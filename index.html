@@ -564,7 +564,7 @@ body.intro-open{overflow:hidden}
 .v16-import-row strong{overflow-wrap:anywhere}
 .v16-import-status{white-space:pre-wrap;overflow-wrap:anywhere}
 @media (min-width:760px){.v16-import-row{grid-template-columns:1fr 1fr}}
-</style><meta name="app-build-version" content="V16-2026-11-07"><link rel="manifest" href="manifest.webmanifest"><script src="./school-pack.js" defer></script><script src="./challenges.js" defer></script><script src="./exercise-policy.js" defer></script><script src="./bonus-missions.js" defer></script><script src="./xp-rules.js" defer></script><script src="./lesson-editor.js" defer></script><script src="./sound.js" defer></script></head><body>
+</style><meta name="app-build-version" content="V16-2026-11-07"><link rel="manifest" href="manifest.webmanifest"><script src="./school-pack.js" defer></script><script src="./challenges.js" defer></script><script src="./exercise-policy.js" defer></script><script src="./bonus-missions.js" defer></script><script src="./xp-rules.js" defer></script><script src="./lesson-editor.js" defer></script><script src="./sound.js" defer></script><style id="access-roles-style">.access-choice{display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:420px;margin:10px auto}.access-role{padding:13px 8px;border:1px solid #70def9;border-radius:14px;background:#1b3557;color:white;font-weight:800;cursor:pointer}.access-role small{display:block;font-weight:400;font-size:11px;margin-top:5px;color:#d4e8f9}#login-form[hidden]{display:none!important}@media(max-width:350px){.access-choice{grid-template-columns:1fr}}</style><script defer src="./access-roles.js"></script></head><body>
 <section id="intro-screen" role="dialog" aria-modal="true" aria-label="Animation d’ouverture" hidden>
   <audio id="intro-music" src="./assets/intro-arcade-v9.mp3" preload="auto" aria-hidden="true"></audio>
   
@@ -579,7 +579,8 @@ body.intro-open{overflow:hidden}
 </section>
 <section id="access" aria-label="Connexion privée"><div class="access-mark">CLASSEUR · 3e</div>
 <h1>Accède à tes missions</h1><p>Connecte-toi ou visite le classeur sans compte.</p>
-<button class="guest-enter" id="guest-enter" type="button"><span aria-hidden="true">👁</span> VISITER EN INVITÉ <small>Sans inscription · Consultation uniquement</small></button><div class="guest-divider">ou connexion personnelle</div><form id="login-form"><label for="login-email">Adresse e-mail</label>
+<div class="access-choice" role="group" aria-label="Choisir un accès"><button type="button" id="choose-parent" class="access-role">ESPACE PARENT <small>Gestion des cours et suivi</small></button><button type="button" id="choose-tim" class="access-role">ESPACE TIM <small>Leçons, exercices et progression</small></button></div>
+<button class="guest-enter" id="guest-enter" type="button"><span aria-hidden="true">👁</span> VISITER EN INVITÉ <small>Sans inscription · Consultation uniquement</small></button><div class="guest-divider">ou accès personnel sécurisé</div><form id="login-form" hidden><p id="access-role-label" aria-live="polite">Connexion</p><label for="login-email">Adresse e-mail</label>
 <input id="login-email" type="email" required autocomplete="username" placeholder="Adresse e-mail">
 <label for="login-password">Mot de passe</label>
 <input id="login-password" type="password" required autocomplete="current-password" placeholder="Mot de passe">
