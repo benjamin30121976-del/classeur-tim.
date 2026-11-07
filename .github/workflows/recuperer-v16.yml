@@ -19,42 +19,42 @@ jobs:
             curl --fail --location --retry 3 --silent --show-error "https://classeur-tim.pages.dev/$file" -o "$file"
             echo "Recupere: $file"
           done <<'FILES'
-guest-access.js
-attachments.js
-maths-bis-data.js
-version.json
-bonus-missions.js
-ent-private-import.js
-guest-data.js
-README.md
-lesson-editor.js
-challenges.js
-sound.js
-boot.js
-jszip.min.js
-app.js
-.gitignore
-_headers
-espagnol-05-novembre.js
-xp-rules.js
-intro.js
-index.html
-school-pack.js
-manifest.webmanifest
-exercise-policy.js
-pdf-preview.js
-assets/loup-weekly-statique.webp
-assets/loup-daily-statique.webp
-assets/loup-defi.webp
-assets/loup-accueil.webp
-assets/loup-sunday-statique.webp
-assets/intro-arcade-v9.mp3
-assets/el-lobo.png
-assets/loup-sunday-anime.webp
-assets/loup-intro.gif
-assets/loup-weekly-anime.webp
-assets/loup-daily-anime.webp
-packs/maths-bis-v16.json
+          guest-access.js
+          attachments.js
+          maths-bis-data.js
+          version.json
+          bonus-missions.js
+          ent-private-import.js
+          guest-data.js
+          README.md
+          lesson-editor.js
+          challenges.js
+          sound.js
+          boot.js
+          jszip.min.js
+          app.js
+          .gitignore
+          _headers
+          espagnol-05-novembre.js
+          xp-rules.js
+          intro.js
+          index.html
+          school-pack.js
+          manifest.webmanifest
+          exercise-policy.js
+          pdf-preview.js
+          assets/loup-weekly-statique.webp
+          assets/loup-daily-statique.webp
+          assets/loup-defi.webp
+          assets/loup-accueil.webp
+          assets/loup-sunday-statique.webp
+          assets/intro-arcade-v9.mp3
+          assets/el-lobo.png
+          assets/loup-sunday-anime.webp
+          assets/loup-intro.gif
+          assets/loup-weekly-anime.webp
+          assets/loup-daily-anime.webp
+          packs/maths-bis-v16.json
           FILES
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
