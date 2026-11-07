@@ -1,0 +1,26 @@
+name: Importer la V16 depuis le ZIP
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'Classeur_Tim_V16_GitHub_Avec_Publication_Automatique.zip'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extraire la V16 et enregistrer les fichiers
+        run: |
+          set -e
+          ZIP="Classeur_Tim_V16_GitHub_Avec_Publication_Automatique.zip"
+          test -f "$ZIP" || { echo "ZIP absent"; exit 0; }
+          unzip -o "$ZIP" -d .
+          rm "$ZIP"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Importer les sources du classeur V16"
+          git push
