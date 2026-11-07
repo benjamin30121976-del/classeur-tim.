@@ -1,0 +1,15 @@
+{
+  "version": "V16-Cloudflare",
+  "built": "2026-11-07",
+  "features": [
+    "v15-wolf-animations-preserved",
+    "original-ent-pdf-private",
+    "23-bis-visible-after-login",
+    "native-tables-inline-svg",
+    "parent-course-editor",
+    "bulk-private-import",
+    "cloudflare-pages"
+  ],
+  "firebase_real_test": "non effectue",
+  "hosting": "not deployed"
+}

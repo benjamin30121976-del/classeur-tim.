@@ -1,0 +1,646 @@
+
+
+'use strict';
+const DATA=window.__TIM_DATA;
+const EXAM=null; // Complété ultérieurement dans une publication parentale validée d'après l'ENT ; aucune saisie par Tim.
+const ATTEMPT_KEY='tim_espagnol_v6_attempts';
+const DRAFT_KEY='tim_espagnol_v6_drafts';
+const IMPORT_KEY='tim_espagnol_v6_parent_import';
+let storageOK=true;
+try{let k='tim_v6_storage_test';localStorage.setItem(k,'1');storageOK=localStorage.getItem(k)==='1';localStorage.removeItem(k);}catch(e){storageOK=false;}
+let volatile={},lessonSearch='',lessonTopic='all',exerciseSearch='',exerciseTopic='all',dicoCurrentVerb=null,dicoStage='hub',wordCategory='all';
+function load(k,fallback){try{const x=localStorage.getItem(k);return x?JSON.parse(x):fallback;}catch(e){return volatile[k]===undefined?fallback:volatile[k];}}
+function save(k,x){volatile[k]=x;try{localStorage.setItem(k,JSON.stringify(x));return true;}catch(e){storageOK=false;return false;}}
+function attempts(){return window.__CLOUD_ATTEMPTS || [];}
+function drafts(){const d=load(DRAFT_KEY,{});return d&&typeof d==='object'&&!Array.isArray(d)?d:{};}
+function attemptFor(id){return attempts().find(a=>a.id===id);}
+function safe(x){return String(x??'');}
+function E(tag,cls,txt){let el=document.createElement(tag);if(cls)el.className=cls;if(txt!==undefined)el.textContent=safe(txt);return el;}
+function clear(el){el.replaceChildren();return el;}
+function add(parent,...nodes){parent.append(...nodes);return parent;}
+function norm(x){return safe(x).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[¿?¡!.,;:]/g,'').replace(/\s+/g,' ').trim();}
+function short(x,n=110){x=safe(x);return x.length>n?x.slice(0,n-1)+'…':x;}
+function button(label,handler,cls='plain'){let b=E('button',cls,label);b.type='button';b.addEventListener('click',handler);return b;}
+function badge(text,cls=''){return E('span','pill '+cls,text);}
+function notice(text,cls='note info'){return E('div',cls,text);}
+function scrollTop(){window.scrollTo(0,0);requestAnimationFrame(()=>window.scrollTo(0,0));}
+function page(name){if(name==='parent' && !window.__TIM_PARENT){name='home';}if(name==='dico')renderDico('hub');if(name==='cours'){document.getElementById('lesson-index').classList.remove('hide');document.getElementById('lesson-detail').classList.remove('active');}if(name==='exercices'){document.getElementById('exercise-index').classList.remove('hide');document.getElementById('exercise-detail').classList.remove('active');}for(const p of document.querySelectorAll('.page'))p.classList.toggle('active',p.id===name);for(const b of document.querySelectorAll('[data-nav]')){b.classList.toggle('selected',b.dataset.nav===name);b.setAttribute('aria-current',b.dataset.nav===name?'page':'false');}scrollTop();if(name==='matieres')renderMatieres();if(name==='cours')renderLessonIndex();if(name==='exercices')renderExerciseIndex();if(name==='parent')renderParent();refreshXPHeader();if(name==='difficultes')renderDifficulties();if(name==='home')renderHome();if(name==='revisions')renderRevisions();if(name==='aide')document.getElementById('help-query').focus();}
+document.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.nav==='exercices'){exerciseSubject='';exerciseGroup='';exerciseMode='';document.getElementById('exercise-search').value='';}page(b.dataset.nav);}));
+function lessonBy(id){return DATA.lessons.find(l=>l.id===id);}
+function exerciseBy(id){return DATA.exercises.find(e=>e.id===id);}
+function quizLabel(q){return q.level==='Rédaction'?'Rédaction : 7 critères vérifiés':q.level+' · '+q.questions.length+' questions';}
+function exerciseDescription(ex){return safe(ex.description).replace(/correction immédiate/gi,'correction le lendemain à 18 h');}
+function topicSelect(id,arr,sel,handler){const root=clear(document.getElementById(id));root.append(new Option('Tous les thèmes','all'));for(const x of arr)root.append(new Option(x,x));root.value=sel;root.addEventListener('change',()=>handler(root.value));}
+function cardAction(heading,meta,description,onClick,status){const b=E('button','tile');b.type='button';if(status)b.append(badge(status,status==='Terminé'?'green':''));b.append(E('strong','',heading),E('small','',meta));if(description)b.append(E('small','',description));b.append(E('span','end','Ouvrir →'));b.addEventListener('click',onClick);return b;}
+function makeExamples(root,rows){for(const [es,fr] of rows){const ex=E('div','example');const left=E('div');left.append(document.createTextNode(es+' '));left.append(speakButton(es));ex.append(left,E('div','',fr));root.append(ex);}}
+function speakButton(txt){let b=E('button','speak','▶ Écouter');b.type='button';b.title='Écouter en espagnol';b.addEventListener('click',()=>speak(txt));return b;}
+function speak(txt){if(!('speechSynthesis' in window)){alert('La voix espagnole n’est pas disponible dans ce navigateur.');return;}try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(safe(txt));u.lang='es-ES';u.rate=.82;const v=speechSynthesis.getVoices().find(x=>x.lang?.toLowerCase().startsWith('es'));if(v)u.voice=v;u.onerror=()=>{alert('La prononciation n’a pas fonctionné sur cet appareil.');};speechSynthesis.speak(u);}catch(err){alert('Impossible de lire cette phrase sur ce téléphone.');}}
+function buildBlock(block){
+ let box=E('div','block');if(block.h)box.append(E('h3','',block.h));
+ if(block.kind==='table'){
+  if(block.tableRole==='grid'){
+   const holder=E('div','v16-table-scroll'),t=E('table','v16-native-table');
+   for(const [i,row] of (block.rows||[]).entries()){const tr=E('tr');for(const cell of row)tr.append(E(i===0?'th':'td','',cell));t.append(tr);}holder.append(t);box.append(holder);
+  }else makeExamples(box,block.rows||[]);
+ }else if(block.kind==='note')box.append(E('div','v16-prewrap',block.body||''));
+ else if(block.kind==='bullets'){let ul=E('ul');for(const line of (block.items||[]))ul.append(E('li','',line));box.append(ul);}
+ else if(block.kind==='svg'){
+  if(window.TIM_LESSON_EDITOR?.safeSvg?.(block.svg)){
+   const img=E('img','v16-inline-figure');img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(block.svg);img.alt=block.h||'Schéma de cours';img.loading='lazy';box.append(img);
+  }else box.append(notice('Schéma indisponible ou format non autorisé.'));
+  if(block.caption)box.append(E('p','v16-caption',block.caption));
+ }else if(block.kind==='figure'){
+  let spot=E('div','v16-image-spot','Chargement de la figure…');spot.dataset.attachmentId=block.attachmentId||'';box.append(spot);
+  if(block.caption)box.append(E('p','v16-caption',block.caption));
+ }
+ return box;
+}
+async function loadInlineLessonFigures(root,lessonId){
+ const nodes=[...root.querySelectorAll('.v16-image-spot[data-attachment-id]')];if(!nodes.length)return;
+ const api=window.__TIM_BRIDGE?.attachments;
+ if(!api){nodes.forEach(n=>n.textContent='Figure consultable après connexion au compte Tim ou parent.');return;}
+ try{const list=await api.list('lesson',lessonId);const byId=new Map(list.map(x=>[x.id,x]));
+  for(const node of nodes){const meta=byId.get(node.dataset.attachmentId);
+   if(!meta){node.textContent='Figure introuvable : vérifie les pièces jointes de ce cours.';continue;}
+   try{const blob=await api.read(meta),url=URL.createObjectURL(blob);const img=E('img','v16-inline-figure');img.src=url;img.alt=meta.title||'Schéma du cours';img.loading='lazy';node.replaceChildren(img);
+   }catch(err){node.textContent='Impossible de charger la figure : '+(err.message||err);}
+  }
+ }catch(err){nodes.forEach(n=>n.textContent='Figures non disponibles : '+(err.message||err));}
+}
+
+
+const COURSE_GROUPS=[
+ {title:'Se présenter',topics:['Identité','Goûts','Lettre','École'],icon:'◎',sub:'Identité, goûts, écrire une lettre'},
+ {title:'Verbes et grammaire',topics:['Conjugaison','Grammaire','Questions'],icon:'Aa',sub:'Présent, accords, questions'},
+ {title:'Culture espagnole',topics:['Horoscope','Géographie'],icon:'◇',sub:'Pays hispanophones et horoscope'},
+ {title:'Méthodes de contrôle',topics:['Méthode'],icon:'✓',sub:'Comprendre les consignes et réviser'}
+];
+let lessonGroup='', lessonSubject='', exerciseGroup='', exerciseSubject='', exerciseMode='';
+// Les missions bonus sont un tirage quotidien stable. Le compteur XP existant
+// ne change pas : au plus +3 XP bonus/jour, une seule validation par exercice.
+function bonusStatus(){return window.TIM_BONUS.state(DATA.exercises,attempts());}
+function bonusMissionPanel(onHome=false,subject=''){
+ const st=bonusStatus(),box=E('section',onHome?'bonus-spotlight home-bonus':'bonus-spotlight');
+ const header=E('div','bonus-spotlight-head');header.append(E('div','bonus-spotlight-heading',onHome?'🎁 MISSION BONUS DU JOUR':'🎁 TES EXERCICES BONUS'),E('span','bonus-xp','Jusqu’à +3 XP / jour'));box.append(header);
+ box.append(E('p','bonus-lead','3 suggestions surprises chaque jour. Tu peux aussi faire autant d’autres exercices bonus que tu veux : seuls les XP sont plafonnés.')); 
+ const chosen=st.chosen.filter(e=>!subject||(e.subject||'Espagnol')===subject);
+ if(!chosen.length)box.append(E('p','bonus-empty',subject?'Aucun exercice de '+subject+' dans le tirage du jour. Tu peux consulter les autres exercices bonus.':'Toutes les missions bonus disponibles ont déjà été terminées.'));
+ const list=E('div','bonus-mission-list');
+ for(let i=0;i<chosen.length;i++){const ex=chosen[i],done=!!attemptFor(ex.id);
+  const b=E('button','bonus-mission-item');b.type='button';b.append(E('span','bonus-mission-number',done?'✓':String(st.chosen.findIndex(x=>x.id===ex.id)+1)));
+  const meta=E('span','bonus-mission-copy');meta.append(E('strong','',ex.title),E('small','',(ex.subject||'Espagnol')+' · '+(lessonBy(ex.lesson)?.title||'Cours enregistré')));b.append(meta,E('span','bonus-mission-status',done?'Terminé':'Jouer ›'));
+  b.addEventListener('click',()=>openExercise(ex.id));list.append(b);
+ }box.append(list);
+ const actions=E('div','bonus-mission-actions');
+ if(!window.__TIM_GUEST&&!window.__TIM_PARENT){
+  const reroll=button(st.round?'Tirage déjà changé':'🔀 Changer mes bonus (1 fois)',()=>{
+    if(window.TIM_BONUS.change(DATA.exercises,attempts())){if(onHome)renderHome();else renderExerciseIndex();}
+    else v7Toast('Le changement a déjà été utilisé ou une mission est commencée.');
+  },'bonus-reroll');reroll.disabled=!st.canChange;
+  actions.append(reroll);
+ }
+ if(onHome){actions.append(button('VOIR MES BONUS →',()=>{exerciseMode='bonus-mission';exerciseSubject='';exerciseGroup='';page('exercices');},'bonus-browse'));}
+ else if(subject){actions.append(button('Voir tous les exercices bonus →',()=>{exerciseMode='bonus-all';exerciseGroup='';renderExerciseIndex();},'bonus-browse'));}
+ else actions.append(button('Voir toutes les matières →',()=>{exerciseMode='';exerciseSubject='';renderExerciseIndex();},'bonus-browse'));
+ box.append(actions);
+ if(!st.round)box.append(E('p','bonus-footnote','Tu peux changer le tirage une seule fois, avant de valider un exercice.'));
+ else box.append(E('p','bonus-footnote','Tirage modifié pour aujourd’hui. Le changement ne se renouvelle que demain.'));
+ if(window.__TIM_GUEST)box.append(E('p','bonus-footnote','Mode invité : aperçu uniquement, sans validation ni XP.'));
+ return box;
+}
+
+// V15 : chapitres classés par matière, et non par thèmes espagnols pour tout le site.
+function subjectOf(item){return item?.subject||'Espagnol';}
+function chapterOf(lesson){
+ const raw=safe(lesson?.chapter||lesson?.topic||'Autres notions').trim()||'Autres notions';
+ // Les intitulés ENT et BIS peuvent être différents pour le même chapitre.
+ // Regrouper uniquement à l'affichage, sans modifier le contenu original stocké.
+ if(subjectOf(lesson)!=='Mathématiques')return raw;
+ const key=norm(raw+' '+safe(lesson?.title));
+ if(/thales/.test(key))return 'Thalès';
+ if(/pythagore/.test(key))return 'Pythagore';
+ if(/litteral|developpement|programme de calcul/.test(key))return 'Calcul littéral';
+ if(/fractions|puissance|nombres relatifs|calculs? numerique|ecriture scientifique/.test(key))return 'Calculs numériques';
+ if(/automatismes/.test(key))return 'Automatismes';
+ if(/revisions|evaluation|controle/.test(key))return 'Révisions / évaluation';
+ return raw;
+}
+function isBisLesson(lesson){return lesson?.kind==='bis'||lesson?.category==='bis'||/^MBIS\d{2}$/.test(lesson?.id||'');}
+function isBonusLesson(lesson){return lesson?.category==='bonus'||lesson?.kind==='bonus'||/^M26B_/.test(lesson?.id||'')||/cours bonus/i.test(lesson?.source||'');}
+function groupsForLessons(rows,subject){
+ const topics=[...new Set(rows.map(chapterOf))];
+ if(subject==='Espagnol'){
+  const groups=COURSE_GROUPS.filter(g=>g.topics.some(t=>topics.includes(t)));
+  const covered=new Set(groups.flatMap(g=>g.topics));
+  return [...groups,...topics.filter(t=>!covered.has(t)).map(t=>({title:t,topics:[t],icon:'▤',sub:'Chapitre '+t}))];
+ }
+ return topics.sort((a,b)=>a.localeCompare(b,'fr')).map(t=>({title:t,topics:[t],icon:'▤',sub:'Cours, devoirs et entraînements'}));
+}
+function setLessonSubject(name){
+ lessonSubject=name;lessonGroup='';
+ const selector=document.getElementById('lesson-topic');
+ const topics=[...new Set(DATA.lessons.filter(l=>!name||subjectOf(l)===name).map(chapterOf))].sort((a,b)=>a.localeCompare(b,'fr'));
+ selector.replaceChildren(new Option('Tous les chapitres','all'),...topics.map(t=>new Option(t,t)));
+ selector.value='all';document.getElementById('lesson-search').value='';renderLessonIndex();
+}
+function exerciseGroupDefs(exs){
+ const all=exs.map(e=>lessonBy(e.lesson)).filter(Boolean);
+ return groupsForLessons(all,exerciseSubject||'Espagnol');
+}
+function groupTile(o,count,click,unit='fiche'){const b=E('button','group-card');b.type='button';const ic=E('span','group-icon',o.icon);b.append(ic);const txt=E('div');txt.append(E('strong','',o.title),E('small','',count+' '+unit+(count>1?'s':'')+' · '+o.sub));b.append(txt);b.addEventListener('click',click);return b;}
+function renderLessonIndex(){
+ const root=clear(document.getElementById('lesson-list'));
+ const q=norm(document.getElementById('lesson-search').value),topic=document.getElementById('lesson-topic').value;
+ const subjects=[...new Set([...SCHOOL_SUBJECTS,...DATA.lessons.map(subjectOf)])];
+ if(!lessonSubject&&!q){
+  root.className='matter-grid';document.getElementById('lesson-count').textContent='Choisis d’abord une matière :';
+  for(const name of subjects){const count=DATA.lessons.filter(l=>subjectOf(l)===name).length;
+   const b=E('button','matter-card');b.type='button';
+   b.append(E('strong','',name),E('small','',count+' cours enregistré(s)'));
+   if(count)b.addEventListener('click',()=>setLessonSubject(name));else b.disabled=true;
+   root.append(b);
+  }return;
+ }
+ const eligible=DATA.lessons.filter(l=>(!lessonSubject||subjectOf(l)===lessonSubject));
+ const groups=groupsForLessons(eligible,lessonSubject||'Espagnol');
+ if(lessonSubject&&!q&&!lessonGroup){
+  root.className='clicklist group-picker';root.append(button('← Toutes les matières',()=>setLessonSubject(''),'group-back'));
+  document.getElementById('lesson-count').textContent=lessonSubject+' · Choisis un chapitre :';
+  for(const g of groups){const count=eligible.filter(l=>g.topics.includes(chapterOf(l))).length;
+   root.append(groupTile(g,count,()=>{lessonGroup=g.title;renderLessonIndex();}));
+  }return;
+ }
+ root.className='clicklist';
+ if(lessonSubject)root.append(button('← Chapitres de '+lessonSubject,()=>{lessonGroup='';renderLessonIndex();},'group-back'));
+ const group=groups.find(g=>g.title===lessonGroup);
+ const found=eligible.filter(l=>(topic==='all'||chapterOf(l)===topic)&&(!group||q||group.topics.includes(chapterOf(l)))&&(!q||norm(l.title+' '+l.date+' '+l.topic+' '+l.summary+' '+l.source+' '+l.blocks.map(b=>JSON.stringify(b)).join(' ')).includes(q)));
+ document.getElementById('lesson-count').textContent=found.length+' fiche(s) trouvée(s)';
+ const entCourses=found.filter(l=>!isBisLesson(l)),bisCourses=found.filter(isBisLesson);
+ if(entCourses.length){root.append(E('h3','lesson-type-label ent','COURS ENT · '+entCourses.length));for(const l of entCourses)root.append(cardAction(l.title,'Cours ENT · '+(l.date||'Séance enregistrée')+' · '+chapterOf(l),l.summary,()=>openLesson(l.id)));}
+ if(bisCourses.length){root.append(E('h3','lesson-type-label bis','LEÇONS BIS ILLUSTRÉES · '+bisCourses.length));for(const l of bisCourses)root.append(cardAction(l.title,'Leçon BIS · '+chapterOf(l),l.summary,()=>openLesson(l.id)));}
+ if(!found.length)root.append(notice('Aucune fiche trouvée pour cette recherche.'));
+}
+function openLesson(id){const l=lessonBy(id);if(!l)return;lessonSubject=subjectOf(l);lessonGroup='';page('cours');document.getElementById('lesson-index').classList.add('hide');const dest=clear(document.getElementById('lesson-detail'));dest.classList.add('active');
+ const bis=isBisLesson(l),allSame=DATA.lessons.filter(x=>x.id!==l.id&&subjectOf(x)===subjectOf(l)&&chapterOf(x)===chapterOf(l)),others=allSame.filter(x=>bis?!isBisLesson(x):isBisLesson(x));
+ dest.append(button('← Retour au sommaire',()=>{dest.classList.remove('active');document.getElementById('lesson-index').classList.remove('hide');scrollTop();},'plain back'));
+ dest.append(E('p','lesson-type-label '+(bis?'bis':'ent'),bis?'LEÇON BIS · POUR MIEUX COMPRENDRE':'COURS ENT · DOCUMENT DU PROFESSEUR'),E('h2','',l.title),E('p','meta',bis?'Version pédagogique complémentaire':'Cours abordé : '+(l.date||'date non précisée')),E('p','',l.summary));
+ if(bis){dest.append(notice('Cette leçon BIS complète le cours ENT ; elle ne remplace jamais la version du professeur.','note info'));}
+ else {dest.append(notice('Les PDF et figures originaux du professeur apparaissent dans « Documents originaux » lorsqu’ils sont associés à ce cours. La fiche affichée ici peut être une synthèse ; elle n’est pas forcément une reproduction du PDF.','lesson-caution'));}
+ const tabs=E('div','lesson-tabs');tabs.append(button('COURS ENT',()=>{const target=bis?others[0]:l;if(target)openLesson(target.id);else alert('Aucun cours ENT associé à ce chapitre.');},'plain'),button('LEÇON BIS',()=>{const target=bis?l:others[0];if(target)openLesson(target.id);else alert('Aucune leçon BIS associée à ce chapitre.');},'plain'));dest.append(tabs);
+ if(others.length>1){const rel=E('div','panel');rel.append(E('h3','',bis?'Autres cours ENT de ce chapitre':'Leçons BIS de ce chapitre'));for(const other of others)rel.append(cardAction(other.title,bis?'Cours ENT':'Leçon BIS',other.summary,()=>openLesson(other.id)));dest.append(rel);}
+ // Les PDF d'origine sont prioritaires et consultables en lecteur mobile privé.
+ if(!bis)dest.append(makeAttachmentPanel('lesson',l.id));
+ for(const b of l.blocks)dest.append(buildBlock(b));loadInlineLessonFigures(dest,l.id);
+ if(bis)dest.append(makeAttachmentPanel('lesson',l.id));
+let related=DATA.exercises.filter(e=>e.lesson===l.id&&!e.id.startsWith('R'));let controls=E('div','panel separated');controls.append(E('h3','','S’entraîner sur cette leçon'));if(related.length){let list=E('div','clicklist');for(const ex of related)list.append(cardAction(ex.title,(window.TIM_EXERCISE.school(ex)?'Devoir ENT · 0 XP':'Bonus · jusqu’à +2 XP')+' · '+quizLabel(ex),null,()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));controls.append(list);}else controls.append(E('p','','Un exercice pourra être ajouté ultérieurement.'));dest.append(controls);
+let help=E('div','helpbox');help.append(E('h3','','Je n’ai pas compris'));help.append(E('p','','Voici une autre manière de comprendre. Les explications suivantes ont été écrites spécialement pour le classeur.'));const stage=E('div');let index=0;function step(){clear(stage);if(index===0){stage.append(badge('Niveau 1 · Explication simple'),E('p','',l.help.simple));}if(index===1){stage.append(badge('Niveau 2 · Étapes guidées'));let ol=E('ol');for(const x of l.help.steps)ol.append(E('li','',x));stage.append(ol,E('p','note info',l.help.example));}if(index>=2){stage.append(badge('Niveau 3 · Vérifier avec un exemple'));const ck=l.help.check;if(ck){stage.append(E('p','',ck.q));let opts=E('div','check-answers');ck.options.forEach((o,j)=>opts.append(button(o,()=>{msg.textContent=(j===ck.right?'Bonne réponse. ':'Ce n’est pas la bonne réponse. ')+ck.why;msg.style.color=j===ck.right?'var(--green)':'var(--red)';},'plain')));stage.append(opts);const msg=E('p','subtle','Cette mini-question est une aide, pas un exercice noté.');stage.append(msg);}else stage.append(E('p','',l.help.example));}next.textContent=index===0?'Explication pas à pas →':index===1?'Vérifier avec un exemple →':'Recommencer l’aide';}
+const next=button('Explication pas à pas →',()=>{index=(index+1)%3;step();});help.append(stage,next);step();dest.append(help);
+let arch=E('div','panel');arch.append(E('h3','','Historique des cours'));arch.append(E('p','small', 'Les originaux ENT doivent être ajoutés dans l’espace parent pour être consultables de façon privée, sans mettre les PDF scolaires sur un site public.'));arch.append(button('Voir le journal des séances',()=>page('archives'),'plain'));dest.append(arch);scrollTop();}
+document.getElementById('lesson-search').addEventListener('input',renderLessonIndex);
+function renderRevisions(){const root=clear(document.getElementById('revisions-content'));if(EXAM&&EXAM.date){const box=E('div','panel');box.append(badge('Contrôle confirmé'),E('h3','',EXAM.title+' — '+EXAM.date),E('p','',EXAM.topics||''));root.append(box);}else root.append(notice('Aucun prochain contrôle n’est actuellement renseigné. Dès qu’une date et un programme seront confirmés dans l’ENT, le parent pourra demander une mise à jour du classeur.','notice'));
+let grid=E('div','clicklist');for(const l of DATA.lessons){const small=l.blocks.find(b=>b.kind==='table');grid.append(cardAction('Fiche '+l.id.slice(1)+' · '+l.title,l.date,small?small.rows.slice(0,2).map(r=>r[0]).join(' · '):l.summary,()=>openLesson(l.id)));}root.append(grid);}
+function getRelevantRemedials(){const a=attempts(),miss=new Set();for(const t of a){if(!window.TIM_EXERCISE.canShow(t,new Date(),!!window.__TIM_PARENT))continue;t.answers.forEach((x,i)=>{if(x.correct===false){const skill=exerciseBy(t.id)?.questions[i]?.skill;if(skill&&DATA.skillToRemedy[skill])miss.add(DATA.skillToRemedy[skill]);}});}return [...miss].filter(id=>!attemptFor(id)).map(exerciseBy).filter(Boolean);}
+function renderExerciseIndex(){
+ const root=clear(document.getElementById('exercise-list')),q=norm(document.getElementById('exercise-search').value),topic=document.getElementById('exercise-topic').value;
+ const toolbar=clear(document.getElementById('exercise-subject-toolbar'));
+ const finder=document.getElementById('exercise-search').closest('.toolrow');
+ const extras=clear(document.getElementById('recommended-extra'));
+ const bases=DATA.exercises.filter(e=>!window.TIM_EXERCISE.challenge(e));
+ if(!exerciseSubject){
+  finder.classList.add('hide');root.className='matter-grid';
+  if(exerciseMode==='school-all'){
+   root.className='clicklist';const schoolwork=bases.filter(e=>window.TIM_EXERCISE.mode(e)==='school');
+   document.getElementById('exercise-count').textContent='Devoirs de l’école · 0 XP';toolbar.append(button('← Toutes les matières',()=>{exerciseMode='';renderExerciseIndex();},'group-back'));
+   if(!schoolwork.length)root.append(notice('Aucun devoir de l’ENT n’a encore été publié dans le classeur.'));
+   else for(const ex of schoolwork)root.append(cardAction(ex.title,(ex.subject||'Espagnol')+' · 0 XP',exerciseDescription(ex),()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));return;
+  }
+  if(exerciseMode==='bonus-mission'){
+   root.className='clicklist';document.getElementById('exercise-count').textContent='Tes 3 missions bonus du jour';
+   toolbar.append(button('← Toutes les matières',()=>{exerciseMode='';renderExerciseIndex();},'group-back'));
+   root.append(bonusMissionPanel(false));return;
+  }
+  document.getElementById('exercise-count').textContent='Devoirs de l’école, défi du jour et exercices bonus :';
+  const overview=E('div','exercise-v12-overview');
+  overview.append(button('📚 DEVOIRS DE L’ÉCOLE · 0 XP',()=>{exerciseSubject='';exerciseMode='school-all';renderExerciseIndex();},'exercise-v12-overview-button school'),button('🎯 DÉFI DU JOUR · +5 XP',()=>{page('home');document.getElementById('challenge-section')?.scrollIntoView({behavior:'smooth',block:'center'});},'exercise-v12-overview-button challenge'));
+  root.append(overview,bonusMissionPanel(false));
+  const icons=['🇪🇸','∑','⚗','EN','📖','🌍','⚖','🌱','⚙'];
+  SCHOOL_SUBJECTS.forEach((name,i)=>{const count=bases.filter(e=>(e.subject||'Espagnol')===name).length;
+    const b=E('button','matter-card'+(name==='Espagnol'?' matter-espanol':''));b.type='button';
+    b.append(E('span','ico',icons[i]||'▤'),E('strong','',name),E('small','',count?count+' exercice(s) disponible(s)':'À compléter avec les cours de Tim'));
+    if(count)b.addEventListener('click',()=>{exerciseSubject=name;exerciseGroup='';exerciseMode='';document.getElementById('exercise-search').value='';renderExerciseIndex();scrollTop();});
+    else {b.disabled=true;b.classList.add('pending-subject');}root.append(b);
+  });return;
+ }
+ finder.classList.remove('hide');root.className='clicklist';
+ toolbar.append(button('← Toutes les matières',()=>{exerciseSubject='';exerciseGroup='';exerciseMode='';document.getElementById('exercise-search').value='';renderExerciseIndex();scrollTop();},'group-back'),E('h3','',exerciseSubject));
+ const bySubject=bases.filter(e=>(e.subject||'Espagnol')===exerciseSubject);
+ if(!exerciseMode&&!q){
+  finder.classList.add('hide');document.getElementById('exercise-count').textContent='Choisis ta mission :';
+  const choices=E('div','exercise-type-choice');
+  for(const [mode,label,icon,desc] of [
+   ['school','DEVOIRS DE L’ÉCOLE','📚','Exercices demandés par les professeurs dans l’ENT · 0 XP.'],
+   ['bonus','EXERCICES BONUS','⭐','Exercices créés pour s’entraîner · XP bonus limités à +3 par jour.']
+  ]){
+   const found=bySubject.filter(e=>window.TIM_EXERCISE.mode(e)===mode);
+   const tile=E('button','exercise-type-tile '+mode);tile.type='button';
+   tile.append(E('span','type-icon',icon),E('strong','',label),E('small','',desc),E('span','type-counter',found.length+' exercice(s)'));
+   tile.addEventListener('click',()=>{exerciseMode=mode;exerciseGroup='';renderExerciseIndex();});choices.append(tile);
+  }
+  root.append(E('p','exercise-type-prompt','Les devoirs de l’école n’apportent aucun XP. Les exercices bonus sont libres, avec un plafond de +3 XP par jour. Le défi du jour se trouve sur l’accueil.'),choices);
+  return;
+ }
+ // Entrée rapide : les 3 bonus du jour, sans obliger Tim à choisir un chapitre.
+ if(exerciseMode==='bonus'&&!q){
+  finder.classList.add('hide');
+  document.getElementById('exercise-count').textContent='Tes missions bonus en '+exerciseSubject;
+  toolbar.append(button('← Devoirs / bonus',()=>{exerciseMode='';exerciseGroup='';renderExerciseIndex();},'group-back'));
+  root.append(bonusMissionPanel(false,exerciseSubject));return;
+ }
+ finder.classList.remove('hide');
+ if(exerciseMode)toolbar.append(button('← Devoirs / bonus',()=>{exerciseMode='';exerciseGroup='';document.getElementById('exercise-search').value='';renderExerciseIndex();},'group-back'));
+ const categoryExercises=bySubject.filter(e=>!exerciseMode||window.TIM_EXERCISE.mode(e)===(exerciseMode==='bonus-all'?'bonus':exerciseMode));
+ const groups=exerciseGroupDefs(categoryExercises);
+ if(!q&&!exerciseGroup){
+  root.classList.add('group-picker');document.getElementById('exercise-count').textContent=exerciseMode==='bonus-all'?'Tous les exercices bonus · Choisis un thème :':exerciseMode==='school'?'Devoirs de l’école · Choisis un thème :':'Exercices bonus · Choisis un thème :';
+  if(!categoryExercises.length){root.append(notice(exerciseMode==='school'?'Aucun devoir de l’ENT publié pour cette matière.':'Aucun exercice bonus pour le moment.')); return;}
+  for(const g of groups){const count=categoryExercises.filter(e=>g.topics.includes(chapterOf(lessonBy(e.lesson)))).length;root.append(groupTile({...g,sub:g.sub.replace('Identité, goûts, écrire une lettre','Questions sur toi et tes goûts')},count,()=>{exerciseGroup=g.title;renderExerciseIndex();},'exercice'));}return;
+ }
+ root.classList.remove('group-picker');
+ if(exerciseGroup&&!q)root.append(button('← Tous les thèmes',()=>{exerciseGroup='';renderExerciseIndex();},'group-back'));
+ const group=groups.find(g=>g.title===exerciseGroup);
+ const found=categoryExercises.filter(e=>{const l=lessonBy(e.lesson);return l&&(topic==='all'||chapterOf(l)===topic)&&(!group||q||group.topics.includes(chapterOf(l)))&&(!q||norm(e.title+' '+l.title+' '+quizLabel(e)).includes(q));});
+ document.getElementById('exercise-count').textContent=found.length+' exercice(s) · '+found.filter(e=>attemptFor(e.id)).length+' terminé(s)';
+ for(const ex of found)root.append(cardAction(ex.title,lessonBy(ex.lesson).title+' · '+quizLabel(ex),exerciseDescription(ex),()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));
+ if(!found.length)root.append(notice('Aucun exercice dans cette sélection.'));
+ const available=getRelevantRemedials().filter(e=>(e.subject||'Espagnol')===exerciseSubject&&(!exerciseMode||window.TIM_EXERCISE.mode(e)===exerciseMode));
+ if(available.length&&!exerciseMode){extras.append(E('h3','separated','Nouveaux exercices conseillés après une erreur'));const c=E('div','clicklist');for(const ex of available)c.append(cardAction(ex.title,lessonBy(ex.lesson).title,'Questions différentes de l’exercice déjà validé',()=>openExercise(ex.id)));extras.append(c);}
+}
+function answerValue(input){if(input.type==='radio'){const chosen=document.querySelector('input[name="'+input.name+'"]:checked');return chosen?chosen.value:'';}return input.value;}
+function freeOrTextAnswer(question,answer){if(question.type==='free')return null;const correct=question.type==='mc'?String(question.right)===String(answer):[question.right,...(question.also||[])].some(x=>norm(x)===norm(answer));return correct;}
+function openExercise(id){const ex=exerciseBy(id);if(!ex)return;window.__TIM_OPEN_EXERCISE_ID=id;page('exercices');document.getElementById('exercise-index').classList.add('hide');const root=clear(document.getElementById('exercise-detail'));root.classList.add('active');root.append(button('← Retour aux exercices',()=>{root.classList.remove('active');document.getElementById('exercise-index').classList.remove('hide');renderExerciseIndex();scrollTop();},'plain back'));root.append(badge(ex.level),E('h2','',ex.title),E('p','intro',exerciseDescription(ex)),E('p','small','Leçon associée : '+lessonBy(ex.lesson).title));root.append(button('Voir la leçon correspondante',()=>openLesson(ex.lesson),'plain'));root.append(makeAttachmentPanel('exercise',ex.id));if(!window.__TIM_GUEST&&!ex.kind&&!attemptFor(ex.id)){
+ const mode=window.TIM_EXERCISE.mode(ex);
+ const modeInfo=notice(mode==='school'?'📚 DEVOIR DE L’ÉCOLE · 0 XP. Tu recevras la correction le lendemain à 18 h.':mode==='bonus'?'⭐ EXERCICE BONUS · 100 % = +2 XP ; dès 60 % = +1 XP ; sinon 0. Maximum +3 XP par jour.':'Cet exercice n’est pas encore disponible.');modeInfo.id='tim-exercise-mode-info';root.append(modeInfo);
+}
+if(window.__TIM_GUEST){root.append(notice('Visite en lecture seule : tu peux voir les questions, mais tu ne peux ni répondre ni valider.','guest-preview'));
+ for(const [i,q] of ex.questions.entries()){const row=E('div','q');row.append(E('strong','',(i+1)+'. '+q.q));if(q.type==='mc'){const ul=E('ul');for(const option of q.options)ul.append(E('li','',option));row.append(ul);}root.append(row);}return;}
+const old=attemptFor(ex.id),draft=drafts()[ex.id]||[];let form=E('div','panel');let controls=[];
+ex.questions.forEach((question,i)=>{const row=E('div','q');row.append(E('div','qtitle',(i+1)+'. '+question.q));const previous=old?old.answers[i]?.response:draft[i];if(question.type==='mc'){let options=E('div','check-answers');question.options.forEach((option,j)=>{const label=E('label','choose');const input=E('input');input.type='radio';input.name='question-'+ex.id+'-'+i;input.value=String(j);input.checked=previous!==undefined&&String(previous)===String(j);input.disabled=!!old;input.addEventListener('change',saveDraft);label.append(input,E('span','',option));options.append(label);});row.append(options);controls.push({kind:'mc',name:'question-'+ex.id+'-'+i});}else{const input=question.type==='free'?E('textarea','answer wide'):E('input','answer');if(question.type==='text'){input.type='text';input.autocomplete='off';input.spellcheck=false;input.placeholder='Écris la réponse en espagnol';}else{input.rows=6;input.placeholder='Écris ta lettre ici…';}input.value=previous===undefined?'':safe(previous);input.disabled=!!old;input.addEventListener('input',saveDraft);row.append(input);controls.push({kind:'text',node:input});}form.append(row);});root.append(form);
+function values(){return controls.map(c=>c.kind==='mc'?(document.querySelector('input[name="'+c.name+'"]:checked')?.value??''):c.node.value.trim());}
+function saveDraft(){if(old)return;const d=drafts();d[id]=values();save(DRAFT_KEY,d);}
+if(old){
+ const disclosed=window.TIM_EXERCISE.canShow(old,new Date(),!!window.__TIM_PARENT);
+ if(disclosed){root.append(E('div','banner-good','Exercice terminé · correction disponible.'));renderFeedback(ex,old,root);}
+ else{
+  const panel=E('div','correction-pending');panel.append(E('strong','','✓ Exercice validé et enregistré'),E('p','',window.TIM_EXERCISE.school(ex)?'Ton devoir scolaire est enregistré : 0 XP, comme prévu.':'Tes XP sont calculés immédiatement et pris en compte dans ta progression.'),E('p','release-date','Correction disponible '+window.TIM_EXERCISE.releaseLabel(old)+'.'),E('p','','Tu pourras voir tes erreurs et les bonnes réponses à cette date.'));
+  const recap=E('div','exercise-submission-recap');recap.append(E('strong','','Tes réponses enregistrées :'));
+  const list=E('ol');for(const [i,a] of old.answers.entries()){const li=E('li','',ex.questions[i]?.type==='mc'?(ex.questions[i]?.options?.[Number(a.response)]||'Sans réponse'):a.response);list.append(li);}recap.append(list);panel.append(recap);root.append(panel);
+ }
+ const gain=old.date<XP_V5_START?(old.needsReview?5:(old.score*10+(old.total>0&&old.score===old.total?20:0))):old.date<XP_START?xpBarV5(old):old.date<XP_V10_START?xpBarV9(old):old.policyVersion>=12?xpBar(old):xpBarV10(old);
+ root.append(E('div','xp-award',window.TIM_EXERCISE.school(ex)?'📚 Devoir de l’école : 0 XP.':('⭐ '+(gain>=0?'+':'')+gain+' XP sur cet exercice (avant plafonds). Total actuel : '+xpInfo().total+' XP.')));
+} else if(window.__TIM_PARENT){controls.forEach(c=>{if(c.node)c.node.disabled=true;else for(const el of form.querySelectorAll('input'))el.disabled=true;});root.append(notice('Aperçu parent : seul Tim peut répondre et valider cet exercice.'));}else{
+ const submit=button('Valider définitivement cet exercice',async()=>{const vals=values();if(vals.some(v=>!safe(v).trim())){alert('Réponds à toutes les questions avant de valider.');return;}if(attemptFor(id)){openExercise(id);return;}if(!confirm('Confirmer ? Cet exercice sera définitivement terminé, sur tous les appareils.'))return;const answers=ex.questions.map((question,i)=>({question:question.q,response:vals[i],correct:freeOrTextAnswer(question,vals[i]),expected:question.type==='mc'?question.options[question.right]:question.type==='free'?question.right:question.right,skill:question.skill,explanation:question.why}));const graded=answers.filter(a=>a.correct!==null);const t={id,date:new Date().toISOString(),title:ex.title,lesson:ex.lesson,score:graded.reduce((sum,a)=>sum+(a.correct?1:0),0),total:graded.length,needsReview:graded.length===0,answers};submit.disabled=true;submit.textContent='Enregistrement sécurisé…';
+ try {const saved=await window.__TIM_BRIDGE.submit(id,vals);window.__CLOUD_ATTEMPTS.push(saved);
+const mailAttempt=window.__TIM_BRIDGE.notifyAlert?.(id,saved);if(mailAttempt?.catch)mailAttempt.catch(()=>{});
+ const d=drafts();delete d[id];save(DRAFT_KEY,d);v7NewAttempt(saved);openExercise(id);
+ }catch(err){submit.disabled=false;submit.textContent='Valider définitivement cet exercice';
+ alert('L’exercice n’a pas été enregistré. Rien n’est perdu : vérifie ta connexion et réessaie. '+(err?.message||''));
+ await window.__TIM_BRIDGE.refresh();if(attemptFor(id))openExercise(id);}},'btn');root.append(E('p','small',window.TIM_EXERCISE.school(ex)?'Devoir scolaire : aucun XP. La correction apparaîtra demain à partir de 18 h pour Tim ; le parent la consulte dès la validation.':'Après validation, les XP sont calculés immédiatement. La correction apparaîtra le lendemain à partir de 18 h pour Tim ; le parent la consulte tout de suite.'),submit);}
+if(!old && !window.__TIM_PARENT && controls.length>1){
+  const questionNodes=[...form.querySelectorAll('.q')];
+  const submit=root.querySelector('button.btn');
+  if(submit){submit.classList.add('quiz-final');}
+  form.classList.add('quiz-one');
+  const progress=E('div','quiz-progress');const heading=E('div','quiz-row');const stateLabel=E('span','','Question 1 / '+questionNodes.length);const nAnswered=E('span','','0 réponse');heading.append(stateLabel,nAnswered);const bar=E('div','quiz-track');const barFill=E('span');bar.append(barFill);progress.append(heading,bar);root.insertBefore(progress,form);
+  const actions=E('div','quiz-controls');let step=0;
+  const before=button('← Précédent',()=>{showStep(step-1);progress.scrollIntoView({behavior:'smooth',block:'start'});},'plain');
+  const after=button('Suivant →',()=>{const answers=values();if(!safe(answers[step]).trim()){alert('Réponds à la question avant de passer à la suivante.');return;}showStep(step+1);progress.scrollIntoView({behavior:'smooth',block:'start'});},'btn');
+  actions.append(before,after);root.insertBefore(actions,submit);
+  function showStep(n){step=Math.min(questionNodes.length-1,Math.max(0,n));for(let i=0;i<questionNodes.length;i++)questionNodes[i].classList.toggle('quiz-current',i===step);stateLabel.textContent='Question '+(step+1)+' / '+questionNodes.length;barFill.style.width=(((step+1)/questionNodes.length)*100)+'%';let filled=values().filter(v=>safe(v).trim()).length;nAnswered.textContent=filled+' réponse'+(filled>1?'s':'');before.disabled=step===0;after.classList.toggle('hide',step===questionNodes.length-1);submit.classList.toggle('ready',step===questionNodes.length-1);}
+  form.addEventListener('change',()=>{nAnswered.textContent=values().filter(v=>safe(v).trim()).length+' réponses';});form.addEventListener('input',()=>{nAnswered.textContent=values().filter(v=>safe(v).trim()).length+' réponses';});
+  showStep(0);
+ }
+scrollTop();}
+function renderFeedback(ex,t,root){const box=E('div','result'+(t.needsReview?' waiting':''));box.append(E('h3','',t.needsReview?'Rédaction enregistrée — à revoir':'Résultat : '+t.score+'/'+t.total));box.append(E('p','subtle','Validé le '+new Date(t.date).toLocaleString('fr-FR')+'. Les réponses sont verrouillées sur tous les appareils.'));for(const [i,a] of t.answers.entries()){const p=E('div','feedback');p.append(E('strong','',`${i+1}. ${a.question}`),E('p','',`Ta réponse : ${ex.questions[i].type==='mc'?ex.questions[i].options[Number(a.response)]:a.response}`));if(a.correct!==null)p.append(E('p',a.correct?'correct':'wrong',a.correct?'Correct.':'À revoir.'));if(a.correct===false)p.append(E('p','','Réponse attendue : '+a.expected));p.append(E('p','subtle',a.explanation));box.append(p);}root.append(v7Feedback(ex,t),box);if(t.answers.some(a=>a.correct===false))root.append(button('Voir mon carnet des difficultés',()=>page('difficultes'),'plain'));}
+document.getElementById('exercise-search').addEventListener('input',renderExerciseIndex);
+function renderDifficulties(){const root=clear(document.getElementById('difficulties-content'));const done=attempts().filter(t=>window.TIM_EXERCISE.canShow(t,new Date(),!!window.__TIM_PARENT));const errs=[];for(const t of done){for(const [i,x] of t.answers.entries())if(x.correct===false)errs.push({t,x,i});}let stats=E('div','mini-grid');stats.append(E('div','info-stat',done.length+' exercices'),E('div','info-stat',errs.length+' erreurs'),E('div','info-stat',getRelevantRemedials().length+' aides'));root.append(stats);
+if(!done.length){root.append(notice('Aucun exercice validé. Les difficultés apparaîtront après la première correction.'));return;}if(!errs.length){root.append(notice('Aucune erreur dans les exercices validés. Cela ne signifie pas que toutes les notions sont maîtrisées.','banner-good'));return;}
+const groups={};for(const e of errs){const s=e.x.skill||'autre';(groups[s]??=[]).push(e);}for(const [skill,items] of Object.entries(groups)){const b=E('div','panel');b.append(badge('Notion à retravailler'),E('h3','',skill+' · '+items.length+' erreur(s)'));for(const {t,x} of items){const line=E('div','separated');line.append(E('strong','',t.title),E('p','',x.question),E('p','wrong','Réponse donnée : '+(x.response??'')),E('p','correct','Réponse attendue : '+x.expected),E('p','subtle',x.explanation));b.append(line);}const r=DATA.skillToRemedy[skill];if(r&&!attemptFor(r))b.append(button('Faire un nouvel exercice différent',()=>openExercise(r),'btn'));else if(r)b.append(E('p','small','L’exercice complémentaire correspondant est déjà terminé.'));const lesson=lessonBy(items[0].t.lesson);if(lesson)b.append(button('Revoir la leçon',()=>openLesson(lesson.id),'plain'));root.append(b);}}
+function renderDico(stage='hub'){dicoStage=stage;for(const suffix of ['hub','subjects','spanish','verbs','verbtime','verbdetail','words']){let elem=document.getElementById('dico-'+suffix);elem.classList.toggle('active',suffix===stage);elem.classList.toggle('hide',suffix!==stage);}if(stage==='verbs')renderVerbIndex();if(stage==='words')renderWordIndex();}
+function renderVerbIndex(){const root=clear(document.getElementById('dico-verbs'));root.append(button('← Dictionnaire espagnol',()=>renderDico('spanish'),'plain back'),E('h3','','Choisis un verbe'));let inp=E('input','search');inp.type='search';inp.placeholder='Chercher un verbe (ex. ser, llamarse)';root.append(inp);let list=E('div','clicklist');root.append(list);function update(){clear(list);const q=norm(inp.value);const f=DATA.verbs.filter(v=>norm(v.verb+' '+v.fr).includes(q)).sort((a,b)=>a.verb.localeCompare(b.verb,'es'));if(!f.length)list.append(notice('Ce verbe ne figure pas dans les cours enregistrés.'));for(const v of f)list.append(cardAction(v.verb,v.fr,short(v.source,65),()=>{dicoCurrentVerb=v;renderDico('verbtime');renderVerbTime();}));}inp.addEventListener('input',update);update();}
+function renderVerbTime(){const root=clear(document.getElementById('dico-verbtime'));const v=dicoCurrentVerb;if(!v)return;root.append(button('← Liste des verbes',()=>renderDico('verbs'),'plain back'),E('h3','',v.verb+' — '+v.fr),E('p','subtle','Choisis le temps de conjugaison'));root.append(cardAction('Présent de l’indicatif','Temps étudié dans les documents ENT','Les six personnes, les traductions et la prononciation',()=>{renderDico('verbdetail');renderVerbDetail();}));root.append(notice('Les autres temps ne sont pas proposés, car ils ne sont pas confirmés dans les cours étudiés. Ils pourront être ajoutés plus tard.'));}
+function renderVerbDetail(){const root=clear(document.getElementById('dico-verbdetail'));const v=dicoCurrentVerb;if(!v)return;root.append(button('← Temps de conjugaison',()=>renderDico('verbtime'),'plain back'),badge('Présent de l’indicatif'),E('h3','',v.verb+' — '+v.fr),E('p','subtle','Source : '+v.source));const translations={'llamarse':['je m’appelle','tu t’appelles','il/elle s’appelle','nous nous appelons','vous vous appelez','ils/elles s’appellent']};for(let i=0;i<v.forms.length;i++){let r=E('div','gloss-row');r.append(E('div','',DATA.persons[i]));let col=E('div');col.append(document.createTextNode(v.forms[i]+' '),speakButton(v.forms[i]));r.append(col);root.append(r);}if(v.verb==='ser'||v.verb==='estar')root.append(notice('Ser sert surtout à décrire l’identité et une caractéristique ; estar sert souvent à décrire un état ou un lieu.'));}
+function renderWordIndex(){const root=clear(document.getElementById('dico-words'));root.append(button('← Dictionnaire espagnol',()=>renderDico('spanish'),'plain back'),E('h3','','Mots et expressions'));let input=E('input','search');input.type='search';input.placeholder='Écris un mot en français ou en espagnol';root.append(input);let filter=E('select');let cats=['Tous les thèmes',...new Set(DATA.vocab.map(x=>x.cat))];for(const c of cats)filter.append(new Option(c,c));filter.value=wordCategory==='all'?cats[0]:wordCategory;root.append(E('p','small','Recherche dans les deux langues.'));root.append(filter);let list=E('div');root.append(list);function update(){clear(list);const q=norm(input.value),cat=filter.value;const rows=DATA.vocab.filter(w=>(!q||norm(w.fr+' '+w.es).includes(q))&&(cat===cats[0]||w.cat===cat));list.append(E('p','subtle',rows.length+' mot(s) ou expression(s)'));if(!rows.length){list.append(notice('Ce mot ne figure pas dans les cours enregistrés dans ce classeur.'));return;}for(const w of rows){let r=E('div','gloss-row');r.append(E('div','',w.fr));let x=E('div');x.append(document.createTextNode(w.es+' '),speakButton(w.es));r.append(x);list.append(r);}}input.addEventListener('input',update);filter.addEventListener('change',update);update();}
+document.querySelectorAll('[data-dico]').forEach(b=>b.addEventListener('click',()=>renderDico(b.dataset.dico)));document.getElementById('tool-help').addEventListener('click',()=>page('aide'));
+function renderTimeline(){const root=clear(document.getElementById('timeline-content'));root.append(E('h3','','Journal des séances disponibles'));let stack=E('div','timeline');for(const [iso,date,topic,source,ids] of DATA.timeline){const row=E('div','timeline-row');row.append(E('div','date',date));let cell=E('div');cell.append(E('strong','',topic),E('small','',source));let links=E('div','btnrow');for(const id of ids.split(',').filter(Boolean))links.append(button('Fiche '+id.slice(1),()=>openLesson(id),'plain'));cell.append(links);row.append(cell);stack.append(row);}root.append(stack);root.append(notice('Les dates sans fiche retrouvée (29 septembre, 13 octobre) et la fiche vide du 7 octobre ne prouvent pas que les cours ont été annulés.'));}
+function renderArchives(){renderTimeline();const root=clear(document.getElementById('archive-content'));const categories=[...new Set(DATA.archive.map(x=>x.day))];categories.sort((a,b)=>{const extract=(x)=>{const [day,month]=x.split(' ');const m={'septembre':9,'octobre':10,'novembre':11};return (m[month]||0)*100+Number(day||0);};return extract(a)-extract(b)});for(const group of categories){const arr=DATA.archive.filter(x=>x.day===group);const details=E('details','archive-group');details.append(E('summary','',group+' · '+arr.length+' capture(s)'));const wrap=E('div','archive-grid');for(const img of arr){const b=E('button','archive-shot');b.type='button';const picture=E('img');picture.src=img.src;picture.loading='lazy';picture.alt='Capture ENT du '+group+', '+img.name;b.append(picture,E('small','',img.name));b.addEventListener('click',()=>openImage(img));wrap.append(b);}details.append(wrap);root.append(details);}}
+function openImage(img){const dial=document.getElementById('image-dialog');document.getElementById('dialog-caption').textContent=img.day+' · '+img.name;document.getElementById('dialog-image').src=img.src;if(typeof dial.showModal==='function')dial.showModal();else window.open(img.src,'_blank');}
+document.getElementById('dialog-close').addEventListener('click',()=>document.getElementById('image-dialog').close());
+function searchHelp(){const root=clear(document.getElementById('help-results')),q=norm(document.getElementById('help-query').value);if(!q){root.textContent='Écris un mot, une notion ou une date.';return;}let arr=[];const v=DATA.verbs.filter(x=>norm(x.verb+' '+x.fr).includes(q));for(const x of v.slice(0,3))arr.push({type:'verbe',title:x.verb+' — '+x.fr,description:'Présent : '+x.forms.join(' · '),go:()=>{page('dico');dicoCurrentVerb=x;renderDico('verbdetail');renderVerbDetail();}});
+const words=DATA.vocab.filter(x=>norm(x.fr+' '+x.es).includes(q));for(const x of words.slice(0,5))arr.push({type:'mot',title:x.fr+' → '+x.es,description:'Vocabulaire : '+x.cat,go:()=>{page('dico');renderDico('words');}});
+const course=DATA.lessons.filter(l=>norm(l.title+' '+l.date+' '+l.topic+' '+l.summary+' '+l.source+' '+l.blocks.map(b=>JSON.stringify(b)).join(' ')).includes(q));for(const l of course.slice(0,6))arr.push({type:'cours',title:l.title,description:l.date+' · '+l.summary,go:()=>openLesson(l.id)});
+if(!arr.length){root.textContent='Je n’ai pas trouvé cette information dans les cours enregistrés. Essaie un autre mot ou consulte les fiches par date.';return;}root.className='';let list=E('div','clicklist');for(const item of arr)list.append(cardAction(item.title,item.type,item.description,item.go));root.append(list);}
+document.getElementById('help-search').addEventListener('click',searchHelp);document.getElementById('help-query').addEventListener('keydown',ev=>{if(ev.key==='Enter')searchHelp();});
+function reportText(a){if(!a.length)return 'Aucun exercice enregistré.';return 'Classeur espagnol Tim — '+a.length+' exercices\n\n'+a.map(t=>`${new Date(t.date).toLocaleString('fr-FR')} · ${t.title} · ${t.needsReview?'Rédaction à revoir':t.score+'/'+t.total}\n`+t.answers.map((x,i)=>`${i+1}. ${x.question}\nRéponse : ${x.response}\nAttendu : ${x.expected}\n${x.correct===null?'Relecture humaine':x.correct?'Correct':'Incorrect'}`).join('\n')).join('\n\n');}
+function exported(){return {app:'classeur_espagnol_tim',version:7,exportedAt:new Date().toISOString(),attempts:attempts()};}
+function exportJSON(){const blob=new Blob([JSON.stringify(exported(),null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);let a=document.createElement('a');a.download='resultats_espagnol_Tim_V7.json';a.href=url;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),8000);}
+function renderAttempts(list,arr){clear(list);if(!arr.length){list.append(notice('Aucun exercice validé.'));return;}for(const a of arr.slice().reverse()){let box=E('div','panel');box.append(E('h3','',a.title+(a.needsReview?' · à corriger':' · '+a.score+'/'+a.total)),E('p','meta',new Date(a.date).toLocaleString('fr-FR')));const detail=E('details','summary-details');detail.append(E('summary','','Voir toutes les réponses'));for(const [i,x] of a.answers.entries()){const row=E('div','separated');row.append(E('strong','',(i+1)+'. '+x.question),E('p','',`Réponse : ${x.response}`),E('p','subtle',`Attendu : ${x.expected}`),E('p',x.correct===false?'wrong':x.correct===true?'correct':'subtle',x.correct===null?'À relire':x.correct?'Correct':'À revoir'));detail.append(row);}box.append(detail);list.append(box);}}
+// V15 — Lecture privée des pièces jointes (PDF, figures, photos, documents).
+function makeAttachmentPanel(targetKind,targetId){
+ const panel=E('section','panel attachment-panel');panel.append(E('h3','',targetKind==='lesson'?(isBisLesson(lessonBy(targetId))?'Documents complémentaires de la leçon BIS':'Documents originaux ENT · PDF et figures'):'Documents et figures'));
+ if(!window.__TIM_BRIDGE?.attachments){panel.append(E('p','small','Les pièces jointes privées sont visibles après connexion.'));return panel;}
+ const info=E('p','small','Chargement des documents…'),list=E('div','attachment-list');panel.append(info,list);
+ const api=window.__TIM_BRIDGE.attachments;
+ async function refresh(){
+  clear(list);info.textContent='Chargement des pièces jointes…';
+  try{
+   const files=await api.list(targetKind,targetId);info.textContent=files.length?files.length+' document(s) disponible(s).':'Aucune pièce jointe pour le moment.';
+   for(const item of files){
+    const row=E('div','attachment-row');
+    row.append(E('div','attachment-name',(item.title||item.fileName)+' · '+(item.size/1024/1024).toFixed(2)+' Mo'));
+    const controls=E('div','btnrow'),preview=E('div','attachment-preview');
+    const open=button('Voir / télécharger',async()=>{
+     open.disabled=true;preview.replaceChildren(E('p','small','Ouverture du document…'));
+     let disposePdf=()=>{};
+     try{
+      const blob=await api.read(item),url=URL.createObjectURL(blob);
+      clear(preview);const dl=E('a','btn','Télécharger '+item.fileName);dl.href=url;dl.download=item.fileName;preview.append(dl);
+      if(item.mime.startsWith('image/')){const img=E('img','attachment-image');img.src=url;img.alt=item.title||item.fileName;preview.append(img);}
+      else if(item.mime==='application/pdf'){
+       // Les PDF intégrés en iframe ne s'affichent pas de manière fiable sur Chrome Android.
+       // La V15.1 dessine les pages dans le classeur avec PDF.js (zoom et navigation).
+       const host=E('div','attachment-pdf-reader');preview.append(host);
+       const module=await import('./pdf-preview.js');
+       const release=await module.mountPdfPreview(host,blob);
+       if(typeof release==='function')disposePdf=release;
+      }else preview.append(E('p','small','Ce format est à ouvrir après téléchargement.'));
+      const close=button('Fermer l’aperçu',()=>{disposePdf();URL.revokeObjectURL(url);clear(preview);},'plain');preview.append(close);
+     }catch(e){preview.textContent='Ouverture impossible : '+(e.message||e);}finally{open.disabled=false;}
+    },'plain');controls.append(open);
+    if(window.__TIM_PARENT){controls.append(button('Supprimer',async()=>{
+     if(!confirm('Supprimer définitivement « '+item.fileName+' » ?'))return;
+     try{await api.remove(item);await refresh();}catch(e){alert('Suppression impossible : '+(e.message||e));}
+    },'plain'));}
+    row.append(controls,preview);list.append(row);
+   }
+  }catch(e){info.textContent='Pièces jointes indisponibles : '+(e.message||e);}
+ }
+ refresh();return panel;
+}
+function makeAttachmentAdminPanel(){
+ const box=E('div','panel');box.append(E('h3','','Ajouter un PDF, une figure ou une pièce jointe'),E('p','small','Sélectionne la matière puis le cours ou l’exercice. Fichiers privés accessibles uniquement à Tim et à son parent. Taille maximale : 4 Mo. PDF, images et documents Office/OpenDocument. Aucun abonnement de stockage supplémentaire nécessaire dans les limites gratuites de Firestore.'));
+ const api=window.__TIM_BRIDGE.attachments;
+ const subjects=[...new Set([...DATA.lessons.map(subjectOf),...DATA.exercises.map(subjectOf)])].sort((a,b)=>a.localeCompare(b,'fr'));
+ const subject=E('select','attachment-select');subject.setAttribute('aria-label','Matière');subjects.forEach(s=>subject.append(new Option(s,s)));if(subjects.includes('Mathématiques'))subject.value='Mathématiques';
+ const target=E('select','attachment-select');target.setAttribute('aria-label','Cours ou exercice associé');
+ const label=E('input','answer');label.type='text';label.maxLength=120;label.placeholder='Titre facultatif du document';label.setAttribute('aria-label','Titre du document');
+ const file=E('input','attachment-file');file.type='file';file.multiple=true;file.accept='.pdf,.png,.jpg,.jpeg,.webp,.gif,.txt,.docx,.pptx,.xlsx,.odp,.odt';file.setAttribute('aria-label','Choisir un fichier');
+ const state=E('p','small','Les fichiers ne sont pas ajoutés automatiquement : tu confirmes la publication.');
+ function fill(){const rows=[...DATA.lessons.filter(l=>subjectOf(l)===subject.value).map(l=>({value:'lesson|'+l.id,name:'Cours · '+chapterOf(l)+' · '+l.title})),...DATA.exercises.filter(e=>subjectOf(e)===subject.value&&!window.TIM_EXERCISE.challenge(e)).map(e=>({value:'exercise|'+e.id,name:'Exercice · '+e.title}))];target.replaceChildren(...rows.map(v=>new Option(v.name,v.value)));}
+ subject.addEventListener('change',fill);fill();
+ const send=button('Ajouter la pièce jointe',async()=>{
+  const selected=[...(file.files||[])],value=target.value;if(!selected.length||!value){state.textContent='Choisis un document et un cours ou exercice.';return;}
+  const [kind,id]=value.split('|');send.disabled=true;
+  try{let count=0;for(const fileItem of selected){state.textContent='Envoi '+(count+1)+'/'+selected.length+' : '+fileItem.name;await api.upload(kind,id,fileItem,selected.length===1?label.value:fileItem.name,n=>state.textContent='Envoi '+(count+1)+'/'+selected.length+' : '+n+' %');count++;}state.textContent=count+' fichier(s) ajoutés. Tim peut les consulter depuis le cours.';file.value='';label.value='';}
+  catch(e){state.textContent='Échec : '+(e.message||e);}
+  finally{send.disabled=false;}
+ },'btn');
+ box.append(E('p','small','Matière'),subject,E('p','small','Rattacher à'),target,E('p','small','Titre visible dans le classeur'),label,E('p','small','Fichier'),file,send,state);
+ return box;
+}
+function parentAdminPanels(root){
+ if(window.TIM_ENT_PRIVATE_IMPORT?.render&&window.__TIM_BRIDGE?.attachments)root.prepend(window.TIM_ENT_PRIVATE_IMPORT.render({lessons:DATA.lessons,api:window.__TIM_BRIDGE.attachments}));
+ if(window.__TIM_BRIDGE?.attachments)root.prepend(makeAttachmentAdminPanel());
+ const test=E('div','panel');test.append(E('h3','','Contrôle technique de Firebase'),E('p','small','Ce test crée un résultat fictif dans la collection séparée test_attempts, le lit, vérifie le verrouillage, puis le supprime. Il ne touche à aucun résultat de Tim.'));
+ const status=E('p','subtle','Aucun test effectué.');
+ const run=button('Tester Firebase sans toucher aux notes',async()=>{
+  run.disabled=true;status.textContent='Test de la base en cours…';
+  try{const out=await window.__TIM_BRIDGE.diagnose();status.textContent=out.created&&out.read&&out.locked&&out.erased?'TEST RÉUSSI : écriture, lecture, refus de modification, effacement dans la collection de test.':'TEST INCOMPLET : '+JSON.stringify(out);}
+  catch(e){status.textContent='ÉCHEC DU TEST : '+(e.message||e);}
+  finally{run.disabled=false;}
+ },'btn');test.append(run,status);root.prepend(test);
+ const addPanel=E('div','panel');addPanel.append(E('h3','','Ajouter de nouveaux cours et exercices'),E('p','small','Les nouveaux exercices doivent préciser leur catégorie : category: "school" pour les devoirs de l’ENT (0 XP), ou category: "bonus" pour les exercices d’entraînement créés à partir des leçons (+0 à +2 XP). Date de publication enregistrée automatiquement dans Firebase. Les anciens cours et résultats ne sont jamais écrasés.')); 
+ const input=E('textarea','answer wide');input.rows=5;input.placeholder='JSON : {"lessons":[...],"exercises":[{"id":"...","category":"school" ou "bonus",...}]}' ;input.setAttribute('aria-label','Contenu JSON du nouveau cours');
+ const packFile=E('input','attachment-file');packFile.type='file';packFile.accept='.json,application/json';packFile.setAttribute('aria-label','Charger un lot JSON de cours depuis le téléphone');
+ packFile.addEventListener('change',async()=>{const f=packFile.files?.[0];if(!f)return;try{if(f.size>850000)throw Error('Lot trop volumineux.');const text=await f.text();const parsed=JSON.parse(text);if(!Array.isArray(parsed.lessons)&&!Array.isArray(parsed.exercises))throw Error('Lot JSON de cours invalide.');input.value=JSON.stringify(parsed);info.textContent='Lot chargé : vérifie le contenu, puis appuie sur Publier. Aucun envoi automatique.';}catch(e){info.textContent='Fichier invalide : '+(e.message||e);}});
+ const info=E('p','small','Aucun ancien cours n’est remplacé. Seul le compte parent peut publier.');
+ const buttonAdd=button('Publier les nouveaux cours',async()=>{
+  buttonAdd.disabled=true;info.textContent='Vérification du contenu…';
+  try{const payload=JSON.parse(input.value);const n=await window.__TIM_BRIDGE.publish(payload);info.textContent=n+' contenu(s) ajouté(s) dans Firebase. Rechargement…';window.location.reload();}
+  catch(e){info.textContent='Publication refusée : '+(e.message||e);buttonAdd.disabled=false;}
+ },'btn');addPanel.append(E('p','small','Choisir un lot JSON sur le téléphone (ou coller le texte ci-dessous) :'),packFile,input,buttonAdd,info);{const advanced=E('details','v16-import');advanced.append(E('summary','','Import de fichiers JSON (option avancée)'),addPanel);root.prepend(advanced);}
+ const mail=E('div','panel');mail.append(E('h3','','Alerte e-mail après validation'),E('p','small','L’alerte utilise un scénario Make : réception du webhook, vérification de l’exercice, puis envoi Gmail au parent. Le site ne peut pas envoyer un e-mail directement sans ce scénario.'));
+ const hook=E('input','answer');hook.type='url';hook.placeholder='https://hook.eu1.make.com/…';hook.autocomplete='off';hook.setAttribute('aria-label','Adresse du webhook Make');
+ const mailStatus=E('p','small','Configuration Make non vérifiée.');
+ window.__TIM_BRIDGE.readAlertWebhook?.().then(v=>{if(v){hook.value=v;mailStatus.textContent='Webhook enregistré. Il reste à vérifier le scénario Make et l’arrivée réelle d’un e-mail.';}else mailStatus.textContent='Alerte désactivée : aucun webhook Make enregistré.';}).catch(()=>{});
+ const saveMail=button('Enregistrer le webhook',async()=>{
+  saveMail.disabled=true;try{const enabled=await window.__TIM_BRIDGE.saveAlertWebhook(hook.value);mailStatus.textContent=enabled?'Webhook enregistré dans Firebase. Attention : ce n’est pas une preuve de réception d’e-mail.':'Webhook supprimé, alerte désactivée.';}
+  catch(e){mailStatus.textContent='Échec : '+(e.message||e);}finally{saveMail.disabled=false;}
+ },'plain');mail.append(hook,saveMail,mailStatus);root.prepend(mail);
+ if(window.TIM_LESSON_EDITOR?.render)root.prepend(window.TIM_LESSON_EDITOR.render({lessons:DATA.lessons,bridge:window.__TIM_BRIDGE,onSaved:()=>window.location.reload()}));
+}
+function renderParent(){const root=clear(document.getElementById('parent-content'));if(window.__TIM_BRIDGE){root.append(button('↻ Actualiser les résultats en ligne',async()=>{try{await window.__TIM_BRIDGE.refresh();renderParent();}catch(e){alert('Résultats indisponibles : vérifie la connexion.');}},'plain'));}let loc=attempts();let stats=E('div','mini-grid');stats.append(E('div','info-stat',loc.length+' exercices'),E('div','info-stat',loc.filter(x=>!x.needsReview).length+' notés'),E('div','info-stat',loc.filter(x=>x.needsReview).length+' rédactions'));root.append(stats);root.append(makeXPPanel(),makeRewardsTile());
+let toolbar=E('div','panel');toolbar.append(E('h3','','Exporter les résultats enregistrés en ligne'),E('p','small','Le fichier contient les réponses, la date de validation et les corrections ; il peut être transmis au parent, puis joint à ChatGPT pour un bilan.'));const buttons=E('div','btnrow');buttons.append(button('Exporter les résultats (.json)',exportJSON,'btn'));buttons.append(button('Copier le bilan',async()=>{try{await navigator.clipboard.writeText(reportText(loc));alert('Bilan copié.');}catch(e){const ta=E('textarea');ta.value=reportText(loc);document.body.append(ta);ta.select();document.execCommand('copy');ta.remove();alert('Copie tentée ; sinon utilise l’export JSON.');}},'plain'));toolbar.append(buttons);root.append(toolbar);let list=E('div','results-list');renderAttempts(list,loc);root.append(E('h3','','Validations enregistrées en ligne'),list);
+let other=E('div','panel');other.append(E('h3','','Importer un ancien fichier de résultats'),E('p','small','Pour consulter les résultats récents, utilise la liste ci-dessus. Cet import est réservé aux anciens fichiers locaux et ne modifie pas Firestore.'));let uploader=E('input');uploader.type='file';uploader.accept='.json,application/json';other.append(uploader);const imported=E('div');const present=load(IMPORT_KEY,null);function showImported(payload){clear(imported);if(!payload){imported.append(E('p','subtle','Aucun fichier importé.'));return;}imported.append(E('p','banner-good',payload.attempts.length+' résultat(s) importé(s).'));let list=E('div');renderAttempts(list,payload.attempts);imported.append(list);}uploader.addEventListener('change',async()=>{const f=uploader.files?.[0];if(!f)return;try{const data=JSON.parse(await f.text());if(data.app!=='classeur_espagnol_tim'||!Array.isArray(data.attempts)||data.attempts.some(x=>typeof x.id!=='string'||!Array.isArray(x.answers)))throw Error('Fichier de résultats incorrect.');save(IMPORT_KEY,data);showImported(data);}catch(e){alert('Ce fichier n’est pas un export valide du classeur.');}});other.append(imported);showImported(present);root.append(other);if(window.__TIM_BRIDGE?.diagnose){parentAdminPanels(root);}root.append(notice('Il n’est pas possible ici de modifier un contrôle à distance. Les informations officielles d’un prochain contrôle doivent être relevées par le parent dans l’ENT, puis ajoutées à une mise à jour du classeur.','note info'));}
+
+const WOLF_ICON='<svg aria-hidden="true" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 10 23 18 32 14 41 18 56 10 53 37 46 47 32 56 18 47 11 37Z" fill="#e6eaff" stroke="#5868cd" stroke-width="2.6" stroke-linejoin="round"/><path d="m23 35 9 5 9-5-3 12-6 5-6-5Z" fill="#6472d0"/><path d="m18 29 8 3m20-3-8 3" stroke="#28376c" stroke-width="3" stroke-linecap="round"/><path d="M27 41 32 44 37 41" stroke="#263a73" stroke-width="2.5" stroke-linejoin="round"/></svg>';
+
+const SCHOOL_SUBJECTS=['Espagnol',...(window.__TIM_MORE_PACK?.subjects||[])];
+// Conserver les acquis historiques ; nouveau barème à compter de la préparation V6.
+const XP_V5_START='2026-11-06';
+const XP_START='2026-11-06T04:27:16Z';
+const XP_V10_START='2026-11-06T05:42:54Z'; // Maintient les barèmes des validations antérieures à la V10.
+const parisDay=window.TIM_XP.day;
+const weekMonday=window.TIM_XP.monday;
+function xpBar(a){const ex=exerciseBy(a.id);return window.TIM_XP.contribution(a,ex);}
+function xpBarV9(a){return window.TIM_XP.contributionV9(a,exerciseBy(a.id));}
+function xpBarV10(a){return window.TIM_XP.contributionV10(a,exerciseBy(a.id));}
+function xpBarV5(a){if(a.needsReview||!a.total)return 0;const p=Math.max(0,Math.min(1,a.score/a.total));let v=p===1?10:p>=.8?6:p>=.6?2:p>=.4?-2:-5;if((a.id.startsWith('DAY_')||a.id.startsWith('WEEK_')||a.id.startsWith('SUNDAY_'))&&p>=.8)v+=5;return v;}
+function xpInfo(done=attempts()){
+ const daily=new Map();let legacy=0,perfect=0;
+ for(const a of done){if(a.total>0&&a.score===a.total&&window.TIM_EXERCISE.canShow(a,new Date(),!!window.__TIM_PARENT))perfect++;
+  if(!a.date||a.date<XP_V5_START){legacy+=a.needsReview?5:(Math.max(0,Number(a.score)||0)*10+(a.total>0&&a.score===a.total?20:0));continue;}
+  const day=parisDay(a.date);if(!day)continue;
+  const value=a.date<XP_START?xpBarV5(a):a.date<XP_V10_START?xpBarV9(a):a.policyVersion>=12?xpBar(a):xpBarV10(a),old=daily.get(day)||{plus:0,bonus:0,minus:0};
+  const isNewBonus=a.date>=XP_V10_START&&!window.TIM_EXERCISE.challenge(exerciseBy(a.id))&&(a.policyVersion>=12?window.TIM_XP.isBonus(exerciseBy(a.id),a.date):!exerciseBy(a.id)?.publishedAt||parisDay(exerciseBy(a.id)?.publishedAt)!==day);
+  if(value>=0){if(isNewBonus)old.bonus+=value;else old.plus+=value;}else old.minus+=value;daily.set(day,old);
+ }
+ const weeks=new Map();const today=parisDay(new Date());const current=weekMonday(today);
+ for(const [day,v] of daily){const key=weekMonday(day);weeks.set(key,(weeks.get(key)||0)+Math.min(10,v.plus+Math.min(3,v.bonus))+Math.max(-5,v.minus));}
+ let total=legacy,peak=legacy;for(const key of [...weeks.keys()].sort()){total=Math.max(0,total+Math.max(-50,Math.min(50,weeks.get(key))));peak=Math.max(peak,total);}
+ const thisWeek=Math.max(0,Math.min(50,weeks.get(current)||0));
+ const currentWeekly=window.__TIM_CHALLENGES?.weekly;
+ const weeklyPass=done.some(a=>a.id===currentWeekly&&a.total>0&&a.score/a.total>=.8&&weekMonday(parisDay(a.date))===current);
+ const reward=window.TIM_XP.reward(thisWeek,weeklyPass);
+ const level=Math.floor(peak/100)+1;
+ return {total,perfect,peak,level,inLevel:Math.max(0,Math.min(100,total-(level-1)*100)),done:done.length,week:thisWeek,rawWeek:weeks.get(current)||0,reward,legacy,weeklyPass};
+}
+function makeXPPanel(){const st=xpInfo(),p=E('div','xp-panel');
+ p.innerHTML='<div class="xp-panel-head"><strong>⭐ Niveau '+st.level+'</strong><span>'+st.total+' XP</span></div><div class="xp-track" role="progressbar" aria-label="Progression vers le prochain niveau" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+st.inLevel+'"><div class="xp-track-fill" style="width:'+st.inLevel+'%"></div></div><div class="xp-small">'+st.inLevel+' / 100 XP pour le prochain niveau.</div>';
+ const badges=E('div','trophies'),entries=[['🏅 Premier quiz',st.done>=1],['🎯 5 quiz',st.done>=5],['🏆 Sans faute',st.perfect>=1],['⭐ 100 XP',st.peak>=100],['🔥 500 XP',st.peak>=500]];
+ entries.forEach(([t,ok])=>badges.append(E('span','trophy'+(ok?'':' locked'),(ok?'':'🔒 ')+t)));p.append(badges);return p;
+}
+function refreshXPHeader(){const el=document.getElementById('xp-header');if(!el||window.__TIM_GUEST)return;const s=xpInfo();el.innerHTML='<span>⭐ '+s.total+' XP</span><small>Niveau '+s.level+'</small>';}
+function makeRewardsTile(){const b=E('button','reward-open');b.type='button';
+ const text=E('span');text.append(E('strong','','🎁 MES RÉCOMPENSES'),E('small','','Comment fonctionnent les XP, les défis et les gains ?'));
+ b.append(text,E('span','','›'));b.addEventListener('click',()=>{
+  const dialog=document.getElementById('rewards-dialog'),body=clear(document.getElementById('rewards-explanation'));
+  body.append(E('p','','Tu peux gagner une récompense chaque semaine selon tes XP nets. Les montants ne s’additionnent pas.'));
+  const table=E('table'),heads=E('tr');for(const t of ['XP nets (lundi–dimanche)','Récompense'])heads.append(E('th','',t));table.append(heads);
+  for(const [score,amount] of [[15,'2 €'],[30,'5 €'],[45,'10 € + défi hebdomadaire réussi']]){const row=E('tr');row.append(E('td','',score+' XP'),E('td','',amount));table.append(row);}body.append(table);
+  const p=E('ul');for(const t of ['Devoir demandé dans l’ENT : 0 XP, même s’il est validé parfaitement.','Exercice bonus : 100 % = +2 XP, de 60 % à moins de 100 % = +1 XP, sinon 0 XP. Tu peux en faire autant que tu souhaites ; maximum +3 XP bonus par jour.','Leçon consultée : 0 XP. Les XP sont enregistrés à la validation ; Tim voit la correction le lendemain à 18 h, le parent immédiatement.','Maximum +10 XP gagnés et −5 XP perdus par jour ; au plus +50 XP par semaine.','Défi du jour : questions des leçons mises en ligne aujourd’hui, plusieurs matières si disponibles. Au moins 80 % = +5 XP bonus en plus des points du défi.','Le défi hebdomadaire doit être réussi à au moins 80 % pour débloquer les 10 €.','Chaque dimanche : grand défi de révision depuis la rentrée. 80 % de bonnes réponses = +5 XP bonus, dans la limite des plafonds.','Une seule récompense par semaine, maximum 10 €. Le parent valide et verse l’argent. Les niveaux XP restent acquis.'])p.append(E('li','',t));body.append(p);
+  if(!window.__TIM_GUEST){const st=xpInfo();body.append(E('p','',`Cette semaine : ${st.week} XP nets. Récompense calculée : ${st.reward} €. ${st.weeklyPass?'Défi hebdomadaire réussi.':'Défi hebdomadaire non encore réussi.'}`));}
+  dialog.setAttribute('tabindex','-1');if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');dialog.scrollTop=0;dialog.focus({preventScroll:true});
+ });return b;}
+document.getElementById('rewards-close')?.addEventListener('click',()=>{const d=document.getElementById('rewards-dialog');if(d.close)d.close();else d.removeAttribute('open');});
+function missionCard(kind){
+ const meta=window.__TIM_CHALLENGES||{},id=kind==='daily'?meta.daily:kind==='weekly'?meta.weekly:meta.sunday;
+ const ex=DATA.exercises.find(x=>x.id===id),done=ex&&attemptFor(ex.id),sunday=kind==='sunday',weekly=kind==='weekly';
+ const c=E('section',kind==='daily'?'daily-card game-challenge':sunday?'sunday-card game-challenge':'weekly-card game-challenge');if(kind==='daily')c.id='challenge-section';
+ const head=E('div','challenge-top');
+ head.append(E('strong','',kind==='daily'?'🎯 DÉFI DU JOUR':sunday?'👑 GRAND DÉFI DU DIMANCHE':'🏆 DÉFI DE LA SEMAINE'),E('span','challenge-xp-tag','BONUS +5 XP'));
+ c.append(head);
+ const body=E('div','challenge-main'),copy=E('div','challenge-main-copy');
+ if(!ex){copy.append(E('p','challenge-detail',sunday?'Dès que les cours permettront de composer 5 questions, ton défi sera prêt.':weekly?'Le défi apparaîtra quand les exercices de cette semaine seront publiés.':'En attente de cinq questions issues des leçons publiées aujourd’hui. Aucun ancien cours n’est réutilisé automatiquement.'));}
+ else{
+  copy.append(E('p','challenge-detail',kind==='daily'?`${ex.questions.length} questions sur les leçons publiées aujourd’hui, dans les matières disponibles.`:sunday?`${ex.questions.length} questions pour retrouver les cours depuis la rentrée.`:`${ex.questions.length} questions sur les cours publiés cette semaine.`));
+  if(sunday){const subjects=[...new Set(ex.questions.map(q=>q.q.split(' · ')[0]))];copy.append(E('p','challenge-meta',`Depuis septembre · ${subjects.join(', ')} · ${ex.realLessons.length} leçon(s)`));}
+  else if(weekly){copy.append(E('p','challenge-meta',`${ex.realLessons.length} leçon(s) · Toutes les matières disponibles`));}
+  copy.append(E('p','challenge-success','🎯 80 % de bonnes réponses = +5 XP bonus'));
+ }
+ body.append(copy);
+ const wolfWrap=E('div','challenge-wolf-scene');
+ const artKind=kind==='daily'?'daily':sunday?'sunday':'weekly';
+ const img=E('img','challenge-wolf challenge-wolf-'+artKind);
+ img.src='./assets/loup-'+artKind+(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'-statique.webp':'-anime.webp');
+ img.alt=kind==='daily'?'Loup joueur faisant un clin d’œil':sunday?'Loup couronné du grand défi':'Loup victorieux avec une coupe';
+ img.loading='lazy';img.width=126;img.height=100;
+ wolfWrap.append(img);body.append(wolfWrap);c.append(body);
+ const dayOfWeek=new Date((meta.today||'2026-11-06')+'T12:00:00Z').getUTCDay();
+ const open=kind==='daily'||(sunday?dayOfWeek===0:dayOfWeek>=5||dayOfWeek===0);
+ const actions=E('div','challenge-card-actions');
+ if(!ex){actions.append(badge('À venir'));}
+ else if(done){const unlocked=window.TIM_EXERCISE.canShow(done,new Date(),!!window.__TIM_PARENT);actions.append(badge(unlocked?'✓ Déjà validé · '+done.score+'/'+done.total:'✓ Déjà validé · correction demain à 18 h','green'),button(unlocked?'Voir les réponses':'Voir ma validation',()=>openExercise(ex.id),'small-cta'));}
+ else if(!open){actions.append(badge(sunday?'Disponible dimanche':'Disponible vendredi'));}
+ else if(window.__TIM_GUEST)actions.append(badge('Lecture seule · invité'));
+ else actions.append(button(window.__TIM_PARENT?'Prévisualiser le défi':'LANCER LE DÉFI',()=>openExercise(ex.id),'mission-launch'));
+ c.append(actions);return c;
+}
+function makeSoundSettings(){const zone=E('div','sound-settings');zone.append(E('span','','🔊 Bruit des touches : '));
+ const selector=E('select');selector.setAttribute('aria-label','Son des boutons');for(const [value,name] of [['bulle','Bulle · pop'],['arcade','Tir arcade · pew'],['muet','Sans bruit']])selector.add(new Option(name,value));selector.value=window.TIM_SOUND?.mode||'bulle';selector.addEventListener('change',()=>window.TIM_SOUND?.setMode(selector.value));zone.append(selector);return zone;
+}
+function renderHome(){
+ const root=clear(document.getElementById('home-content'));refreshXPHeader();
+ const hero=E('section','mission-hero');
+ const copy=E('div','mission-copy');copy.append(E('div','shout','CLASSEUR · 3e'),E('h1','','CHOISIS TA MISSION'),E('p','','Cours, défis et progression. À toi de jouer.'));
+ copy.append(button('Choisir une matière →',()=>page('matieres'),'lobo-go'));hero.append(copy);const wolf=E('img','mission-wolf');wolf.src='./assets/loup-accueil.webp';wolf.alt='Le loup jongleur du classeur';hero.append(wolf);root.append(hero,makeSoundSettings(),...(window.__TIM_GUEST?[]:[makeXPPanel()]),makeRewardsTile(),missionCard('daily'),bonusMissionPanel(true),missionCard('weekly'),missionCard('sunday'));
+ root.append(E('h2','home-section-title','Que veux-tu travailler ?'));
+ const cards=E('div','home-grid');
+ for(const o of [{name:'Matières',sub:'Cours classés par matière',icon:'▦',cls:'cours',dest:'matieres'},
+  {name:'Exercices',sub:'Matière, thème, puis quiz',icon:'✓',cls:'exos',dest:'exercices'},
+  {name:'Outils',sub:'Dictionnaires et recherche',icon:'⌕',cls:'words',dest:'dico'},
+  {name:'Mes erreurs',sub:'Corrections et progrès',icon:'◎',cls:'errors',dest:'difficultes'}]){
+  const b=E('button','home-card '+o.cls);b.type='button';b.append(E('span','icon-bubble',o.icon),E('span','corner','›'));const t=E('div');t.append(E('strong','',o.name),E('small','',o.sub));b.append(t);b.addEventListener('click',()=>{if(o.dest==='exercices'){exerciseSubject='';exerciseGroup='';exerciseMode='';}page(o.dest);});cards.append(b);
+ }root.append(cards);
+ root.append(E('p','home-mini-note',window.__TIM_GUEST?'Visite publique : cours et questions consultables, aucune réponse enregistrée.':'Débloque tes missions et suis ta progression. Consulte « Mes récompenses » pour connaître les règles.'));
+ if(window.__TIM_PARENT)root.append(button('Voir les résultats et les réglages parent',()=>page('parent'),'plain'));
+}
+function renderMatieres(){
+ const root=clear(document.getElementById('matieres-content'));refreshXPHeader();
+ root.append(E('p','intro',window.__TIM_GUEST?'Aperçu public. Les contenus privés nécessitent une connexion.':'Retrouve les cours, les chapitres et les exercices de chaque matière.')); 
+ const wrap=E('div','matter-grid');
+ const icons=['🇪🇸','∑','⚗','EN','📖','🌍','⚖','🌱','⚙'];
+ for(let i=0;i<SCHOOL_SUBJECTS.length;i++){
+  const name=SCHOOL_SUBJECTS[i],n=DATA.lessons.filter(x=>(x.subject||'Espagnol')===name).length,ex=DATA.exercises.filter(x=>(x.subject||'Espagnol')===name).length;
+  const b=E('button','matter-card'+(name==='Espagnol'?' matter-espanol':''));b.type='button';b.append(E('span','ico',icons[i]||'▤'),E('strong','',name),E('small','',n+' leçon(s) · '+ex+' exercice(s)'+(!n?' · Cours ENT à ajouter':'') ));
+  if(n)b.addEventListener('click',()=>renderMatiere(name));else{b.title='Les vrais cours de Tim ne sont pas encore ajoutés';b.disabled=true;b.style.opacity='.55';}
+  wrap.append(b);
+ }root.append(wrap);
+ if(SCHOOL_SUBJECTS.some(s=>!DATA.lessons.some(l=>(l.subject||'Espagnol')===s)))root.append(E('div','note','Les autres matières ne seront remplies qu’à partir des documents réels de Tim (ENT, cahiers et devoirs). Aucun cours ne sera inventé.'));
+}
+function renderMatiere(name){
+ const root=clear(document.getElementById('matieres-content'));
+ root.append(button('← Toutes les matières',renderMatieres,'matter-back'),E('h2','',name));
+ const lessons=DATA.lessons.filter(x=>subjectOf(x)===name);
+ const exs=DATA.exercises.filter(x=>subjectOf(x)===name&&!window.TIM_EXERCISE.challenge(x));
+ root.append(E('p','intro',lessons.length+' cours · '+exs.length+' exercices. Les vrais devoirs de l’ENT sont séparés des bonus.'));
+ const groups=groupsForLessons(lessons,name);
+ for(const group of groups){
+  const chapterLessons=lessons.filter(l=>group.topics.includes(chapterOf(l)));
+  const chapterExercises=exs.filter(e=>chapterLessons.some(l=>l.id===e.lesson));
+  const section=E('details','chapter-section');const sum=E('summary','',group.title+' · '+chapterLessons.length+' cours · '+chapterExercises.length+' exercices');section.append(sum);
+  const body=E('div','chapter-body');
+  const ordinary=chapterLessons.filter(l=>!isBonusLesson(l));
+  const bonus=chapterLessons.filter(l=>!ordinary.includes(l));
+  function addLessons(title,rows){if(!rows.length)return;body.append(E('h3','',title));const list=E('div','clicklist');for(const l of rows)list.append(cardAction(l.title,l.date||'Révision',l.summary||'',()=>openLesson(l.id)));body.append(list);}
+  addLessons('Cours de la classe / ENT',ordinary);addLessons('Cours bonus : explications supplémentaires',bonus);
+  function addEx(title,rows){if(!rows.length)return;body.append(E('h3','',title));const list=E('div','clicklist');for(const e of rows)list.append(cardAction(e.title,(window.TIM_EXERCISE.school(e)?'0 XP':'Bonus XP'),exerciseDescription(e),()=>openExercise(e.id),attemptFor(e.id)?'Terminé':'À faire'));body.append(list);}
+  addEx('Devoirs ENT · 0 XP',chapterExercises.filter(e=>window.TIM_EXERCISE.mode(e)==='school'));
+  addEx('Entraînements bonus',chapterExercises.filter(e=>window.TIM_EXERCISE.mode(e)!=='school'));
+  section.append(body);root.append(section);
+ }
+}
+const V7_IMAGES={};
+let v7AudioEnabled=window.TIM_SOUND?.on??true,v7Ctx=null,v7Rain=null,v7LastReaction=null;
+function v7UpdateSoundButton(){v7AudioEnabled=window.TIM_SOUND?.on??v7AudioEnabled;const b=document.getElementById('sound-toggle');if(!b)return;b.textContent=v7AudioEnabled?'🔊':'🔇';b.title=v7AudioEnabled?'Couper les sons':'Activer les sons';b.classList.toggle('on',v7AudioEnabled);b.setAttribute('aria-label',b.title);}
+function v7Audio(){try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;if(!v7Ctx)v7Ctx=new C();if(v7Ctx.state==='suspended')v7Ctx.resume();return v7Ctx;}catch(e){return null;}}
+function v7Toast(msg){const el=document.getElementById('v7-toast');if(!el)return;el.textContent=msg;el.hidden=false;clearTimeout(v7Toast.t);v7Toast.t=setTimeout(()=>el.hidden=true,3500);}
+function v7Sfx(kind){const c=v7Audio();if(!c)return;let now=c.currentTime+.02;const settings={welcome:[200,385,260,.66],win:[250,520,350,1.02],try:[260,325,210,.46],review:[185,295,230,.55]};const [a,b,z,d]=settings[kind]||settings.welcome;
+ // Stylised cartoon wolf howl generated locally (not a recorded animal call).
+ for(let i=0;i<2;i++){const o=c.createOscillator(),g=c.createGain(),f=c.createBiquadFilter();o.type=i?'sine':'sawtooth';f.type='lowpass';f.frequency.value=i?900:650;o.frequency.setValueAtTime(a*(i?1.98:1),now);o.frequency.exponentialRampToValueAtTime(b*(i?1.98:1),now+d*.4);o.frequency.exponentialRampToValueAtTime(z*(i?1.98:1),now+d);g.gain.setValueAtTime(.0001,now);g.gain.linearRampToValueAtTime(i?.036:.1,now+d*.16);g.gain.setValueAtTime(i?.036:.1,now+d*.55);g.gain.exponentialRampToValueAtTime(.0001,now+d);o.connect(f).connect(g).connect(c.destination);o.start(now);o.stop(now+d+.04);}
+}
+function v7SpeakWolf(s){if(!('speechSynthesis' in window)){v7Toast('La voix de synthèse n’est pas disponible sur ce téléphone.');return;}try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(s);u.lang='fr-FR';u.rate=.94;u.pitch=.77;u.volume=.84;const voice=speechSynthesis.getVoices().find(x=>x.lang?.toLowerCase().startsWith('fr'));if(voice)u.voice=voice;speechSynthesis.speak(u);}catch(e){v7Toast('La voix n’a pas fonctionné.');}}
+function v7WolfHello(){if(!v7AudioEnabled){v7AudioEnabled=true;v7UpdateSoundButton();}v7Sfx('welcome');v7SpeakWolf('Bienvenue dans ton classeur, Tim ! Allez, campeón, on s’y met. Vamos !');const im=document.querySelector('.wolf-hero');if(im){im.classList.remove('wolf-howling');void im.offsetWidth;im.classList.add('wolf-howling');}}
+function v7Reaction(t){if(t.needsReview)return {key:'review',heading:'Texte enregistré !',phrase:'El Lobo attend la relecture de ta rédaction. Aucun point perdu pour le moment.',sound:'review',voice:'Texte enregistré. Bien joué pour l’effort. On le relira ensemble.'};
+ if(t.score===t.total)return {key:'correct',heading:'¡Perfecto !',phrase:'Tout est juste. El Lobo pousse son hurlement de victoire !',sound:'win',voice:'Ouh ! Bravo Tim ! Toutes les réponses sont justes. Tu assures !'};
+ if(t.score===0)return {key:'error',heading:'On reprend autrement',phrase:'Pas de panique. El Lobo a repéré ce qui bloque : regarde les explications et le carnet des difficultés.',sound:'try',voice:'Aïe, ce n’est pas encore ça. On regarde ensemble. Tu vas y arriver.'};
+ return {key:'progress',heading:'Bien joué, on progresse !',phrase:'Il reste quelques erreurs. El Lobo t’aide à comprendre, sans recommencer cet exercice.',sound:'try',voice:'Bien joué pour les réponses correctes ! On va comprendre les autres. Vamos !'};}
+function v7NewAttempt(t){v7LastReaction=t.id;window.TIM_SOUND?.play('tap');}
+function v7Feedback(ex,t){
+ const r=v7Reaction(t),card=E('div','result-reaction');
+ card.append(E('span','avatar','🐺'));
+ const words=E('div');words.append(E('strong','',r.heading),E('p','',t.needsReview?'Ton texte est enregistré pour une relecture.':(t.score===t.total?'Tout est juste, bien joué !':'Regarde les explications pour comprendre les réponses.')));
+ card.append(words);return card;
+}
+function v7RainToggle(){const b=document.getElementById('rain-toggle');if(v7Rain){try{v7Rain.source.stop();}catch(e){}v7Rain=null;b.classList.remove('on');b.textContent='☔';b.title='Activer la pluie douce';v7Toast('Ambiance pluie coupée.');return;}const c=v7Audio();if(!c){v7Toast('Ce navigateur ne permet pas les sons.');return;}const length=Math.floor(c.sampleRate*2);const buff=c.createBuffer(1,length,c.sampleRate);let arr=buff.getChannelData(0);let x=0;for(let i=0;i<length;i++){x=(x*.98)+(Math.random()*2-1)*.02;arr[i]=x*.6;}let source=c.createBufferSource(),filter=c.createBiquadFilter(),gain=c.createGain();source.buffer=buff;source.loop=true;filter.type='lowpass';filter.frequency.value=1350;gain.gain.value=.045;source.connect(filter).connect(gain).connect(c.destination);source.start();v7Rain={source,filter,gain};b.classList.add('on');b.textContent='🌧️';b.title='Arrêter la pluie douce';v7Toast('Ambiance pluie activée.');}
+function v7InitUI(){document.addEventListener('tim-sound-change',v7UpdateSoundButton);v7UpdateSoundButton();document.getElementById('sound-toggle').addEventListener('click',()=>{v7AudioEnabled=!v7AudioEnabled;window.TIM_SOUND?.setOn(v7AudioEnabled);v7UpdateSoundButton();if(!v7AudioEnabled&&'speechSynthesis' in window)speechSynthesis.cancel();v7Toast(v7AudioEnabled?'Sons activés.':'Sons coupés.');});document.getElementById('rain-toggle').addEventListener('click',v7RainToggle);
+ const cour=document.getElementById('cours').querySelector('.pagehead');if(cour){const a=E('div','utility-row');a.append(button('★ Fiches de révision',()=>page('revisions'),'small-cta'));cour.append(a);}
+ const parent=document.getElementById('parent-content');let parentH=document.getElementById('parent').querySelector('.pagehead');parentH.append(E('div','parent-note','Les résultats sont enregistrés en ligne dans Firestore et visibles par les comptes autorisés. Les notifications automatiques ne sont pas encore disponibles.'));let links=E('div','utility-row');links.append(button('🗂 Archives ENT',()=>page('archives'),'small-cta'),button('★ Fiches de révision',()=>page('revisions'),'small-cta'));parentH.append(links);
+ const rev=document.getElementById('revisions').querySelector('.pagehead');rev.append(button('← Accueil',()=>page('home'),'small-cta'));
+ const help=document.getElementById('aide').querySelector('.pagehead');help.append(button('← Accueil',()=>page('home'),'small-cta'));
+ const arch=document.getElementById('archives').querySelector('.pagehead');arch.append(button('← Coin parent',()=>page('parent'),'small-cta'));
+}
+
+// Init
+const categories=[...new Set(DATA.lessons.map(l=>l.topic))].sort((a,b)=>a.localeCompare(b,'fr'));
+topicSelect('lesson-topic',categories,'all',v=>{lessonTopic=v;renderLessonIndex()});
+topicSelect('exercise-topic',categories,'all',v=>{exerciseTopic=v;renderExerciseIndex()});
+renderHome();renderLessonIndex();renderExerciseIndex();renderRevisions();renderArchives();renderDico('hub');
+const hash=location.hash.replace('#','');if(document.getElementById(hash)?.classList.contains('page'))page(hash);else page('home');
+
+ v7InitUI();
+
+
+// Réévaluer automatiquement l'affichage à minuit et au déblocage de 18 h.
+// Les dates sont toujours calculées en Europe/Paris ; pas de minuteur d'écriture Firebase.
+let __timLastDay=window.TIM_EXERCISE.day(new Date());
+let __timLastCorrectionAccess='';
+function __timRefreshCalendar(){
+ const today=window.TIM_EXERCISE.day(new Date());const dateChanged=today!==__timLastDay;__timLastDay=today;
+ const detail=document.getElementById('exercise-detail');
+ if(detail?.classList.contains('active')&&window.__TIM_OPEN_EXERCISE_ID){
+  const a=attemptFor(window.__TIM_OPEN_EXERCISE_ID);
+  if(a){const access=String(window.TIM_EXERCISE.canShow(a,new Date(),!!window.__TIM_PARENT));
+   if(__timLastCorrectionAccess!==access){__timLastCorrectionAccess=access;openExercise(a.id);return;}}
+ }
+ if(dateChanged){
+  window.__TIM_CHALLENGE_SETUP?.(DATA);
+  const el=document.getElementById('exercices');if(el?.classList.contains('active')){
+   renderExerciseIndex();
+   const tip=document.getElementById('tim-exercise-mode-info');const ex=exerciseBy(window.__TIM_OPEN_EXERCISE_ID);
+   if(tip&&ex){const mode=window.TIM_EXERCISE.mode(ex);tip.textContent=mode==='bonus'?'⭐ EXERCICE BONUS · 100 % = +2 XP ; dès 60 % = +1 XP ; sinon 0. Maximum +3 XP par jour.':mode==='school'?'📚 DEVOIR DE L’ÉCOLE · 0 XP.':'Pas encore disponible.';}
+  }
+  if(document.getElementById('home')?.classList.contains('active'))renderHome();
+ }
+}
+setInterval(__timRefreshCalendar,60000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)__timRefreshCalendar();});

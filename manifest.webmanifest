@@ -1,0 +1,9 @@
+{
+  "name": "Classeur de 3e — Choisis ta mission",
+  "short_name": "Missions 3e",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0b1120",
+  "theme_color": "#0b1120",
+  "lang": "fr"
+}
