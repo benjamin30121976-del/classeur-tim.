@@ -194,19 +194,16 @@ async function runFirebaseDiagnostic(){
 async function fetchAttempts(content){
  const docs=await getDocs(collection(db,'attempts'));
  const map=new Map(content.exercises.map(x=>[x.id,x]));
- // Reconstituer également les anciennes missions uniques (jours et semaines passés).
- const list=[];docs.forEach(d=>{const a=d.data();let ex=map.get(d.id),values=a.answers;
-  if(/^(DAY_20\d{6}|WEEK_20\d{2}W\d{2}|SUNDAY_20\d{6})$/.test(d.id)&&Array.isArray(values)){
-   // Les réponses transportent les références exactes des questions : le contrôle ne change pas si de nouveaux cours sont ajoutés.
-   try{const decoded=values.map(v=>JSON.parse(v));if(decoded.every(v=>v&&typeof v.ref==='string'&&typeof v.v==='string')){
-    const frozen=window.__TIM_CHALLENGE_FROM_REFS?.(d.id,content,decoded.map(v=>v.ref));
-    if(frozen){ex=frozen;const at=content.exercises.findIndex(x=>x.id===d.id);if(at>=0)content.exercises[at]=frozen;else content.exercises.push(frozen);map.set(d.id,frozen);values=decoded.map(v=>v.v);}
-   }}catch(e){}
-   if(!ex){ex=window.__TIM_CHALLENGE_ENSURE?.(content,d.id);if(ex)map.set(d.id,ex);}
-  }
-  if(ex&&Array.isArray(values)&&values.length===ex.questions.length)list.push(result(ex,values,a.submittedAt,a.policyVersion));});
+ const list=[];
+ docs.forEach(d=>{
+  const a=d.data(),ex=map.get(d.id);
+  if(!ex)return;
+  // Never reconstruct the correct answers in the browser before parent approval.
+  list.push({id:d.id,date:a.submittedAt?.toDate?.().toISOString()||new Date().toISOString(),title:ex.title,lesson:ex.lesson,xp:Number(a.xp||0),correctionStatus:a.correctionStatus==='released'?'released':'pending-parent',correctionLocked:a.correctionStatus!=='released',answers:[],score:null,total:null,needsReview:false});
+ });
  list.sort((a,b)=>a.date.localeCompare(b.date));window.__CLOUD_ATTEMPTS=list;return list;
 }
+
 function stopApp(){if(window.__TIM_GUEST)return;document.body.classList.remove('ready');access.hidden=false;appLoaded=false;window.__CLOUD_ATTEMPTS=[];
   for(const id of ['content-import','content-import-button','import-logout'])document.getElementById(id)?.remove();
   access.querySelector('h1').textContent="Accède à tes missions";
