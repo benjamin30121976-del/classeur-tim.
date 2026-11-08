@@ -257,10 +257,9 @@ async function startSession(user){
    if(!window.TIM_XP?.canSubmit(window.__TIM_DATA.exercises.find(q=>q.id===id),new Date()))throw Error('Ce défi n’est plus disponible pour cette date.');
    const ex=window.__TIM_DATA.exercises.find(q=>q.id===id);
    if(!ex||!Array.isArray(values)||values.length!==ex.questions.length)throw Error('Exercice ou réponses invalides.');
-   // Firestore security rules prevent overwrite: one document per exercise id, create only.
-   const stored=['daily','weekly','sunday'].includes(ex.kind)?values.map((v,i)=>JSON.stringify({ref:ex.questions[i].sourceId,v:String(v)})):values;
-   await setDoc(doc(db,'attempts',id),{exerciseId:id,authorUid:TIM_UID,answers:stored,submittedAt:serverTimestamp(),policyVersion:12});
-   return result(ex,values,new Date(),12);
+   const response=await httpsCallable(functionsApi,'submitTimExercise')({id,answers:values});
+   const xp=Number(response.data?.xp||0);
+   return {id,date:new Date().toISOString(),title:ex.title,lesson:ex.lesson,xp,correctionLocked:true,correctionStatus:'pending-parent',answers:[],score:null,total:null,needsReview:false};
   },
   refresh:async()=>fetchAttempts(window.__TIM_DATA),
   publish:publishCoursePack,
