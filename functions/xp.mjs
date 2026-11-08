@@ -5,7 +5,6 @@ export function rawPoints({kind,category,score,total,needsReview}) {
   const base=p===1?3:p>=.8?2:p>=.6?1:p>=.4?-1:-2;
   return base+(p>=.8?5:0);
  }
- if(category==='training')return 0;
  if(category==='bonus')return p===1?2:p>=.6?1:0;
  throw Error('Unknown exercise category');
 }
