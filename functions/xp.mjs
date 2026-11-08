@@ -10,7 +10,7 @@ export function rawPoints({kind,category,score,total,needsReview}) {
  throw Error('Unknown exercise category');
 }
 export function cappedPoints(raw,dayEarned=0,dayLost=0,weekEarned=0,dayBonus=0,category='bonus'){
- if(raw<0)return Math.max(raw,-5-dayLost);
+ if(raw<0)return Math.min(0,Math.max(raw,-5-dayLost));
  let cap=Math.min(10-dayEarned,50-weekEarned);
  if(category==='bonus')cap=Math.min(cap,3-dayBonus);
  return Math.max(0,Math.min(raw,cap));
