@@ -22,7 +22,7 @@ test('23 sous-leçons, dix questions notées sans réponses divulguées',()=>{
   assert.equal(JSON.stringify(publicTask).includes('correctIndex'),false);
   assert.equal(JSON.stringify(publicTask).includes('expected'),false);
   const good=gradeMathTask(id,task.questions.map(q=>q.correctIndex));
-  assert.equal(good.score,10);assert.equal(good.total,10);assert.equal(good.xp,0);
+  assert.equal(good.score,10);assert.equal(good.total,10);assert.equal(good.items.length,10);assert.equal(good.xp,0);
   assert.ok(good.items.every(q=>q.correct===true&&q.explanation));
   const bad=gradeMathTask(id,task.questions.map(q=>(q.correctIndex+1)%4));
   assert.equal(bad.score,0);assert.ok(bad.items.every(q=>!q.correct&&q.expected));
