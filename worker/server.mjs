@@ -185,7 +185,7 @@ export async function getMathTrainingTask(db,uid,payload){
 export async function submitMathTraining(db,uid,payload){
  permitted(uid,'tim');
  const id=payload?.id,answers=payload?.answers;
- if(!mathId(id)||!Array.isArray(answers)||answers.length!==2||
+ if(!mathId(id)||!Array.isArray(answers)||answers.length!==10||
     answers.some(x=>!Number.isInteger(x)||x<0||x>3))
   throw new ApiFault(400,'invalid-answers');
  let result;
@@ -196,7 +196,7 @@ export async function submitMathTraining(db,uid,payload){
  if(existing)throw new ApiFault(409,'already-exists');
  await db.commit([createWrite('mathTrainingAttempts/'+id,{
    ...result,authorUid:uid,subject:'Mathématiques',answers,
-   title:mathTask(id).title,version:1
+   title:mathTask(id).title,version:2
  },NOW)],tx);
  return {...result,submitted:true,submittedAt:new Date().toISOString()};
 }
