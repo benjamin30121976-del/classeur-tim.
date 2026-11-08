@@ -2,8 +2,144 @@
 function Q(prompt,answer,wrong,why){
  const a=String(answer),seen=new Set([a]);
  if(wrong.length!==3||wrong.some(v=>{const x=String(v);if(seen.has(x))return true;seen.add(x);return false;}))throw Error('QCM ambigu : '+prompt);
- return [prompt,a,wrong.map(String),why,wrong.map(x=>'« '+x+' » ne convient pas : '+why)];
+ return [prompt,a,wrong.map(String),why,explainWrongChoices(prompt,a,wrong.map(String),why)];
 }
+function explainWrongChoices(prompt,expected,wrong,method){
+ let reasons;
+ if(prompt.startsWith('Calcule (−')&&prompt.includes(' + ')){
+  reasons=[
+   'Le signe négatif de cette proposition est incorrect : le nombre positif de l’addition a ici la plus grande valeur absolue.',
+   'Cette proposition revient à additionner les valeurs absolues : il faut soustraire les distances à zéro.',
+   'Cette proposition traite le second nombre comme négatif alors qu’il est positif dans l’énoncé.'
+  ];
+ }else if(prompt.startsWith('Calcule (−')&&prompt.includes(' × ')){
+  reasons=[
+   'Le résultat ne peut pas être positif : un facteur est négatif et l’autre positif.',
+   'Cette proposition correspond à une addition des valeurs, alors que l’opération demandée est une multiplication.',
+   'Cette proposition additionne les valeurs et perd le signe négatif du produit.'
+  ];
+ }else if(prompt.startsWith('Calcule (−')&&prompt.includes(')²')){
+  reasons=[
+   'Le carré est positif : multiplier deux facteurs négatifs donne un produit positif.',
+   'Tu as doublé le nombre au lieu de le multiplier par lui-même.',
+   'Tu as pris le double de la valeur absolue plutôt que son carré.'
+  ];
+ }else if(prompt.startsWith('Calcule ')&&prompt.includes('⁻²')){
+  reasons=[
+   'Cette réponse est le carré, pas son inverse : un exposant −2 demande 1 sur le carré.',
+   'Un exposant négatif ne veut pas dire que le résultat est négatif.',
+   'Tu as pris l’inverse du double, et non l’inverse du carré.'
+  ];
+ }else if(prompt.startsWith('Calcule ')&&prompt.includes(' + ')&&prompt.includes('/')){
+  reasons=[
+   'Tu as additionné les dénominateurs, mais ils doivent rester identiques pour additionner ces fractions.',
+   'Tu as multiplié les numérateurs au lieu de les additionner.',
+   'Tu n’as gardé que la première fraction : la seconde doit aussi être ajoutée.'
+  ];
+ }else if(prompt.startsWith('Calcule les 2/4')){
+  reasons=[
+   'Tu as calculé un quart au lieu de deux quarts, donc la moitié.',
+   'Tu as conservé le nombre entier sans appliquer la fraction 2/4.',
+   'Tu as ajouté 2 au résultat alors que prendre deux quarts revient exactement à diviser par 2.'
+  ];
+ }else if(prompt.startsWith('Écris ')&&prompt.includes('scientifique')){
+  reasons=[
+   'Ton exposant est inférieur de 1 : la valeur obtenue est dix fois trop petite.',
+   'Ton exposant est supérieur de 1 : la valeur obtenue est dix fois trop grande.',
+   'Ton exposant est inférieur de 2 : la valeur obtenue est cent fois trop petite.'
+  ];
+ }else if(prompt.startsWith('Dans un triangle rectangle, l’hypoténuse vaut')){
+  reasons=[
+   'Tu as soustrait directement les deux longueurs sans élever au carré.',
+   'La somme des longueurs dépasse l’hypoténuse : un côté de l’angle droit doit être plus petit.',
+   'Cette valeur ne vérifie pas l’égalité des carrés : calcule la racine de la différence.'
+  ];
+ }else if(prompt.startsWith('Dans un triangle rectangle, les deux côtés')){
+  reasons=[
+   'Tu as additionné les longueurs au lieu d’additionner leurs carrés.',
+   'Tu as soustrait les longueurs alors que l’hypoténuse demande la somme des carrés.',
+   'Cette longueur est trop grande et ne vérifie pas le calcul de la racine carrée.'
+  ];
+ }else if(prompt.startsWith('Un rectangle mesure')){
+  reasons=[
+   'La somme des deux côtés n’est pas la diagonale du rectangle.',
+   'La différence des deux côtés n’est pas la diagonale du rectangle.',
+   'Cette réponse ne vérifie pas l’égalité diagonale² = largeur² + longueur².'
+  ];
+ }else if(prompt.startsWith('Un triangle a pour côtés')){
+  reasons=[
+   'La conclusion doit découler de la comparaison des carrés des trois longueurs.',
+   'Les longueurs sont suffisantes pour appliquer la réciproque ou la contraposée de Pythagore.',
+   'La conclusion vient des calculs sur les longueurs, pas de la taille du dessin.'
+  ];
+ }else if(prompt.startsWith('Réduis ')){
+  reasons=[
+   'Le terme numérique constant doit rester présent après la réduction.',
+   'Un nombre seul ne peut pas être regroupé avec un terme contenant x.',
+   'Les deux termes en x s’additionnent : les coefficients ne doivent pas être soustraits.'
+  ];
+ }else if(prompt.startsWith('Calcule ')&&prompt.includes(' pour x = ')){
+  reasons=[
+   'Tu as additionné des valeurs au lieu de commencer par multiplier le coefficient par x.',
+   'Le dernier nombre doit être ajouté, pas soustrait.',
+   'Tu as oublié de multiplier la valeur de x par son coefficient.'
+  ];
+ }else if(prompt.startsWith('Développe (x + ')){
+  reasons=[
+   'Tu as oublié le produit des deux nombres constants dans le développement.',
+   'Tu as mal additionné les coefficients des deux termes en x.',
+   'Le produit des deux nombres positifs est positif, et non négatif.'
+  ];
+ }else if(prompt.startsWith('Développe ')){
+  reasons=[
+   'Le facteur devant les parenthèses doit aussi multiplier le nombre constant négatif.',
+   'Le coefficient de x est mal calculé : multiplie les coefficients plutôt que de les additionner.',
+   'Le terme constant est négatif puisqu’un nombre positif multiplie un nombre négatif.'
+  ];
+ }else if(prompt.startsWith('Programme de calcul :')){
+  reasons=[
+   'Tu as oublié d’ajouter le nombre de fois demandé du nombre de départ lors de la dernière étape.',
+   'Tu n’as pas multiplié par le facteur indiqué le nombre soustrait au départ.',
+   'La soustraction de départ doit produire un terme négatif après développement.'
+  ];
+ }else if(prompt.startsWith('Dans le triangle ABC, ')&&prompt.includes('Calcule AC')){
+  reasons=[
+   'Cette valeur ne respecte pas les deux rapports égaux : vérifie le produit en croix.',
+   'Tu as mal isolé AC : il faut multiplier AN par AB puis diviser par AM.',
+   'Doubler arbitrairement une longueur ne conserve pas le coefficient de proportionnalité.'
+  ];
+ }else if(prompt.startsWith('Dans le triangle ABC, ')&&prompt.includes('Calcule MN')){
+  reasons=[
+   'Tu as inversé le rapport petit/grand : MN est plus petit que BC.',
+   'Tu as pris un nombre incorrect de parts du segment BC.',
+   'Tu as additionné une longueur et un numérateur au lieu d’appliquer le rapport.'
+  ];
+ }else if(prompt.startsWith('Dans le triangle ABC, ')&&prompt.includes('rapport MN/BC')){
+  reasons=[
+   'Tu as inversé le rapport : MN/BC est dans le même sens que AM/AB.',
+   'Tu as modifié le dénominateur du rapport, alors que Thalès conserve le rapport donné.',
+   'Tu as modifié le numérateur du rapport, alors que Thalès conserve le rapport donné.'
+  ];
+ }else if(prompt.startsWith('Un triangle rectangle a deux côtés')){
+  reasons=[
+   'Tu as oublié de diviser le produit base × hauteur par deux.',
+   'Tu as additionné les longueurs, alors qu’une aire se calcule à partir de leur produit.',
+   'Tu as ajouté un nombre après le calcul de l’aire : ce n’est pas demandé.'
+  ];
+ }else if(prompt.includes('Quel outil')||prompt.includes('Quelle méthode')){
+  const rule=wrong.map(x=>{
+   if(x.includes('Thalès'))return 'Thalès nécessite des points alignés et des droites parallèles ; ce n’est pas la bonne condition ici.';
+   if(x.includes('Réciproque'))return 'La réciproque sert à prouver un angle droit à partir des trois côtés, et pas à calculer un côté d’un triangle déjà rectangle.';
+   if(x.includes('Contraposée'))return 'La contraposée sert à montrer qu’un triangle n’est pas rectangle quand les carrés diffèrent.';
+   if(x.includes('Pythagore'))return 'Pythagore direct nécessite un triangle déjà rectangle ; la situation donnée demande une autre propriété.';
+   return 'Calculer un périmètre ou une aire ne démontre pas la relation de longueurs ou l’angle demandé.';
+  });
+  reasons=rule;
+ }
+ if(!reasons||reasons.length!==3)throw Error('Correction spécifique manquante : '+prompt);
+ return wrong.map((option,i)=>'Pour la réponse « '+option+' » : '+reasons[i]+' Méthode à suivre : '+method);
+}
+
 const T=[[3,4,5],[5,12,13],[8,15,17],[7,24,25],[6,8,10],[9,12,15],[12,16,20],[10,24,26]];
 const N=[[4,5,6],[5,6,8],[6,7,8],[7,8,10],[8,9,11],[9,10,12],[10,11,14],[12,13,17]];
 const R=[[1,2,2,4],[2,3,4,6],[1,3,3,9],[2,5,4,10],[3,4,6,8],[1,4,2,8],[3,5,6,10],[2,7,4,14]];
