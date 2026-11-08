@@ -52,7 +52,9 @@ export function nextCorrectionAfterSubmission(exercise,submittedAt){
  const clock=part('hour')+':'+part('minute');
  const subject=normalizeSubject(exercise.subject||exercise.matiere);
  if(!subject)return null;
- const excluded=new Set(exercise.excludedClassDates||[]);
+ const excludedDates=exercise.excludedClassDates||[];
+ if(!Array.isArray(excludedDates)||excludedDates.some(x=>typeof x!=='string'||!datePattern.test(x)))return null;
+ const excluded=new Set(excludedDates);
  for(let i=0;i<28;i++){
   const d=utcDay(date);d.setUTCDate(d.getUTCDate()+i);
   const day=isoDay(d);
