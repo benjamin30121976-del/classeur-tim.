@@ -212,7 +212,7 @@ function renderExerciseIndex(){
    root.className='clicklist';const schoolwork=bases.filter(e=>window.TIM_EXERCISE.mode(e)==='school');
    document.getElementById('exercise-count').textContent='Devoirs de l’école · XP selon le résultat';toolbar.append(button('← Toutes les matières',()=>{exerciseMode='';renderExerciseIndex();},'group-back'));
    if(!schoolwork.length)root.append(notice('Aucun devoir de l’ENT n’a encore été publié dans le classeur.'));
-   else for(const ex of schoolwork)root.append(cardAction(ex.title,(ex.subject||'Espagnol')+' · 0 XP',exerciseDescription(ex),()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));return;
+   else for(const ex of schoolwork)root.append(cardAction(ex.title,(ex.subject||'Espagnol')+' · XP selon le résultat',exerciseDescription(ex),()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));return;
   }
   if(exerciseMode==='bonus-mission'){
    root.className='clicklist';document.getElementById('exercise-count').textContent='Tes 3 missions bonus du jour';
@@ -221,7 +221,7 @@ function renderExerciseIndex(){
   }
   document.getElementById('exercise-count').textContent='Devoirs de l’école, défi du jour et exercices bonus :';
   const overview=E('div','exercise-v12-overview');
-  overview.append(button('📚 DEVOIRS DE L’ÉCOLE · 0 XP',()=>{exerciseSubject='';exerciseMode='school-all';renderExerciseIndex();},'exercise-v12-overview-button school'),button('🎯 DÉFI DU JOUR · +5 XP',()=>{page('home');document.getElementById('challenge-section')?.scrollIntoView({behavior:'smooth',block:'center'});},'exercise-v12-overview-button challenge'));
+  overview.append(button('📚 DEVOIRS DE L’ÉCOLE · XP',()=>{exerciseSubject='';exerciseMode='school-all';renderExerciseIndex();},'exercise-v12-overview-button school'),button('🎯 DÉFI DU JOUR · +5 XP',()=>{page('home');document.getElementById('challenge-section')?.scrollIntoView({behavior:'smooth',block:'center'});},'exercise-v12-overview-button challenge'));
   root.append(overview,bonusMissionPanel(false));
   const icons=['🇪🇸','∑','⚗','EN','📖','🌍','⚖','🌱','⚙'];
   SCHOOL_SUBJECTS.forEach((name,i)=>{const count=bases.filter(e=>(e.subject||'Espagnol')===name).length;
@@ -238,7 +238,7 @@ function renderExerciseIndex(){
   finder.classList.add('hide');document.getElementById('exercise-count').textContent='Choisis ta mission :';
   const choices=E('div','exercise-type-choice');
   for(const [mode,label,icon,desc] of [
-   ['school','DEVOIRS DE L’ÉCOLE','📚','Exercices demandés par les professeurs dans l’ENT · 0 XP.'],
+   ['school','DEVOIRS DE L’ÉCOLE','📚','Exercices demandés par les professeurs dans l’ENT · XP selon les réponses.'],
    ['bonus','EXERCICES BONUS','⭐','Exercices créés pour s’entraîner · XP bonus limités à +3 par jour.']
   ]){
    const found=bySubject.filter(e=>window.TIM_EXERCISE.mode(e)===mode);
@@ -420,7 +420,7 @@ function parentAdminPanels(root){
   catch(e){status.textContent='ÉCHEC DU TEST : '+(e.message||e);}
   finally{run.disabled=false;}
  },'btn');test.append(run,status);root.prepend(test);
- const addPanel=E('div','panel');addPanel.append(E('h3','','Ajouter de nouveaux cours et exercices'),E('p','small','Les nouveaux exercices doivent préciser leur catégorie : category: "school" pour les devoirs de l’ENT (0 XP), ou category: "bonus" pour les exercices d’entraînement créés à partir des leçons (+0 à +2 XP). Date de publication enregistrée automatiquement dans Firebase. Les anciens cours et résultats ne sont jamais écrasés.')); 
+ const addPanel=E('div','panel');addPanel.append(E('h3','','Ajouter de nouveaux cours et exercices'),E('p','small','Les nouveaux exercices doivent préciser leur catégorie : category: "school" pour les devoirs de l’ENT (XP selon les réponses), ou category: "bonus" pour les exercices d’entraînement créés à partir des leçons (+0 à +2 XP). Date de publication enregistrée automatiquement dans Firebase. Les anciens cours et résultats ne sont jamais écrasés.')); 
  const input=E('textarea','answer wide');input.rows=5;input.placeholder='JSON : {"lessons":[...],"exercises":[{"id":"...","category":"school" ou "bonus",...}]}' ;input.setAttribute('aria-label','Contenu JSON du nouveau cours');
  const packFile=E('input','attachment-file');packFile.type='file';packFile.accept='.json,application/json';packFile.setAttribute('aria-label','Charger un lot JSON de cours depuis le téléphone');
  packFile.addEventListener('change',async()=>{const f=packFile.files?.[0];if(!f)return;try{if(f.size>850000)throw Error('Lot trop volumineux.');const text=await f.text();const parsed=JSON.parse(text);if(!Array.isArray(parsed.lessons)&&!Array.isArray(parsed.exercises))throw Error('Lot JSON de cours invalide.');input.value=JSON.stringify(parsed);info.textContent='Lot chargé : vérifie le contenu, puis appuie sur Publier. Aucun envoi automatique.';}catch(e){info.textContent='Fichier invalide : '+(e.message||e);}});
@@ -496,7 +496,7 @@ function makeRewardsTile(){const b=E('button','reward-open');b.type='button';
   body.append(E('p','','Tu peux gagner une récompense chaque semaine selon tes XP nets. Les montants ne s’additionnent pas.'));
   const table=E('table'),heads=E('tr');for(const t of ['XP nets (lundi–dimanche)','Récompense'])heads.append(E('th','',t));table.append(heads);
   for(const [score,amount] of [[15,'2 €'],[30,'5 €'],[45,'10 € + défi hebdomadaire réussi']]){const row=E('tr');row.append(E('td','',score+' XP'),E('td','',amount));table.append(row);}body.append(table);
-  const p=E('ul');for(const t of ['Devoir demandé dans l’ENT : 0 XP, même s’il est validé parfaitement.','Exercice bonus : 100 % = +2 XP, de 60 % à moins de 100 % = +1 XP, sinon 0 XP. Tu peux en faire autant que tu souhaites ; maximum +3 XP bonus par jour.','Leçon consultée : 0 XP. Les XP sont enregistrés à la validation ; Tim voit la correction le lendemain à 18 h, le parent immédiatement.','Maximum +10 XP gagnés et −5 XP perdus par jour ; au plus +50 XP par semaine.','Défi du jour : questions des leçons mises en ligne aujourd’hui, plusieurs matières si disponibles. Au moins 80 % = +5 XP bonus en plus des points du défi.','Le défi hebdomadaire doit être réussi à au moins 80 % pour débloquer les 10 €.','Chaque dimanche : grand défi de révision depuis la rentrée. 80 % de bonnes réponses = +5 XP bonus, dans la limite des plafonds.','Une seule récompense par semaine, maximum 10 €. Le parent valide et verse l’argent. Les niveaux XP restent acquis.'])p.append(E('li','',t));body.append(p);
+  const p=E('ul');for(const t of ['Devoir demandé dans l’ENT : les XP sont attribués dès la validation, positifs ou négatifs selon les réponses.','Exercice bonus : 100 % = +2 XP, de 60 % à moins de 100 % = +1 XP, sinon 0 XP. Tu peux en faire autant que tu souhaites ; maximum +3 XP bonus par jour.','Leçon consultée : 0 XP. Les XP sont enregistrés à la validation ; Tim voit la correction le lendemain à 18 h, le parent immédiatement.','Maximum +10 XP gagnés et −5 XP perdus par jour ; au plus +50 XP par semaine.','Défi du jour : questions des leçons mises en ligne aujourd’hui, plusieurs matières si disponibles. Au moins 80 % = +5 XP bonus en plus des points du défi.','Le défi hebdomadaire doit être réussi à au moins 80 % pour débloquer les 10 €.','Chaque dimanche : grand défi de révision depuis la rentrée. 80 % de bonnes réponses = +5 XP bonus, dans la limite des plafonds.','Une seule récompense par semaine, maximum 10 €. Le parent valide et verse l’argent. Les niveaux XP restent acquis.'])p.append(E('li','',t));body.append(p);
   if(!window.__TIM_GUEST){const st=xpInfo();body.append(E('p','',`Cette semaine : ${st.week} XP nets. Récompense calculée : ${st.reward} €. ${st.weeklyPass?'Défi hebdomadaire réussi.':'Défi hebdomadaire non encore réussi.'}`));}
   dialog.setAttribute('tabindex','-1');if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');dialog.scrollTop=0;dialog.focus({preventScroll:true});
  });return b;}
