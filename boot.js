@@ -368,7 +368,7 @@ try{
  const app=initializeApp(cfg);auth=getAuth(app);db=getFirestore(app);
  const appCheckSiteKey=String(cfg.appCheckSiteKey||'').trim();
  if(appCheckSiteKey){initializeAppCheck(app,{provider:new ReCaptchaV3Provider(appCheckSiteKey),isTokenAutoRefreshEnabled:true});}
- else console.warn('Firebase App Check: clé reCAPTCHA v3 absente. Les fonctions protégées ne seront pas accessibles.');
+ else {console.warn('Firebase App Check: clé reCAPTCHA v3 absente. Les fonctions protégées ne seront pas accessibles.');message('Connexion privée incomplète : clé App Check manquante. Les devoirs et corrections ne fonctionneront pas tant que cette configuration n’est pas ajoutée.');}
  functionsApi=getFunctions(app,'europe-west1');
  form.addEventListener('submit',async(e)=>{
   e.preventDefault();button.disabled=true;message('Connexion en cours…');
