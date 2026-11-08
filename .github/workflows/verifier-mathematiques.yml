@@ -5,6 +5,9 @@ on:
       - 'maths-parcours.js'
       - 'maths-parcours.css'
       - 'worker/maths-training-curriculum.mjs'
+      - 'worker/maths-training-extra.mjs'
+      - 'maths-bis-data.js'
+      - 'worker/test/math-training.test.mjs'
       - 'worker/server.mjs'
       - 'boot.js'
       - 'app.js'
@@ -16,6 +19,9 @@ on:
     paths:
       - 'maths-parcours.js'
       - 'worker/maths-training-curriculum.mjs'
+      - 'worker/maths-training-extra.mjs'
+      - 'maths-bis-data.js'
+      - 'worker/test/math-training.test.mjs'
       - 'worker/server.mjs'
       - 'tools/test/maths-parcours.test.mjs'
   workflow_dispatch:
@@ -34,8 +40,10 @@ jobs:
         run: |
           node --check maths-parcours.js
           node --check worker/maths-training-curriculum.mjs
+          node --check worker/maths-training-extra.mjs
+          node --check maths-bis-data.js
           node --check worker/server.mjs
           node --check boot.js
           node --check app.js
       - name: Vérifier le barème et la communication Parent-Tim sans utiliser leurs comptes
-        run: node --test tools/test/maths-parcours.test.mjs
+        run: node --test tools/test/maths-parcours.test.mjs worker/test/math-training.test.mjs
