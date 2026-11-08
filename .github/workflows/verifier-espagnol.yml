@@ -4,6 +4,9 @@ on:
     paths:
       - 'espagnol-parcours.js'
       - 'espagnol-pedagogie-data.js'
+      - 'espagnol-renforcement.js'
+      - 'espagnol-prononciation.js'
+      - 'tools/test/espagnol-renforcement.test.cjs'
       - 'espagnol-parcours.css'
       - 'espagnol-training-engine.js'
       - 'espagnol-training-ui.js'
@@ -30,12 +33,17 @@ jobs:
           /tmp/tim-spanish/node_modules/.bin/playwright install --with-deps chromium
       - name: Vérifier le moteur de notation des 150 exercices
         run: node --test functions/test/spanish-training.test.mjs
+      - name: Vérifier les 15 guides, 20 tableaux et 45 activités libres
+        run: node --test tools/test/espagnol-renforcement.test.cjs
       - name: Vérifier le code Firebase sans déploiement
         run: |
           node --check functions/index.mjs
           node --check boot.js
           node --check espagnol-training-engine.js
           node --check espagnol-training-ui.js
+          node --check espagnol-parcours.js
+          node --check espagnol-renforcement.js
+          node --check espagnol-prononciation.js
       - name: Tester le site en local (sans toucher aux donnees de Tim)
         env:
           NODE_PATH: /tmp/tim-spanish/node_modules
