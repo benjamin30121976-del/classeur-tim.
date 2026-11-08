@@ -416,7 +416,7 @@ function parentAdminPanels(root){
  const status=E('p','subtle','Aucun test effectué.');
  const run=button('Tester Firebase sans toucher aux notes',async()=>{
   run.disabled=true;status.textContent='Test de la base en cours…';
-  try{const out=await window.__TIM_BRIDGE.diagnose();status.textContent=out.created&&out.read&&out.locked&&out.erased?'TEST RÉUSSI : écriture, lecture, refus de modification, effacement dans la collection de test.':'TEST INCOMPLET : '+JSON.stringify(out);}
+  try{const out=await window.__TIM_BRIDGE.diagnose();status.textContent=out.parentContentRead&&out.attemptsRead&&out.unauthorizedAttemptWriteBlocked&&out.backendReport?'TEST RÉUSSI : cours parent, résultats, protection contre les écritures directes et rapport serveur vérifiés.':'TEST INCOMPLET : '+JSON.stringify(out);}
   catch(e){status.textContent='ÉCHEC DU TEST : '+(e.message||e);}
   finally{run.disabled=false;}
  },'btn');test.append(run,status);root.prepend(test);
