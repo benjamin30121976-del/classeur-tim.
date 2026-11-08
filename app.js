@@ -188,6 +188,8 @@ function openLesson(id){const l=lessonBy(id);if(!l)return;lessonSubject=subjectO
  else {dest.append(notice('Les PDF et figures originaux du professeur apparaissent dans « Documents originaux » lorsqu’ils sont associés à ce cours. La fiche affichée ici peut être une synthèse ; elle n’est pas forcément une reproduction du PDF.','lesson-caution'));}
  const tabs=E('div','lesson-tabs');tabs.append(button('COURS ENT',()=>{const target=bis?others[0]:l;if(target)openLesson(target.id);else alert('Aucun cours ENT associé à ce chapitre.');},'plain'),button('LEÇON BIS',()=>{const target=bis?l:others[0];if(target)openLesson(target.id);else alert('Aucune leçon BIS associée à ce chapitre.');},'plain'));dest.append(tabs);
  if(others.length>1){const rel=E('div','panel');rel.append(E('h3','',bis?'Autres cours ENT de ce chapitre':'Leçons BIS de ce chapitre'));for(const other of others)rel.append(cardAction(other.title,bis?'Cours ENT':'Leçon BIS',other.summary,()=>openLesson(other.id)));dest.append(rel);}
+ // Lettre personnelle de Tim : visionneuse privée identique dans le parcours Espagnol et la fiche ENT.
+ if(l.id==='L05'&&window.TIM_SPANISH_LETTER)dest.append(window.TIM_SPANISH_LETTER.createPanel());
  // Les énoncés espagnols des captures ENT sont traduits sans remplacer les PDF de l'enseignante.
  if(subjectOf(l)==='Espagnol'&&window.TIM_SPANISH_ENT_ORIGINALS){dest.append(window.TIM_SPANISH_ENT_ORIGINALS.renderPanel(l.id));}
  // Les PDF d'origine sont prioritaires et consultables en lecteur mobile privé.
