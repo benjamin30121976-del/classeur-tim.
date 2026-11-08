@@ -3,7 +3,7 @@ import {initializeApp} from 'firebase-admin/app';
 import {getFirestore,FieldValue} from 'firebase-admin/firestore';
 import {grade} from './grading.mjs';
 import {rawPoints,cappedPoints} from './xp.mjs';
-import {suggestedCorrectionAt} from './schedule.mjs';
+import {suggestedCorrectionAt,paris18Utc} from './schedule.mjs';
 initializeApp();
 const db=getFirestore();
 const timUid=process.env.TIM_STUDENT_UID,parentUid=process.env.TIM_PARENT_UID;
@@ -69,4 +69,28 @@ export const setParentCorrectionRelease=onCall({region:'europe-west1',enforceApp
  }
  await db.doc('releasedCorrections/'+id).set({released,releaseAt:new Date(millis),updatedAt:FieldValue.serverTimestamp()});
  return {saved:true,id,released,releaseAt:new Date(millis).toISOString()};
+});
+
+export const confirmParentSchoolSchedule=onCall({region:'europe-west1',enforceAppCheck:true},async request=>{
+ role(request,'parent');
+ const {id,verifiedClassDate}=request.data||{};
+ if(!validId(id)||typeof verifiedClassDate!=='string'||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(verifiedClassDate))
+  throw new HttpsError('invalid-argument','Date scolaire YYYY-MM-DD requise');
+ let releaseAt;
+ try{releaseAt=paris18Utc(verifiedClassDate);}
+ catch{throw new HttpsError('invalid-argument','Date scolaire invalide');}
+ const parsed=new Date(verifiedClassDate+'T12:00:00Z');
+ if(Number.isNaN(+parsed)||parsed.toISOString().slice(0,10)!==verifiedClassDate)
+  throw new HttpsError('invalid-argument','Date scolaire invalide');
+ const ref=db.doc('attempts/'+id);
+ await db.runTransaction(async tx=>{
+  const attempt=await tx.get(ref);
+  if(!attempt.exists)throw new HttpsError('not-found','Tentative introuvable');
+  const submitted=attempt.get('submittedAt')?.toDate?.();
+  if(!submitted)throw new HttpsError('failed-precondition','Date de soumission manquante');
+  if(verifiedClassDate<parisDate(submitted))
+   throw new HttpsError('failed-precondition','Cours antérieur à la soumission');
+  tx.update(ref,{scheduleVerified:true,suggestedReleaseAt:releaseAt,verifiedClassDate,verifiedBy:request.auth.uid,verifiedAt:FieldValue.serverTimestamp()});
+ });
+ return {confirmed:true,id,earliestReleaseAt:releaseAt,requiresParentRelease:true};
 });
