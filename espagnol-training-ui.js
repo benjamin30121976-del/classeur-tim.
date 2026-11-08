@@ -212,12 +212,24 @@ function renderParentProgress(root){
  const render=()=>{
   const p=progress();if(p.status!=='ok'){slot.innerHTML='<p class="spx-training-warning">'+esc(p.message||'Chargement du suivi…')+'</p>';return;}
   const ids=Object.keys(COURSE()),total=(p.attempts||[]).length;
-  slot.innerHTML='<p><strong>'+total+' / 150</strong> exercices terminés par Tim. Une seule note par exercice, sans meilleure note ni seconde tentative.</p>'+
+  const complete=(p.attempts||[]).filter(a=>a.score!==null&&Array.isArray(a.items)&&a.items.length===10);
+  const wrong=complete.flatMap(a=>a.items.filter(it=>it.correct===false).map(it=>({lesson:a.lessonId,item:it})));
+  const difficulties=ids.map(ref=>({
+    ref,name:COURSE()[ref].name,
+    wrong:wrong.filter(x=>x.lesson===ref).length,
+    count:complete.filter(a=>a.lessonId===ref).length
+  })).filter(x=>x.wrong>0).sort((a,b)=>b.wrong-a.wrong);
+  const diagnosis=complete.length?
+   '<section class="spx-parent-diagnostic"><h4>Notions à revoir en priorité</h4>'+
+   '<p>'+wrong.length+' réponse(s) incorrecte(s) sur '+(complete.length*10)+' questions corrigées dans les entraînements réalisés. Ce bilan n’est pas une note de l’ENT.</p>'+
+   (difficulties.length?'<ol>'+difficulties.slice(0,5).map(x=>'<li><strong>'+esc(x.name)+'</strong> : '+x.wrong+' erreur(s) sur '+x.count+' exercice(s). <span>'+esc(GUIDE()?.DATA?.[x.ref]?.pitfall||'Revoir la leçon.')+'</span></li>').join('')+'</ol>':'<p>Aucune erreur dans les exercices corrigés.</p>')+'</section>':
+   '<p class="spx-note">Le diagnostic apparaîtra après le premier exercice terminé par Tim.</p>';
+  slot.innerHTML='<p><strong>'+total+' / 150</strong> exercices terminés par Tim. Une seule note par exercice, sans meilleure note ni seconde tentative.</p>'+diagnosis+
    ids.map(id=>{
     const attempts=listIds(id).map(key=>found(key)).filter(Boolean);
     return '<details class="spx-parent-chapter"><summary>'+esc(COURSE()[id].name)+' — '+attempts.length+'/10 fait(s)</summary>'+
      (attempts.length?attempts.map(a=>'<details class="spx-parent-result"><summary>'+(a.mode==='Q'?'QCM ':'Écriture ')+a.series+' — '+(a.score===null?'note indisponible':a.score+'/10')+'</summary>'+
-      (a.items||[]).map((it,i)=>'<p><strong>Question '+(i+1)+'</strong> : '+esc(it.prompt)+'<br>Tim : '+esc(it.response)+' · attendu : '+esc(it.expected)+' · '+(it.correct?'correct':'à revoir')+'</p>').join('')+'</details>').join(''):'<p>Aucun exercice terminé.</p>')+'</details>';
+      (a.items||[]).map((it,i)=>'<p><strong>Question '+(i+1)+'</strong> : '+esc(it.prompt)+'<br>Tim : '+esc(it.response)+' · attendu : '+esc(it.expected)+' · '+(it.correct?'correct':'à revoir')+(!it.correct?' · <strong>Conseil :</strong> '+esc(GUIDE()?.errorHint(id,ENGINE.buildSpanishTasks(a.id,COURSE())?.questions?.[i])||'Revoir le cours.'):'')+'</p>').join('')+'</details>').join(''):'<p>Aucun exercice terminé.</p>')+'</details>';
    }).join('')+
    '<button type="button" class="spx-button subtle" id="spx-parent-refresh">Actualiser le suivi</button>';
   slot.querySelector('#spx-parent-refresh').onclick=async()=>{
