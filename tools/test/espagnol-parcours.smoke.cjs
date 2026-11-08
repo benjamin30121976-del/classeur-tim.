@@ -38,10 +38,10 @@ const out=path.join(process.cwd(),'test-espagnol-results');fs.mkdirSync(out,{rec
     const lessonIds=await subject.locator('.spx-quick-easy').evaluateAll(nodes=>nodes.map(x=>x.dataset.easy));
     lessonTotal+=lessonIds.length;
     for(const id of lessonIds){
-     const card=subject.locator('.spx-lesson-item').filter({has:subject.locator('[data-easy="'+id+'"]')});
+     const card=subject.locator('.spx-lesson-item').filter({has:page.locator('[data-easy="'+id+'"]')});
      const labels=await card.locator('.spx-quick-link').allTextContents();
      for(const must of ['1 · Leçon ENT','2 · Leçon simplifiée','3 · Je n’ai pas compris','Exercices d’entraînement · 5 × 10']){
-      if(!labels.some(x=>x.includes(must)))throw Error(id+': missing shortcut '+must);
+      if(!labels.some(x=>x.includes(must)))throw Error(id+': missing shortcut '+must+'; available '+JSON.stringify(labels));
      }
      if(labels.some(x=>x.trim()==='Leçon'||x.includes('Je n’ai pas compris ?')))throw Error(id+': obsolete duplicate');
      await card.locator('[data-easy="'+id+'"]').click();
