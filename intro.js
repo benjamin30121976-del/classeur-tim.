@@ -4,6 +4,7 @@
  const img=document.getElementById('intro-animation');
  const play=document.getElementById('intro-play');
  const silent=document.getElementById('intro-silent');
+ const skip=document.getElementById('intro-skip');
  const gate=document.getElementById('intro-gate');
  const music=document.getElementById('intro-music');
  let timer=null,lastFocus=null,started=false,withMusic=false,fallback=false;
@@ -12,15 +13,25 @@
   music.pause();
   try{music.currentTime=0;}catch(e){}
  }
- function close(){
+ function close(skipped=false){
   if(!overlay||overlay.hidden)return;
   overlay.hidden=true;
   document.body.classList.remove('intro-open');
   if(timer!==null){clearTimeout(timer);timer=null;}
   // La fanfare finale est dans le MP3 : éviter de superposer l'ancienne.
-  if(started&&withMusic&&fallback)window.TIM_SOUND?.play('welcome');
+  if(!skipped&&started&&withMusic&&fallback)window.TIM_SOUND?.play('welcome');
   stopMusic();
   if(lastFocus?.isConnected)try{lastFocus.focus({preventScroll:true});}catch(e){}
+ }
+ function skipAnimation(){
+  if(!overlay||overlay.hidden)return;
+  // Fonctionne avant le choix du son et pendant la lecture.
+  // Pas de fanfare finale, pas de délai de 6,7 s et aucune préférence audio modifiée.
+  close(true);
+  const home=document.querySelector('[data-nav="home"]');
+  if(home)home.click();
+  // Arrête tout son synthétique déjà programmé (notamment le secours audio).
+  window.TIM_SOUND?.stopAll?.();
  }
  function start(withSound){
   if(!overlay||overlay.hidden||!gate||gate.hidden)return;
@@ -65,5 +76,6 @@
  }
  play?.addEventListener('click',()=>start(true));
  silent?.addEventListener('click',()=>start(false));
+ skip?.addEventListener('click',skipAnimation);
  window.TIM_INTRO_SHOW=show;
 })();
