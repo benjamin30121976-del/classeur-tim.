@@ -8,7 +8,7 @@ service cloud.firestore {
   match /exercises/{id} { allow read, write: if parent(); }
   match /lessons/{id} { allow read, write: if parent(); }
   match /publicLessons/{id} { allow read: if true; allow write: if parent() && !request.resource.data.keys().hasAny(['answers','answerKeys','corrections','expected','solution','solutions']); }
-  match /publicExercises/{id} { allow read: if family(); allow write: if parent() && !request.resource.data.keys().hasAny(['answers','answerKeys','corrections','expected','solution','solutions','right']); }
+  match /publicExercises/{id} { allow read: if family(); allow write: if false; // Import par serveur de confiance uniquement : empêche les réponses cachées dans des champs imbriqués. }
   match /answerKeys/{id} { allow read, write: if parent(); }
   match /releasedCorrections/{id} {
    allow read: if parent(); // Tim reçoit uniquement les corrections filtrées par la fonction serveur.
