@@ -3,6 +3,7 @@ import {initializeApp} from 'firebase-admin/app';
 import {getFirestore,FieldValue} from 'firebase-admin/firestore';
 import {grade} from './grading.mjs';
 import {rawPoints,cappedPoints} from './xp.mjs';
+import {buildMission,isMissionId,isMissionOpen} from './missions-v18.mjs';
 import {spanishNov05Exercises} from './spanish-nov05-private.mjs';
 import {SPANISH_COURSE} from './spanish-training-curriculum.mjs';
 import {buildSpanishTasks,evaluateSpanishTask} from './spanish-training-engine.mjs';
@@ -13,6 +14,14 @@ const validId=id=>typeof id==='string'&&/^[A-Za-z][A-Za-z0-9_-]{1,35}$/.test(id)
 function role(request,which){const uid=which==='tim'?timUid:parentUid;if(!uid||request.auth?.uid!==uid)throw new HttpsError('permission-denied','Accès non autorisé');}
 function parisDate(d){const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);const get=t=>p.find(x=>x.type===t).value;return `${get('year')}-${get('month')}-${get('day')}`;}
 async function resolveExercise(id){
+ if(isMissionId(id)){
+  const doc=await db.doc('content/main').get();
+  const main=doc.exists?decodeCourse(doc.data()?.payloadJson?JSON.parse(doc.data().payloadJson):doc.data()):null;
+  const mission=buildMission(id,main);
+  if(!mission)throw new HttpsError('not-found','Défi introuvable');
+  if(!isMissionOpen(mission))throw new HttpsError('failed-precondition','Défi fermé');
+  return {exercise:{...sanitizeCourse(mission),enabled:true},key:{questions:mission.questions.map(q=>({right:q.right,also:q.also,why:q.why}))}};
+ }
  const spanish=spanishNov05Exercises.find(ex=>ex.id===id);
  if(spanish)return {exercise:{...sanitizeCourse(spanish),enabled:spanish.enabled!==false},key:{questions:spanish.questions.map(q=>({right:q.right,also:q.also,why:q.why}))}};
 
@@ -42,12 +51,13 @@ export const submitTimExercise=onCall({region:'europe-west1',enforceAppCheck:tru
   const monday=new Date(date+'T12:00:00Z');monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);
   const week=monday.toISOString().slice(0,10),today=state.date===date?state:{earned:0,lost:0,bonus:0};
   const weekEarned=state.week===week?Number(state.weekEarned||0):0;
+  const weekXp=state.week===week?Number(state.weekXp??state.weekEarned??0):0;
   const category=ex.category||'school';
   const raw=rawPoints({kind:ex.kind,category,score:result.score,total:result.total,needsReview:result.needsReview});
   const xp=cappedPoints(raw,Number(today.earned||0),Number(today.lost||0),weekEarned,Number(today.bonus||0),category);
-  tx.set(xpRef,{date,week,earned:Number(today.earned||0)+Math.max(0,xp),lost:Number(today.lost||0)+Math.max(0,-xp),bonus:Number(today.bonus||0)+(category==='bonus'?Math.max(0,xp):0),weekEarned:weekEarned+Math.max(0,xp),updatedAt:FieldValue.serverTimestamp()});
-  const common={exerciseId:id,title:String(ex.title||id).slice(0,200),authorUid:request.auth.uid,submittedAt:FieldValue.serverTimestamp(),score:result.score,total:result.total,needsReview:result.needsReview,policyVersion:17};
-  tx.create(attemptRef,{exerciseId:id,authorUid:request.auth.uid,submittedAt:FieldValue.serverTimestamp(),policyVersion:17,xp,correctionStatus:'pending-parent'});
+  tx.set(xpRef,{date,week,earned:Number(today.earned||0)+Math.max(0,xp),lost:Number(today.lost||0)+Math.max(0,-xp),bonus:Number(today.bonus||0)+(category==='bonus'?Math.max(0,xp):0),weekEarned:weekEarned+Math.max(0,xp),weekXp:Math.max(0,weekXp+xp),policyVersion:18,updatedAt:FieldValue.serverTimestamp()});
+  const common={exerciseId:id,title:String(ex.title||id).slice(0,200),authorUid:request.auth.uid,submittedAt:FieldValue.serverTimestamp(),score:result.score,total:result.total,needsReview:result.needsReview,policyVersion:18};
+  tx.create(attemptRef,{exerciseId:id,authorUid:request.auth.uid,submittedAt:FieldValue.serverTimestamp(),policyVersion:18,xp,correctionStatus:'pending-parent'});
   tx.create(privateRef,{...common,...result});
   return {id,submitted:true,xp,correctionLocked:true,correctionStatus:'pending-parent'};
  });}catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError('internal','Échec de validation');}
