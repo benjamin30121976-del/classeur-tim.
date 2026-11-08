@@ -193,7 +193,7 @@ async function viewTraining(id){
 function render(element,opts){
  root=element;options=opts||{};all=options.lessons||[];
  bis=all.filter(x=>/^MBIS(?:0[1-9]|1[0-9]|2[0-3])$/.test(x.id||''));
- ent=all.filter(x=>x.subject==='Mathématiques'&&!/^MBIS/.test(x.id||''));
+ ent=all.filter(x=>x.subject==='Mathématiques'&&!/^MBIS/.test(x.id||'')&&x.category!=='bis'&&x.category!=='bonus'&&x.kind!=='bonus');
  exercises=options.exercises||[];
  grades=window.__TIM_MATH_PROGRESS||{status:'loading',attempts:[]};
  home();
