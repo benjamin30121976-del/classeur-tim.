@@ -195,7 +195,7 @@ async function viewTraining(id){
    throw Error('Une question renvoie à un programme ou à une figure dont l’énoncé manque. Exercice suspendu, aucune tentative utilisée.');
   holder.innerHTML='<h3>Deux questions de compréhension</h3>'+
    '<p><strong>Avant de répondre :</strong> lis les données et la consigne de chaque question. Ce mini-test BIS est distinct des exercices ENT du professeur.</p>'+
-   (context?'<section class="spx-panel"><h3>Énoncé à consulter pour les deux questions</h3><p style="white-space:pre-wrap">'+esc(context)+'</p></section>')+
+   (context?'<section class="spx-panel"><h3>Énoncé à consulter pour les deux questions</h3><p style="white-space:pre-wrap">'+esc(context)+'</p></section>':'')+
    '<p>Après la validation définitive, tu recevras la note et les explications. Tu ne pourras pas refaire cet exercice.</p>'+
    '<form id="math-quiz-form">'+task.questions.map((q,i)=>'<fieldset class="spx-training-question"><legend>Question '+(i+1)+' / '+task.questions.length+'</legend><p>'+esc(q.prompt)+'</p>'+
     q.choices.map((v,j)=>'<label class="math-choice"><input type="radio" name="mq'+i+'" value="'+j+'" required> '+esc(v)+'</label>').join('')+'</fieldset>').join('')+
