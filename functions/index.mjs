@@ -41,7 +41,7 @@ export const submitTimExercise=onCall({region:'europe-west1',enforceAppCheck:tru
   const xp=cappedPoints(raw,Number(today.earned||0),Number(today.lost||0),weekEarned,Number(today.bonus||0),category);
   tx.set(xpRef,{date,week,earned:Number(today.earned||0)+Math.max(0,xp),lost:Number(today.lost||0)+Math.max(0,-xp),bonus:Number(today.bonus||0)+(category==='bonus'?Math.max(0,xp):0),weekEarned:weekEarned+Math.max(0,xp),updatedAt:FieldValue.serverTimestamp()});
   const common={exerciseId:id,authorUid:request.auth.uid,submittedAt:FieldValue.serverTimestamp(),score:result.score,total:result.total,needsReview:result.needsReview,policyVersion:17};
-  tx.create(attemptRef,{...common,xp,responses:answers.map(v=>String(v)),correctionStatus:'pending-parent'});
+  tx.create(attemptRef,{...common,xp,correctionStatus:'pending-parent'});
   tx.create(privateRef,{...common,...result});
   return {id,submitted:true,xp,correctionLocked:true,correctionStatus:'pending-parent'};
  });}catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError('internal','Échec de validation');}
