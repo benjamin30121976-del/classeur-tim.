@@ -8,7 +8,7 @@ const isChallenge=ex=>['daily','weekly','sunday'].includes(ex?.kind);
 function exercisePoints(a){if(a.needsReview||!a.total)return 0;const p=Math.max(0,Math.min(1,(a.score||0)/a.total));return p===1?3:p>=.8?2:p>=.6?1:p>=.4?-1:-2;}
 function bonusPoints(a){if(a.needsReview||!a.total)return 0;const p=Math.max(0,Math.min(1,(a.score||0)/a.total));return p===1?2:p>=.6?1:0;}
 function canSubmit(ex,time){if(!ex)return false;const d=day(time);const dow=new Date(d+'T12:00:00Z').getUTCDay();
- if(ex.kind==='daily')return dow>=1&&dow<=5&&window.__TIM_CHALLENGES?.dailyIds?.includes(ex.id)===true&&ex.id.startsWith('DAY_'+d.replace(/-/g,'')+'_');
+ if(ex.kind==='daily')return window.__TIM_CHALLENGES?.dailyIds?.includes(ex.id)===true&&(ex.id==='DAY_20261108_01'?d==='2026-11-08':dow>=1&&dow<=5&&ex.id.startsWith('DAY_'+d.replace(/-/g,'')+'_'));
  if(ex.kind==='sunday')return dow===0&&ex.id==='SUNDAY_'+d.replace(/-/g,'')&&window.__TIM_CHALLENGES?.sunday===ex.id;
  if(ex.kind==='weekly')return dow===6&&window.__TIM_CHALLENGES?.weekly===ex.id;
  if(window.TIM_EXERCISE?.mode(ex,time)==='upcoming')return false;
