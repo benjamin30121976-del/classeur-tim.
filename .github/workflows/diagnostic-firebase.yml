@@ -45,7 +45,7 @@ jobs:
       - name: Tester la notation et les XP (JUnit)
         run: |
           mkdir -p test-results
-          node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=test-results/notation-xp.xml functions/test/grading.test.mjs functions/test/xp.test.mjs
+          node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=test-results/notation-xp.xml functions/test/grading.test.mjs functions/test/xp.test.mjs functions/test/spanish-nov05.test.mjs
       - name: Tester les règles sur Firestore Emulator (JUnit)
         run: |
           npx firebase emulators:exec --project tim-access-rules-local-test --only firestore "node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=test-results/firestore.xml tools/test/firestore-rules.integration.test.mjs"
