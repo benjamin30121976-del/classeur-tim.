@@ -495,15 +495,36 @@ async function startSession(user){
      return;
     }
    }
-   // Les 150 entraînements espagnols sont corrigés immédiatement après validation
-   // et n'ont jamais à passer par le déblocage parental des devoirs ordinaires.
+   // Les évaluations mathématiques, comme les entraînements espagnols,
+   // sont corrigées automatiquement : ne pas les mettre en "attente parent".
+   // Elles disposent d'un enregistrement privé dédié dans Firestore.
+   let mathRecords=[],mathUnavailable=false;
+   try{
+    const response=await cloudCallable('getMathTrainingProgress')({});
+    if(!Array.isArray(response.data?.attempts))throw Error('Historique de mathématiques incomplet');
+    mathRecords=response.data.attempts.filter(a=>
+     /^MT(?:0[1-9]|1[0-9]|2[0-3])$/.test(String(a.id||'')));
+   }catch(mathError){
+    mathUnavailable=true;
+    console.warn('Lecture du suivi mathématique indisponible :',mathError.code||mathError.message);
+   }
+   // Les 150 entraînements espagnols et les 23 évaluations de mathématiques
+   // sont corrigés immédiatement ; le compteur "en attente" reste réservé
+   // aux devoirs dont la correction doit être débloquée.
    const spanishTraining=id=>/^SP[QW]_L(?:0[1-9]|1[0-5])_0[1-5]$/.test(String(id||''));
-   const automatic=attempts.filter(a=>spanishTraining(a.id));
+   const automatic=[...attempts.filter(a=>spanishTraining(a.id)),...mathRecords];
    const schoolAttempts=attempts.filter(a=>!spanishTraining(a.id));
    const pending=schoolAttempts.filter(a=>a.correctionStatus!=='released');
    const released=schoolAttempts.filter(a=>a.correctionStatus==='released');
-   status.textContent=pending.length+' devoir'+(pending.length>1?'s':'')+' en attente de correction\n'+attempts.length+' exercice'+(attempts.length>1?'s':'')+' validé'+(attempts.length>1?'s':'')+' en ligne';
+   const validatedCount=attempts.length+mathRecords.length;
+   status.textContent=pending.length+' devoir'+(pending.length>1?'s':'')+' en attente de correction\n'+validatedCount+' exercice'+(validatedCount>1?'s':'')+' validé'+(validatedCount>1?'s':'')+' en ligne'+(mathUnavailable?' (hors mathématiques momentanément indisponibles)':'');
    status.style.whiteSpace='pre-line';
+   if(mathUnavailable){
+    const info=document.createElement('p');
+    info.textContent='Les résultats de mathématiques ne sont pas accessibles actuellement ; ils ne sont pas inclus dans le total ci-dessus. Réessaie après reconnexion.';
+    info.style.cssText='font-size:14px;line-height:1.5;color:#ffd7a6';
+    list.append(info);
+   }
    if(!releaseServiceAvailable){
     const info=document.createElement('p');
     info.textContent='Consultation des résultats : disponible via Firebase. Autoriser ou reverrouiller les corrections nécessite toujours le service serveur, actuellement inaccessible. Les notes restent enregistrées.';
@@ -519,10 +540,12 @@ async function startSession(user){
     const line=document.createElement('article');
     line.style.cssText='padding:14px;margin:12px 0;border:1px solid #526b8b;border-radius:13px;background:#1a304d;overflow-wrap:anywhere';
     const match=/^SP([QW])_(L(?:0[1-9]|1[0-5]))_0([1-5])$/.exec(String(item.id||''));
+    const mathMatch=/^MT(0[1-9]|1[0-9]|2[0-3])$/.exec(String(item.id||''));
     const ex=window.__TIM_DATA?.exercises?.find(e=>e.id===item.id);
-    const lesson=match?window.TIM_SPANISH_EDU?.[match[2]]:
+    const lesson=mathMatch?window.__TIM_DATA?.lessons?.find(l=>l.id==='MBIS'+mathMatch[1]):
+      match?window.TIM_SPANISH_EDU?.[match[2]]:
       window.__TIM_DATA?.lessons?.find(l=>l.id===ex?.lesson);
-    const subject=match?'Espagnol':(ex?.subject||'Exercice');
+    const subject=mathMatch?'Mathématiques':match?'Espagnol':(ex?.subject||'Exercice');
     const lessonTitle=lesson?.name||lesson?.title||'';
     const exerciseTitle=match?(match[1]==='Q'?'QCM ':'Écriture ')+Number(match[3]):item.title;
     const heading=document.createElement('strong');heading.textContent=subject+(lessonTitle?' · '+lessonTitle:'');
@@ -568,6 +591,48 @@ async function startSession(user){
      if(loaded)return;
      note('Chargement de la copie enregistrée…');
      try{
+      if(mathMatch){
+       // Le même bouton "Voir la copie" fonctionne pour les mathématiques.
+       // Le relevé provient de l'API sécurisée, sans contacter de service public.
+       const record=item;
+       copy.replaceChildren();
+       if(!Array.isArray(record.items)||!record.items.length){
+        note('La copie détaillée est momentanément indisponible. Actualise les résultats.');
+        return;
+       }
+       const when=new Date(record.submittedAt||'');
+       if(Number.isFinite(when.getTime()))
+        note('Validé le '+when.toLocaleString('fr-FR',{timeZone:'Europe/Paris'}),'font-size:13px;color:#c3d8f2');
+       note('Note : '+record.score+'/'+record.total+' · 0 XP','font-weight:800;font-size:17px');
+       const errors=record.items.filter(q=>q.correct===false);
+       note(errors.length?
+         'Bilan : '+errors.length+' erreur'+(errors.length>1?'s':'')+'. Relire la leçon BIS « '+(lesson?.title||'Mathématiques')+' » et le cours ENT du même chapitre.':
+         'Bilan : toutes les réponses sont correctes.','font-weight:600');
+       for(const [index,answer] of record.items.entries()){
+        const section=document.createElement('section');
+        section.style.cssText='margin:12px 0;padding:10px 12px;background:#203954;border:1px solid #506781;border-radius:10px';
+        const question=document.createElement('strong');
+        question.textContent=(index+1)+'. '+String(answer.prompt||'Question');
+        question.style.cssText='display:block;margin-bottom:7px';
+        const given=document.createElement('p');
+        given.textContent='Réponse de Tim : '+String(answer.response??'');
+        given.style.cssText='margin:0 0 5px';
+        const result=document.createElement('p');
+        result.textContent=answer.correct?'Bonne réponse':'Réponse à revoir';
+        result.style.cssText='font-weight:700;margin:0;color:'+(answer.correct?'#a4e9c8':'#ffb6a7');
+        section.append(question,given,result);
+        if(!answer.correct&&answer.expected!==undefined){
+         const expected=document.createElement('p');
+         expected.textContent='Réponse attendue : '+String(answer.expected);
+         section.append(expected);
+        }
+        const explain=document.createElement('p');
+        explain.textContent=String(answer.explanation||'Revoir la sous-leçon.');
+        section.append(explain);copy.append(section);
+       }
+       loaded=true;
+       return;
+      }
       // Le service de résumé peut être indisponible : les copies sont déjà
       // lisibles dans privateAttempts via les règles Firestore Parent.
       const [privateDoc,attemptDoc]=await Promise.all([
