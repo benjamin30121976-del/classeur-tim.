@@ -2,6 +2,7 @@
  * Ce module ne contient aucune réponse ; les réponses privées viennent de Firestore.
  */
 export const DAILY_MISSION_COUNT=24;
+export const TEST_MISSION_ID='DAY_20261108_01';
 export const parisDay=date=>{
  const parts=new Intl.DateTimeFormat('fr-CA',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(date));
  const p=Object.fromEntries(parts.filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
@@ -61,21 +62,28 @@ export function buildMission(id,content,curriculum=null){
  const sm=id.match(/^SUNDAY_(20\d{2})(\d{2})(\d{2})$/);
  if(dm){
   const on=dm[1]+'-'+dm[2]+'-'+dm[3],number=Number(dm[4]);
-  if(!validDate(on)||dateUTC(on).getUTCDay()%7===0||dateUTC(on).getUTCDay()===6)return null;
-  // Premier petit défi : l'exact inverse du QCM 1 « Se présenter ».
-  // Le cours de 10 expressions provient du même référentiel pédagogique public.
-  if(number===1&&Array.isArray(curriculum?.L01?.pairs)&&curriculum.L01.pairs.length===10){
-   const questions=curriculum.L01.pairs.map(([es,fr],i)=>({
-    type:'text',q:'Écris en espagnol : « '+fr+' ».',right:es,also:[],skill:'se présenter',
-    why:'Expression de la leçon Se présenter : « '+es+' » = « '+fr+' ».',sourceId:'SPANISH_L01:'+i
-   }));
-   return {id,title:'Défi inversé — Se présenter',description:'10 traductions du français vers l’espagnol, sans QCM.',
+  const trial=id===TEST_MISSION_ID;
+  const dow=dateUTC(on).getUTCDay();
+  if(!validDate(on)||(!trial&&(dow===0||dow===6)))return null;
+  if(trial){
+   const pairs=curriculum?.L01?.pairs;
+   if(!Array.isArray(pairs)||pairs.length!==10)return null;
+   const capitalize=s=>{s=String(s);return s.charAt(0).toLocaleUpperCase('fr-FR')+s.slice(1);};
+   const questions=pairs.map(([es,fr],i)=>{
+    const expected=String(es).startsWith('¿')?String(es):capitalize(es);
+    const french=capitalize(fr);
+    return {type:'text',q:'Écris en espagnol : « '+french+' ».',right:expected,also:[],
+      skill:'Se présenter — écriture exacte',
+      why:'Expression de la leçon Se présenter : « '+expected+' » correspond à « '+french+' ». Vérifie la ponctuation espagnole, les majuscules, les accents et les espaces.',
+      sourceId:'SPANISH_L01:'+i};
+   });
+   return {id,title:'Défi inversé — Se présenter',description:'10 traductions du français vers l’espagnol, sans QCM. Chaque détail de l’écriture compte.',
+    instructions:'Traduis chaque expression française en espagnol en faisant particulièrement attention à ton écriture. Attention, la précision compte ! Vérifie soigneusement : l’orthographe de chaque mot, les accents sur les lettres (á, é, í, ó, ú), les signes de ponctuation espagnols, notamment ¿ au début et ? à la fin des questions, les majuscules et les espaces. Chaque détail compte dans la correction. Prends le temps de bien relire tes dix réponses avant de valider ton défi.',
     level:'Mission quotidienne',subject:'Défis',lesson:'L01',kind:'daily',category:'challenge',
-    period:on,realLessons:['Se présenter'],questions};
+    period:on,realLessons:['Se présenter'],strictAnswers:true,questions};
   }
   chosen=select(pool(content,on),10,'DAY_'+on,(number-1)*10);
-  kind='daily';period=on;label='Petit défi du jour n°'+number;
- }else if(wm){
+  kind='daily';period=on;label='Petit défi du jour n°'+number; }else if(wm){
   const year=Number(wm[1]),num=Number(wm[2]),jan4=new Date(Date.UTC(year,0,4,12));
   jan4.setUTCDate(jan4.getUTCDate()-((jan4.getUTCDay()+6)%7)+(num-1)*7);
   const start=jan4.toISOString().slice(0,10);if(weekId(start)!==id)return null;
@@ -101,14 +109,14 @@ export function buildMission(id,content,curriculum=null){
 export function isMissionOpen(ex,today=parisDay(new Date())){
  if(!ex||!isMissionId(ex.id)||!validDate(today))return false;
  const dow=dateUTC(today).getUTCDay();
- if(ex.kind==='daily')return dow>=1&&dow<=5&&ex.id.startsWith('DAY_'+today.replace(/-/g,'')+'_');
+ if(ex.kind==='daily')return ex.id===TEST_MISSION_ID?today==='2026-11-08':dow>=1&&dow<=5&&ex.id.startsWith('DAY_'+today.replace(/-/g,'')+'_');
  if(ex.kind==='weekly')return dow===6&&ex.id===weekId(today);
  if(ex.kind==='sunday')return dow===0&&ex.id==='SUNDAY_'+today.replace(/-/g,'');
  return false;
 }
 export function setupMissions(content,now=new Date(),curriculum=null){
  const today=parisDay(now),dow=dateUTC(today).getUTCDay();
- const dailyIds=dow>=1&&dow<=5?Array.from({length:DAILY_MISSION_COUNT},(_,i)=>'DAY_'+today.replace(/-/g,'')+'_'+String(i+1).padStart(2,'0')):[];
+ const dailyIds=today==='2026-11-08'?[TEST_MISSION_ID]:dow>=1&&dow<=5?Array.from({length:DAILY_MISSION_COUNT},(_,i)=>'DAY_'+today.replace(/-/g,'')+'_'+String(i+1).padStart(2,'0')):[];
  const saturday=addDays(monday(today),5),sunday=addDays(monday(today),6);
  const weekly=weekId(today),sundayId='SUNDAY_'+sunday.replace(/-/g,'');
  const ids=[...dailyIds,weekly,sundayId],exercises=ids.map(id=>buildMission(id,content,curriculum)).filter(Boolean);
