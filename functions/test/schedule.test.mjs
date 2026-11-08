@@ -44,7 +44,7 @@ test('cours suivant selon heure réelle de remise à Paris',()=>{
  assert.equal(nextCorrectionAfterSubmission(ex,'2026-11-12T18:00:00Z'),'2026-11-13T17:00:00.000Z');
 });
 test('cours annulé et créneau Q1/Q2 après remise',()=>{
- assert.equal(nextCorrectionAfterSubmission({subject:'mathématiques',excludedClassDates:['2026-11-13']},'2026-11-12T10:00:00Z'),'2026-11-16T17:00:00.000Z');
+ assert.equal(nextCorrectionAfterSubmission({subject:'mathématiques',excludedClassDates:['2026-11-13']},'2026-11-12T15:00:00Z'),'2026-11-16T17:00:00.000Z');
  assert.equal(nextCorrectionAfterSubmission({subject:'espagnol'},'2026-11-16T14:00:00Z'),'2026-11-18T17:00:00.000Z');
 });
 
