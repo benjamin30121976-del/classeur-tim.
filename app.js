@@ -294,9 +294,9 @@ if(old){
   panel.append(E('strong','','Devoir envoyé — correction en attente du parent'),E('p','','Tes XP sont calculés immédiatement. Ton parent décidera quand afficher le corrigé.'));
   root.append(panel);
  }else{
-  const disclosed=window.TIM_EXERCISE.canShow(old,new Date(),!!window.__TIM_PARENT);
+  const disclosed=old.correctionStatus==='released'&&Array.isArray(old.answers)&&old.answers.length===ex.questions.length;
   if(disclosed){root.append(E('div','banner-good','Exercice terminé · correction disponible.'));renderFeedback(ex,old,root);}
-  else root.append(notice('Correction en attente du parent.'));
+  else root.append(notice('Correction en attente du parent ou en cours de chargement.'));
  }
  if(typeof old.xp==='number')root.append(E('div','xp-award',(old.xp>=0?'+':'')+old.xp+' XP'));
 } else if(window.__TIM_PARENT){controls.forEach(c=>{if(c.node)c.node.disabled=true;else for(const el of form.querySelectorAll('input'))el.disabled=true;});root.append(notice('Aperçu parent : seul Tim peut répondre et valider cet exercice.'));}else{
