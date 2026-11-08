@@ -27,3 +27,14 @@ Dernière révision : 8 novembre 2026.
 - Huit questions incomplètes corrigées dans les leçons `MBIS14`, `MBIS15`, `MBIS16`, `MBIS18` et `MBIS23`.
 - Les deux questions des 23 mini-évaluations sont délivrées par le serveur : leur validation pédagogique individuelle **reste à faire**.
 - Les exercices historiques du professeur ne sont pas écrasés. Les résultats antérieurs de Tim ne sont pas modifiés.
+
+## Audit renforcé des évaluations de mathématiques (8 novembre 2026)
+- Banque serveur : worker/maths-training-curriculum.mjs, 23 évaluations MT01 à MT23, deux questions par sous-leçon.
+- 46 questions autonomes. Énoncés complétés pour Pythagore (triangle et unités), Thalès (alignements et parallèles), programmes de calcul et racines carrées.
+- Quatre choix distincts par question. 138 mauvais choix (trois par question), chacun accompagné d'une explication spécifique de l'erreur, puis du calcul ou de la méthode corrects.
+- 184 scénarios de notation vérifiés : quatre choix pour chacune des 46 questions. Score brut de 0, 1 ou 2 sur 2, affiché aussi sur 20 (0, 10 ou 20). La note reste peu fine avec deux questions ; l'affichage précise le nombre de bonnes réponses.
+- Tim voit la note et la correction immédiatement après confirmation du serveur. La même tentative ne peut pas être validée une deuxième fois.
+- Le serveur utilise mathTrainingAttempts, une transaction Firestore et une précondition exists:false. Les autorisations Tim/Parent sont contrôlées côté serveur.
+- Le compte Parent affiche les résultats à l'ouverture, puis les actualise toutes les 60 secondes tant que la page reste ouverte et visible. Il reçoit les réponses attendues, l'erreur spécifique et la sous-leçon conseillée.
+- Tests de notation, de non-répétition et d'accès Parent/Tim dans worker/test/math-training.test.mjs, ajoutés au contrôle GitHub Actions.
+- Le contrôle Chromium/Playwright du site public a été demandé : sa réussite et la mise en production ne sont pas garanties avant inspection du rapport. Ne pas déclencher de soumission depuis le compte Tim.
