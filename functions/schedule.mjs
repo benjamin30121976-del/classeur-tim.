@@ -20,14 +20,16 @@ function utcDay(s){if(!datePattern.test(s))throw new Error('Date YYYY-MM-DD requ
 function isoDay(d){return d.toISOString().slice(0,10);}
 export function quarter(date){const d=utcDay(date),ref=utcDay('2026-11-02');d.setUTCDate(d.getUTCDate()-(d.getUTCDay()+6)%7);const weeks=Math.round((d-ref)/604800000);return Math.abs(weeks)%2===0?'Q2':'Q1';}
 export function normalizeSubject(raw){const s=String(raw||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');if(/math/.test(s))return 'mathématiques';if(/phys|chim/.test(s))return 'physique-chimie';if(/espagn/.test(s))return 'espagnol';if(/angl/.test(s))return 'anglais';if(/fran/.test(s))return 'français';if(/histo|geo/.test(s))return 'histoire-géographie';if(/svt|vie et terre/.test(s))return 'svt';if(/techno/.test(s))return 'technologie';if(/musique/.test(s))return 'éducation musicale';if(/plastique/.test(s))return 'arts plastiques';if(/eps|sport/.test(s))return 'eps';return '';}
-export function suggestedCorrectionDay({subject,dueDate,submittedDate}){
+export function suggestedCorrectionDay({subject,dueDate,submittedDate,excludedDates=[]}){
+ if(!Array.isArray(excludedDates)||excludedDates.some(x=>typeof x!=='string'||!datePattern.test(x)))throw new Error('Dates exclues invalides');
+ const excluded=new Set(excludedDates);
  const name=normalizeSubject(subject);if(!schedule[name])return null;
  const start=dueDate||submittedDate;if(!start)return null;
  const d=utcDay(start);if(submittedDate&&start<submittedDate)utcDay(submittedDate);
  if(submittedDate&&start<submittedDate)d.setTime(utcDay(submittedDate).getTime());
  for(let i=0;i<28;i++){
   const day=isoDay(d),q=quarter(day),slots=schedule[name][d.getUTCDay()]||[];
-  if(day>=String(submittedDate||'')&&slots.some(slot=>!slot.includes('@')||slot.endsWith('@'+q)))return day;
+  if(!excluded.has(day)&&day>=String(submittedDate||'')&&slots.some(slot=>!slot.includes('@')||slot.endsWith('@'+q)))return day;
   d.setUTCDate(d.getUTCDate()+1);
  }
  return null;
@@ -39,4 +41,4 @@ export function paris18Utc(date){
  const minutes=match?(match[1]==='+'?1:-1)*(Number(match[2])*60+Number(match[3]||0)):60;
  return new Date(target-minutes*60000).toISOString();
 }
-export function suggestedCorrectionAt(exercise,submittedDate){const date=suggestedCorrectionDay({subject:exercise.subject||exercise.matiere,dueDate:exercise.dueDate||exercise.entDueDate,submittedDate});return date?paris18Utc(date):null;}
+export function suggestedCorrectionAt(exercise,submittedDate){const date=suggestedCorrectionDay({subject:exercise.subject||exercise.matiere,dueDate:exercise.dueDate||exercise.entDueDate,submittedDate,excludedDates:exercise.excludedClassDates||[]});return date?paris18Utc(date):null;}
