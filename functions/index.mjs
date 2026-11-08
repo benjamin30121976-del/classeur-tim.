@@ -58,7 +58,14 @@ export const setParentCorrectionRelease=onCall({region:'europe-west1',enforceApp
  role(request,'parent');
  const {id,releaseAt,released}=request.data||{},millis=Date.parse(releaseAt);
  if(!validId(id)||typeof released!=='boolean'||!Number.isFinite(millis)||millis<Date.UTC(2026,0,1)||millis>Date.now()+366*86400000)throw new HttpsError('invalid-argument','Paramètres invalides');
- if(!(await db.doc('attempts/'+id).get()).exists)throw new HttpsError('not-found','Tentative introuvable');
+ const attempt=await db.doc('attempts/'+id).get();
+ if(!attempt.exists)throw new HttpsError('not-found','Tentative introuvable');
+ // Parent may postpone, never advance the release before the scheduled class at 18:00 Paris.
+ const earliest=attempt.get('suggestedReleaseAt');
+ if(released===true){
+   if(typeof earliest!=='string'||!Number.isFinite(Date.parse(earliest)))throw new HttpsError('failed-precondition','Horaire scolaire non validé');
+   if(millis<Date.parse(earliest))throw new HttpsError('failed-precondition','Correction avant la fin du cours à 18 h');
+ }
  await db.doc('releasedCorrections/'+id).set({released,releaseAt:new Date(millis),updatedAt:FieldValue.serverTimestamp()});
  return {saved:true,id,released,releaseAt:new Date(millis).toISOString()};
 });
