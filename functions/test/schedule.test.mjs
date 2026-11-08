@@ -26,3 +26,13 @@ test('jour sans cours exclu : report au prochain vrai créneau',()=>{
 test('exclusion du jour de cours dans le calcul de 18h',()=>{
  assert.equal(suggestedCorrectionAt({subject:'mathématiques',excludedClassDates:['2026-11-12']},'2026-11-10'),'2026-11-13T17:00:00.000Z');
 });
+
+test('aucune correction pour une matière inconnue ou une date invalide',()=>{
+ assert.equal(suggestedCorrectionDay({subject:'matière inconnue',submittedDate:'2026-11-10'}),null);
+ assert.throws(()=>suggestedCorrectionDay({subject:'maths',submittedDate:'2026-02-30'}));
+ assert.throws(()=>suggestedCorrectionDay({subject:'maths',submittedDate:'2026-11-10',excludedDates:['demain']}));
+});
+test('changement heure été/hiver sans déblocage prématuré',()=>{
+ assert.equal(paris18Utc('2027-03-26'),'2027-03-26T17:00:00.000Z');
+ assert.equal(paris18Utc('2027-03-29'),'2027-03-29T16:00:00.000Z');
+});
