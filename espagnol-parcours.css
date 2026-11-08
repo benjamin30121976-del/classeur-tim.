@@ -135,3 +135,20 @@
 .spx-icon .spx-topic-svg{display:block;width:27px;height:27px;color:#a32b41;flex:none}
 .spx-card:hover .spx-topic-svg{transform:scale(1.07);transition:transform .15s ease}
 @media (prefers-reduced-motion:reduce){.spx-card:hover .spx-topic-svg{transform:none;transition:none}}
+
+/* Sous-leçons : cinq accès directs clairs et indépendants, sans intitulé répété. */
+.spx-lesson-intro{display:flex;align-items:flex-start;gap:14px;padding:16px 17px 10px;background:#fff}
+.spx-lesson-copy{flex:1;min-width:0}
+.spx-lesson-copy h4{margin:1px 0 7px;font-size:17px;line-height:1.35;color:#812f47;font-weight:850}
+.spx-lesson-copy p{margin:0;color:#586b84;font-size:13.5px;line-height:1.55}
+.spx-lesson-intro .spx-chip{margin-top:4px;flex-shrink:0}
+.spx-lesson-intro .spx-metrics{border-top:1px solid #f0e4e3;padding-top:8px;margin:10px 0 0}
+.spx-lesson-intro .spx-metrics>span{font-size:12px}
+.spx-quick-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;padding:12px 14px 15px;border-top:1px solid #f1e5e5}
+.spx-quick-link{display:flex!important;align-items:center;justify-content:center;min-height:44px;padding:9px 10px!important;border-radius:11px!important;border:1px solid #ebd8dc!important;background:#fff8f5!important;color:#8e3049!important;font-weight:800!important;font-size:12.5px!important;line-height:1.35!important;text-align:center!important;cursor:pointer!important;box-shadow:none!important;white-space:normal}
+.spx-quick-link.spx-quick-easy{background:#fff0bd!important;border-color:#efcf77!important;color:#793344!important}
+.spx-quick-link:hover{background:#ffe8df!important}
+.spx-quick-link.spx-quick-easy:hover{background:#ffe39d!important}
+.spx-quick-link:focus-visible{outline:3px solid #aa3150!important;outline-offset:2px}
+.spx-panel,.spx-ent-translations,.spx-easy-lesson{scroll-margin-top:130px}
+@media(max-width:520px){.spx-lesson-intro{padding:14px 12px 11px;gap:11px}.spx-lesson-copy h4{font-size:16px}.spx-lesson-intro .spx-metrics>span{font-size:11.5px}.spx-quick-links{padding:11px 12px 14px;gap:8px}.spx-quick-link{font-size:12px!important;min-height:45px}}
