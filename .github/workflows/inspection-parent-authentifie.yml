@@ -24,6 +24,7 @@ jobs:
         run: |
           node --check app.js
           node --check maths-parcours.js
+          node --check maths-bis-data.js
           node --check outils/inspecter-parent-securise.cjs
       - name: Verifier la configuration des secrets sans les afficher
         id: verify
