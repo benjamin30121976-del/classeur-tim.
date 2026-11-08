@@ -1,0 +1,14 @@
+{
+  "site": "https://classeur-tim-v16.pages.dev/",
+  "mode": "tour-complet",
+  "devices": [
+    "desktop",
+    "mobile"
+  ],
+  "maxLessons": 35,
+  "maxExercises": 45,
+  "screenshotAllLessons": true,
+  "screenshotAllExercises": true,
+  "actions": [],
+  "note": "Inspection automatique du site en mode Invite uniquement; ne pas utiliser de comptes personnels."
+}
