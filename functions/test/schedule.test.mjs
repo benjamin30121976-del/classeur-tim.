@@ -1,5 +1,5 @@
 import test from 'node:test';import assert from 'node:assert/strict';
-import {quarter,suggestedCorrectionDay,paris18Utc,suggestedCorrectionAt} from '../schedule.mjs';
+import {quarter,suggestedCorrectionDay,paris18Utc,suggestedCorrectionAt,nextCorrectionAfterSubmission} from '../schedule.mjs';
 test('Q2 then Q1',()=>{assert.equal(quarter('2026-11-02'),'Q2');assert.equal(quarter('2026-11-09'),'Q1');});
 test('math next class after Tuesday',()=>assert.equal(suggestedCorrectionDay({subject:'maths',submittedDate:'2026-11-10'}),'2026-11-12'));
 test('Spanish next class after Monday Q2',()=>assert.equal(suggestedCorrectionDay({subject:'espagnol',submittedDate:'2026-11-09'}),'2026-11-11'));
@@ -35,4 +35,15 @@ test('aucune correction pour une matière inconnue ou une date invalide',()=>{
 test('changement heure été/hiver sans déblocage prématuré',()=>{
  assert.equal(paris18Utc('2027-03-26'),'2027-03-26T17:00:00.000Z');
  assert.equal(paris18Utc('2027-03-29'),'2027-03-29T16:00:00.000Z');
+});
+
+test('cours suivant selon heure réelle de remise à Paris',()=>{
+ const ex={subject:'mathématiques'};
+ assert.equal(nextCorrectionAfterSubmission(ex,'2026-11-12T07:00:00Z'),'2026-11-12T17:00:00.000Z');
+ assert.equal(nextCorrectionAfterSubmission(ex,'2026-11-12T10:00:00Z'),'2026-11-13T17:00:00.000Z');
+ assert.equal(nextCorrectionAfterSubmission(ex,'2026-11-12T18:00:00Z'),'2026-11-13T17:00:00.000Z');
+});
+test('cours annulé et créneau Q1/Q2 après remise',()=>{
+ assert.equal(nextCorrectionAfterSubmission({subject:'mathématiques',excludedClassDates:['2026-11-13']},'2026-11-12T10:00:00Z'),'2026-11-16T17:00:00.000Z');
+ assert.equal(nextCorrectionAfterSubmission({subject:'espagnol'},'2026-11-16T14:00:00Z'),'2026-11-18T17:00:00.000Z');
 });
