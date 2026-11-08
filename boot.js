@@ -386,6 +386,27 @@ async function startSession(user){
  };
  window.__TIM_BRIDGE={
   trainingProgress:loadSpanishProgress,
+  mathTrainingTask:async(id)=>{
+   if(!/^MT(?:0[1-9]|1[0-9]|2[0-3])$/.test(id))throw Error('Exercice de mathématiques invalide.');
+   const r=await cloudCallable('getMathTrainingTask')({id});
+   return r.data;
+  },
+  mathTrainingSubmit:async(id,answers)=>{
+   if(activeUser?.uid!==TIM_UID)throw Error('Seul Tim peut valider une évaluation.');
+   if(!/^MT(?:0[1-9]|1[0-9]|2[0-3])$/.test(id)||
+      !Array.isArray(answers)||answers.length!==2)throw Error('Réponses invalides.');
+   const r=await cloudCallable('submitMathTraining')({id,answers});
+   if(!r.data?.submitted||r.data?.xp!==0||!Number.isInteger(r.data?.score))
+    throw Error('La note ne peut pas être confirmée.');
+   return r.data;
+  },
+  mathTrainingProgress:async()=>{
+   if(activeUser?.uid!==TIM_UID&&activeUser?.uid!==PARENT_UID)throw Error('Accès réservé à Tim et au Parent.');
+   const r=await cloudCallable('getMathTrainingProgress')({});
+   if(!Array.isArray(r.data?.attempts))throw Error('Historique des maths indisponible.');
+   window.__TIM_MATH_PROGRESS={status:'ok',attempts:r.data.attempts};
+   return window.__TIM_MATH_PROGRESS;
+  },
   trainingSubmit:async(id,answers)=>{
    if(window.__TIM_GUEST||activeUser?.uid!==TIM_UID)throw Error('Seul Tim peut valider un entraînement.');
    if(!trainingId.test(id)||!Array.isArray(answers)||answers.length!==10)throw Error('Exercice invalide.');
