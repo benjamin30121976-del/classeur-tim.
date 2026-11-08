@@ -12,6 +12,19 @@ const status=document.getElementById('access-status');
 const form=document.getElementById('login-form');
 const button=document.getElementById('login-button');
 let auth,db,activeUser,appLoaded=false,unsubscribe=null;
+let selectedRole=null;
+const roleChoices=document.querySelector('.role-choices');
+const roleLabel=document.getElementById('selected-role-label');
+function chooseRole(role){
+ selectedRole=role;
+ roleChoices.hidden=true;form.hidden=false;
+ roleLabel.textContent=role==='tim'?'Connexion de Tim':'Connexion du parent';
+ document.getElementById('login-email').focus();
+}
+document.getElementById('tim-enter').addEventListener('click',()=>chooseRole('tim'));
+document.getElementById('parent-enter').addEventListener('click',()=>chooseRole('parent'));
+document.getElementById('role-back').addEventListener('click',()=>{selectedRole=null;form.hidden=true;roleChoices.hidden=false;});
+
 const message=(msg,good=false)=>{status.textContent=msg;status.classList.toggle('good',good);};
 // Firestore Standard does not accept an array directly inside another array.
 // Wrap only those inner arrays as a map; restore them after reading the document.
@@ -304,13 +317,13 @@ try{
  const app=initializeApp(cfg);auth=getAuth(app);db=getFirestore(app);
  form.addEventListener('submit',async(e)=>{
   e.preventDefault();button.disabled=true;message('Connexion en cours…');
-  try{await signInWithEmailAndPassword(auth,document.getElementById('login-email').value.trim(),document.getElementById('login-password').value);document.getElementById('login-password').value='';}
+  try{if(!selectedRole)throw new Error('Choisir un espace');const credential=await signInWithEmailAndPassword(auth,document.getElementById('login-email').value.trim(),document.getElementById('login-password').value);if(credential.user.uid!==(selectedRole==='tim'?TIM_UID:PARENT_UID)){await signOut(auth);throw new Error('Mauvais espace');}document.getElementById('login-password').value='';}
   catch(e){message('Connexion refusée : vérifie ton adresse et ton mot de passe.');}finally{button.disabled=false;}
  });
  document.getElementById('logout-button').onclick=()=>signOut(auth);
  onAuthStateChanged(auth,async(user)=>{
   if(window.__TIM_GUEST)return;
-  if(!user){if(appLoaded){window.location.reload();return;}stopApp();document.getElementById('login-form').hidden=false;message('Identifie-toi pour accéder au classeur.',true);return;}
+  if(!user){if(appLoaded){window.location.reload();return;}stopApp();document.getElementById('login-form').hidden=!selectedRole;roleChoices.hidden=Boolean(selectedRole);message('Choisis Invité, Tim ou Parent.',true);return;}
   await startSession(user);
  });
 }catch(err){if(!err.setupWaiting){stopApp();message('Impossible d’ouvrir Firebase : '+(err.message||'Erreur de configuration'));}}
