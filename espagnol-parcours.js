@@ -57,7 +57,7 @@ function render(root,opts){
     '<span>'+plural(cours,'fiche de cours ENT','fiches de cours ENT')+'</span>'+
     '<span>'+plural(acts,'activité/exercice ENT repéré','activités/exercices ENT repérés')+'</span>'+
     '<span>'+plural(series,'entraînement','entraînements')+' · 10 questions chacun</span>'+
-    '<span>Leçon simplifiée « Je n’ai pas compris »</span>'+
+    (isCategory?'<span>Leçons simplifiées disponibles</span>':'')+
    '</span>';
  };
  function draw(content){root.innerHTML='<div class="spx">'+content+'</div>';}
@@ -100,15 +100,33 @@ function render(root,opts){
  }
  function openCategory(i){
   category=i;const c=C[i];
+  const item=ref=>{
+   const hasEnt=lessons.some(l=>l.id===ref);
+   const activities=ENT_ACTIVITIES[ref]||0;
+   return '<article class="spx-lesson-item">'+
+    '<div class="spx-lesson-intro"><span class="spx-chip" aria-hidden="true">▤</span><div class="spx-lesson-copy"><h4>'+esc(ED[ref].name)+'</h4><p>'+esc(ED[ref].intro)+'</p>'+statLine([ref])+'</div></div>'+
+    '<div class="spx-quick-links" aria-label="Accès directs : '+esc(ED[ref].name)+'">'+
+     '<button type="button" class="spx-quick-link" data-lesson="'+ref+'">Leçon</button>'+
+     '<button type="button" class="spx-quick-link spx-quick-easy" data-easy="'+ref+'">Leçon simplifiée</button>'+
+     '<button type="button" class="spx-quick-link" data-training="'+ref+'">Entraînements · 5 × 10</button>'+
+     (hasEnt?'<button type="button" class="spx-quick-link" data-course="'+ref+'">Cours ENT</button>':'')+
+     (activities>0?'<button type="button" class="spx-quick-link" data-ent-exercises="'+ref+'">Exercices ENT ('+activities+')</button>':'')+
+    '</div></article>';
+  };
   draw(header(c.title,c.text)+back("Toutes les rubriques")+
    '<p class="spx-chapter-overview">'+plural(entCourseCount(c.ids),'fiche de cours ENT','fiches de cours ENT')+' · '+plural(entActivityCount(c.ids),'activité/exercice ENT repéré','activités/exercices ENT repérés')+' · '+(c.ids.length*TRAINING_SERIES)+' entraînements de 10 questions</p>'+
    '<h3 class="spx-subheading">Choisis une sous-leçon</h3>'+
-   c.ids.map(ref=>'<div class="spx-lesson-item"><button type="button" class="spx-row" data-lesson="'+ref+'"><span class="spx-chip">▤</span><span><strong>'+esc(ED[ref].name)+'</strong><small>'+esc(ED[ref].intro)+'</small>'+statLine([ref])+'</span><span>›</span></button><button type="button" class="spx-easy-shortcut" data-easy="'+ref+'">Je n’ai pas compris ? Voir la leçon plus simple →</button></div>').join("")+
-   '<p class="spx-note">Les chiffres ENT ne comptent que les activités identifiées dans nos captures, pas l’ensemble des devoirs possibles.</p>');
-  bindBack(home);root.querySelectorAll("[data-lesson]").forEach(b=>b.onclick=()=>openLesson(b.dataset.lesson));
-  root.querySelectorAll("[data-easy]").forEach(b=>b.onclick=()=>openLesson(b.dataset.easy,true));scroll();
+   c.ids.map(item).join("")+
+   '<p class="spx-note">« Exercices ENT » ouvre les énoncés retrouvés et traduits, lorsqu’ils sont disponibles. Les originaux complets restent dans « Cours ENT ». Les entraînements (0 XP) sont distincts des devoirs du professeur.</p>');
+  bindBack(home);
+  root.querySelectorAll("[data-lesson]").forEach(b=>b.onclick=()=>openLesson(b.dataset.lesson));
+  root.querySelectorAll("[data-easy]").forEach(b=>b.onclick=()=>openLesson(b.dataset.easy,true));
+  root.querySelectorAll("[data-training]").forEach(b=>b.onclick=()=>openLesson(b.dataset.training,false,"training"));
+  root.querySelectorAll("[data-ent-exercises]").forEach(b=>b.onclick=()=>openLesson(b.dataset.entExercises,false,"ent"));
+  root.querySelectorAll("[data-course]").forEach(b=>b.onclick=()=>opts.original(b.dataset.course));
+  scroll();
  }
- function openLesson(ref,showEasy=false){
+ function openLesson(ref,showEasy=false,jumpTo=''){
   id=ref;category=categoryOf(ref);const x=ED[ref];
   const real=lessons.find(l=>l.id===ref);const date=real&&real.date?real.date:"Date non indiquée";
   const help=real?.help||{};
@@ -132,8 +150,14 @@ function render(root,opts){
   if(window.TIM_SPANISH_ENT_ORIGINALS){const originalPanel=window.TIM_SPANISH_ENT_ORIGINALS.renderPanel(ref);const second=root.querySelectorAll(".spx-panel")[1];if(second)second.after(originalPanel);}
   if(ref==="L05"&&window.TIM_SPANISH_LETTER){const first=root.querySelector(".spx-panel");if(first)first.after(window.TIM_SPANISH_LETTER.createPanel());}
   bindBack(()=>openCategory(category));root.querySelectorAll("[data-set]").forEach(b=>b.onclick=()=>begin(+b.dataset.set));
-  root.querySelector("#spx-ent").onclick=()=>opts.original(ref);scroll();
-  if(showEasy){const easy=root.querySelector("#spx-easy-lesson");if(easy)requestAnimationFrame(()=>easy.scrollIntoView({behavior:"smooth",block:"start"}));}
+  root.querySelector("#spx-ent").onclick=()=>opts.original(ref);
+  if(showEasy||jumpTo){
+   const target=showEasy?root.querySelector("#spx-easy-lesson"):
+     jumpTo==="training"?root.querySelector("[data-set]")?.closest(".spx-panel"):
+     jumpTo==="ent"?root.querySelector(".spx-ent-translations"):null;
+   if(target)requestAnimationFrame(()=>target.scrollIntoView({behavior:"auto",block:"start"}));
+   else scroll();
+  }else scroll();
  }
  function questionData(){
   const x=ED[id],p=x.pairs[qIndex],make=(correct,wrong,prompt,word,dir,cloze)=>{
