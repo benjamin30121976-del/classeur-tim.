@@ -9,6 +9,16 @@ const C=[
  {title:"Poser des questions et écrire",text:"Comment poser une question, écrire une lettre et comprendre une consigne ?",icon:"?",ids:["L11","L05","L14"],keywords:"lettre contrôle question consigne énoncé écrire"},
  {title:"Les pays où l'on parle espagnol",text:"Découvrir l'Espagne, le Mexique et les autres pays hispanophones.",icon:"P",ids:["L03"],keywords:"géographie pays espagne mexique"}
 ];
+const INSTRUCTIONS=[
+ ["Lee el texto.","Lis le texte.","Lis le passage avant de répondre aux questions."],
+ ["Completa la frase.","Complète la phrase.","Cherche le mot ou la forme qui manque dans la phrase."],
+ ["Elige la respuesta correcta.","Choisis la bonne réponse.","Observe les propositions et sélectionne celle qui convient."],
+ ["Relaciona las palabras.","Associe les mots.","Relie chaque mot à sa traduction ou à son équivalent."],
+ ["Responde a las preguntas.","Réponds aux questions.","Lis chaque question, puis formule la réponse demandée."],
+ ["Justifica tu respuesta.","Justifie ta réponse.","Explique pourquoi tu réponds cela, ou cite un passage si la consigne le demande."],
+ ["Escribe una frase.","Écris une phrase.","Rédige une phrase entière, pas seulement un mot."],
+ ["Verdadero o falso.","Vrai ou faux.","Décide si la phrase est vraie ou fausse, puis vérifie si tu dois justifier."]
+];
 const ED=window.TIM_SPANISH_EDU||{};
 const esc=x=>String(x==null?"":x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 const nrm=x=>String(x||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim();
@@ -68,9 +78,10 @@ function render(root,opts){
   draw(header(x.name,C[category].title)+back("Retour aux sous-leçons")+
    '<section class="spx-panel"><span class="spx-label">1 · JE COMPRENDS</span><h3>C’est quoi, exactement ?</h3><p>'+esc(x.intro)+'</p><div class="spx-example">'+esc(x.example)+'</div><p><strong>À retenir :</strong> '+esc(x.tip)+'</p></section>'+
    '<section class="spx-panel"><span class="spx-label">2 · MON PETIT DICTIONNAIRE</span><h3>Les mots expliqués en français</h3><table class="spx-words"><tr><th>Espagnol</th><th>Français</th></tr>'+x.pairs.map(p=>'<tr><td>'+esc(p[0])+'</td><td>'+esc(p[1])+'</td></tr>').join("")+'</table></section>'+
-   '<section class="spx-panel"><span class="spx-label">3 · JE M’ENTRAÎNE</span><h3>Cinq exercices, dix questions chacun</h3><p>Choisis une série. Valide chaque réponse pour voir la correction. Tu peux recommencer autant que tu veux.</p>'+
+   '<section class="spx-panel"><span class="spx-label">3 · JE COMPRENDS LES CONSIGNES</span><h3>Qu’est-ce que la professeure me demande ?</h3><p>Voici des phrases que tu peux rencontrer dans un exercice. La traduction est toujours visible. Les explications t’aident à savoir quoi faire, sans te donner la réponse.</p><div class="spx-guide-list">'+INSTRUCTIONS.map(row=>'<div class="spx-guide"><strong lang="es">'+esc(row[0])+'</strong><div class="spx-guide-fr">En français : '+esc(row[1])+'</div><small>'+esc(row[2])+'</small></div>').join("")+'</div><p class="spx-note">Méthode : 1. Je lis la consigne. 2. Je repère le verbe d’action (« complète », « choisis », « justifie »). 3. Je fais seulement ce qui est demandé.</p></section>'+
+   '<section class="spx-panel"><span class="spx-label">4 · JE M’ENTRAÎNE</span><h3>Cinq exercices, dix questions chacun</h3><p>Choisis une série. À chaque question, la consigne en espagnol apparaît avec sa traduction et l’action à effectuer. Tu peux recommencer autant que tu veux.</p>'+
    ["Je comprends les expressions","Je retrouve les mots espagnols","Je m'entraîne dans les deux sens","Je comprends les phrases","Je révise toute la sous-leçon"].map((label,i)=>'<button type="button" class="spx-row" data-set="'+i+'"><span class="spx-chip">'+(i+1)+'</span><span><strong>'+esc(label)+'</strong><small>10 questions · correction expliquée</small></span><span>›</span></button>').join("")+'</section>'+
-   '<section class="spx-panel"><span class="spx-label">4 · LE COURS DE L’ENT</span><h3>Retrouver le cours de la classe</h3><p>Repère dans le classeur : '+esc(date)+'. Les documents d’origine restent accessibles lorsqu’ils sont disponibles.</p><button class="spx-button subtle" type="button" id="spx-ent">Voir la fiche du cours</button></section>');
+   '<section class="spx-panel"><span class="spx-label">5 · LE COURS DE L’ENT</span><h3>Retrouver le cours de la classe</h3><p>Repère dans le classeur : '+esc(date)+'. Les documents d’origine restent accessibles lorsqu’ils sont disponibles.</p><button class="spx-button subtle" type="button" id="spx-ent">Voir la fiche du cours</button></section>');
   bindBack(()=>openCategory(category));root.querySelectorAll("[data-set]").forEach(b=>b.onclick=()=>begin(+b.dataset.set));
   root.querySelector("#spx-ent").onclick=()=>opts.original(ref);scroll();
  }
@@ -97,18 +108,28 @@ function render(root,opts){
   const target=dir===0?1:0,source=dir===0?0:1;
   return make(p[target],x.pairs.map(t=>t[target]),dir===0?"Que signifie en français ?":"Comment dit-on en espagnol ?",p[source],dir,null);
  }
+ function questionInstruction(q){
+  if(q.cloze==="last")return {es:"Completa la frase con la forma correcta del verbo.",fr:"Complète la phrase avec la bonne forme du verbe.",action:"Repère qui fait l'action (je, tu, il, nous…). Puis choisis la forme du verbe qui correspond. Ne regarde pas la correction avant de répondre."};
+  if(q.cloze==="first")return {es:"Completa con el artículo correcto.",fr:"Complète avec l'article correct.",action:"Observe le nom après le trou. Cherche si le mot est masculin ou féminin, singulier ou pluriel. Choisis ensuite l'article qui convient."};
+  if(q.dir===0)return {es:"Elige la traducción correcta.",fr:"Choisis la bonne traduction.",action:"Lis l'expression en espagnol, puis choisis sa traduction en français parmi les propositions."};
+  return {es:"Elige la expresión correcta en español.",fr:"Choisis la bonne expression en espagnol.",action:"Lis le sens en français, puis retrouve comment on l'écrit en espagnol parmi les propositions."};
+ }
  function begin(n){set=n;qIndex=0;score=0;showQuestion();}
  function showQuestion(){
   if(qIndex>=10){end();return;}
-  selected=-1;validated=false;const q=questionData();
+  selected=-1;validated=false;const q=questionData(),guide=questionInstruction(q);
   draw(header(ED[id].name,"Exercice "+(set+1)+" sur 5 · question "+(qIndex+1)+" sur 10")+
    back("Retour à la sous-leçon")+
-   '<section class="spx-panel"><span class="spx-label">QUESTION '+(qIndex+1)+' / 10</span><h3>'+esc(q.question)+'</h3><div class="spx-example">'+esc(q.word)+'</div><p>Choisis la bonne traduction.</p>'+
+   '<section class="spx-panel"><span class="spx-label">QUESTION '+(qIndex+1)+' / 10</span>'+
+   '<div class="spx-instruction"><span class="spx-label">LA CONSIGNE, EN DEUX LANGUES</span><p lang="es" class="spx-instruction-es">'+esc(guide.es)+'</p><p class="spx-instruction-fr"><strong>En français :</strong> '+esc(guide.fr)+'</p><button class="spx-help-button" type="button" id="spx-explain">Je ne comprends pas la consigne</button><p class="spx-action" id="spx-action" hidden><strong>Ce que tu dois faire :</strong> '+esc(guide.action)+'</p></div>'+
+   '<h3>'+esc(q.question)+'</h3><div class="spx-example">'+esc(q.word)+'</div><p>'+esc(guide.fr)+'</p>'+
    q.choices.map((val,i)=>'<button class="spx-option" type="button" data-option="'+i+'">'+esc(val)+'</button>').join("")+
    '<div id="spx-correct" aria-live="polite"></div>'+
    '<button class="spx-button" id="spx-submit" type="button" disabled>Valider ma réponse</button>'+
    '<button class="spx-button subtle" id="spx-next" type="button" hidden>Question suivante →</button></section>');
-  bindBack(()=>openLesson(id));root.querySelectorAll("[data-option]").forEach(b=>b.onclick=()=>{
+  bindBack(()=>openLesson(id));
+  root.querySelector("#spx-explain").onclick=()=>{const note=root.querySelector("#spx-action");note.hidden=!note.hidden;root.querySelector("#spx-explain").textContent=note.hidden?"Je ne comprends pas la consigne":"Masquer l'explication";};
+  root.querySelectorAll("[data-option]").forEach(b=>b.onclick=()=>{
    if(validated)return;selected=+b.dataset.option;
    root.querySelectorAll("[data-option]").forEach(z=>z.classList.toggle("selected",+z.dataset.option===selected));
    root.querySelector("#spx-submit").disabled=false;
