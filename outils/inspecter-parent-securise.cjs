@@ -9,7 +9,7 @@ const PASSWORD=process.env.TIM_PARENT_PASSWORD||'';
 const URL=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
 const output=path.join(process.cwd(),'browser-parent-results');
 fs.mkdirSync(output,{recursive:true});
-const data={site:URL,date:new Date().toISOString(),checks:[],devices:[],notes:[],pageErrors:[],subjectInventory:[]};
+const data={site:URL,date:new Date().toISOString(),checks:[],devices:[],notes:[],pageErrors:[],subjectInventory:[],educationInventory:[],lessonIndex:[],exerciseIndex:[],integrity:[]};
 function check(name,ok,detail=''){data.checks.push({name,ok,detail});console.log((ok?'OK':'ECHEC')+' '+name+(detail?' : '+detail:''));}
 async function picture(page,filename){
   // Ne jamais archiver de formulaire contenant le mot de passe.
@@ -62,7 +62,34 @@ async function inspect(browser,label,viewport){
       const lessons=window.__TIM_DATA?.lessons||[],exercises=window.__TIM_DATA?.exercises||[];
       return [...new Set([...lessons.map(x=>x.subject||'Espagnol'),...exercises.map(x=>x.subject||'Espagnol')])].map(name=>({name,lessons:lessons.filter(x=>(x.subject||'Espagnol')===name).length,exercises:exercises.filter(x=>(x.subject||'Espagnol')===name).length}));
     });
-    if(label==='ordinateur')data.subjectInventory=subjects;
+    if(label==='ordinateur'){
+      data.subjectInventory=subjects;
+      const catalogue=await page.evaluate(()=>{
+        const lessons=window.__TIM_DATA?.lessons||[],exercises=window.__TIM_DATA?.exercises||[];
+        const subj=item=>item?.subject||'Espagnol';
+        const bis=l=>l.kind==='bis'||l.category==='bis'||/^MBIS\d{2}$/.test(l.id||'');
+        const bonus=l=>l.kind==='bonus'||l.category==='bonus'||/^M26B_/.test(l.id||'')||/cours bonus/i.test(l.source||'');
+        const challenge=e=>['daily','weekly','sunday'].includes(e?.kind);
+        const school=e=>!!e&&!challenge(e)&&(e.category==='school'||e.exerciseType==='school'||e.fromENT===true||e.origin==='ENT'||e.sourceType==='ENT');
+        const L=lessons.map(l=>({id:l.id,title:l.title,subject:subj(l),date:l.date||'',topic:l.topic||'',kind:l.kind||'',category:l.category||'',origin:l.origin||'',source:l.source||'',type:bis(l)?'BIS':bonus(l)?'BONUS':'ENT',blocks:Array.isArray(l.blocks)?l.blocks.length:0,original_lesson_ids:l.original_lesson_ids||l.originalLessonIds||[]}));
+        const E=exercises.map(e=>({id:e.id,title:e.title,subject:subj(e),lesson:e.lesson||'',date:e.date||'',category:e.category||'',kind:e.kind||'',exerciseType:e.exerciseType||'',origin:e.origin||'',sourceType:e.sourceType||'',type:challenge(e)?'DEFI':school(e)?'ENT':'BONUS',questions:Array.isArray(e.questions)?e.questions.length:0}));
+        const names=[...new Set([...L.map(x=>x.subject),...E.map(x=>x.subject)])];
+        return {L,E,groups:names.map(name=>{
+          const ls=L.filter(x=>x.subject===name),es=E.filter(x=>x.subject===name);
+          return {name,lessons:ls.length,ENT:ls.filter(x=>x.type==='ENT').length,
+            BIS:ls.filter(x=>x.type==='BIS').length,lessonBonus:ls.filter(x=>x.type==='BONUS').length,
+            exercises:es.length,exENT:es.filter(x=>x.type==='ENT').length,exBONUS:es.filter(x=>x.type==='BONUS').length,exDEFI:es.filter(x=>x.type==='DEFI').length};
+        }),integrity:[
+          ...E.filter(e=>!['daily','weekly','sunday'].includes(e.kind)&&e.lesson&&!L.some(l=>l.id===e.lesson)).map(e=>'Exercice '+e.id+' : cours rattache absent ('+e.lesson+')'),
+          ...L.filter(l=>l.blocks===0).map(l=>'Lecon '+l.id+' sans bloc de contenu'),
+          ...E.filter(e=>e.questions===0).map(e=>'Exercice '+e.id+' sans question')
+        ]};
+      });
+      data.educationInventory=catalogue.groups;
+      data.lessonIndex=catalogue.L;
+      data.exerciseIndex=catalogue.E;
+      data.integrity=catalogue.integrity;
+    }
     check(label+' exercices charges',stats.exercises>0,'Nombre : '+stats.exercises);
     await picture(page,label+'-accueil-parent');
     for(const id of ['matieres','exercices','parent']){
@@ -122,6 +149,18 @@ async function inspect(browser,label,viewport){
  '',
  '## Répartition des matières',
  ...data.subjectInventory.map(s=>'- '+s.name+' : '+s.lessons+' leçons, '+s.exercises+' exercices'),
+ '',
+ '## Détail ENT / BIS / bonus par matière',
+ ...data.educationInventory.map(x=>'- '+x.name+' : '+x.ENT+' cours ENT, '+x.BIS+' leçons BIS, '+x.lessonBonus+' cours bonus ; '+x.exENT+' exercices ENT, '+x.exBONUS+' exercices bonus, '+x.exDEFI+' défis (total '+x.lessons+' leçons et '+x.exercises+' exercices).'),
+ '',
+ '## Contrôle des références',
+ ...(data.integrity.length?data.integrity:['Aucune référence orpheline et aucun contenu vide signalé.']),
+ '',
+ '## Index des leçons (identifiant et intitulé, sans contenu ni réponse)',
+ ...data.lessonIndex.map(x=>'- ['+x.subject+'] '+x.type+' | '+x.id+' | '+x.title+' | '+x.date+' | blocs='+x.blocks),
+ '',
+ '## Index des exercices (identifiant et intitulé, sans question ni correction)',
+ ...data.exerciseIndex.map(x=>'- ['+x.subject+'] '+x.type+' | '+x.id+' | '+x.title+' | lié à '+x.lesson+' | questions='+x.questions),
  '',
  '## Erreurs JavaScript',
  ...(data.pageErrors.length?data.pageErrors:['Aucune erreur capturée']),
