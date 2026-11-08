@@ -568,6 +568,10 @@ function renderMatieres(){
 }
 function renderMatiere(name){
  const root=clear(document.getElementById('matieres-content'));
+ if(name==='Espagnol'&&window.TIM_SPANISH_PATH&&window.TIM_SPANISH_EDU){
+  window.TIM_SPANISH_PATH.render(root,{lessons:DATA.lessons,back:renderMatieres,original:openLesson});
+  return;
+ }
  root.append(button('← Toutes les matières',renderMatieres,'matter-back'),E('h2','',name));
  const lessons=DATA.lessons.filter(x=>subjectOf(x)===name);
  const exs=DATA.exercises.filter(x=>subjectOf(x)===name&&!window.TIM_EXERCISE.challenge(x));
