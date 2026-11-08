@@ -10,13 +10,7 @@ export function grade(exercise, key, responses) {
   const secret=key.questions[i];
   let correct=null;
   if(question.type==='mc')correct=String(secret.right)===response;
-  else if(question.type==='text'){
-   const choices=[secret.right,...(secret.also||[])];
-   // Le défi du 8 novembre contrôle les majuscules, les accents, les espaces et la ponctuation.
-   correct=exercise.strictAnswers===true
-    ?choices.some(x=>String(x??'').normalize('NFC')===response.normalize('NFC'))
-    :choices.some(x=>normalize(x)===normalize(response));
-  }
+  else if(question.type==='text')correct=[secret.right,...(secret.also||[])].some(x=>normalize(x)===normalize(response));
   else if(question.type==='free')needsReview=true;
   else throw new Error('Unsupported question type');
   if(correct!==null){total++;if(correct)score++;}
