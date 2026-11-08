@@ -24,8 +24,15 @@ async function run({publicDocs=[],privateDocs=[],serviceOk=false,readAllowed=tru
  const docs=rows=>({docs:rows.map(d=>({id:d.id,data:()=>d}))});
  const ctx={
   panel,document:{createElement:node},
-  window:{__TIM_DATA:{exercises:[{id:'MATH_A',title:'Calculs en mathématiques'},{id:'SVT_B',title:'Cellules en SVT'}]}},
+  window:{__TIM_DATA:{exercises:[{id:'MATH_A',title:'Calculs en mathématiques'},{id:'SVT_B',title:'Cellules en SVT'}]},
+   TIM_SPANISH_EDU:{L01:{name:'Se présenter'}},
+   TIM_SPANISH_TRAINING_ENGINE:{buildSpanishTasks:()=>({questions:[{type:'mc',choices:['autre choix','autre réponse',"je m'appelle",'aucun']} ]})}},
   functionsApi:{},collection:(_db,path)=>path,db:{},
+  doc:(_db,path,id)=>({path,id}),
+  getDoc:async({path,id})=>{
+   const data=(path==='privateAttempts'?privateDocs:publicDocs).find(x=>x.id===id);
+   return {exists:()=>Boolean(data),data:()=>data};
+  },
   cloudCallable:name=>async()=>{
    if(name==='getParentReport'&&serviceOk)return {data:{attempts:publicDocs.map(x=>({...x,title:x.title||x.id,correctionStatus:x.correctionStatus||'pending-parent'}))}};
    throw Error('functions/not-found');
@@ -44,7 +51,7 @@ async function run({publicDocs=[],privateDocs=[],serviceOk=false,readAllowed=tru
  await vm.runInNewContext('(async()=>{'+code+'await refreshCorrections();})()',ctx);
  function allText(n){return [n.textContent,...n.children.map(allText)].join('\n');}
  function actions(n){return [n,...n.children.flatMap(actions)].filter(x=>x.type==='button');}
- return {text:allText(status)+'\n'+allText(list),buttons:actions(list)};
+ return {text:allText(status)+'\n'+allText(list),buttons:actions(list),allText:()=>allText(list)};
 }
 test('Sans devoir, la lecture Firestore remplace le message trompeur',async()=>{
  const x=await run();
@@ -61,7 +68,7 @@ test('Notes Maths et SVT accessibles, sans bouton de déblocage non opérationne
  assert.match(x.text,/Calculs en mathématiques · 8\/10/);
  assert.match(x.text,/Cellules en SVT · 6\/10/);
  assert.match(x.text,/1 devoir\(s\) en attente/);
- assert.equal(x.buttons.length,1);
+ assert.equal(x.buttons.length,3,'Deux boutons pour ouvrir les copies et un bouton Actualiser');
 });
 test('En cas de double refus, aucun succès fictif',async()=>{
  const x=await run({readAllowed:false});
@@ -71,6 +78,23 @@ test('En cas de double refus, aucun succès fictif',async()=>{
 test('Si le backend fonctionne, les boutons de correction demeurent',async()=>{
  const x=await run({serviceOk:true,publicDocs:[{id:'MATH_A',score:8,total:10}]});
  assert.match(x.text,/1 devoir\(s\) en attente/);
- assert.equal(x.buttons.length,2);
+ assert.equal(x.buttons.length,3);
  assert.match(x.buttons[0].textContent,/Débloquer/);
+ assert.match(x.buttons[1].textContent,/Voir la copie/);
+});
+
+test('Le Parent ouvre une copie espagnole sans rejouer le QCM',async()=>{
+ const x=await run({serviceOk:true,
+  publicDocs:[{id:'SPQ_L01_01',title:'QCM 1 — Se présenter',score:10,total:10,correctionStatus:'pending-parent'}],
+  privateDocs:[{id:'SPQ_L01_01',score:10,total:10,answers:[{question:'Que signifie me llamo ?',response:'2',correct:true,expected:"je m'appelle"}]}]
+ });
+ assert.match(x.text,/Espagnol · Se présenter/);
+ assert.match(x.text,/QCM 1 · 10\\/10/);
+ const view=x.buttons.find(b=>/Voir la copie/.test(b.textContent));
+ assert.ok(view,'Le bouton de lecture doit apparaître');
+ await view.onclick();
+ assert.match(x.allText(),/Que signifie me llamo/);
+ assert.match(x.allText(),/Réponse de Tim : je m'appelle/);
+ assert.match(x.allText(),/Bonne réponse/);
+ assert.doesNotMatch(x.allText(),/Valider définitivement/);
 });
