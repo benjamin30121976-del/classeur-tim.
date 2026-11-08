@@ -2,5 +2,7 @@
   "mode": "lecture-seule-parent",
   "site": "https://classeur-tim-v16.pages.dev/",
   "scope": "Se connecter avec les secrets GitHub Actions, inspecter les cours et les boutons sans modifier les données.",
-  "launch_on_update": true
+  "launch_on_update": true,
+  "requestedAt": "2026-11-08T05:49:00+01:00",
+  "note": "Vérification de connexion Parent après ajout des secrets GitHub. Lecture seule, aucun changement aux cours."
 }
