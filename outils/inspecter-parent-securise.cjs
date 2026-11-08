@@ -101,6 +101,29 @@ async function inspect(browser,label,viewport){
         await picture(page,label+'-onglet-'+id);
       }catch(e){check(label+' onglet '+id,false,'Clic non abouti');}
     }
+    // Audit en lecture seule du backend des 23 tests. Aucune soumission.
+    if(label==='ordinateur'){
+      try{
+        const audit=await page.evaluate(async()=>{
+          const bridge=window.__TIM_BRIDGE;
+          let available=0,valid=0,errors=[];
+          if(!bridge?.mathTrainingTask)return {available,valid,errors:['API maths indisponible']};
+          for(let i=1;i<=23;i++){
+            const id='MT'+String(i).padStart(2,'0');
+            try{
+              const response=await bridge.mathTrainingTask(id);
+              available++;
+              const q=response?.task?.questions||[];
+              if(response?.task?.id===id&&q.length===2&&q.every(item=>typeof item.prompt==='string'&&item.prompt.length>=15&&Array.isArray(item.choices)&&item.choices.length===4&&new Set(item.choices).size===4))valid++;
+              else errors.push(id+' incomplet');
+            }catch(e){errors.push(id+' service indisponible');}
+          }
+          return {available,valid,errors};
+        });
+        check('23 évaluations mathématiques récupérables via API Parent',audit.available===23,'Réponses serveur : '+audit.available+'/23');
+        check('46 questions de mathématiques complètes côté site',audit.valid===23,'Tests complets : '+audit.valid+'/23'+(audit.errors.length?' ; anomalies : '+audit.errors.join(', ').slice(0,200):''));
+      }catch(e){check('audit des évaluations mathématiques côté site',false,'Erreur de lecture du service : '+String(e.message||e).slice(0,130));}
+    }
     // Vérifier la lisibilité de la fiche de mathématiques sur téléphone et ordinateur.
     // Lecture seule : aucun exercice n'est soumis et aucun résultat n'est créé.
     try{
