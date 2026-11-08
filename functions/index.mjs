@@ -70,6 +70,14 @@ export const setParentCorrectionRelease=onCall({region:'europe-west1',enforceApp
 
 // Read-only course view: Firebase Admin reads private source, but sends no answer keys to Tim.
 const PRIVATE_COURSE_FIELDS=new Set(['right','also','why','expected','answer','answers','answerKey','answerKeys','solution','solutions','correction','corrections','explanation','rubric']);
+function decodeCourse(value){
+ if(Array.isArray(value))return value.map(decodeCourse);
+ if(value&&typeof value==='object'){
+  if(Object.keys(value).length===1&&Array.isArray(value.__tim_nested_array_v1))return value.__tim_nested_array_v1.map(decodeCourse);
+  return Object.fromEntries(Object.entries(value).map(([k,v])=>[k,decodeCourse(v)]));
+ }
+ return value;
+}
 function sanitizeCourse(value){
  if(Array.isArray(value))return value.map(sanitizeCourse);
  if(value&&typeof value==='object')return Object.fromEntries(Object.entries(value).filter(([k])=>!PRIVATE_COURSE_FIELDS.has(k)).map(([k,v])=>[k,sanitizeCourse(v)]));
@@ -80,9 +88,9 @@ export const getTimCourseContent=onCall({region:'europe-west1',enforceAppCheck:t
  const source=await db.doc('content/main').get();
  if(!source.exists)throw new HttpsError('not-found','Cours non importés');
  const raw=source.data();
- const content=raw?.payloadJson?JSON.parse(raw.payloadJson):raw;
+ const content=decodeCourse(raw?.payloadJson?JSON.parse(raw.payloadJson):raw);
  const [lessons,exercises]=await Promise.all([db.collection('lessons').limit(500).get(),db.collection('exercises').limit(500).get()]);
- const parse=d=>{const v=d.data();return v.payloadJson?JSON.parse(v.payloadJson):v;};
+ const parse=d=>{const v=d.data();return decodeCourse(v.payloadJson?JSON.parse(v.payloadJson):v);};
  const additions={lessons:lessons.docs.map(parse),exercises:exercises.docs.map(parse)};
  return {content:sanitizeCourse(content),additions:sanitizeCourse(additions)};
 });
