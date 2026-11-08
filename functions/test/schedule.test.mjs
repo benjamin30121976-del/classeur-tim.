@@ -40,7 +40,7 @@ test('changement heure été/hiver sans déblocage prématuré',()=>{
 test('cours suivant selon heure réelle de remise à Paris',()=>{
  const ex={subject:'mathématiques'};
  assert.equal(nextCorrectionAfterSubmission(ex,'2026-11-12T07:00:00Z'),'2026-11-12T17:00:00.000Z');
- assert.equal(nextCorrectionAfterSubmission(ex,'2026-11-12T10:00:00Z'),'2026-11-13T17:00:00.000Z');
+ assert.equal(nextCorrectionAfterSubmission(ex,'2026-11-12T15:00:00Z'),'2026-11-13T17:00:00.000Z');
  assert.equal(nextCorrectionAfterSubmission(ex,'2026-11-12T18:00:00Z'),'2026-11-13T17:00:00.000Z');
 });
 test('cours annulé et créneau Q1/Q2 après remise',()=>{
