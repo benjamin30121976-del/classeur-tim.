@@ -53,7 +53,7 @@ function select(items,amount,seed,offset=0){
 export function isMissionId(id){
  return /^DAY_20\d{6}_(?:0[1-9]|1\d|2[0-4])$/.test(id)||/^WEEK_20\d{2}W\d{2}$/.test(id)||/^SUNDAY_20\d{6}$/.test(id);
 }
-export function buildMission(id,content){
+export function buildMission(id,content,curriculum=null){
  if(!isMissionId(id))return null;
  let chosen=[],kind='',period='',label='';
  const dm=id.match(/^DAY_(20\d{2})(\d{2})(\d{2})_(\d{2})$/);
@@ -62,6 +62,17 @@ export function buildMission(id,content){
  if(dm){
   const on=dm[1]+'-'+dm[2]+'-'+dm[3],number=Number(dm[4]);
   if(!validDate(on)||dateUTC(on).getUTCDay()%7===0||dateUTC(on).getUTCDay()===6)return null;
+  // Premier petit défi : l'exact inverse du QCM 1 « Se présenter ».
+  // Le cours de 10 expressions provient du même référentiel pédagogique public.
+  if(number===1&&Array.isArray(curriculum?.L01?.pairs)&&curriculum.L01.pairs.length===10){
+   const questions=curriculum.L01.pairs.map(([es,fr],i)=>({
+    type:'text',q:'Écris en espagnol : « '+fr+' ».',right:es,also:[],skill:'se présenter',
+    why:'Expression de la leçon Se présenter : « '+es+' » = « '+fr+' ».',sourceId:'SPANISH_L01:'+i
+   }));
+   return {id,title:'Défi inversé — Se présenter',description:'10 traductions du français vers l’espagnol, sans QCM.',
+    level:'Mission quotidienne',subject:'Défis',lesson:'L01',kind:'daily',category:'challenge',
+    period:on,realLessons:['Se présenter'],questions};
+  }
   chosen=select(pool(content,on),10,'DAY_'+on,(number-1)*10);
   kind='daily';period=on;label='Petit défi du jour n°'+number;
  }else if(wm){
@@ -95,11 +106,11 @@ export function isMissionOpen(ex,today=parisDay(new Date())){
  if(ex.kind==='sunday')return dow===0&&ex.id==='SUNDAY_'+today.replace(/-/g,'');
  return false;
 }
-export function setupMissions(content,now=new Date()){
+export function setupMissions(content,now=new Date(),curriculum=null){
  const today=parisDay(now),dow=dateUTC(today).getUTCDay();
  const dailyIds=dow>=1&&dow<=5?Array.from({length:DAILY_MISSION_COUNT},(_,i)=>'DAY_'+today.replace(/-/g,'')+'_'+String(i+1).padStart(2,'0')):[];
  const saturday=addDays(monday(today),5),sunday=addDays(monday(today),6);
  const weekly=weekId(today),sundayId='SUNDAY_'+sunday.replace(/-/g,'');
- const ids=[...dailyIds,weekly,sundayId],exercises=ids.map(id=>buildMission(id,content)).filter(Boolean);
+ const ids=[...dailyIds,weekly,sundayId],exercises=ids.map(id=>buildMission(id,content,curriculum)).filter(Boolean);
  return {meta:{today,weekStart:monday(today),weekEnd:sunday, daily:dailyIds[0]||null,dailyIds,weekly,sunday:sundayId,saturdayDate:saturday,sundayDate:sunday},exercises};
 }
