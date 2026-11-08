@@ -4,6 +4,7 @@ import {getFirestore,doc,getDoc,setDoc,deleteDoc,collection,getDocs,query,where,
 import {getFunctions,httpsCallable} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-functions.js';
 import {initializeAppCheck,ReCaptchaV3Provider} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-app-check.js';
 import {makeAttachmentBridge} from './attachments.js';
+import {setupMissions} from './missions-v18.mjs';
 
 // Only the two existing Firebase Authentication users are authorized.
 // Security does NOT rely on these frontend constants: Firestore Rules enforce them.
@@ -323,6 +324,7 @@ async function startSession(user){
   catch(e){message('Chargement des cours de Tim impossible : '+(e.message||'Firebase'));return;}
  }
  if(!Array.isArray(content.lessons)||!Array.isArray(content.exercises)){message('Le contenu du cours est incomplet.');return;}
+ const missionSource=content; // référentiel identique à celui du serveur
  // V16 Cloudflare : 23 leçons BIS déjà disponibles, sans import manuel ni écrasement Firebase.
  const builtInBis=window.TIM_MATHS_BIS_PACK?.lessons||[];
  const knownLessonIds=new Set(content.lessons.map(l=>l.id));
@@ -330,7 +332,10 @@ async function startSession(user){
  if(isParent){try{content=await loadCourseAdditions(content);}catch(e){console.warn('Extensions indisponibles :',e);}}
  else if(serverAdditions){const l=new Map(content.lessons.map(x=>[x.id,x]));const e=new Map(content.exercises.map(x=>[x.id,x]));const versions=(serverAdditions.lessons||[]).filter(item=>item?.id&&Array.isArray(item.blocks));for(const item of versions.filter(x=>!x.replacesId))l.set(item.id,item);for(const item of versions.filter(x=>x.replacesId).sort((a,b)=>String(a.savedAt||'').localeCompare(String(b.savedAt||'')))){if(/^[A-Za-z][A-Za-z0-9_-]{1,35}$/.test(item.replacesId))l.set(item.replacesId,{...item,id:item.replacesId,revisionId:item.id});}for(const item of serverAdditions.exercises||[])if(item?.id&&Array.isArray(item.questions))e.set(item.id,item);content={...content,lessons:[...l.values()],exercises:[...e.values()]};}
  content=window.TIM_APPLY_SPANISH_NOV05?.(content)||content;
- if(window.__TIM_CHALLENGE_SETUP) content=window.__TIM_CHALLENGE_SETUP(content);
+ const missionPlan=setupMissions(missionSource);
+ window.__TIM_CHALLENGES=missionPlan.meta;
+ const existingMissionIds=new Set(content.exercises.map(x=>x.id));
+ content={...content,exercises:[...content.exercises,...missionPlan.exercises.filter(x=>!existingMissionIds.has(x.id))]};
  // Tim never receives answer fields through the application state.
  // Server-side storage/rules must also be migrated before production release.
  if(!isParent){
