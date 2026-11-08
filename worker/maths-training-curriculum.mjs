@@ -423,15 +423,15 @@ const CONTENT={
       "Quelle condition est indispensable pour appliquer Thalès ?",
       "Des alignements et des segments parallèles.",
       [
-        "Un triangle de couleur bleue.",
-        "Deux longueurs identiques.",
-        "Un angle droit seulement."
+        "Deux côtés égaux dans un triangle.",
+        "Deux droites perpendiculaires.",
+        "Un angle droit dans un triangle."
       ],
       "On justifie les alignements des points et le parallélisme des segments.",
       [
-        "La couleur de la figure ne fait pas partie des hypothèses de Thalès.",
-        "Deux longueurs égales ne remplacent pas la vérification des parallèles.",
-        "Un angle droit seul correspond plutôt à Pythagore ; Thalès exige des parallèles."
+        "Deux côtés égaux ne suffisent pas à appliquer Thalès ; il faut des alignements et des droites parallèles.",
+        "Des droites perpendiculaires ne remplacent pas les droites parallèles de la configuration de Thalès.",
+        "Un angle droit tout seul permet éventuellement Pythagore, mais pas Thalès sans parallèles."
       ]
     ],
     [
@@ -534,15 +534,15 @@ const CONTENT={
       "Quel indice annonce qu'on peut utiliser Thalès ?",
       "Des points alignés et des segments parallèles.",
       [
-        "Une variable x dans une expression.",
-        "Un angle droit sans parallèles.",
-        "Une addition de fractions."
+        "La présence d'une lettre x dans une expression.",
+        "Un angle droit dans l'un des triangles.",
+        "Deux triangles qui partagent seulement un sommet."
       ],
       "Thalès repose sur les alignements et les parallèles, pas sur un programme de calcul.",
       [
-        "La présence de x signale du calcul littéral, pas une configuration de Thalès.",
-        "Un angle droit sans parallèles évoque Pythagore, pas Thalès.",
-        "L'addition de fractions n'est pas la condition géométrique de Thalès."
+        "Une lettre x indique du calcul littéral, pas une situation géométrique de Thalès.",
+        "Un angle droit peut servir à Pythagore mais ne donne pas les droites parallèles nécessaires à Thalès.",
+        "Deux triangles peuvent partager un sommet sans avoir des côtés parallèles."
       ]
     ]
   ],
@@ -551,15 +551,15 @@ const CONTENT={
       "Quel théorème calcule CG dans le triangle CDG rectangle en D ?",
       "Pythagore",
       [
-        "Thalès",
-        "Une proportionnalité sans justification",
-        "La règle de trois seule"
+        "Le théorème de Thalès.",
+        "La réciproque du théorème de Pythagore.",
+        "Le théorème des milieux."
       ],
       "Puisque le triangle est rectangle en D, CG² = CD² + DG².",
       [
-        "Aucun parallélisme n'est donné pour Thalès, mais le triangle est rectangle en D.",
-        "Une simple proportionnalité ne remplace pas le théorème applicable au triangle rectangle.",
-        "La règle de trois sans justification ne permet pas ici de calculer CG."
+        "Aucune paire de droites parallèles n'est donnée pour appliquer Thalès au triangle rectangle.",
+        "La réciproque sert à prouver qu'un triangle est rectangle ; ici il est déjà annoncé rectangle, on cherche CG.",
+        "Le théorème des milieux exige des milieux de côtés, qui ne sont pas indiqués ici."
       ]
     ],
     [
@@ -647,30 +647,30 @@ const CONTENT={
       "Avec trois côtés de longueurs 3, 4 et 5, quel outil prouve qu'un triangle est rectangle ?",
       "La réciproque de Pythagore",
       [
-        "Le théorème de Thalès",
-        "La distributivité",
-        "La somme des fractions"
+        "Le théorème de Thalès.",
+        "Le théorème de Pythagore sans sa réciproque.",
+        "Le calcul du périmètre."
       ],
       "3² + 4² = 5² ; la réciproque permet de prouver l'angle droit.",
       [
-        "Thalès a besoin de parallèles et d'alignements, pas uniquement de trois longueurs.",
-        "La distributivité développe une expression : elle ne démontre aucun angle droit.",
-        "L'addition de fractions ne permet pas de prouver qu'un triangle est rectangle."
+        "Thalès concerne des alignements et parallèles, pas la démonstration d'un angle droit à partir de trois longueurs.",
+        "Le théorème direct suppose déjà le triangle rectangle ; pour le démontrer grâce aux côtés, il faut sa réciproque.",
+        "Un périmètre additionne les longueurs, il ne prouve pas qu'un angle est droit."
       ]
     ],
     [
       "Dans le triangle ABC, M est sur [AB], N sur [AC] et (MN) est parallèle à (BC). Quel théorème permet de calculer BC à partir de AM, AB et MN ?",
       "Le théorème de Thalès",
       [
-        "La réciproque de Pythagore",
-        "Une multiplication de nombres relatifs",
-        "Le calcul d'une aire"
+        "Le théorème de Pythagore.",
+        "La réciproque du théorème de Pythagore.",
+        "Un simple calcul d'aire."
       ],
       "La configuration permet d'écrire avec Thalès : AM/AB = MN/BC.",
       [
-        "La réciproque de Pythagore exige la comparaison des carrés de trois côtés.",
-        "Multiplier des nombres relatifs n'utilise pas les parallèles de cette figure.",
-        "Calculer une aire ne permet pas ici de retrouver BC à partir des côtés correspondants."
+        "Pythagore demande un triangle rectangle ; ici ce sont les alignements et la parallèle qui donnent une relation de longueurs.",
+        "La réciproque de Pythagore sert à démontrer un angle droit, pas à exploiter un parallélisme.",
+        "Une aire ne fournit pas directement BC à partir des longueurs des côtés correspondants."
       ]
     ]
   ],
@@ -694,15 +694,15 @@ const CONTENT={
       "Avant d'écrire les rapports de Thalès, que faut-il vérifier ?",
       "Alignements, parallèles et correspondance des côtés.",
       [
-        "Seulement la couleur de la figure.",
-        "Uniquement la longueur du plus petit côté.",
-        "Que le triangle est équilatéral."
+        "Deux longueurs égales dans le dessin.",
+        "La présence d'un angle droit.",
+        "La seule mesure du plus petit côté."
       ],
       "Il faut vérifier les alignements, les parallèles et la correspondance des côtés.",
       [
-        "La couleur ne donne aucune information sur le parallélisme.",
-        "Connaître seulement le plus petit côté n'est pas suffisant pour Thalès.",
-        "Le triangle n'a pas besoin d'être équilatéral pour utiliser Thalès."
+        "Deux longueurs égales n'établissent ni l'alignement des points ni le parallélisme des segments.",
+        "Un angle droit seul renvoie à Pythagore ; pour Thalès il faut des points alignés et des segments parallèles.",
+        "La plus petite longueur ne suffit pas : on doit aussi vérifier les alignements et les parallèles."
       ]
     ]
   ],
