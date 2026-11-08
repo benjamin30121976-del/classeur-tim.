@@ -113,7 +113,7 @@ test('Les mathématiques partagent le compteur Parent et le bouton Voir la copie
  assert.match(x.text,/0 devoir en attente/);
  assert.match(x.text,/1 exercice validé en ligne/);
  assert.match(x.text,/Mathématiques · BIS · Théorème de Pythagore/);
- assert.match(x.text,/Évaluation de la sous-leçon · 01 · 1\/2/);
+ assert.match(x.text,/Évaluation de la sous-leçon · 05 · 1\/2/);
  const view=x.buttons.find(b=>/Voir la copie/.test(b.textContent));
  assert.ok(view,'Le Parent doit pouvoir ouvrir le détail depuis le même encart');
  await view.onclick();
