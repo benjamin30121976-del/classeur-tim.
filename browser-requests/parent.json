@@ -3,6 +3,6 @@
   "site": "https://classeur-tim-v16.pages.dev/",
   "scope": "En lecture seule : s'assurer que les anciennes questions BIS en double ont disparu, que chaque évaluation comporte dix questions, que la note et le corrigé sont consultables par Tim et Parent. Ne soumettre aucune tentative.",
   "launch_on_update": true,
-  "note": "Tests Node des 230 questions et 920 réponses, correction détaillée et tentative unique ; puis Chromium sur téléphone et ordinateur. Ne pas utiliser TinyFish.",
-  "checkVersion": "maths-corrections-completes-et-230q-2026-11-09-r2"
+  "note": "Inspecter les 23 évaluations BIS complètes, 230 énoncés et le parcours Parent, sans jamais valider une réponse. Les deux séries de tests Node sont lancées ensemble dans la CI.",
+  "checkVersion": "audit-maths-10-questions-230-corrige-complet-2026-11-09-r3"
 }
