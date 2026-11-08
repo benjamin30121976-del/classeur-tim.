@@ -52,7 +52,7 @@ test('Parent: accès privé, mais ne peut pas fabriquer des XP',async()=>{
  const parent=db(parentUid);
  await assertSucceeds(getDoc(doc(parent,'answerKeys/E01')));
  await assertSucceeds(getDoc(doc(parent,'privateAttempts/mine')));
- await assertSucceeds(setDoc(doc(parent,'releasedCorrections/new'),{released:false,releaseAt:Timestamp.fromDate(new Date('2099-01-01'))}));
+ await assertFails(setDoc(doc(parent,'releasedCorrections/new'),{released:false,releaseAt:Timestamp.fromDate(new Date('2099-01-01'))}));
  await assertFails(setDoc(doc(parent,'attempts/fake'),{authorUid:timUid,xp:100}));
 });
 test('Compte inconnu: refus',async()=>{
@@ -74,4 +74,9 @@ test('No browser account, including Parent, may write XP aggregates',async()=>{
   await assertFails(getDoc(doc(client,'xpState/tim')));
   await assertFails(setDoc(doc(client,'xpState/tim'),{earned:9999,weekEarned:9999}));
  }
+});
+
+test('Parent cannot bypass server by writing release time directly',async()=>{
+ const parent=db(parentUid);
+ await assertFails(setDoc(doc(parent,'releasedCorrections/past'),{released:true,releaseAt:Timestamp.fromDate(new Date('2020-01-01'))}));
 });
