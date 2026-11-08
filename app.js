@@ -281,38 +281,86 @@ function renderExerciseIndex(){
 }
 function answerValue(input){if(input.type==='radio'){const chosen=document.querySelector('input[name="'+input.name+'"]:checked');return chosen?chosen.value:'';}return input.value;}
 function freeOrTextAnswer(question,answer){if(question.type==='free')return null;const correct=question.type==='mc'?String(question.right)===String(answer):[question.right,...(question.also||[])].some(x=>norm(x)===norm(answer));return correct;}
-function openExercise(id){const ex=exerciseBy(id);if(!ex)return;window.__TIM_OPEN_EXERCISE_ID=id;page('exercices');document.getElementById('exercise-index').classList.add('hide');const root=clear(document.getElementById('exercise-detail'));root.classList.add('active');root.append(button('← Retour aux exercices',()=>{root.classList.remove('active');document.getElementById('exercise-index').classList.remove('hide');renderExerciseIndex();scrollTop();},'plain back'));root.append(badge(ex.level),E('h2','',ex.title),E('p','intro',exerciseDescription(ex)),E('p','small','Leçon associée : '+lessonBy(ex.lesson).title));root.append(button('Voir la leçon correspondante',()=>openLesson(ex.lesson),'plain'));
-if(ex.instructions){const instructions=E('div','note info',ex.instructions);instructions.style.cssText='white-space:pre-line;font-size:16px;line-height:1.65;margin:12px 0;padding:16px;border:2px solid #e9b84a;border-radius:14px';root.append(instructions);}
-root.append(makeAttachmentPanel('exercise',ex.id));if(!window.__TIM_GUEST&&!ex.kind&&!attemptFor(ex.id)){
+function openExercise(id){const ex=exerciseBy(id);if(!ex)return;const existing=attemptFor(id),completedChallenge=Boolean(existing&&['daily','weekly','sunday'].includes(ex.kind));window.__TIM_OPEN_EXERCISE_ID=id;page('exercices');document.getElementById('exercise-index').classList.add('hide');const root=clear(document.getElementById('exercise-detail'));root.classList.add('active');root.append(button('← Retour aux exercices',()=>{root.classList.remove('active');document.getElementById('exercise-index').classList.remove('hide');renderExerciseIndex();scrollTop();},'plain back'));root.append(badge(ex.level),E('h2','',ex.title),E('p','intro',exerciseDescription(ex)),E('p','small','Leçon associée : '+(lessonBy(ex.lesson)?.title||'Voir les cours de la matière')));root.append(button('Voir la leçon correspondante',()=>openLesson(ex.lesson),'plain'));
+if(ex.instructions&&!completedChallenge){const instructions=E('div','note info',ex.instructions);instructions.style.cssText='white-space:pre-line;font-size:16px;line-height:1.65;margin:12px 0;padding:16px;border:2px solid #e9b84a;border-radius:14px';root.append(instructions);}
+if(!completedChallenge)root.append(makeAttachmentPanel('exercise',ex.id));if(!window.__TIM_GUEST&&!ex.kind&&!attemptFor(ex.id)){
  const mode=window.TIM_EXERCISE.mode(ex);
  const modeInfo=notice(mode==='school'?'📚 DEVOIR DE L’ÉCOLE · 0 XP. Ton parent débloquera la correction.':mode==='bonus'?'⭐ EXERCICE BONUS · 100 % = +2 XP ; dès 60 % = +1 XP ; sinon 0. Maximum +3 XP par jour.':'Cet exercice n’est pas encore disponible.');modeInfo.id='tim-exercise-mode-info';root.append(modeInfo);
 }
 if(window.__TIM_GUEST){root.append(notice('Visite en lecture seule : tu peux voir les questions, mais tu ne peux ni répondre ni valider.','guest-preview'));
  for(const [i,q] of ex.questions.entries()){const row=E('div','q');row.append(E('strong','',(i+1)+'. '+q.q));if(q.type==='mc'){const ul=E('ul');for(const option of q.options)ul.append(E('li','',option));row.append(ul);}root.append(row);}return;}
-const old=attemptFor(ex.id),draft=drafts()[ex.id]||[];let form=E('div','panel');let controls=[];
-ex.questions.forEach((question,i)=>{const row=E('div','q');row.append(E('div','qtitle',(i+1)+'. '+question.q));const previous=old?old.answers[i]?.response:draft[i];if(question.type==='mc'){let options=E('div','check-answers');question.options.forEach((option,j)=>{const label=E('label','choose');const input=E('input');input.type='radio';input.name='question-'+ex.id+'-'+i;input.value=String(j);input.checked=previous!==undefined&&String(previous)===String(j);input.disabled=!!old;input.addEventListener('change',saveDraft);label.append(input,E('span','',option));options.append(label);});row.append(options);controls.push({kind:'mc',name:'question-'+ex.id+'-'+i});}else{const input=question.type==='free'?E('textarea','answer wide'):E('input','answer');if(question.type==='text'){input.type='text';input.autocomplete='off';input.spellcheck=false;input.placeholder='Écris la réponse en espagnol';}else{input.rows=6;input.placeholder='Écris ta lettre ici…';}input.value=previous===undefined?'':safe(previous);input.disabled=!!old;input.addEventListener('input',saveDraft);row.append(input);controls.push({kind:'text',node:input});}form.append(row);});root.append(form);
+const old=existing,draft=drafts()[ex.id]||[];let form=E('div','panel');let controls=[];
+ex.questions.forEach((question,i)=>{const row=E('div','q');row.append(E('div','qtitle',(i+1)+'. '+question.q));const previous=old?old.answers[i]?.response:draft[i];if(question.type==='mc'){let options=E('div','check-answers');question.options.forEach((option,j)=>{const label=E('label','choose');const input=E('input');input.type='radio';input.name='question-'+ex.id+'-'+i;input.value=String(j);input.checked=previous!==undefined&&String(previous)===String(j);input.disabled=!!old;input.addEventListener('change',saveDraft);label.append(input,E('span','',option));options.append(label);});row.append(options);controls.push({kind:'mc',name:'question-'+ex.id+'-'+i});}else{const input=question.type==='free'?E('textarea','answer wide'):E('input','answer');if(question.type==='text'){input.type='text';input.autocomplete='off';input.spellcheck=false;input.placeholder='Écris la réponse en espagnol';}else{input.rows=6;input.placeholder='Écris ta lettre ici…';}input.value=previous===undefined?'':safe(previous);input.disabled=!!old;input.addEventListener('input',saveDraft);row.append(input);controls.push({kind:'text',node:input});}form.append(row);});if(!completedChallenge)root.append(form);
 function values(){return controls.map(c=>c.kind==='mc'?(document.querySelector('input[name="'+c.name+'"]:checked')?.value??''):c.node.value.trim());}
 function saveDraft(){if(old)return;const d=drafts();d[id]=values();save(DRAFT_KEY,d);}
 if(old){
+ const challenge=['daily','weekly','sunday'].includes(ex.kind);
+ if(challenge){
+  const summary=E('section','panel challenge-result-summary');summary.id='challenge-result-summary';
+  summary.style.cssText='margin:12px 0;padding:18px;border:2px solid #dfbc61;border-radius:16px;line-height:1.6';
+  const grade=Number.isFinite(old.score)&&Number.isFinite(old.total)?old.score+'/'+old.total:'note en cours de chargement';
+  const xp=Number.isFinite(old.xp)?(old.xp>=0?'+':'')+old.xp+' XP':'XP indisponibles';
+  summary.append(E('h3','','Ta note : '+grade),E('p','challenge-result-xp','XP attribués : '+xp));
+  summary.append(E('p','small','Défi terminé. Tes réponses sont enregistrées ; tu peux revoir la correction, mais pas recommencer.'));
+  root.append(summary);
+ }
  const locked=old.correctionStatus==='pending-parent'||old.correctionLocked===true;
- if(locked){
+ const disclosed=old.correctionStatus==='released'&&Array.isArray(old.answers)&&old.answers.length===ex.questions.length;
+ const retry=()=>button('Actualiser ma note et mon corrigé',async()=>{
+  try{await window.__TIM_BRIDGE.refresh();openExercise(id);}
+  catch(err){alert('Résultat enregistré, mais correction temporairement inaccessible : '+String(err?.message||err));}
+ },'mission-launch');
+ if(challenge){
+  if(disclosed){
+   renderFeedback(ex,old,root);
+  }else{
+   root.append(notice('Le défi a bien été enregistré, mais le corrigé complet ne s’affiche pas encore. Tu peux le recharger sans refaire le défi.'));
+   root.append(retry());
+  }
+ }else if(locked){
   const panel=E('div','correction-pending');
   panel.append(E('strong','','Devoir envoyé — correction en attente du parent'),E('p','','Tes XP sont calculés immédiatement. Ton parent décidera quand afficher le corrigé.'));
   root.append(panel);
- }else{
-  const disclosed=old.correctionStatus==='released'&&Array.isArray(old.answers)&&old.answers.length===ex.questions.length;
-  if(disclosed){root.append(E('div','banner-good','Exercice terminé · correction disponible.'));renderFeedback(ex,old,root);}
-  else root.append(notice('Correction en attente du parent ou en cours de chargement.'));
- }
- if(typeof old.xp==='number')root.append(E('div','xp-award',(old.xp>=0?'+':'')+old.xp+' XP'));
+ }else if(disclosed){
+  root.append(E('div','banner-good','Exercice terminé · correction disponible.'));
+  renderFeedback(ex,old,root);
+ }else root.append(notice('Correction en attente du parent ou en cours de chargement.'));
+ if(!challenge&&typeof old.xp==='number')root.append(E('div','xp-award',(old.xp>=0?'+':'')+old.xp+' XP'));
 } else if(window.__TIM_PARENT){controls.forEach(c=>{if(c.node)c.node.disabled=true;else for(const el of form.querySelectorAll('input'))el.disabled=true;});root.append(notice('Aperçu parent : seul Tim peut répondre et valider cet exercice.'));}else{
- const submit=button('Valider définitivement cet exercice',async()=>{const vals=values();if(vals.some(v=>!safe(v).trim())){alert('Réponds à toutes les questions avant de valider.');return;}if(attemptFor(id)){openExercise(id);return;}if(!confirm('Confirmer ? Cet exercice sera définitivement terminé, sur tous les appareils.'))return;submit.disabled=true;submit.textContent='Enregistrement sécurisé…';
- try {const saved=await window.__TIM_BRIDGE.submit(id,vals);window.__CLOUD_ATTEMPTS.push(saved);
-const mailAttempt=window.__TIM_BRIDGE.notifyAlert?.(id,saved);if(mailAttempt?.catch)mailAttempt.catch(()=>{});
- const d=drafts();delete d[id];save(DRAFT_KEY,d);v7NewAttempt(saved);alert((saved.correctionStatus==='released'?'Défi terminé et corrigé. ':'Devoir envoyé. ')+(saved.xp>=0?'+':'')+saved.xp+' XP.'+(saved.correctionStatus==='released'?' Consulte tes réponses.':' Correction en attente du parent.'));openExercise(id);
- }catch(err){submit.disabled=false;submit.textContent='Valider définitivement cet exercice';
- alert('L’exercice n’a pas été enregistré. Rien n’est perdu : vérifie ta connexion et réessaie. '+(err?.message||''));
- await window.__TIM_BRIDGE.refresh();if(attemptFor(id))openExercise(id);}},'btn');root.append(E('p','small','Une seule validation. Pour les défis, la note et la correction sont immédiates ; les devoirs scolaires restent à 0 XP et sous contrôle du parent.'),submit);}
+ const submit=button('Valider définitivement cet exercice',async()=>{
+  const vals=values();
+  if(vals.some(v=>!safe(v).trim())){alert('Réponds à toutes les questions avant de valider.');return;}
+  if(attemptFor(id)){openExercise(id);return;}
+  if(!confirm('Confirmer ? Cet exercice sera définitivement terminé, sur tous les appareils.'))return;
+  submit.disabled=true;submit.textContent='Enregistrement sécurisé…';
+  let saved;
+  try{saved=await window.__TIM_BRIDGE.submit(id,vals);}
+  catch(err){
+   submit.disabled=false;submit.textContent='Valider définitivement cet exercice';
+   // Un enregistrement peut avoir abouti côté serveur avant une coupure réseau.
+   try{await window.__TIM_BRIDGE.refresh();}catch{}
+   if(attemptFor(id)){
+    alert('L’exercice a bien été enregistré. Son résultat va être affiché.');
+    openExercise(id);
+   }else alert('Validation non confirmée. Tes réponses restent sauvegardées ; vérifie ta connexion avant de réessayer. '+String(err?.message||err));
+   return;
+  }
+  window.__CLOUD_ATTEMPTS.push(saved);
+  const notification=window.__TIM_BRIDGE.notifyAlert?.(id,saved);
+  if(notification?.catch)notification.catch(()=>{});
+  const d=drafts();delete d[id];save(DRAFT_KEY,d);v7NewAttempt(saved);
+  // Un défi affiche son BILAN (note, XP, correction) directement, sans alerte XP seule.
+  const isChallenge=['daily','weekly','sunday'].includes(ex.kind);
+  try{
+   if(!isChallenge)alert('Devoir envoyé. '+(saved.xp>=0?'+':'')+saved.xp+' XP. '+(saved.correctionStatus==='released'?'Correction disponible.':'Correction en attente du parent.'));
+   openExercise(id);
+  }catch(renderError){
+   console.error('Affichage du résultat indisponible :',renderError);
+   root.replaceChildren();
+   root.append(notice('Ton exercice est enregistré, mais le résultat n’a pas pu s’afficher. Tu ne dois pas le recommencer.'));
+   root.append(button('Ouvrir ma note et mon corrigé',()=>openExercise(id),'mission-launch'));
+  }
+},'btn');root.append(E('p','small','Une seule validation. Pour les défis, la note et la correction sont immédiates ; les devoirs scolaires restent à 0 XP et sous contrôle du parent.'),submit);}
 if(!old && !window.__TIM_PARENT && controls.length>1){
   const questionNodes=[...form.querySelectorAll('.q')];
   const submit=root.querySelector('button.btn');
@@ -328,7 +376,33 @@ if(!old && !window.__TIM_PARENT && controls.length>1){
   showStep(0);
  }
 scrollTop();}
-function renderFeedback(ex,t,root){const box=E('div','result'+(t.needsReview?' waiting':''));box.append(E('h3','',t.needsReview?'Rédaction enregistrée — à revoir':'Résultat : '+t.score+'/'+t.total));box.append(E('p','subtle','Validé le '+new Date(t.date).toLocaleString('fr-FR')+'. Les réponses sont verrouillées sur tous les appareils.'));for(const [i,a] of t.answers.entries()){const p=E('div','feedback');p.append(E('strong','',`${i+1}. ${a.question}`),E('p','',`Ta réponse : ${ex.questions[i].type==='mc'?ex.questions[i].options[Number(a.response)]:a.response}`));if(a.correct!==null)p.append(E('p',a.correct?'correct':'wrong',a.correct?'Correct.':'À revoir.'));if(a.correct===false)p.append(E('p','','Réponse attendue : '+a.expected));p.append(E('p','subtle',a.explanation));box.append(p);}root.append(v7Feedback(ex,t),box);if(t.answers.some(a=>a.correct===false))root.append(button('Voir mon carnet des difficultés',()=>page('difficultes'),'plain'));}
+function renderFeedback(ex,t,root){
+ const isChallenge=['daily','weekly','sunday'].includes(ex.kind);
+ const box=E('section','result'+(t.needsReview?' waiting':''));
+ if(isChallenge)box.id='challenge-detailed-correction';
+ box.append(E('h3','',t.needsReview?'Rédaction enregistrée — à revoir':'Correction détaillée : '+t.score+'/'+t.total));
+ box.append(E('p','subtle','Validé le '+new Date(t.date).toLocaleString('fr-FR')+'. Les réponses sont verrouillées sur tous les appareils.'));
+ for(const [i,a] of t.answers.entries()){
+  const q=ex.questions[i]||{},p=E('div','feedback');
+  const given=q.type==='mc'?(q.options?.[Number(a.response)]??a.response):a.response;
+  p.append(E('strong','',(i+1)+'. '+safe(a.question||q.q||'Question')),E('p','','Ta réponse : '+safe(given)));
+  if(a.correct!==null)p.append(E('p',a.correct?'correct':'wrong',a.correct?'Bonne réponse.':'Réponse à revoir.'));
+  if(a.correct===false){
+   p.append(E('p','correct','Réponse attendue : '+safe(a.expected)));
+   const explanation=safe(a.explanation).trim()||'Compare les mots, leur ordre et les terminaisons avec la réponse attendue. Relis la leçon pour comprendre la règle.';
+   p.append(E('p','subtle','Explication : '+explanation));
+   const source=safe(q.sourceId).split(':')[0];
+   const lessonId=DATA.exercises.find(item=>item.id===source)?.lesson||ex.lesson;
+   const lesson=lessonBy(lessonId);
+   if(lesson)p.append(button('Revoir la leçon : '+lesson.title,()=>openLesson(lesson.id),'plain'));
+  }else if(a.explanation)p.append(E('p','subtle','Explication : '+a.explanation));
+  box.append(p);
+ }
+ if(isChallenge){
+  root.append(box,v7Feedback(ex,t));
+ }else root.append(v7Feedback(ex,t),box);
+ if(t.answers.some(a=>a.correct===false))root.append(button('Voir mon carnet des difficultés',()=>page('difficultes'),'plain'));
+}
 document.getElementById('exercise-search').addEventListener('input',renderExerciseIndex);
 function renderDifficulties(){const root=clear(document.getElementById('difficulties-content'));const done=attempts().filter(t=>(t.correctionStatus==='released'&&Array.isArray(t.answers)&&t.answers.length>0));const errs=[];for(const t of done){for(const [i,x] of t.answers.entries())if(x.correct===false)errs.push({t,x,i});}let stats=E('div','mini-grid');stats.append(E('div','info-stat',done.length+' exercices'),E('div','info-stat',errs.length+' erreurs'),E('div','info-stat',getRelevantRemedials().length+' aides'));root.append(stats);
 if(!done.length){root.append(notice('Aucun exercice validé. Les difficultés apparaîtront après la première correction.'));return;}if(!errs.length){root.append(notice('Aucune erreur dans les exercices validés. Cela ne signifie pas que toutes les notions sont maîtrisées.','banner-good'));return;}
