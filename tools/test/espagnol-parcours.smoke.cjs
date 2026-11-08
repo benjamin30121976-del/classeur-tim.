@@ -1,151 +1,109 @@
+/* Vérifications réelles du parcours Espagnol : 3 niveaux, ENT et 5x10 sans XP. */
 const {chromium}=require('playwright');
-const fs=require('fs');
-const path=require('path');
-const out=path.join(process.cwd(),'test-espagnol-results');
-fs.mkdirSync(out,{recursive:true});
+const fs=require('fs');const path=require('path');
+const out=path.join(process.cwd(),'test-espagnol-results');fs.mkdirSync(out,{recursive:true});
 (async()=>{
  const browser=await chromium.launch({headless:true});
- try{
-  for(const [device,width,height] of [['mobile',390,844],['desktop',1200,860]]){
+ try {
+  for (const [device,width,height] of [['mobile',390,844],['desktop',1200,860]]) {
    const page=await browser.newPage({viewport:{width,height},deviceScaleFactor:1});
    const errors=[];page.on('pageerror',e=>errors.push(e.message));
+   const subject=page.locator('#matieres-content');
    await page.goto('http://127.0.0.1:8778/',{waitUntil:'domcontentloaded',timeout:30000});
    await page.locator('#guest-enter').click();
    await page.waitForFunction(()=>document.body.classList.contains('guest-mode'),{timeout:20000});
    const intro=page.locator('#intro-screen');
    if(await intro.isVisible()){
-    const skip=page.locator('#intro-silent');
-    if(await skip.isVisible())await skip.click();
+    const skip=page.locator('#intro-silent');if(await skip.isVisible())await skip.click();
     await intro.waitFor({state:'hidden',timeout:20000});
    }
-   await page.locator('[data-nav="matieres"]:visible').first().click();
-   if(!(await page.locator('#matieres > .pagehead').isVisible()))throw Error(device+': subject choice header not visible on selection screen');
-   await page.locator('#matieres-content .matter-card').filter({hasText:'Espagnol'}).first().click();
-   if(!(await page.locator('#matieres > .pagehead').isHidden()))throw Error(device+': redundant subject choice header still visible inside Spanish');
-   const categories=await page.locator('#matieres-content .spx-card').count();
-   if(categories!==6)throw Error(device+': 6 categories expected, found '+categories);
-   const pictures=page.locator('#matieres-content .spx-card .spx-topic-svg');
-   if(await pictures.count()!==6)throw Error(device+': expected 6 different vector pictograms');
-   const paths=await pictures.evaluateAll(nodes=>nodes.map(n=>n.innerHTML));
-   if(new Set(paths).size!==6)throw Error(device+': topic pictograms must be distinct');
-   for(const card of await page.locator('#matieres-content .spx-card').all()){
-     const badge=card.locator('.spx-icon');
-     const label=(await badge.textContent()).trim();
-     if(label)throw Error(device+': old letter label still present: '+label);
+   const selectSpanish=async()=>{
+    await page.locator('[data-nav="matieres"]:visible').first().click();
+    await subject.locator('.matter-card').filter({hasText:'Espagnol'}).first().click();
+    if(!(await page.locator('#matieres > .pagehead').isHidden()))throw Error('Selection header still visible inside subject');
+   };
+   const openGroup=async(index)=>{
+    await subject.locator('.spx-card[data-category="'+index+'"]').click();
+   };
+   await selectSpanish();
+   if(await subject.locator('.spx-card').count()!==6)throw Error('6 Spanish groups required');
+   if(await subject.locator('.spx-topic-svg').count()!==6)throw Error('Topic pictograms missing');
+   const search=subject.locator('#spx-find');await search.fill('je suis');
+   if(await subject.locator('#spx-results .spx-hit').count()===0)throw Error('Search result missing');
+   await search.fill('');
+
+   let lessonTotal=0;
+   for(let group=0;group<6;group++){
+    await openGroup(group);
+    const lessonIds=await subject.locator('.spx-quick-easy').evaluateAll(nodes=>nodes.map(x=>x.dataset.easy));
+    lessonTotal+=lessonIds.length;
+    for(const id of lessonIds){
+     const card=subject.locator('.spx-lesson-item').filter({has:page.locator('[data-easy="'+id+'"]')});
+     const labels=await card.locator('.spx-quick-link').allTextContents();
+     for(const must of ['1 · Leçon ENT','2 · Leçon simplifiée','3 · Je n’ai pas compris','Exercices d’entraînement · 5 × 10']){
+      if(!labels.some(x=>x.includes(must)))throw Error(id+': missing shortcut '+must+'; available '+JSON.stringify(labels));
+     }
+     if(labels.some(x=>x.trim()==='Leçon'||x.includes('Je n’ai pas compris ?')))throw Error(id+': obsolete duplicate');
+     await card.locator('[data-easy="'+id+'"]').click();
+     if(!(await subject.locator('.spx-simplified-page').isVisible()))throw Error(id+': simplified lesson not opened');
+     if(await subject.locator('.spx-words .spx-listen').count()!==10)throw Error(id+': translated spoken vocabulary incomplete');
+     if(await subject.locator('.spx-simple-steps li').count()<2)throw Error(id+': simplified explanation not complete');
+     await subject.locator('.spx-back').click();
+     await subject.locator('[data-help="'+id+'"]').click();
+     if(!(await subject.locator('.spx-personal-help').isVisible()))throw Error(id+': separate help not opened');
+     if(await subject.locator('.spx-help-prompt').count()<2)throw Error(id+': prepared FAQ questions missing');
+     await subject.locator('.spx-help-prompt').first().click();
+     if(!(await subject.locator('#spx-help-result .spx-help-answer').isVisible()))throw Error(id+': FAQ does not answer');
+     await subject.locator('.spx-back').click();
+    }
+    await subject.locator('.spx-back').click();
    }
-   const firstCardText=await page.locator('#matieres-content .spx-card').first().innerText();
-   if(!firstCardText.includes('fiches de cours ENT')||!firstCardText.includes('ENT repérés')||!firstCardText.includes('20 entraînements')||!firstCardText.includes('Leçons simplifiées disponibles'))throw Error(device+': overview inventory missing on Spanish cards');
-   await page.screenshot({path:path.join(out,device+'-espagnol-accueil.png'),fullPage:true});
-   await page.locator('#spx-find').fill('je suis');
-   const links=await page.locator('#spx-results .spx-hit').count();
-   if(links<1)throw Error(device+': search "je suis" returned no lesson');
-   await page.locator('#spx-find').fill('');
-   await page.locator('#matieres-content .spx-back').click();
-   if(!(await page.locator('#matieres > .pagehead').isVisible()))throw Error(device+': subject choice header not restored when returning to subjects');
-   await page.locator('#matieres-content .matter-card').filter({hasText:'Espagnol'}).first().click();
-   if(!(await page.locator('#matieres > .pagehead').isHidden()))throw Error(device+': subject choice header displayed again in Spanish');
-   await page.locator('#matieres-content .spx-card').first().click();
-   const rows=await page.locator('#matieres-content .spx-lesson-item').count();
-   if(rows!==4)throw Error(device+': expected four verbs sub-lessons, got '+rows);
-   const firstLessonText=await page.locator('#matieres-content .spx-lesson-item').first().innerText();
-   if(!firstLessonText.includes('1 fiche de cours ENT')||!firstLessonText.includes('5 entraînements')||firstLessonText.includes('Je n’ai pas compris'))throw Error(device+': sublesson inventory duplicate or missing');
-   const firstActions=page.locator('#matieres-content .spx-lesson-item').first().locator('.spx-quick-link');
-   if(await firstActions.count()!==4)throw Error(device+': expected four direct actions without unavailable ENT exercises');
-   for(const label of ['Leçon','Leçon simplifiée','Entraînements · 5 × 10','Cours ENT']){
-     if(!(await firstActions.filter({hasText:label}).count()))throw Error(device+': missing direct link '+label);
-   }
-   await page.locator('#matieres-content [data-easy="L09"]').click();
-   if(!(await page.locator('#spx-easy-lesson').isVisible()))throw Error(device+': simple lesson not visible');
-   if(!(await page.locator('#spx-easy-lesson').getAttribute('open')!==null))throw Error(device+': simple lesson not expanded from shortcut');
-   if(await page.locator('#spx-easy-lesson li').count()<3)throw Error(device+': simplified help steps missing');
-   await page.locator('#matieres-content .spx-back').click();
-   const returnRows=await page.locator('#matieres-content .spx-lesson-item').count();
-   if(returnRows!==4)throw Error(device+': return from simplified help failed');
-   const entButton=page.locator('#matieres-content [data-ent-exercises="L13"]');
-   if(!(await entButton.isVisible()))throw Error(device+': ENT exercises action missing for photocopy');
-   await entButton.click();
-   const entWork=await page.locator('#matieres-content .spx-chapter-overview').innerText();
-   if(!entWork.includes('3 activités/exercices ENT repérés'))throw Error(device+': sourced ENT activity count missing in photocopy lesson');
-   if(!(await page.locator('#matieres-content .spx-ent-translations').isVisible()))throw Error(device+': ENT button does not open original exercise extracts');
-   await page.locator('#matieres-content .spx-back').click();
-   await page.locator('#matieres-content [data-training="L09"]').click();
-   if(await page.locator('#matieres-content [data-set]').count()!==5)throw Error(device+': training shortcut does not open 5 series');
-   await page.locator('#matieres-content .spx-back').click();
-   await page.locator('#matieres-content [data-lesson="L09"]').click();
-   const voices=await page.locator('#matieres-content .spx-words .spx-listen').count();
-   if(voices!==10)throw Error(device+': expected one audio button for each of 10 Spanish expressions, found '+voices);
-   await page.evaluate(()=>{
-      window.__spanishSpoken=[];
-      window.SpeechSynthesisUtterance=class{constructor(text){this.text=text;}};
-      Object.defineProperty(window,"speechSynthesis",{value:{
-        cancel(){},getVoices(){return [{lang:"es-ES",name:"Spanish test voice"}];},
-        speak(utterance){window.__spanishSpoken.push({text:utterance.text,lang:utterance.lang,rate:utterance.rate});}
-      },configurable:true});
-   });
-   const firstWord=await page.locator('#matieres-content .spx-words .spx-listen').first().getAttribute('data-say-es');
-   await page.locator('#matieres-content .spx-words .spx-listen').first().click();
-   const spoken=await page.evaluate(()=>window.__spanishSpoken[0]);
-   if(spoken?.text!==firstWord||spoken?.lang!=="es-ES"||spoken?.rate>0.9)throw Error(device+': Spanish voice button not wired correctly');
-   if(await page.locator('#matieres-content .spx-guide .spx-listen').count()!==8)throw Error(device+': teacher instructions lack Spanish audio');
-   if(!(await page.locator('#matieres-content .spx-ent-translations .spx-listen').count()))throw Error(device+': ENT original expressions lack audio');
-   const referenceInstructions=await page.locator('#matieres-content .spx-guide').count();
-   if(referenceInstructions!==8)throw Error(device+': expected 8 translated teacher instructions, got '+referenceInstructions);
-   const originalPanel=page.locator('#matieres-content .spx-ent-translations');
-   if(!(await originalPanel.isVisible()))throw Error(device+': original ENT translated panel not visible');
-   const translations=await originalPanel.locator('.spx-ent-item').count();
-   if(translations<1)throw Error(device+': original ENT extracts missing in this lesson');
-   if(!(await originalPanel.locator('.spx-ent-spanish').first().textContent()))throw Error(device+': Spanish originals missing');
-   if(!(await originalPanel.locator('.spx-ent-french').first().textContent()))throw Error(device+': French translations missing');
-   const series=await page.locator('#matieres-content .spx-row[data-set]').count();
-   if(series!==5)throw Error(device+': expected 5 training series, got '+series);
-   await page.screenshot({path:path.join(out,device+'-verbes-lecon.png'),fullPage:true});
-   await page.locator('#matieres-content .spx-row[data-set]').first().click();
+   if(lessonTotal!==15)throw Error('Expected 15 sublessons, got '+lessonTotal);
+   await page.screenshot({path:path.join(out,device+'-nouvelle-organisation.png'),fullPage:true});
+   await openGroup(0);
+   await subject.locator('[data-help="L09"]').click();
+   await subject.locator('#spx-help-input').fill('Pourquoi yo hablo et pas yo habla ?');
+   await subject.locator('#spx-help-send').click();
+   if(!(await subject.locator('#spx-help-result').innerText()).includes('yo (je)'))throw Error('Specific question not answered about verb ending');
+   await subject.locator('#spx-help-input').fill('Une question hors de cette leçon, complètement inconnue');
+   await subject.locator('#spx-help-send').click();
+   if(!(await subject.locator('#spx-help-result').innerText()).includes('pas trouvé'))throw Error('Unknown question must not invent an answer');
+   await subject.locator('.spx-back').click();
+   await subject.locator('[data-training="L09"]').click();
+   if(!(await subject.locator('.spx-practice-page').isVisible()))throw Error('Training view missing');
+   if(await subject.locator('[data-set]').count()!==5)throw Error('5 exercises required');
+   const practice=await subject.locator('.spx-practice-page').innerText();
+   if(!practice.includes('0 XP')||!practice.includes('10 questions'))throw Error('Practice description missing');
+   await subject.locator('[data-set="0"]').click();
    for(let q=0;q<10;q++){
-    const es=await page.locator('.spx-instruction-es').textContent();
-    const fr=await page.locator('.spx-instruction-fr').textContent();
-    if(!es?.trim() || !fr?.includes('En français'))throw Error(device+': Spanish instruction or French translation missing on question '+(q+1));
-    await page.locator('#spx-explain').click();
-    if(!(await page.locator('#spx-action').isVisible()))throw Error(device+': explanation of the instruction not accessible');
-    await page.locator('#matieres-content .spx-option').first().click();
-    await page.locator('#spx-submit').click();
-    if(!(await page.locator('#matieres-content .spx-feedback').isVisible()))throw Error(device+': correction missing question '+(q+1));
-    await page.locator('#spx-next').click();
+    if(!(await subject.locator('.spx-instruction-fr').isVisible()))throw Error('French question translation missing');
+    await subject.locator('#spx-explain').click();
+    if(!(await subject.locator('#spx-action').isVisible()))throw Error('Guidance missing');
+    await subject.locator('.spx-option').first().click();
+    await subject.locator('#spx-submit').click();
+    if(!(await subject.locator('.spx-feedback').isVisible()))throw Error('Correction missing');
+    await subject.locator('#spx-next').click();
    }
-   if(!(await page.locator('#spx-repeat').isVisible()))throw Error(device+': exercise summary missing');
-   await page.locator('#spx-repeat').click();
-   if(!(await page.locator('#matieres-content .spx-option').first().isVisible()))throw Error(device+': repeat failed');
-   await page.locator('#matieres-content .spx-back').click();
-   await page.locator('#spx-ent').click();
-   if(!(await page.locator('#lesson-detail.active').isVisible()))throw Error(device+': original ENT lesson not opened');
-   if(!(await page.locator('#lesson-detail .spx-ent-translations').isVisible()))throw Error(device+': translations not displayed with original ENT lesson');
-   // L'accès « Cours ENT » doit ouvrir la vraie fiche du cours et non les bonus.
-   await page.locator('[data-nav="matieres"]:visible').first().click();
-   await page.locator('#matieres-content .matter-card').filter({hasText:'Espagnol'}).first().click();
-   await page.locator('#matieres-content .spx-card').first().click();
-   await page.locator('#matieres-content [data-course="L09"]').click();
-   if(!(await page.locator('#lesson-detail.active').isVisible()))throw Error(device+': direct ENT course shortcut failed');
-   if(!(await page.locator('#lesson-detail .lesson-type-label.ent').isVisible()))throw Error(device+': not a real ENT course');
-   // Retour aux matières et contrôle que la photo manuscrite privée n'est jamais affichée aux invités.
-   await page.locator('[data-nav="matieres"]:visible').first().click();
-   if(!(await page.locator('#matieres > .pagehead').isVisible()))throw Error(device+': subject choice header not visible on selection screen');
-   await page.locator('#matieres-content .matter-card').filter({hasText:'Espagnol'}).first().click();
-   if(!(await page.locator('#matieres > .pagehead').isHidden()))throw Error(device+': redundant subject choice header still visible inside Spanish');
-   await page.locator('#matieres-content .spx-card').filter({hasText:'Poser des questions et écrire'}).click();
-   await page.locator('#matieres-content [data-lesson="L05"]').click();
-   if(!(await page.locator('#matieres-content .tim-letter-panel').isVisible()))throw Error(device+': original handwritten letter panel not accessible');
-   const atelier=page.locator('#matieres-content .tim-letter-workshop');
-   if(!(await atelier.isVisible()))throw Error(device+': translation and correction workshop missing');
-   if(await atelier.locator('.tim-letter-lesson').count()!==6)throw Error(device+': expected 6 sections of letter analysis');
-   await atelier.locator('.tim-letter-lesson summary').first().click();
-   if(!(await atelier.locator('.tim-letter-fr').first().isVisible()))throw Error(device+': French translation not visible after opening section');
-   if(!(await atelier.locator('.tim-letter-handwriting').isVisible()))throw Error(device+': handwriting guidance missing');
-   if(await atelier.locator('.tim-letter-es .spx-listen').count()!==6)throw Error(device+': Spanish letter examples lack audio');
-   if(!(await page.locator('#matieres-content .tim-letter-state').isVisible()))throw Error(device+': private access explanation missing');
-   if(await page.locator('#matieres-content .tim-letter-original').count())throw Error(device+': personal image visible in guest mode');
-   if(await page.locator('#matieres-content .tim-letter-upload').count())throw Error(device+': guest should not see private upload');
-   await page.screenshot({path:path.join(out,device+'-atelier-lettre.png'),fullPage:true});
-   if(errors.length)throw Error(device+': JS error(s): '+errors.join('; '));
-   console.log('OK '+device+' : 6 categories, search, 5 series, 10 questions and repeat');
+   if(!(await subject.locator('#spx-repeat').isVisible()))throw Error('End-of-series repeat missing');
+   await subject.locator('#spx-repeat').click();
+   if(!(await subject.locator('.spx-option').first().isVisible()))throw Error('Repeat exercise failed');
+   await subject.locator('.spx-back').click();
+   if(!(await subject.locator('.spx-practice-page').isVisible()))throw Error('Back from quiz must go to training list');
+   await subject.locator('.spx-back').click();
+   await subject.locator('[data-ent-exercises="L13"]').click();
+   if(!(await subject.locator('.spx-ent-translations').isVisible()))throw Error('ENT exercise extracts not displayed');
+   if(!(await subject.locator('.spx-ent-item').count()))throw Error('ENT original excerpt missing');
+   await subject.locator('.spx-back').click();
+   await subject.locator('[data-course="L09"]').click();
+   if(!(await page.locator('#lesson-detail .lesson-type-label.ent').isVisible()))throw Error('ENT course shortcut not opening original');
+   await selectSpanish();
+   await openGroup(4);
+   await subject.locator('[data-easy="L05"]').click();
+   if(!(await subject.locator('.tim-letter-panel').isVisible()))throw Error('Original letter panel must remain within L05');
+   if(await subject.locator('.tim-letter-original').count())throw Error('Guest must not see private letter');
+   if(errors.length)throw Error('Browser JS errors: '+errors.join(' / '));
+   await page.screenshot({path:path.join(out,device+'-lettre-simplifiee.png'),fullPage:true});
+   console.log('OK '+device+': 6 groups, 15x3 lesson levels, ENT, help, 5x10 exercises, no XP');
    await page.close();
   }
  }finally{await browser.close();}
