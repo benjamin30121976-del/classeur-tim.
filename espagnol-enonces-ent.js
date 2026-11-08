@@ -104,7 +104,9 @@ function renderPanel(id){
  const list=el("div","spx-ent-list");
  for(const item of items){
   const box=el("div","spx-ent-item");
-  box.append(el("p","spx-ent-spanish",item.es));
+  const utterance=el("p","spx-ent-spanish",item.es);
+  const listen=el("button","spx-listen","🔊");listen.type="button";listen.dataset.sayEs=item.es;listen.title="Écouter en espagnol";listen.setAttribute("aria-label","Écouter cette consigne en espagnol");
+  utterance.append(document.createTextNode(" "),listen);box.append(utterance);
   const translation=el("p","spx-ent-french");translation.append(el("strong","", "En français : "),document.createTextNode(item.fr));box.append(translation);
   const action=el("p","spx-ent-action");action.append(el("strong","","Ce qu'on attend de toi : "),document.createTextNode(item.how));box.append(action);
   box.append(el("small","spx-ent-source","Source : "+item.source+" · "+item.kind));

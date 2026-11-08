@@ -99,3 +99,10 @@
 .tim-letter-method h4,.tim-letter-handwriting h4{margin:0 0 11px;color:#823046;font-size:15px}
 .tim-letter-method p,.tim-letter-handwriting p{margin:7px 0;color:#435266;font-size:13px;line-height:1.6}
 .tim-letter-disclaimer{font-size:12px!important;color:#6f7d8d!important}
+
+/* Bouton d'écoute des mots/phrases espagnoles, uniquement dans la matière Espagnol. */
+.spx-listen{display:inline-flex!important;align-items:center;justify-content:center;border:1px solid #e9d9a9!important;border-radius:10px!important;background:#fff2c9!important;color:#84354a!important;font-size:15px!important;min-height:35px;min-width:40px;padding:5px 8px!important;cursor:pointer!important;vertical-align:middle;margin:3px 0 3px 5px;line-height:1.2!important;box-shadow:none!important}
+.spx-listen:focus-visible{outline:3px solid #b9304c!important;outline-offset:2px}
+.spx-listen:hover{background:#ffe8a3!important}
+.spx-words td:first-child{vertical-align:middle}
+.spx-words .spx-listen{float:right}

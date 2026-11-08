@@ -24,6 +24,7 @@ function createWorkshop(){
   const sum=el("summary","",b.heading);
   card.append(sum);
   const orig=el("p","tim-letter-es",b.es),fr=el("p","tim-letter-fr");
+  const voice=el("button","spx-listen","🔊");voice.type="button";voice.dataset.sayEs=b.es;voice.title="Écouter cette expression espagnole";voice.setAttribute("aria-label","Écouter cet exemple en espagnol");orig.append(document.createTextNode(" "),voice);
   fr.append(el("strong","","Traduction : "),document.createTextNode(b.fr));
   const note=el("p","tim-letter-why");
   note.append(el("strong","","À comprendre ou corriger : "),document.createTextNode(b.why));
