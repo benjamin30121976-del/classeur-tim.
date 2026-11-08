@@ -1,0 +1,64 @@
+name: Tester le serveur Spark gratuit sur Cloudflare (sans publication)
+on:
+  pull_request:
+    paths:
+      - '_worker.js'
+      - '.assetsignore'
+      - 'boot.js'
+      - 'worker/**'
+      - 'tools/test/cloudflare-spark-backend.test.mjs'
+      - 'tools/test/cloudflare-spark-auth.test.mjs'
+      - '.github/workflows/test-cloudflare-spark.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Analyser le code du Worker et ses dépendances
+        run: |
+          node --check _worker.js
+          node --check boot.js
+          node --check worker/auth.mjs
+          node --check worker/firestore.mjs
+          node --check worker/server.mjs
+          node --check functions/grading.mjs
+          node --check functions/xp.mjs
+      - name: Tests de sécurité et de notation dans une base fictive
+        run: node --test tools/test/cloudflare-spark-backend.test.mjs tools/test/cloudflare-spark-auth.test.mjs
+      - name: Confirmer le branchement conditionnel côté navigateur
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const text=fs.readFileSync('boot.js','utf8');
+          const expected=['/api/status','/api/tim','cloudCallable','activeUser.getIdToken()','httpsCallable(functionsApi,name)(data)'];
+          for(const marker of expected)if(!text.includes(marker))throw Error('Pont Cloudflare incomplet : '+marker);
+          const direct=(text.match(/httpsCallable\(functionsApi,/g)||[]).length;
+          if(direct!==1)throw Error('Appels Firebase non transférés : '+direct);
+          console.log('OK : Cloudflare s’active seulement avec un secret serveur configuré.');
+          NODE
+      - name: Démarrer Cloudflare Pages en local sans secret
+        run: |
+          npm install --prefix /tmp/tim-wrangler --no-audit --no-fund wrangler
+          /tmp/tim-wrangler/node_modules/.bin/wrangler pages dev . --ip 127.0.0.1 --port 8788 > /tmp/cloudflare-test.log 2>&1 &
+          for i in $(seq 1 50); do
+            if curl -fsS http://127.0.0.1:8788/api/status > /tmp/api-status.json; then break; fi
+            sleep 1
+          done
+          test -s /tmp/api-status.json || { cat /tmp/cloudflare-test.log; exit 1; }
+          node -e "const d=require('/tmp/api-status.json');if(d.available!==false||d.platform!=='cloudflare-pages')process.exit(1);"
+          curl -fsS http://127.0.0.1:8788/ -o /tmp/tim-classeur-test.html
+          grep -q 'Missions' /tmp/tim-classeur-test.html || grep -q 'MISSION' /tmp/tim-classeur-test.html
+          CODE=$(curl -sS -o /tmp/api-denied.json -w '%{http_code}' -X POST http://127.0.0.1:8788/api/tim -H 'Content-Type: application/json' --data '{"action":"getParentReport"}')
+          test "$CODE" = '401' || { echo "Refus anonyme incorrect : $CODE"; exit 1; }
+          for PRIVATE_PATH in /functions/spanish-nov05-private.mjs /worker/auth.mjs /tools/test/cloudflare-spark-auth.test.mjs /CLOUDFLARE_SPARK_MISE_EN_SERVICE.md; do
+            PRIVATE_CODE=$(curl -sS -o /tmp/tim-private-path.txt -w '%{http_code}' "http://127.0.0.1:8788$PRIVATE_PATH")
+            test "$PRIVATE_CODE" = '404' || { echo "::error::Chemin privé accessible : $PRIVATE_PATH ($PRIVATE_CODE)"; exit 1; }
+          done
+          echo 'OK : site public, API privée, refus anonyme, sources serveur inaccessibles.'
