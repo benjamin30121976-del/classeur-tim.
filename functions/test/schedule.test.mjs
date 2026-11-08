@@ -5,3 +5,16 @@ test('math next class after Tuesday',()=>assert.equal(suggestedCorrectionDay({su
 test('Spanish next class after Monday Q2',()=>assert.equal(suggestedCorrectionDay({subject:'espagnol',submittedDate:'2026-11-09'}),'2026-11-11'));
 test('winter and summer Paris 18h',()=>{assert.equal(paris18Utc('2026-11-12'),'2026-11-12T17:00:00.000Z');assert.equal(paris18Utc('2027-06-03'),'2027-06-03T16:00:00.000Z');});
 test('unknown subject remains locked',()=>assert.equal(suggestedCorrectionAt({subject:'inconnue'},'2026-11-10'),null));
+
+test('créneaux Q1 et Q2 du tableau de référence',()=>{
+ assert.equal(suggestedCorrectionDay({subject:'physique-chimie',submittedDate:'2026-11-09'}),'2026-11-10');
+ assert.equal(suggestedCorrectionDay({subject:'physique-chimie',submittedDate:'2026-11-16'}),'2026-11-17');
+ assert.equal(suggestedCorrectionDay({subject:'SVT',submittedDate:'2026-11-09'}),'2026-11-09');
+ assert.equal(suggestedCorrectionDay({subject:'SVT',submittedDate:'2026-11-16'}),'2026-11-17');
+ assert.equal(suggestedCorrectionDay({subject:'technologie',submittedDate:'2026-11-09'}),'2026-11-12');
+ assert.equal(suggestedCorrectionDay({subject:'technologie',submittedDate:'2026-11-16'}),'2026-11-19');
+ assert.equal(suggestedCorrectionDay({subject:'espagnol',submittedDate:'2026-11-16'}),'2026-11-16');
+});
+test('date de devoir antérieure à la soumission ne déclenche pas de correction passée',()=>{
+ assert.equal(suggestedCorrectionDay({subject:'mathématiques',dueDate:'2026-11-05',submittedDate:'2026-11-10'}),'2026-11-12');
+});
