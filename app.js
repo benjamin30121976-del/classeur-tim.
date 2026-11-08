@@ -192,7 +192,7 @@ function openLesson(id){const l=lessonBy(id);if(!l)return;lessonSubject=subjectO
  if(!bis)dest.append(makeAttachmentPanel('lesson',l.id));
  for(const b of l.blocks)dest.append(buildBlock(b));loadInlineLessonFigures(dest,l.id);
  if(bis)dest.append(makeAttachmentPanel('lesson',l.id));
-let related=DATA.exercises.filter(e=>e.lesson===l.id&&!e.id.startsWith('R'));let controls=E('div','panel separated');controls.append(E('h3','','S’entraîner sur cette leçon'));if(related.length){let list=E('div','clicklist');for(const ex of related)list.append(cardAction(ex.title,(window.TIM_EXERCISE.school(ex)?'Devoir ENT · 0 XP':'Bonus · jusqu’à +2 XP')+' · '+quizLabel(ex),null,()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));controls.append(list);}else controls.append(E('p','','Un exercice pourra être ajouté ultérieurement.'));dest.append(controls);
+let related=DATA.exercises.filter(e=>e.lesson===l.id&&!e.id.startsWith('R'));let controls=E('div','panel separated');controls.append(E('h3','','S’entraîner sur cette leçon'));if(related.length){let list=E('div','clicklist');for(const ex of related)list.append(cardAction(ex.title,(window.TIM_EXERCISE.school(ex)?'Devoir ENT · XP selon le résultat':'Bonus · jusqu’à +2 XP')+' · '+quizLabel(ex),null,()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));controls.append(list);}else controls.append(E('p','','Un exercice pourra être ajouté ultérieurement.'));dest.append(controls);
 let help=E('div','helpbox');help.append(E('h3','','Je n’ai pas compris'));help.append(E('p','','Voici une autre manière de comprendre. Les explications suivantes ont été écrites spécialement pour le classeur.'));const stage=E('div');let index=0;function step(){clear(stage);if(index===0){stage.append(badge('Niveau 1 · Explication simple'),E('p','',l.help.simple));}if(index===1){stage.append(badge('Niveau 2 · Étapes guidées'));let ol=E('ol');for(const x of l.help.steps)ol.append(E('li','',x));stage.append(ol,E('p','note info',l.help.example));}if(index>=2){stage.append(badge('Niveau 3 · Vérifier avec un exemple'));const ck=l.help.check;if(ck){stage.append(E('p','',ck.q));let opts=E('div','check-answers');ck.options.forEach((o,j)=>opts.append(button(o,()=>{msg.textContent=(j===ck.right?'Bonne réponse. ':'Ce n’est pas la bonne réponse. ')+ck.why;msg.style.color=j===ck.right?'var(--green)':'var(--red)';},'plain')));stage.append(opts);const msg=E('p','subtle','Cette mini-question est une aide, pas un exercice noté.');stage.append(msg);}else stage.append(E('p','',l.help.example));}next.textContent=index===0?'Explication pas à pas →':index===1?'Vérifier avec un exemple →':'Recommencer l’aide';}
 const next=button('Explication pas à pas →',()=>{index=(index+1)%3;step();});help.append(stage,next);step();dest.append(help);
 let arch=E('div','panel');arch.append(E('h3','','Historique des cours'));arch.append(E('p','small', 'Les originaux ENT doivent être ajoutés dans l’espace parent pour être consultables de façon privée, sans mettre les PDF scolaires sur un site public.'));arch.append(button('Voir le journal des séances',()=>page('archives'),'plain'));dest.append(arch);scrollTop();}
@@ -210,7 +210,7 @@ function renderExerciseIndex(){
   finder.classList.add('hide');root.className='matter-grid';
   if(exerciseMode==='school-all'){
    root.className='clicklist';const schoolwork=bases.filter(e=>window.TIM_EXERCISE.mode(e)==='school');
-   document.getElementById('exercise-count').textContent='Devoirs de l’école · 0 XP';toolbar.append(button('← Toutes les matières',()=>{exerciseMode='';renderExerciseIndex();},'group-back'));
+   document.getElementById('exercise-count').textContent='Devoirs de l’école · XP selon le résultat';toolbar.append(button('← Toutes les matières',()=>{exerciseMode='';renderExerciseIndex();},'group-back'));
    if(!schoolwork.length)root.append(notice('Aucun devoir de l’ENT n’a encore été publié dans le classeur.'));
    else for(const ex of schoolwork)root.append(cardAction(ex.title,(ex.subject||'Espagnol')+' · 0 XP',exerciseDescription(ex),()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));return;
   }
@@ -279,7 +279,7 @@ function answerValue(input){if(input.type==='radio'){const chosen=document.query
 function freeOrTextAnswer(question,answer){if(question.type==='free')return null;const correct=question.type==='mc'?String(question.right)===String(answer):[question.right,...(question.also||[])].some(x=>norm(x)===norm(answer));return correct;}
 function openExercise(id){const ex=exerciseBy(id);if(!ex)return;window.__TIM_OPEN_EXERCISE_ID=id;page('exercices');document.getElementById('exercise-index').classList.add('hide');const root=clear(document.getElementById('exercise-detail'));root.classList.add('active');root.append(button('← Retour aux exercices',()=>{root.classList.remove('active');document.getElementById('exercise-index').classList.remove('hide');renderExerciseIndex();scrollTop();},'plain back'));root.append(badge(ex.level),E('h2','',ex.title),E('p','intro',exerciseDescription(ex)),E('p','small','Leçon associée : '+lessonBy(ex.lesson).title));root.append(button('Voir la leçon correspondante',()=>openLesson(ex.lesson),'plain'));root.append(makeAttachmentPanel('exercise',ex.id));if(!window.__TIM_GUEST&&!ex.kind&&!attemptFor(ex.id)){
  const mode=window.TIM_EXERCISE.mode(ex);
- const modeInfo=notice(mode==='school'?'📚 DEVOIR DE L’ÉCOLE · 0 XP. Ton parent débloquera la correction.':mode==='bonus'?'⭐ EXERCICE BONUS · 100 % = +2 XP ; dès 60 % = +1 XP ; sinon 0. Maximum +3 XP par jour.':'Cet exercice n’est pas encore disponible.');modeInfo.id='tim-exercise-mode-info';root.append(modeInfo);
+ const modeInfo=notice(mode==='school'?'📚 DEVOIR DE L’ÉCOLE · XP selon le résultat. Ton parent débloquera la correction.':mode==='bonus'?'⭐ EXERCICE BONUS · 100 % = +2 XP ; dès 60 % = +1 XP ; sinon 0. Maximum +3 XP par jour.':'Cet exercice n’est pas encore disponible.');modeInfo.id='tim-exercise-mode-info';root.append(modeInfo);
 }
 if(window.__TIM_GUEST){root.append(notice('Visite en lecture seule : tu peux voir les questions, mais tu ne peux ni répondre ni valider.','guest-preview'));
  for(const [i,q] of ex.questions.entries()){const row=E('div','q');row.append(E('strong','',(i+1)+'. '+q.q));if(q.type==='mc'){const ul=E('ul');for(const option of q.options)ul.append(E('li','',option));row.append(ul);}root.append(row);}return;}
@@ -582,8 +582,8 @@ function renderMatiere(name){
   const bonus=chapterLessons.filter(l=>!ordinary.includes(l));
   function addLessons(title,rows){if(!rows.length)return;body.append(E('h3','',title));const list=E('div','clicklist');for(const l of rows)list.append(cardAction(l.title,l.date||'Révision',l.summary||'',()=>openLesson(l.id)));body.append(list);}
   addLessons('Cours de la classe / ENT',ordinary);addLessons('Cours bonus : explications supplémentaires',bonus);
-  function addEx(title,rows){if(!rows.length)return;body.append(E('h3','',title));const list=E('div','clicklist');for(const e of rows)list.append(cardAction(e.title,(window.TIM_EXERCISE.school(e)?'0 XP':'Bonus XP'),exerciseDescription(e),()=>openExercise(e.id),attemptFor(e.id)?'Terminé':'À faire'));body.append(list);}
-  addEx('Devoirs ENT · 0 XP',chapterExercises.filter(e=>window.TIM_EXERCISE.mode(e)==='school'));
+  function addEx(title,rows){if(!rows.length)return;body.append(E('h3','',title));const list=E('div','clicklist');for(const e of rows)list.append(cardAction(e.title,(window.TIM_EXERCISE.school(e)?'XP selon le résultat':'Bonus XP'),exerciseDescription(e),()=>openExercise(e.id),attemptFor(e.id)?'Terminé':'À faire'));body.append(list);}
+  addEx('Devoirs ENT · XP selon le résultat',chapterExercises.filter(e=>window.TIM_EXERCISE.mode(e)==='school'));
   addEx('Entraînements bonus',chapterExercises.filter(e=>window.TIM_EXERCISE.mode(e)!=='school'));
   section.append(body);root.append(section);
  }
@@ -646,7 +646,7 @@ function __timRefreshCalendar(){
   const el=document.getElementById('exercices');if(el?.classList.contains('active')){
    renderExerciseIndex();
    const tip=document.getElementById('tim-exercise-mode-info');const ex=exerciseBy(window.__TIM_OPEN_EXERCISE_ID);
-   if(tip&&ex){const mode=window.TIM_EXERCISE.mode(ex);tip.textContent=mode==='bonus'?'⭐ EXERCICE BONUS · 100 % = +2 XP ; dès 60 % = +1 XP ; sinon 0. Maximum +3 XP par jour.':mode==='school'?'📚 DEVOIR DE L’ÉCOLE · 0 XP.':'Pas encore disponible.';}
+   if(tip&&ex){const mode=window.TIM_EXERCISE.mode(ex);tip.textContent=mode==='bonus'?'⭐ EXERCICE BONUS · 100 % = +2 XP ; dès 60 % = +1 XP ; sinon 0. Maximum +3 XP par jour.':mode==='school'?'📚 DEVOIR DE L’ÉCOLE · XP selon le résultat.':'Pas encore disponible.';}
   }
   if(document.getElementById('home')?.classList.contains('active'))renderHome();
  }
