@@ -245,6 +245,12 @@ async function startSession(user){
  try{content=await loadCourseAdditions(content);}catch(e){console.warn('Extension de cours indisponible avant mise à jour des règles Firebase :',e);}
  content=window.TIM_APPLY_SPANISH_NOV05?.(content)||content;
  if(window.__TIM_CHALLENGE_SETUP) content=window.__TIM_CHALLENGE_SETUP(content);
+ // Tim never receives answer fields through the application state.
+ // Server-side storage/rules must also be migrated before production release.
+ if(!isParent){
+  const hiddenFields=new Set(['right','also','why','expected','answer','answers','answerKey','answerKeys','solution','solutions','correction','corrections','explanation','rubric']);
+  content={...content,exercises:content.exercises.map(ex=>({...ex,questions:(ex.questions||[]).map(q=>Object.fromEntries(Object.entries(q).filter(([key])=>!hiddenFields.has(key))))}))};
+ }
  window.__TIM_DATA=content;window.__TIM_PARENT=isParent;
  window.__CLOUD_ATTEMPTS=[];
  try{await fetchAttempts(content);}catch(e){message('Impossible de lire les résultats. Les règles Firestore sont à vérifier.');return;}
