@@ -30,11 +30,14 @@ test('Les jetons Firebase sont vérifiés cryptographiquement avant les rôles',
  try{
   assert.equal(await verifyFirebaseToken('Bearer '+await signedJwt(key,claims(PARENT_UID))),PARENT_UID);
   assert.equal(await verifyFirebaseToken('Bearer '+await signedJwt(key,claims(TIM_UID))),TIM_UID);
-  await assert.rejects(()=>verifyFirebaseToken('Bearer '+await signedJwt(key,claims('different-user'))),e=>e.status===403);
+  const outsiderToken=await signedJwt(key,claims('different-user'));
+  await assert.rejects(()=>verifyFirebaseToken('Bearer '+outsiderToken),e=>e.status===403);
   const foreign={...claims(TIM_UID),aud:'other-project'};
-  await assert.rejects(()=>verifyFirebaseToken('Bearer '+await signedJwt(key,foreign)),e=>e.status===401);
+  const foreignToken=await signedJwt(key,foreign);
+  await assert.rejects(()=>verifyFirebaseToken('Bearer '+foreignToken),e=>e.status===401);
   const expired={...claims(TIM_UID),exp:Math.floor(Date.now()/1000)-1};
-  await assert.rejects(()=>verifyFirebaseToken('Bearer '+await signedJwt(key,expired)),e=>e.status===401);
+  const expiredToken=await signedJwt(key,expired);
+  await assert.rejects(()=>verifyFirebaseToken('Bearer '+expiredToken),e=>e.status===401);
   const token=await signedJwt(key,claims(TIM_UID));
   const tampered=token.slice(0,-4)+'ABCD';
   await assert.rejects(()=>verifyFirebaseToken('Bearer '+tampered),e=>e.status===401);
