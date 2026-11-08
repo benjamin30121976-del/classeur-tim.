@@ -9,7 +9,7 @@ const db=getFirestore();
 const timUid=process.env.TIM_STUDENT_UID,parentUid=process.env.TIM_PARENT_UID;
 const validId=id=>typeof id==='string'&&/^[A-Za-z][A-Za-z0-9_-]{1,35}$/.test(id);
 function role(request,which){const uid=which==='tim'?timUid:parentUid;if(!uid||request.auth?.uid!==uid)throw new HttpsError('permission-denied','Accès non autorisé');}
-function parisDate(d){return new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'}).format(d);}
+function parisDate(d){const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);const get=t=>p.find(x=>x.type===t).value;return `${get('year')}-${get('month')}-${get('day')}`;}
 export const submitTimExercise=onCall({region:'europe-west1',enforceAppCheck:true},async request=>{
  role(request,'tim');
  const {id,answers}=request.data||{};
@@ -31,7 +31,7 @@ export const submitTimExercise=onCall({region:'europe-west1',enforceAppCheck:tru
   const xp=cappedPoints(raw,Number(today.earned||0),Number(today.lost||0),weekEarned,Number(today.bonus||0),category);
   tx.set(xpRef,{date,week,earned:Number(today.earned||0)+Math.max(0,xp),lost:Number(today.lost||0)+Math.max(0,-xp),bonus:Number(today.bonus||0)+(category==='bonus'?Math.max(0,xp):0),weekEarned:weekEarned+Math.max(0,xp),updatedAt:FieldValue.serverTimestamp()});
   const common={exerciseId:id,authorUid:request.auth.uid,submittedAt:FieldValue.serverTimestamp(),score:result.score,total:result.total,needsReview:result.needsReview,policyVersion:17};
-  tx.create(attemptRef,{...common,xp,responses:answers.map(v=>String(v)),suggestedReleaseAt:suggestedCorrectionAt(ex,date)});
+  tx.create(attemptRef,{...common,xp,responses:answers.map(v=>String(v)),suggestedReleaseAt:null,proposedReleaseAt:suggestedCorrectionAt(ex,date),scheduleVerified:false});
   tx.create(privateRef,{...common,...result});
   return {id,submitted:true,correctionLocked:true};
  });}catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError('internal','Échec de validation');}
@@ -49,8 +49,8 @@ export const getParentReport=onCall({region:'europe-west1',enforceAppCheck:true}
 export const getTimReleasedCorrections=onCall({region:'europe-west1',enforceAppCheck:true},async request=>{
  role(request,'tim');
  const [attempts,releases]=await Promise.all([db.collection('attempts').where('authorUid','==',request.auth.uid).limit(1000).get(),db.collection('releasedCorrections').limit(1000).get()]);
- const ids=new Set(attempts.docs.map(d=>d.id)),now=Date.now();
- const eligible=releases.docs.filter(d=>ids.has(d.id)&&d.get('released')===true&&typeof d.get('releaseAt')?.toMillis==='function'&&d.get('releaseAt').toMillis()<=now);
+ const eligibleAttempts=new Map(attempts.docs.map(d=>[d.id,d.data()])),now=Date.now();
+ const eligible=releases.docs.filter(d=>eligibleAttempts.has(d.id)&&eligibleAttempts.get(d.id).scheduleVerified===true&&typeof eligibleAttempts.get(d.id).suggestedReleaseAt==='string'&&Date.parse(eligibleAttempts.get(d.id).suggestedReleaseAt)<=now&&d.get('released')===true&&typeof d.get('releaseAt')?.toMillis==='function'&&d.get('releaseAt').toMillis()<=now);
  const docs=await Promise.all(eligible.map(d=>db.doc('privateAttempts/'+d.id).get()));
  return {corrections:docs.filter(d=>d.exists).map(d=>({id:d.id,answers:d.data().answers||[],score:d.data().score,total:d.data().total}))};
 });
@@ -63,6 +63,7 @@ export const setParentCorrectionRelease=onCall({region:'europe-west1',enforceApp
  // Parent may postpone, never advance the release before the scheduled class at 18:00 Paris.
  const earliest=attempt.get('suggestedReleaseAt');
  if(released===true){
+   if(attempt.get('scheduleVerified')!==true)throw new HttpsError('failed-precondition','Emploi du temps non vérifié');
    if(typeof earliest!=='string'||!Number.isFinite(Date.parse(earliest)))throw new HttpsError('failed-precondition','Horaire scolaire non validé');
    if(millis<Date.parse(earliest))throw new HttpsError('failed-precondition','Correction avant la fin du cours à 18 h');
  }
