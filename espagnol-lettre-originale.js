@@ -48,7 +48,7 @@ function createPanel(){
  function uploadBox(){
   if(!window.__TIM_PARENT)return;
   const details=el("details","tim-letter-upload");
-  details.append(el("summary","","Ajouter ou remplacer une photo manuscrite (parent seulement)"));
+  details.append(el("summary","","Ajouter la photo manuscrite originale (parent seulement)"));
   details.append(el("p","","Choisis la photo originale au format PNG, JPG ou WebP. Elle restera privée : seuls Tim et son parent pourront l’ouvrir. Ne la redessine pas : nous conservons l’image telle quelle."));
   const input=el("input","tim-letter-file");input.type="file";input.accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp";
   input.setAttribute("aria-label","Sélectionner la photo manuscrite originale de Tim");
