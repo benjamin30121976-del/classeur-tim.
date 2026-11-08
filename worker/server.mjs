@@ -152,7 +152,7 @@ async function oldTrainingProgress(db,uid){
  return {attempts:list.filter(x=>x.data?.authorUid===TIM_UID).map(x=>({
   id:x.id,lessonId:x.data.lessonId,mode:x.data.mode,series:x.data.series,
   score:x.data.score,total:x.data.total,submittedAt:x.data.submittedAt||'',
-  xp:0,items:x.data.items||[]
+  xp:0,items:uid===PARENT_UID?(x.data.items||[]):[]
  }))};
 }
 const ACTIONS={
