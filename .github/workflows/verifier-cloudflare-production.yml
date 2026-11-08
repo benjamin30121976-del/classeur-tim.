@@ -1,0 +1,31 @@
+name: Vérifier le serveur Cloudflare et les notes Parent en production
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'outils/verifier-cloudflare-production.cjs'
+      - '.github/workflows/verifier-cloudflare-production.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+      TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer navigateur de contrôle
+        run: |
+          mkdir -p /tmp/controle-classeur
+          npm install --prefix /tmp/controle-classeur --no-audit --no-fund playwright
+          /tmp/controle-classeur/node_modules/.bin/playwright install --with-deps chromium
+      - name: Contrôle en lecture seule du serveur public et du compte Parent
+        env:
+          NODE_PATH: /tmp/controle-classeur/node_modules
+        run: node outils/verifier-cloudflare-production.cjs
