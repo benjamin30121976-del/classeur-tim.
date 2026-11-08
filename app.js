@@ -223,9 +223,9 @@ function renderExerciseIndex(){
    toolbar.append(button('← Toutes les matières',()=>{exerciseMode='';renderExerciseIndex();},'group-back'));
    root.append(bonusMissionPanel(false));return;
   }
-  document.getElementById('exercise-count').textContent='Devoirs de l’école, défi du jour et exercices bonus :';
+  document.getElementById('exercise-count').textContent='Devoirs de l’école et exercices bonus :';
   const overview=E('div','exercise-v12-overview');
-  overview.append(button('📚 DEVOIRS DE L’ÉCOLE · XP',()=>{exerciseSubject='';exerciseMode='school-all';renderExerciseIndex();},'exercise-v12-overview-button school'),button('🎯 DÉFI DU JOUR · +3 XP',()=>{page('home');document.getElementById('challenge-section')?.scrollIntoView({behavior:'smooth',block:'center'});},'exercise-v12-overview-button challenge'));
+  overview.append(button('📚 DEVOIRS DE L’ÉCOLE · 0 XP',()=>{exerciseSubject='';exerciseMode='school-all';renderExerciseIndex();},'exercise-v12-overview-button school'));
   root.append(overview,bonusMissionPanel(false));
   const icons=['🇪🇸','∑','⚗','EN','📖','🌍','⚖','🌱','⚙'];
   SCHOOL_SUBJECTS.forEach((name,i)=>{const count=bases.filter(e=>(e.subject||'Espagnol')===name).length;
@@ -250,7 +250,7 @@ function renderExerciseIndex(){
    tile.append(E('span','type-icon',icon),E('strong','',label),E('small','',desc),E('span','type-counter',found.length+' exercice(s)'));
    tile.addEventListener('click',()=>{exerciseMode=mode;exerciseGroup='';renderExerciseIndex();});choices.append(tile);
   }
-  root.append(E('p','exercise-type-prompt','Les devoirs de l’école n’apportent aucun XP. Les exercices bonus sont libres, avec un plafond de +3 XP par jour. Le défi du jour se trouve sur l’accueil.'),choices);
+  root.append(E('p','exercise-type-prompt','Les devoirs de l’école n’apportent aucun XP. Les exercices bonus sont libres, avec un plafond de +3 XP par jour.'),choices);
   return;
  }
  // Entrée rapide : les 3 bonus du jour, sans obliger Tim à choisir un chapitre.
@@ -683,7 +683,8 @@ function renderHome(){
  const root=clear(document.getElementById('home-content'));refreshXPHeader();
  const hero=E('section','mission-hero');
  const copy=E('div','mission-copy');copy.append(E('div','shout','CLASSEUR · 3e'),E('h1','','CHOISIS TA MISSION'),E('p','','Cours, défis et progression. À toi de jouer.'));
- copy.append(button('Choisir une matière →',()=>page('matieres'),'lobo-go'));hero.append(copy);const wolf=E('img','mission-wolf');wolf.src='./assets/loup-accueil.webp';wolf.alt='Le loup jongleur du classeur';hero.append(wolf);root.append(hero,...(window.__TIM_CHALLENGES?.today==='2026-11-08'?[]:[missionCard('daily')]),...(window.__TIM_GUEST?[]:[makeXPPanel()]),makeRewardsTile(),makeSoundSettings(),bonusMissionPanel(true),missionCard('weekly'),missionCard('sunday'));
+ copy.append(button('Choisir une matière →',()=>page('matieres'),'lobo-go'));hero.append(copy);const wolf=E('img','mission-wolf');wolf.src='./assets/loup-accueil.webp';wolf.alt='Le loup jongleur du classeur';hero.append(wolf);// Defi quotidien suspendu jusqu'a verification pedagogique des enonces et de la correction.
+ root.append(hero,...(window.__TIM_GUEST?[]:[makeXPPanel()]),makeRewardsTile(),makeSoundSettings(),bonusMissionPanel(true),missionCard('weekly'),missionCard('sunday'));
  root.append(E('h2','home-section-title','Que veux-tu travailler ?'));
  const cards=E('div','home-grid');
  for(const o of [{name:'Matières',sub:'Cours classés par matière',icon:'▦',cls:'cours',dest:'matieres'},
