@@ -37,6 +37,22 @@ fs.mkdirSync(out,{recursive:true});
    const rows=await page.locator('#matieres-content .spx-row[data-lesson]').count();
    if(rows!==4)throw Error(device+': expected four verbs sub-lessons, got '+rows);
    await page.locator('#matieres-content .spx-row[data-lesson]').first().click();
+   const voices=await page.locator('#matieres-content .spx-words .spx-listen').count();
+   if(voices!==10)throw Error(device+': expected one audio button for each of 10 Spanish expressions, found '+voices);
+   await page.evaluate(()=>{
+      window.__spanishSpoken=[];
+      window.SpeechSynthesisUtterance=class{constructor(text){this.text=text;}};
+      Object.defineProperty(window,"speechSynthesis",{value:{
+        cancel(){},getVoices(){return [{lang:"es-ES",name:"Spanish test voice"}];},
+        speak(utterance){window.__spanishSpoken.push({text:utterance.text,lang:utterance.lang,rate:utterance.rate});}
+      },configurable:true});
+   });
+   const firstWord=await page.locator('#matieres-content .spx-words .spx-listen').first().getAttribute('data-say-es');
+   await page.locator('#matieres-content .spx-words .spx-listen').first().click();
+   const spoken=await page.evaluate(()=>window.__spanishSpoken[0]);
+   if(spoken?.text!==firstWord||spoken?.lang!=="es-ES"||spoken?.rate>0.9)throw Error(device+': Spanish voice button not wired correctly');
+   if(await page.locator('#matieres-content .spx-guide .spx-listen').count()!==8)throw Error(device+': teacher instructions lack Spanish audio');
+   if(!(await page.locator('#matieres-content .spx-ent-translations .spx-listen').count()))throw Error(device+': ENT original expressions lack audio');
    const referenceInstructions=await page.locator('#matieres-content .spx-guide').count();
    if(referenceInstructions!==8)throw Error(device+': expected 8 translated teacher instructions, got '+referenceInstructions);
    const originalPanel=page.locator('#matieres-content .spx-ent-translations');
@@ -81,6 +97,7 @@ fs.mkdirSync(out,{recursive:true});
    await atelier.locator('.tim-letter-lesson summary').first().click();
    if(!(await atelier.locator('.tim-letter-fr').first().isVisible()))throw Error(device+': French translation not visible after opening section');
    if(!(await atelier.locator('.tim-letter-handwriting').isVisible()))throw Error(device+': handwriting guidance missing');
+   if(await atelier.locator('.tim-letter-es .spx-listen').count()!==6)throw Error(device+': Spanish letter examples lack audio');
    if(!(await page.locator('#matieres-content .tim-letter-state').isVisible()))throw Error(device+': private access explanation missing');
    if(await page.locator('#matieres-content .tim-letter-original').count())throw Error(device+': personal image visible in guest mode');
    if(await page.locator('#matieres-content .tim-letter-upload').count())throw Error(device+': guest should not see private upload');
