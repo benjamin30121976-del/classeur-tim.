@@ -48,3 +48,18 @@
 .spx-feedback strong{color:#8a2d45}
 .spx-feedback p{margin:5px 0}
 @media(max-width:520px){.spx-grid{grid-template-columns:1fr}.spx-card{min-height:0;display:grid;grid-template-columns:44px 1fr;gap:4px 11px;padding:13px}.spx-card .spx-icon{grid-row:span 3;margin:0}.spx-card p{margin:0}.spx-card small{grid-column:2}.spx-hero{padding:20px 16px}}
+
+/* Aide aux consignes : mêmes cartes que le reste du classeur, espagnol seulement. */
+.spx-guide-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.spx-guide{background:#fffaf0;border:1px solid #f1e1c7;border-radius:12px;padding:12px}
+.spx-guide strong{display:block;font-size:14px;color:#9b3047;line-height:1.5}
+.spx-guide-fr{font-size:13px;font-weight:800;color:#364256;margin-top:5px}
+.spx-guide small{display:block;font-size:12px;color:#5d6c80;line-height:1.55;margin-top:6px}
+.spx-instruction{padding:14px;margin:0 0 18px;border:1px solid #f0d6a3;border-radius:14px;background:#fff9e8}
+.spx-instruction .spx-label{margin-bottom:6px}
+.spx-instruction-es{font-weight:900;color:#942e43!important;font-size:16px!important;margin:5px 0 7px}
+.spx-instruction-fr{font-size:14px!important;color:#2f4159!important;margin:6px 0 10px}
+.spx-help-button{border:1px solid #e6ca8d;border-radius:10px;background:#fff;color:#8a3348;padding:10px;font-size:12px;font-weight:850;cursor:pointer}
+.spx-action{margin:10px 0 0!important;background:#fff;border-left:3px solid #e6b937;border-radius:0 8px 8px 0;padding:10px;color:#3f5064!important;font-size:13px!important}
+.spx-action[hidden]{display:none}
+@media(max-width:520px){.spx-guide-list{grid-template-columns:1fr}}
