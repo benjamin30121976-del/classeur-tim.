@@ -33,11 +33,11 @@ function mockFirestore() {
  };
 }
 
-test('23 mathematical evaluations, each with two complete questions',()=>{
+test('23 mathematical evaluations, each with ten complete questions',()=>{
  assert.equal(MATH_TOTAL,23);
  for(const t of allTasks()){
   assert.ok(t&&mathId(t.id));
-  assert.equal(t.questions.length,2);
+  assert.equal(t.questions.length,10);
   assert.equal(t.lessonId,'MBIS'+t.id.slice(2));
   for(const [i,q] of t.questions.entries()){
    assert.ok(q.prompt.length>=15,t.id+' question '+i+' lacks a clear prompt');
@@ -57,24 +57,23 @@ test('23 mathematical evaluations, each with two complete questions',()=>{
 test('No correction or correct answer metadata is sent in public tasks',()=>{
  for(const task of allTasks()){
   const exposed=mathPublicTask(task.id);
-  assert.deepEqual(Object.keys(exposed.questions[0]).sort(),['choices','prompt']);
-  assert.deepEqual(Object.keys(exposed.questions[1]).sort(),['choices','prompt']);
+  for(const question of exposed.questions)assert.deepEqual(Object.keys(question).sort(),['choices','prompt']);
  }
 });
 
-test('All 184 independent correct/wrong choice scenarios are graded and explained',()=>{
+test('All 920 independent correct/wrong choice scenarios are graded and explained',()=>{
  let checked=0;
  for(const t of allTasks()){
   const perfect=t.questions.map(q=>q.correctIndex);
   const top=gradeMathTask(t.id,perfect);
-  assert.equal(top.score,2);assert.equal(top.total,2);assert.equal(top.xp,0);
+  assert.equal(top.score,10);assert.equal(top.total,10);assert.equal(top.xp,0);
   assert.ok(top.items.every(x=>x.correct&&x.explanation));
-  for(let i=0;i<2;i++){
+  for(let i=0;i<10;i++){
    for(let choice=0;choice<4;choice++){
     const answers=perfect.slice();answers[i]=choice;
     const r=gradeMathTask(t.id,answers);
-    assert.equal(r.score,choice===perfect[i]?2:1);
-    assert.equal(r.total,2);
+    assert.equal(r.score,choice===perfect[i]?10:9);
+    assert.equal(r.total,10);
     assert.equal(r.xp,0);
     assert.equal(r.items[i].response,t.questions[i].choices[choice]);
     assert.equal(r.items[i].correct,choice===perfect[i]);
@@ -85,7 +84,7 @@ test('All 184 independent correct/wrong choice scenarios are graded and explaine
    }
   }
  }
- assert.equal(checked,23*2*4);
+ assert.equal(checked,23*10*4);
 });
 
 test('Tim gets a durable score and feedback, Parent can read it, no duplicate submission',async()=>{
@@ -93,12 +92,13 @@ test('Tim gets a durable score and feedback, Parent can read it, no duplicate su
  const task=mathTask(id);
  const taskBefore=await getMathTrainingTask(db,TIM_UID,{id});
  assert.equal(taskBefore.completed,false);
- assert.equal(taskBefore.task.questions.length,2);
- const answers=[task.questions[0].correctIndex,(task.questions[1].correctIndex+1)%4];
+ assert.equal(taskBefore.task.questions.length,10);
+ const answers=task.questions.map(q=>q.correctIndex);
+ answers[1]=(answers[1]+1)%4;
  const result=await submitMathTraining(db,TIM_UID,{id,answers});
  assert.equal(result.submitted,true);
- assert.equal(result.score,1);
- assert.equal(result.total,2);
+ assert.equal(result.score,9);
+ assert.equal(result.total,10);
  assert.equal(result.xp,0);
  assert.equal(result.items.length,2);
  assert.equal(result.items[1].correct,false);
@@ -111,7 +111,7 @@ test('Tim gets a durable score and feedback, Parent can read it, no duplicate su
  const parent=await getMathTrainingProgress(db,PARENT_UID);
  assert.equal(student.attempts.length,1);
  assert.equal(parent.attempts.length,1);
- assert.equal(student.attempts[0].score,1);
+ assert.equal(student.attempts[0].score,9);
  assert.equal(parent.attempts[0].items[1].expected,task.questions[1].expected);
  assert.equal(parent.attempts[0].xp,0);
  await assert.rejects(()=>submitMathTraining(db,PARENT_UID,{id,answers}),e=>e.status===403);
@@ -134,6 +134,6 @@ test('Invalid answers and unknown exercises cannot create attempts',async()=>{
  const db=mockFirestore();
  await assert.rejects(()=>submitMathTraining(db,TIM_UID,{id:'MT15',answers:[0]}),e=>e.status===400);
  await assert.rejects(()=>submitMathTraining(db,TIM_UID,{id:'MT00',answers:[0,0]}),e=>e.status===400);
- await assert.rejects(()=>submitMathTraining(db,TIM_UID,{id:'MT15',answers:[0,4]}),e=>e.status===400);
+ await assert.rejects(()=>submitMathTraining(db,TIM_UID,{id:'MT15',answers:[0,0,0,0,0,0,0,0,0,4]}),e=>e.status===400);
  assert.equal(db.data.size,0);
 });
