@@ -445,13 +445,6 @@ async function startSession(user){
    const released=response.data?.correctionStatus==='released'&&Array.isArray(response.data.answers)&&response.data.answers.length===ex.questions.length;
    return {id,date:new Date().toISOString(),title:ex.title,lesson:ex.lesson,xp,correctionLocked:!released,correctionStatus:released?'released':'pending-parent',answers:released?response.data.answers:[],score:released?Number(response.data.score):null,total:released?Number(response.data.total):null,needsReview:false,policyVersion:18};
   },
-  // Nettoyage unique à la demande du Parent, réservé à l'essai du 8 novembre.
-  resetTrial20261108:async()=>{
-   if(activeUser?.uid!==PARENT_UID)throw Error('Accès réservé au Parent.');
-   const result=(await cloudCallable('cancelNovemberTrial')({})).data;
-   await fetchAttempts(window.__TIM_DATA);
-   return result;
-  },
   refresh:async()=>fetchAttempts(window.__TIM_DATA),
   publish:publishCoursePack,
   saveLesson:saveEditableLesson,
