@@ -557,7 +557,14 @@ function renderHome(){
  root.append(E('p','home-mini-note',window.__TIM_GUEST?'Visite publique : cours et questions consultables, aucune réponse enregistrée.':'Débloque tes missions et suis ta progression. Consulte « Mes récompenses » pour connaître les règles.'));
  if(window.__TIM_PARENT)root.append(button('Voir les résultats et les réglages parent',()=>page('parent'),'plain'));
 }
+function setMatieresSelectionHeader(show){
+ // Le titre « Mes matières » et sa consigne sont utiles au choix des matières,
+ // mais redondants après l'ouverture d'une matière (dont Espagnol).
+ const heading=document.querySelector('#matieres > .pagehead');
+ if(heading)heading.style.display=show?'':'none';
+}
 function renderMatieres(){
+ setMatieresSelectionHeader(true);
  const root=clear(document.getElementById('matieres-content'));refreshXPHeader();
  root.append(E('p','intro',window.__TIM_GUEST?'Aperçu public. Les contenus privés nécessitent une connexion.':'Retrouve les cours, les chapitres et les exercices de chaque matière.')); 
  const wrap=E('div','matter-grid');
@@ -571,6 +578,7 @@ function renderMatieres(){
  if(SCHOOL_SUBJECTS.some(s=>!DATA.lessons.some(l=>(l.subject||'Espagnol')===s)))root.append(E('div','note','Les autres matières ne seront remplies qu’à partir des documents réels de Tim (ENT, cahiers et devoirs). Aucun cours ne sera inventé.'));
 }
 function renderMatiere(name){
+ setMatieresSelectionHeader(false);
  const root=clear(document.getElementById('matieres-content'));
  if(name==='Espagnol'&&window.TIM_SPANISH_PATH&&window.TIM_SPANISH_EDU){
   window.TIM_SPANISH_PATH.render(root,{lessons:DATA.lessons,back:renderMatieres,original:openLesson});
