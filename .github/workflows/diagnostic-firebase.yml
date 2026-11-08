@@ -27,8 +27,12 @@ jobs:
         run: npm install --no-audit --no-fund --ignore-scripts
       - name: Installer les dépendances du backend V16
         run: npm install --prefix functions --no-audit --no-fund --ignore-scripts
-      - name: Vérifier la syntaxe des fonctions serveur
-        run: node --check functions/index.mjs
+      - name: Vérifier la syntaxe du backend et des interfaces
+        run: |
+          node --check functions/index.mjs
+          node --check boot.js
+          node --check app.js
+          node --check guest-access.js
       - name: Tester la notation et les XP (JUnit)
         run: |
           mkdir -p test-results
