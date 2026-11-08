@@ -1,0 +1,20 @@
+# Ne jamais servir les sources du serveur et les scripts internes comme fichiers publics.
+# Le site client utilise les JS/HTML/CSS dans la racine, assets/ et packs/.
+worker/
+functions/
+tools/
+outils/
+.github/
+browser-requests/
+node_modules/
+test-espagnol-results/
+browser-parent-results/
+captures-classeur/
+package.json
+package-lock.json
+firebase.json
+firestore.rules
+README.md
+CLOUDFLARE_SPARK_MISE_EN_SERVICE.md
+.gitignore
+.assetsignore
