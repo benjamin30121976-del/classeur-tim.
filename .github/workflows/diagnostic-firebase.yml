@@ -20,5 +20,7 @@ jobs:
           java-version: '21'
       - name: Installer les dépendances Firebase
         run: npm install --no-audit --no-fund --ignore-scripts
+      - name: Tester la logique de notation hors ligne
+        run: node --test functions/test/*.test.mjs
       - name: Tester les autorisations sur l'émulateur
         run: npm run test:rules
