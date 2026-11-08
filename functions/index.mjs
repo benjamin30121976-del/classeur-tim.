@@ -12,11 +12,10 @@ function parisDate(d){const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/
 async function resolveExercise(id){
  const [publicDoc,keyDoc]=await Promise.all([db.doc('publicExercises/'+id).get(),db.doc('answerKeys/'+id).get()]);
  if(publicDoc.exists&&keyDoc.exists)return {exercise:publicDoc.data(),key:keyDoc.data()};
- const source=await db.doc('content/main').get();
- if(!source.exists)throw new HttpsError('not-found','Cours non importés');
- const raw=source.data();const data=decodeCourse(raw?.payloadJson?JSON.parse(raw.payloadJson):raw);
- let exercise=(data.exercises||[]).find(x=>x.id===id);
- if(!exercise){const extra=await db.doc('exercises/'+id).get();if(extra.exists){const v=extra.data();exercise=decodeCourse(v.payloadJson?JSON.parse(v.payloadJson):v);}}
+ const [source,extra]=await Promise.all([db.doc('content/main').get(),db.doc('exercises/'+id).get()]);
+ let exercise;
+ if(extra.exists){const v=extra.data();exercise=decodeCourse(v.payloadJson?JSON.parse(v.payloadJson):v);}
+ if(!exercise&&source.exists){const raw=source.data();const data=decodeCourse(raw?.payloadJson?JSON.parse(raw.payloadJson):raw);exercise=(data.exercises||[]).find(x=>x.id===id);}
  if(!exercise)throw new HttpsError('not-found','Exercice introuvable');
  return {exercise:{...sanitizeCourse(exercise),enabled:true},key:{questions:(exercise.questions||[]).map(q=>({right:q.right,also:q.also,why:q.why}))}};
 }
