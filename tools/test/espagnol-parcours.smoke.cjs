@@ -87,7 +87,7 @@ const out=path.join(process.cwd(),'test-espagnol-results');fs.mkdirSync(out,{rec
         const task=window.TIM_SPANISH_TRAINING_ENGINE.buildSpanishTasks(id,window.TIM_SPANISH_EDU);
         const report=window.TIM_SPANISH_TRAINING_ENGINE.evaluateSpanishTask(task,answers);
         p.attempts.push({...report,mode:task.mode,series:task.series,lessonId:task.lesson,submittedAt:new Date().toISOString(),xp:0});
-        return {...report,submitted:true,xp:0};
+        return {submitted:true,xp:0,cloudSaved:true};
       }
     };
    });
@@ -143,7 +143,7 @@ const out=path.join(process.cwd(),'test-espagnol-results');fs.mkdirSync(out,{rec
    await subject.locator('.spx-back').click();
    await subject.locator('[data-training="L09"]').click();
    await page.waitForFunction(()=>!!window.__TIM_SPANISH_PROGRESS?.attempts?.find(a=>a.id==='SPW_L09_02'),{timeout:5000});
-   if(await page.evaluate(()=>Boolean(JSON.parse(localStorage.getItem('tim_spanish_training_completed_local_v1')||'{}').SPW_L09_02)))throw Error('Synced local result not cleared');
+   if(!await page.evaluate(()=>{const x=JSON.parse(localStorage.getItem('tim_spanish_training_completed_local_v1')||'{}').SPW_L09_02;return Boolean(x?.cloudSaved&&!x.localOnly&&x.items?.length===10);}))throw Error('Synced local result or its correction lost');
    await selectSpanish();
    await openGroup(4);
    await subject.locator('[data-easy="L05"]').click();
