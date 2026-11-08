@@ -431,7 +431,8 @@ async function startSession(user){
    if(!ex||!Array.isArray(values)||values.length!==ex.questions.length)throw Error('Exercice ou réponses invalides.');
    const response=await cloudCallable('submitTimExercise')({id,answers:values});
    const xp=Number(response.data?.xp||0);
-   return {id,date:new Date().toISOString(),title:ex.title,lesson:ex.lesson,xp,correctionLocked:true,correctionStatus:'pending-parent',answers:[],score:null,total:null,needsReview:false};
+   const released=response.data?.correctionStatus==='released'&&Array.isArray(response.data.answers)&&response.data.answers.length===ex.questions.length;
+   return {id,date:new Date().toISOString(),title:ex.title,lesson:ex.lesson,xp,correctionLocked:!released,correctionStatus:released?'released':'pending-parent',answers:released?response.data.answers:[],score:released?Number(response.data.score):null,total:released?Number(response.data.total):null,needsReview:false,policyVersion:18};
   },
   refresh:async()=>fetchAttempts(window.__TIM_DATA),
   publish:publishCoursePack,
