@@ -10,7 +10,7 @@ const draft=id=>{try{const d=JSON.parse(localStorage.getItem(draftKey(id))||"nul
 const saveDraft=(id,answers)=>{try{localStorage.setItem(draftKey(id),JSON.stringify(answers));}catch(e){}};
 const clearDraft=id=>{try{localStorage.removeItem(draftKey(id));}catch(e){}};
 const progress=()=>window.__TIM_GUEST?{status:'guest',message:'Mode invité : les exercices sont consultables uniquement avec le compte Tim.',attempts:[]}:window.__TIM_SPANISH_PROGRESS||{status:'loading',attempts:[]};
-const found=id=>(progress().attempts||[]).find(a=>a.id===id)||localAttempt(id);
+const found=id=>{const cloud=(progress().attempts||[]).find(a=>a.id===id),cached=localAttempt(id);if(!cloud)return cached;if(cached&&Array.isArray(cached.items)&&cached.items.length===10)return {...cloud,score:cached.score,items:cached.items,localOnly:false};return cloud;};
 const isTim=()=>!window.__TIM_GUEST&&!window.__TIM_PARENT;
 
 /* Mode transitoire, à distinguer du compte Firebase. Aucune réponse n'est perdue
@@ -24,28 +24,37 @@ function storeLocal(report,answers){
  try{
   const saved=readLocal();
   if(saved[report.id])return saved[report.id];
-  const item={...report,answers,submitted:true,localOnly:true,xp:0,submittedAt:new Date().toISOString()};
+  const item={...report,answers,submitted:true,localOnly:!report.cloudSaved,xp:0,submittedAt:new Date().toISOString()};
   saved[report.id]=item;localStorage.setItem(COMPLETED_KEY,JSON.stringify(saved));
   return item;
  }catch(error){throw Error("Stockage local indisponible. Les réponses restent en brouillon, mais aucun exercice n’a été validé.");}
 }
-function forgetLocal(id){try{const x=readLocal();delete x[id];localStorage.setItem(COMPLETED_KEY,JSON.stringify(x));}catch(e){}}
+function markCloudSaved(id){
+ try{
+  const x=readLocal();
+  if(!x[id]||x[id].cloudSaved)return;
+  x[id]={...x[id],localOnly:false,cloudSaved:true};
+  localStorage.setItem(COMPLETED_KEY,JSON.stringify(x));
+ }catch(e){}
+}
 function localAttempt(id){return isTim()?readLocal()[id]||null:null;}
 let syncing=false;
 async function syncPending(){
  if(syncing||!isTim()||progress().status!=='ok'||!window.__TIM_BRIDGE?.trainingSubmit)return;
- const entries=Object.entries(readLocal());if(!entries.length)return;
+ const entries=Object.entries(readLocal()).filter(([id,item])=>item.localOnly&&!item.cloudSaved);
+ if(!entries.length)return;
  syncing=true;
  try{
   for(const [id,item] of entries){
-   if((progress().attempts||[]).some(a=>a.id===id)){forgetLocal(id);continue;}
+   if((progress().attempts||[]).some(a=>a.id===id)){markCloudSaved(id);continue;}
    if(!Array.isArray(item.answers)||item.answers.length!==10)continue;
    try{
     const report=await window.__TIM_BRIDGE.trainingSubmit(id,item.answers);
-    if(report?.submitted)forgetLocal(id);
+    if(report?.submitted)markCloudSaved(id);
    }catch(error){
     if(String(error.code||"").includes("already-exists")){
-     await window.__TIM_BRIDGE.trainingProgress();if((progress().attempts||[]).some(a=>a.id===id))forgetLocal(id);
+     await window.__TIM_BRIDGE.trainingProgress();
+     if((progress().attempts||[]).some(a=>a.id===id))markCloudSaved(id);
     }
    }
   }
@@ -60,15 +69,15 @@ function mount(root,{lesson,onBack}){
  let currentId=null;
  function drawList(){
   currentId=null;
-  const p=progress(),ready=p.status==='ok'||(p.status==='unavailable'&&isTim());
+  const p=progress(),ready=p.status==='ok'||(['unavailable','local'].includes(p.status)&&isTim());
   const header=(ready?'<p class="spx-training-status">'+progressLabel(lesson)+'</p>'+
    '<div class="spx-training-track" role="progressbar" aria-label="Exercices terminés" aria-valuenow="'+count(lesson)+'" aria-valuemin="0" aria-valuemax="10"><span style="width:'+(count(lesson)*10)+'%"></span></div>':'')+
-   (p.status==='unavailable'&&isTim()?'<p class="spx-training-warning"><strong>Mode provisoire :</strong> les réponses, les notes et les corrections sont enregistrées uniquement sur cet appareil. Ton parent ne les voit pas encore sur son compte. Ne supprime pas les données du navigateur. Le transfert vers Firebase sera tenté quand il sera disponible.</p>':
+   (['unavailable','local'].includes(p.status)&&isTim()?'<p class="spx-training-warning"><strong>Mode provisoire :</strong> les réponses, les notes et les corrections sont enregistrées uniquement sur cet appareil. Ton parent ne les voit pas encore sur son compte. Ne supprime pas les données du navigateur. Le transfert vers Firebase sera tenté quand il sera disponible.</p>':
     p.status!=='ok'?'<p class="spx-training-warning">'+esc(p.message||'Chargement du suivi des exercices…')+'</p>':'');
   const section=mode=>'<h4 class="spx-training-group-title">'+(mode==='Q'?'5 exercices QCM':'5 exercices à écrire')+'</h4>'+
    Array.from({length:5},(_,j)=>{
     const id='SP'+mode+'_'+lesson+'_0'+(j+1),done=found(id),saved=draft(id),name=mode==='Q'?'QCM '+(j+1):'Écriture '+(j+1);
-    const detail=done?'Terminé · '+done.score+'/10 · '+(done.localOnly?'Sur cet appareil · ':'')+'Voir la correction':
+    const detail=done?'Terminé · '+(done.score===null?'Note à consulter depuis le compte Parent':done.score+'/10')+' · '+(done.localOnly?'Sur cet appareil · ':'')+'Voir le bilan':
      saved&&saved.some(v=>v.trim())?'En cours sur cet appareil · Reprendre':
      'À faire · 10 questions';
     return '<button type="button" class="spx-training-item'+(done?' is-done':'')+'" data-training-id="'+id+'"'+
@@ -86,7 +95,7 @@ function mount(root,{lesson,onBack}){
   currentId=id;
   const done=found(id);
   if(done){drawReview(done);return;}
-  const canAnswer=isTim()&&(progress().status==='ok'||progress().status==='unavailable');
+  const canAnswer=isTim()&&['ok','local','unavailable'].includes(progress().status);
   const prev=draft(id)||Array(10).fill('');
   const title=task.mode==='Q'?'QCM '+task.series:'Écriture '+task.series;
   const blocks=task.questions.map((q,i)=>{
@@ -97,7 +106,7 @@ function mount(root,{lesson,onBack}){
   slot.innerHTML='<button class="spx-training-back" type="button" id="spx-training-return">← Liste des exercices</button>'+
    '<h3>'+title+' — '+esc(COURSE()[lesson].name)+'</h3>'+
    '<p class="spx-training-reminder">Une seule validation définitive. Tu pourras ensuite consulter la correction et la note, sans rejouer. Aucun XP.</p>'+
-   (progress().status==='unavailable'&&isTim()?'<p class="spx-training-warning">Sauvegarde provisoire sur ce téléphone seulement : synchronisation avec le compte Tim en attente.</p>':'')+
+   (['unavailable','local'].includes(progress().status)&&isTim()?'<p class="spx-training-warning">Sauvegarde provisoire sur ce téléphone seulement : synchronisation avec le compte Tim en attente.</p>':'')+
    (!canAnswer?'<p class="spx-training-warning">Seul le compte Tim peut répondre et enregistrer une note.</p>':'')+
    '<form id="spx-training-form">'+blocks+
    (canAnswer?'<div id="spx-training-check" aria-live="polite"></div><button class="spx-button" type="submit" id="spx-training-submit">Vérifier mes 10 réponses</button>':'')+
@@ -119,7 +128,7 @@ function mount(root,{lesson,onBack}){
    button.onclick=async()=>{
     button.disabled=true;button.textContent='Enregistrement en cours…';
     try{
-     if(progress().status==='unavailable'){
+     if(['unavailable','local'].includes(progress().status)){
       // Un seul résultat local par identifiant : ne pas présenter cela comme une sauvegarde Firebase.
       const evaluated=ENGINE.evaluateSpanishTask(task,values);
       const local=storeLocal({...evaluated,mode:task.mode,series:task.series,lessonId:task.lesson},values);
@@ -127,8 +136,10 @@ function mount(root,{lesson,onBack}){
      }
      if(!window.__TIM_BRIDGE?.trainingSubmit)throw Error('Service non disponible.');
      const report=await window.__TIM_BRIDGE.trainingSubmit(id,values);
-     if(!report?.submitted||!Array.isArray(report.items)||report.items.length!==10)throw Error('Confirmation serveur incomplète.');
-     clearDraft(id);drawReview(report);
+     if(!report?.submitted||!report.cloudSaved)throw Error('Confirmation serveur incomplète.');
+     const scored=ENGINE.evaluateSpanishTask(task,values);
+     const local=storeLocal({...scored,mode:task.mode,series:task.series,lessonId:task.lesson,cloudSaved:true},values);
+     clearDraft(id);drawReview(local);
     }catch(error){
      // Ne pas afficher de note fictive ni marquer comme terminé sans confirmation distante.
      check.innerHTML='<p class="spx-training-warning">La validation n’a pas été confirmée : '+esc(error.message||'Erreur de connexion')+'. Les réponses restent sauvegardées en brouillon sur cet appareil.</p><button class="spx-button subtle" type="button" id="spx-training-reload">Vérifier si l’exercice a été enregistré</button>';
@@ -143,7 +154,15 @@ function mount(root,{lesson,onBack}){
  function drawReview(record){
   currentId=record.id;
   const task=ENGINE.buildSpanishTasks(record.id,COURSE());
-  if(!task||!Array.isArray(record.items)){drawList();return;}
+  if(!task){drawList();return;}
+  if(!Array.isArray(record.items)||record.items.length!==10){
+   slot.innerHTML='<button class="spx-training-back" type="button" id="spx-training-return">← Liste des exercices</button>'+
+     '<h3>Exercice terminé · '+(task.mode==='Q'?'QCM ':'Écriture ')+task.series+'</h3>'+
+     '<p class="spx-training-score">Exercice enregistré dans le compte · 0 XP</p>'+
+     '<p class="spx-note">Cet exercice ne peut pas être rejoué. Les réponses de cette tentative ne sont pas disponibles sur cet appareil. Le compte Parent peut consulter la note enregistrée et le détail des corrections.</p>'+
+     '<div class="spx-example">Réponses de référence : '+task.questions.map((q,i)=>(i+1)+'. '+esc(q.answer)).join(' · ')+'</div>';
+   slot.querySelector('#spx-training-return').onclick=drawList;return;
+  }
   slot.innerHTML='<button class="spx-training-back" type="button" id="spx-training-return">← Liste des exercices</button>'+
    '<h3>Exercice terminé · '+(task.mode==='Q'?'QCM ':'Écriture ')+task.series+'</h3>'+
    '<p class="spx-training-score">'+(record.localOnly?'Résultat conservé sur cet appareil : ':'Résultat enregistré dans le compte : ')+record.score+' / 10 · 0 XP</p>'+
@@ -179,7 +198,7 @@ function renderParentProgress(root){
    ids.map(id=>{
     const attempts=listIds(id).map(key=>found(key)).filter(Boolean);
     return '<details class="spx-parent-chapter"><summary>'+esc(COURSE()[id].name)+' — '+attempts.length+'/10 fait(s)</summary>'+
-     (attempts.length?attempts.map(a=>'<details class="spx-parent-result"><summary>'+(a.mode==='Q'?'QCM ':'Écriture ')+a.series+' — '+a.score+'/10</summary>'+
+     (attempts.length?attempts.map(a=>'<details class="spx-parent-result"><summary>'+(a.mode==='Q'?'QCM ':'Écriture ')+a.series+' — '+(a.score===null?'note indisponible':a.score+'/10')+'</summary>'+
       (a.items||[]).map((it,i)=>'<p><strong>Question '+(i+1)+'</strong> : '+esc(it.prompt)+'<br>Tim : '+esc(it.response)+' · attendu : '+esc(it.expected)+' · '+(it.correct?'correct':'à revoir')+'</p>').join('')+'</details>').join(''):'<p>Aucun exercice terminé.</p>')+'</details>';
    }).join('')+
    '<button type="button" class="spx-button subtle" id="spx-parent-refresh">Actualiser le suivi</button>';
