@@ -324,6 +324,12 @@ try{
  onAuthStateChanged(auth,async(user)=>{
   if(window.__TIM_GUEST)return;
   if(!user){if(appLoaded){window.location.reload();return;}stopApp();document.getElementById('login-form').hidden=!selectedRole;roleChoices.hidden=Boolean(selectedRole);message('Choisis Invité, Tim ou Parent.',true);return;}
+  if(!selectedRole){
+   // Ne pas ouvrir automatiquement un espace privé sans choix explicite.
+   roleChoices.hidden=false;form.hidden=true;message('Choisis Invité, Tim ou Parent.',true);return;
+  }
+  const expected=selectedRole==='tim'?TIM_UID:PARENT_UID;
+  if(user.uid!==expected){await signOut(auth);message('Ce compte ne correspond pas à l’espace choisi.');return;}
   await startSession(user);
  });
 }catch(err){if(!err.setupWaiting){stopApp();message('Impossible d’ouvrir Firebase : '+(err.message||'Erreur de configuration'));}}
