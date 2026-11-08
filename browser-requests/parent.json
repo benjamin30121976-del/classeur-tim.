@@ -1,8 +1,8 @@
 {
   "mode": "lecture-seule-parent",
   "site": "https://classeur-tim-v16.pages.dev/",
-  "scope": "Contrôler sur Chromium/Playwright la disparition du défi du jour, la navigation des 23 évaluations de mathématiques de 10 questions, la note Parent et la fiche A/B sans jamais valider depuis Tim.",
+  "scope": "Vérifier en lecture seule les 23 évaluations BIS (10 questions chacune), l'absence des anciens mini-exercices de 2 questions, et les notes/corrections disponibles dans l'espace Parent, sur téléphone et ordinateur. Ne jamais soumettre un exercice de Tim.",
   "launch_on_update": true,
-  "note": "Tests Node automatiques 230 questions/920 choix. TinyFish jamais utilisé. Navigation ordinateur et téléphone, 0 soumission.",
-  "checkVersion": "audit-final-2026-11-08-suppression-defi-230-questions-maths"
+  "note": "Tests automatiques : 230 questions, 920 scénarios de notation, correction immédiate renvoyée, précondition de tentative unique et lecture par les deux comptes ; aucune validation réelle.",
+  "checkVersion": "maths-bis-10questions-corrections-uniques-audit-2026-11-09"
 }
