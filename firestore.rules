@@ -11,8 +11,7 @@ service cloud.firestore {
   match /publicExercises/{id} { allow read: if family(); allow write: if parent() && !request.resource.data.keys().hasAny(['answers','answerKeys','corrections','expected','solution','solutions','right']); }
   match /answerKeys/{id} { allow read, write: if parent(); }
   match /releasedCorrections/{id} {
-   allow read: if parent() || (tim() && resource.data.released == true
-     && resource.data.releaseAt is timestamp && request.time >= resource.data.releaseAt);
+   allow read: if parent(); // Tim reçoit uniquement les corrections filtrées par la fonction serveur.
    allow write: if false; // Only trusted server function may approve release.
   }
   match /attempts/{id} {
