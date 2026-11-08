@@ -201,24 +201,48 @@ async function runFirebaseDiagnostic(){
 }
 
 async function fetchAttempts(content){
- const attemptCollection=collection(db,'attempts');
- const docs=await getDocs(activeUser?.uid===TIM_UID?query(attemptCollection,where('authorUid','==',TIM_UID)):attemptCollection);
- const map=new Map(content.exercises.map(x=>[x.id,x]));
- const list=[];
+ const docs=await getDocs(activeUser?.uid===TIM_UID?
+   query(collection(db,'attempts'),where('authorUid','==',TIM_UID)):
+   collection(db,'attempts'));
+ const map=new Map(content.exercises.map(x=>[x.id,x])),list=[];
+ const isParent=activeUser?.uid===PARENT_UID;
+ // Les originaux des notes sont déjà conservés dans privateAttempts.
+ // Les règles existantes en autorisent la lecture au seul parent.
+ let grades=new Map();
+ if(isParent){
+  try{
+   const privateDocs=await getDocs(collection(db,'privateAttempts'));
+   grades=new Map(privateDocs.docs.map(doc=>[doc.id,doc.data()]));
+  }catch(error){console.warn('Notes détaillées Parent indisponibles :',error.code||error.message);}
+ }
  docs.forEach(d=>{
-  const a=d.data(),ex=map.get(d.id);
-  if(!ex)return;
-  // Never reconstruct the correct answers in the browser before parent approval.
-  list.push({id:d.id,date:a.submittedAt?.toDate?.().toISOString()||new Date().toISOString(),title:ex.title,lesson:ex.lesson,xp:Number(a.xp||0),correctionStatus:a.correctionStatus==='released'?'released':'pending-parent',correctionLocked:a.correctionStatus!=='released',answers:[],score:null,total:null,needsReview:false});
+  const record=d.data(),ex=map.get(d.id);if(!ex)return;
+  const secret=isParent?grades.get(d.id):null;
+  const released=record.correctionStatus==='released';
+  list.push({
+   id:d.id,date:record.submittedAt?.toDate?.().toISOString()||new Date().toISOString(),
+   title:ex.title,lesson:ex.lesson,xp:Number(record.xp||0),
+   correctionStatus:released?'released':'pending-parent',
+   correctionLocked:isParent?false:!released,
+   answers:isParent&&Array.isArray(secret?.answers)?secret.answers:[],
+   score:isParent&&Number.isFinite(secret?.score)?secret.score:null,
+   total:isParent&&Number.isFinite(secret?.total)?secret.total:null,
+   needsReview:isParent?Boolean(secret?.needsReview):false
+  });
  });
  if(activeUser?.uid===TIM_UID&&list.some(x=>x.correctionStatus==='released')){
-  const response=await httpsCallable(functionsApi,'getTimReleasedCorrections')({});
-  const released=new Map((response.data?.corrections||[]).map(x=>[x.id,x]));
-  for(const attempt of list){const correction=released.get(attempt.id);if(!correction){attempt.correctionLocked=true;attempt.correctionStatus='pending-parent';continue;}
-   attempt.answers=Array.isArray(correction.answers)?correction.answers:[];
-   attempt.score=correction.score;attempt.total=correction.total;
-   attempt.correctionLocked=false;
-  }
+  try{
+   const response=await httpsCallable(functionsApi,'getTimReleasedCorrections')({});
+   const released=new Map((response.data?.corrections||[]).map(x=>[x.id,x]));
+   for(const attempt of list){
+    if(attempt.correctionStatus!=='released')continue;
+    const correction=released.get(attempt.id);
+    if(!correction){attempt.correctionLocked=true;attempt.correctionStatus='pending-parent';continue;}
+    attempt.answers=Array.isArray(correction.answers)?correction.answers:[];
+    attempt.score=correction.score;attempt.total=correction.total;
+    attempt.correctionLocked=false;
+   }
+  }catch(error){console.warn('Corrections Tim en attente :',error.code||error.message);}
  }
  list.sort((a,b)=>a.date.localeCompare(b.date));window.__CLOUD_ATTEMPTS=list;return list;
 }
@@ -282,13 +306,45 @@ async function startSession(user){
  window.__CLOUD_ATTEMPTS=[];window.__TIM_SPANISH_PROGRESS={status:'loading',attempts:[]};
  try{await fetchAttempts(content);}catch(e){message('Impossible de lire les résultats. Les règles Firestore sont à vérifier.');return;}
  window.__TIM_SPANISH_PROGRESS={status:'loading',attempts:[]};
+ const trainingId=/^SP[QW]_L(?:0[1-9]|1[0-5])_0[1-5]$/;
  const loadSpanishProgress=async()=>{
   try{
-   const response=await httpsCallable(functionsApi,'getSpanishTrainingProgress')({});
-   const attempts=Array.isArray(response.data?.attempts)?response.data.attempts:[];
-   window.__TIM_SPANISH_PROGRESS={status:'ok',attempts};
-  }catch(e){
-   window.__TIM_SPANISH_PROGRESS={status:'unavailable',attempts:[],message:e.code==='functions/not-found'?'Le nouveau suivi des exercices n’est pas encore activé dans Firebase.':'La sauvegarde des exercices est momentanément indisponible.'};
+   const docs=await getDocs(activeUser?.uid===TIM_UID?
+    query(collection(db,'attempts'),where('authorUid','==',TIM_UID)):
+    collection(db,'attempts'));
+   const ids=docs.docs.filter(d=>trainingId.test(d.id));
+   let grades=new Map();
+   if(activeUser?.uid===PARENT_UID&&ids.length){
+    const priv=await getDocs(collection(db,'privateAttempts'));
+    grades=new Map(priv.docs.filter(d=>trainingId.test(d.id)).map(d=>[d.id,d.data()]));
+   }
+   const attempts=ids.map(d=>{
+    const m=/^SP([QW])_(L\d\d)_0([1-5])$/.exec(d.id),privateRecord=grades.get(d.id);
+    return {
+     id:d.id,lessonId:m[2],mode:m[1],series:Number(m[3]),
+     score:Number.isFinite(privateRecord?.score)?privateRecord.score:null,total:10,
+     submittedAt:d.data().submittedAt?.toDate?.().toISOString()||'',
+     xp:0,cloudSaved:true,
+     items:Array.isArray(privateRecord?.answers)?privateRecord.answers.map(q=>({
+      prompt:q.question,response:q.response,correct:q.correct,
+      expected:q.expected,explanation:q.explanation||''
+     })):[]
+    };
+   });
+   // Sans les exercices publiés dans Firebase, on garde le mode local
+   // pour ne jamais annoncer une synchronisation qui n'existe pas.
+   const catalogue=window.__TIM_DATA?.exercises||[];
+   const available=catalogue.some(ex=>trainingId.test(ex.id));
+   window.__TIM_SPANISH_PROGRESS={
+    status:available?'ok':'local',attempts,
+    message:available?'':'Les entraînements sont préparés. La publication dans Firebase est en attente.'
+   };
+  }catch(error){
+   console.warn('Suivi Espagnol indisponible :',error.code||error.message);
+   window.__TIM_SPANISH_PROGRESS={
+    status:'unavailable',attempts:[],
+    message:'La lecture des notes Firebase est momentanément indisponible.'
+   };
   }
   document.dispatchEvent(new Event('tim-spanish-training-progress'));
   return window.__TIM_SPANISH_PROGRESS;
@@ -297,10 +353,16 @@ async function startSession(user){
   trainingProgress:loadSpanishProgress,
   trainingSubmit:async(id,answers)=>{
    if(window.__TIM_GUEST||activeUser?.uid!==TIM_UID)throw Error('Seul Tim peut valider un entraînement.');
-   const response=await httpsCallable(functionsApi,'submitSpanishTraining')({id,answers});
-   // Le serveur valide une seule fois et conserve la correction, sans XP.
+   if(!trainingId.test(id)||!Array.isArray(answers)||answers.length!==10)throw Error('Exercice invalide.');
+   const ex=window.__TIM_DATA.exercises.find(q=>q.id===id);
+   if(!ex)throw Error('Exercice pas encore publié dans Firebase.');
+   // Reprise du service existant pour les devoirs : validation unique
+   // et notation sur le serveur, aucune nouvelle fonction à déployer.
+   const response=await httpsCallable(functionsApi,'submitTimExercise')({id,answers});
+   if(!response.data?.submitted||Number(response.data.xp)!==0)
+    throw Error('Confirmation de validation sans XP non reçue.');
    await loadSpanishProgress();
-   return response.data;
+   return {submitted:true,xp:0,cloudSaved:true};
   },
   submit:async(id,values)=>{
    if(window.__TIM_GUEST||activeUser.uid!==TIM_UID)throw Error('Seul Tim peut valider les exercices.');
