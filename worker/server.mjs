@@ -174,7 +174,7 @@ async function oldTrainingProgress(db,uid){
 function allowedFamily(uid){
  if(uid!==TIM_UID&&uid!==PARENT_UID)throw new ApiFault(403,'forbidden');
 }
-async function getMathTrainingTask(db,uid,payload){
+export async function getMathTrainingTask(db,uid,payload){
  allowedFamily(uid);
  if(!mathId(payload?.id))throw new ApiFault(400,'invalid-exercise');
  const task=mathPublicTask(payload.id);
@@ -182,7 +182,7 @@ async function getMathTrainingTask(db,uid,payload){
  const existing=await db.get('mathTrainingAttempts/'+payload.id);
  return {task,completed:Boolean(existing&&existing.authorUid===TIM_UID)};
 }
-async function submitMathTraining(db,uid,payload){
+export async function submitMathTraining(db,uid,payload){
  permitted(uid,'tim');
  const id=payload?.id,answers=payload?.answers;
  if(!mathId(id)||!Array.isArray(answers)||answers.length!==2||
@@ -200,7 +200,7 @@ async function submitMathTraining(db,uid,payload){
  },NOW)],tx);
  return {...result,submitted:true,submittedAt:new Date().toISOString()};
 }
-async function getMathTrainingProgress(db,uid){
+export async function getMathTrainingProgress(db,uid){
  allowedFamily(uid);
  const attempts=await db.list('mathTrainingAttempts',100);
  return {attempts:attempts.filter(x=>mathId(x.id)&&x.data?.authorUid===TIM_UID)
