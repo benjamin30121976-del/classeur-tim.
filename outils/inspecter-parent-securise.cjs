@@ -114,14 +114,14 @@ async function inspect(browser,label,viewport){
               const response=await bridge.mathTrainingTask(id);
               available++;
               const q=response?.task?.questions||[];
-              if(response?.task?.id===id&&q.length===2&&q.every(item=>typeof item.prompt==='string'&&item.prompt.length>=15&&Array.isArray(item.choices)&&item.choices.length===4&&new Set(item.choices).size===4))valid++;
+              if(response?.task?.id===id&&q.length===10&&q.every(item=>typeof item.prompt==='string'&&item.prompt.length>=15&&Array.isArray(item.choices)&&item.choices.length===4&&new Set(item.choices).size===4))valid++;
               else errors.push(id+' incomplet');
             }catch(e){errors.push(id+' service indisponible');}
           }
           return {available,valid,errors};
         });
         check('23 évaluations mathématiques récupérables via API Parent',audit.available===23,'Réponses serveur : '+audit.available+'/23');
-        check('46 questions de mathématiques complètes côté site',audit.valid===23,'Tests complets : '+audit.valid+'/23'+(audit.errors.length?' ; anomalies : '+audit.errors.join(', ').slice(0,200):''));
+        check('230 questions de mathématiques complètes côté site',audit.valid===23,'Tests complets : '+audit.valid+'/23'+(audit.errors.length?' ; anomalies : '+audit.errors.join(', ').slice(0,200):''));
       }catch(e){check('audit des évaluations mathématiques côté site',false,'Erreur de lecture du service : '+String(e.message||e).slice(0,130));}
     }
     // Vérifier la lisibilité de la fiche de mathématiques sur téléphone et ordinateur.
