@@ -60,12 +60,7 @@ export function buildMission(id,content,curriculum=null){
  const wm=id.match(/^WEEK_(20\d{2})W(\d{2})$/);
  const sm=id.match(/^SUNDAY_(20\d{2})(\d{2})(\d{2})$/);
  if(dm){return null;}
- if(false&&dm){
-  const on=dm[1]+'-'+dm[2]+'-'+dm[3],number=Number(dm[4]);
-  const dow=dateUTC(on).getUTCDay();
-  if(!validDate(on)||dow===0||dow===6)return null;
-  chosen=select(pool(content,on),10,'DAY_'+on,(number-1)*10);
-  kind='daily';period=on;label='Petit défi du jour n°'+number; }else if(wm){
+ if(wm){
   const year=Number(wm[1]),num=Number(wm[2]),jan4=new Date(Date.UTC(year,0,4,12));
   jan4.setUTCDate(jan4.getUTCDate()-((jan4.getUTCDay()+6)%7)+(num-1)*7);
   const start=jan4.toISOString().slice(0,10);if(weekId(start)!==id)return null;
