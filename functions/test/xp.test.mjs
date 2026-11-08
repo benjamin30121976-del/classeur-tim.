@@ -12,3 +12,6 @@ test('Daily, weekly and bonus caps',()=>{
  assert.equal(cappedPoints(2,0,0,0,3,'bonus'),0);
  assert.equal(cappedPoints(-9,0,4,0,0,'daily'),-1);
 });
+
+test('Un devoir sans catégorie explicite ne rapporte aucun XP',()=>assert.equal(rawPoints({score:10,total:10}),0));
+test('Un devoir ENT ne retire jamais de XP même avec zéro bonne réponse',()=>assert.equal(rawPoints({category:'school',kind:'daily',score:0,total:10}),0));
