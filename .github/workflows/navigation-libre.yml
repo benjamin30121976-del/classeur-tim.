@@ -1,0 +1,50 @@
+name: Navigateur autonome du classeur
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'browser-requests/inspection.json'
+      - 'outils/navigateur-autonome.cjs'
+      - '.github/workflows/navigation-libre.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+  issues: write
+concurrency:
+  group: navigateur-autonome-classeur
+  cancel-in-progress: true
+jobs:
+  inspection:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Charger le code
+        uses: actions/checkout@v4
+      - name: Installer Chromium et Playwright
+        run: |
+          mkdir -p /tmp/tim-agent
+          npm install --prefix /tmp/tim-agent --no-audit --no-fund playwright
+          /tmp/tim-agent/node_modules/.bin/playwright install --with-deps chromium
+      - name: Explorer le classeur et enregistrer les captures
+        env:
+          NODE_PATH: /tmp/tim-agent/node_modules
+        run: node outils/navigateur-autonome.cjs
+      - name: Déposer le bilan permanent sur GitHub
+        if: always()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if [ -f browser-results/rapport.md ]; then
+            echo '' >> browser-results/rapport.md
+            echo '---' >> browser-results/rapport.md
+            echo 'Exécution : https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}' >> browser-results/rapport.md
+            gh issue edit 2 --body-file browser-results/rapport.md
+          fi
+      - name: Sauvegarder rapport et captures
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: navigation-libre-captures
+          path: browser-results/
+          retention-days: 3
+          if-no-files-found: warn
