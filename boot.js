@@ -2,6 +2,7 @@ import {initializeApp} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-
 import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,signOut} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import {getFirestore,doc,getDoc,setDoc,deleteDoc,collection,getDocs,serverTimestamp,runTransaction} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js';
 import {getFunctions,httpsCallable} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-functions.js';
+import {initializeAppCheck,ReCaptchaV3Provider} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-app-check.js';
 import {makeAttachmentBridge} from './attachments.js';
 
 // Only the two existing Firebase Authentication users are authorized.
@@ -326,7 +327,7 @@ async function startSession(user){
 // Netlify Drop: Firebase Web config (public client identifiers, never passwords).
 const CONFIG_STORAGE_KEY='mi-espanol-firebase-web-config';
 function parseFirebaseConfig(s){
-  let c;try{c=JSON.parse(s);}catch(_){c={};for(const m of s.matchAll(/(apiKey|authDomain|projectId|appId|messagingSenderId|storageBucket|measurementId)\s*:\s*["']([^"']+)["']/g))c[m[1]]=m[2];}
+  let c;try{c=JSON.parse(s);}catch(_){c={};for(const m of s.matchAll(/(apiKey|authDomain|projectId|appId|messagingSenderId|storageBucket|measurementId|appCheckSiteKey)\s*:\s*["']([^"']+)["']/g))c[m[1]]=m[2];}
   if(!c || c.projectId!=='classeur-ba3e7' || !c.apiKey || !c.authDomain || !c.appId) throw Error('Configuration incomplète ou projet différent de classeur-ba3e7.');
   return c;
 }
@@ -365,7 +366,11 @@ try{
   throw {setupWaiting:true};
  }
  installShareLink(cfg);
- const app=initializeApp(cfg);auth=getAuth(app);db=getFirestore(app);functionsApi=getFunctions(app,'europe-west1');
+ const app=initializeApp(cfg);auth=getAuth(app);db=getFirestore(app);
+ const appCheckSiteKey=String(cfg.appCheckSiteKey||'').trim();
+ if(appCheckSiteKey){initializeAppCheck(app,{provider:new ReCaptchaV3Provider(appCheckSiteKey),isTokenAutoRefreshEnabled:true});}
+ else console.warn('Firebase App Check: clé reCAPTCHA v3 absente. Les fonctions protégées ne seront pas accessibles.');
+ functionsApi=getFunctions(app,'europe-west1');
  form.addEventListener('submit',async(e)=>{
   e.preventDefault();button.disabled=true;message('Connexion en cours…');
   try{if(!selectedRole)throw new Error('Choisir un espace');const credential=await signInWithEmailAndPassword(auth,document.getElementById('login-email').value.trim(),document.getElementById('login-password').value);if(credential.user.uid!==(selectedRole==='tim'?TIM_UID:PARENT_UID)){await signOut(auth);throw new Error('Mauvais espace');}document.getElementById('login-password').value='';}
