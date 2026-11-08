@@ -528,7 +528,7 @@ function missionCard(kind){
  const open=kind==='daily'||(sunday?dayOfWeek===0:dayOfWeek>=5||dayOfWeek===0);
  const actions=E('div','challenge-card-actions');
  if(!ex){actions.append(badge('À venir'));}
- else if(done){const unlocked=(done.correctionStatus==='released'&&Array.isArray(done.answers)&&done.answers.length>0);actions.append(badge(unlocked?'✓ Déjà validé · '+done.score+'/'+done.total:'✓ Déjà validé · correction demain à 18 h','green'),button(unlocked?'Voir les réponses':'Voir ma validation',()=>openExercise(ex.id),'small-cta'));}
+ else if(done){const unlocked=(done.correctionStatus==='released'&&Array.isArray(done.answers)&&done.answers.length>0);actions.append(badge(unlocked?'✓ Déjà validé · '+done.score+'/'+done.total:'✓ Déjà validé · correction en attente du parent','green'),button(unlocked?'Voir les réponses':'Voir ma validation',()=>openExercise(ex.id),'small-cta'));}
  else if(!open){actions.append(badge(sunday?'Disponible dimanche':'Disponible vendredi'));}
  else if(window.__TIM_GUEST)actions.append(badge('Lecture seule · invité'));
  else actions.append(button(window.__TIM_PARENT?'Prévisualiser le défi':'LANCER LE DÉFI',()=>openExercise(ex.id),'mission-launch'));
