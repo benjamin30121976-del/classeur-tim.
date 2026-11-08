@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {rawPoints,cappedPoints} from '../xp.mjs';
-test('ENT homework awards XP immediately based on grade',()=>{assert.equal(rawPoints({category:'school',score:10,total:10}),8);assert.equal(rawPoints({category:'school',score:0,total:10}),-2);assert.equal(rawPoints({category:'school',score:6,total:10}),1);});
+test('Devoirs ENT : toujours 0 XP, quelle que soit la note',()=>{for(const score of [0,4,6,10])assert.equal(rawPoints({category:'school',score,total:10}),0);});
 test('Training grants no XP',()=>assert.equal(rawPoints({category:'training',score:10,total:10}),0));
 test('Bonus grants 0-2 XP',()=>{
  for(let score=0;score<=10;score++){const n=rawPoints({category:'bonus',score,total:10});assert.ok(n>=0&&n<=2)}
