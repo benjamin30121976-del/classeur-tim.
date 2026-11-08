@@ -42,3 +42,24 @@ export function paris18Utc(date){
  return new Date(target-minutes*60000).toISOString();
 }
 export function suggestedCorrectionAt(exercise,submittedDate){const date=suggestedCorrectionDay({subject:exercise.subject||exercise.matiere,dueDate:exercise.dueDate||exercise.entDueDate,submittedDate,excludedDates:exercise.excludedClassDates||[]});return date?paris18Utc(date):null;}
+
+export function nextCorrectionAfterSubmission(exercise,submittedAt){
+ const instant=submittedAt instanceof Date?submittedAt:new Date(submittedAt);
+ if(!Number.isFinite(instant.getTime()))throw new Error('Date de soumission invalide');
+ const fmt=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hourCycle:'h23'});
+ const parts=fmt.formatToParts(instant),part=k=>parts.find(p=>p.type===k)?.value;
+ const date=part('year')+'-'+part('month')+'-'+part('day');
+ const clock=part('hour')+':'+part('minute');
+ const subject=normalizeSubject(exercise.subject||exercise.matiere);
+ if(!subject)return null;
+ const excluded=new Set(exercise.excludedClassDates||[]);
+ for(let i=0;i<28;i++){
+  const d=utcDay(date);d.setUTCDate(d.getUTCDate()+i);
+  const day=isoDay(d);
+  if(excluded.has(day))continue;
+  const q=quarter(day);
+  const slots=(schedule[subject]?.[d.getUTCDay()]||[]).filter(s=>!s.includes('@')||s.endsWith('@'+q));
+  if(slots.some(s=>i>0||s.slice(0,5)>clock))return paris18Utc(day);
+ }
+ return null;
+}
