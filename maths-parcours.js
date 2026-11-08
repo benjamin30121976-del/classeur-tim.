@@ -48,7 +48,7 @@ function sectionBtns(id){
  btn('data-math-help',id,'3 · Je n’ai pas compris')+
  (ex?btn('data-math-ex',id,'Exercices ENT du chapitre ('+ex+')'):'')+
  (id==='MBIS13'?btn('data-math-programs',id,'Fiche originale · Programmes A et B'):'')+
- btn('data-math-train',id,'Évaluation · une seule fois · 0 XP')+
+ btn('data-math-train',id,'Évaluation BIS · 10 questions · une seule fois · 0 XP')+
  '</div>';
 }
 function wire(){
@@ -123,7 +123,7 @@ function viewProgramsOriginal(){
  const block=(label,steps)=>'<section class="spx-panel"><h3>'+label+'</h3><ol>'+steps.map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol></section>';
  draw(header('Fiche ENT · Deux programmes de calcul','Devoir du 8 octobre 2026 · Énoncé complet du professeur, sans réponses.')+
   back('Retour au chapitre Calcul littéral')+
-  '<section class="spx-panel"><h3>Lis l’énoncé avant les questions</h3><p>Cette fiche reproduit l’exercice 3 demandé par Mme Pialet. Les cinq questions se rapportent aux programmes présentés ci-dessous. Il s’agit du travail ENT, pas de la mini-évaluation BIS de deux questions.</p></section>'+
+  '<section class="spx-panel"><h3>Lis l’énoncé avant les questions</h3><p>Cette fiche reproduit l’exercice 3 demandé par Mme Pialet. Les cinq questions se rapportent aux programmes présentés ci-dessous. Il s’agit du travail ENT, pas de l’évaluation BIS de dix questions.</p></section>'+
   block('Programme A',progA)+block('Programme B',progB)+
   '<section class="spx-panel"><h3>Les cinq questions du professeur</h3><ol>'+qs.map(q=>'<li style="margin:14px 0">'+esc(q)+'</li>').join('')+'</ol><p>Pour répondre, utilise une feuille de brouillon. Les résultats ne sont pas enregistrés ni notés ici.</p></section>'+
   '<section class="spx-panel"><h3>Besoin de revoir la méthode ?</h3>'+btn('data-math-bis',id,'Lire la leçon BIS · Programmes de calcul')+'</section>',
