@@ -1,0 +1,80 @@
+name: Publier les fonctions Firebase Tim et Parent
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/publier-fonctions-parent-tim.yml'
+      - 'functions/index.mjs'
+      - 'firebase.json'
+      - 'functions/package.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  controle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier les fonctions et les noms attendus
+        run: |
+          set -eu
+          node --check functions/index.mjs
+          node --test functions/test/spanish-training.test.mjs
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const src=fs.readFileSync('functions/index.mjs','utf8');
+          const funcs=[
+            'submitTimExercise',
+            'getParentReport',
+            'getTimReleasedCorrections',
+            'setParentCorrectionRelease',
+            'getTimCourseContent',
+            'submitSpanishTraining',
+            'getSpanishTrainingProgress'
+          ];
+          for(const func of funcs){
+            if(!src.includes('export const '+func+'=onCall('))throw Error('Fonction absente du code : '+func);
+          }
+          console.log('Sept fonctions privées présentes dans le code. Aucun déploiement pendant les tests.');
+          NODE
+
+  deployer:
+    if: github.event_name == 'workflow_dispatch'
+    needs: controle
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier autorisation de publication
+        run: |
+          if [ -z "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "::error::Secret FIREBASE_SERVICE_ACCOUNT absent. Aucune publication effectuée."
+            exit 1
+          fi
+      - name: Déployer uniquement les fonctions privées nécessaires (pas les règles Firestore)
+        shell: bash
+        run: |
+          set -euo pipefail
+          KEY_FILE="$RUNNER_TEMP/tim-firebase-publisher.json"
+          trap 'rm -f "$KEY_FILE"' EXIT
+          printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$KEY_FILE"
+          chmod 600 "$KEY_FILE"
+          export GOOGLE_APPLICATION_CREDENTIALS="$KEY_FILE"
+          node -e "const c=require(process.env.GOOGLE_APPLICATION_CREDENTIALS);if(c.project_id!=='classeur-ba3e7'||!c.client_email||!c.private_key)throw Error('Clé Firebase incorrecte ou autre projet');console.log('Projet Firebase correct : classeur-ba3e7')"
+          npm install --prefix functions --ignore-scripts --no-audit --no-fund
+          npx --yes firebase-tools deploy --project classeur-ba3e7 --non-interactive --only functions:submitTimExercise,functions:getParentReport,functions:getTimReleasedCorrections,functions:setParentCorrectionRelease,functions:getTimCourseContent,functions:submitSpanishTraining,functions:getSpanishTrainingProgress
+      - name: Indiquer les vérifications restantes
+        if: success()
+        run: |
+          echo "Fonctions publiées. Vérifier ensuite l'initialisation du jeton App Check dans le navigateur et les appels Tim et Parent." >> "$GITHUB_STEP_SUMMARY"
