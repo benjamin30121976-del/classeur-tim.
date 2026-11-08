@@ -599,7 +599,7 @@ async function startSession(user){
        // pas le numéro de case coché (0, 1, 2 ou 3).
        const choices=taskQuestion?.type==='mc'?taskQuestion.choices:
         exerciseQuestion?.type==='mc'?exerciseQuestion.options:null;
-       if(Array.isArray(choices)&&/^\\d+$/.test(response)&&choices[Number(response)]!==undefined)
+       if(Array.isArray(choices)&&/^\d+$/.test(response)&&choices[Number(response)]!==undefined)
         response=String(choices[Number(response)]);
        const section=document.createElement('section');
        section.style.cssText='margin:12px 0;padding:10px 12px;background:#203954;border:1px solid #506781;border-radius:10px';
