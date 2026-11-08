@@ -55,6 +55,23 @@ async function getStatus(){
   if(checks.report.status!==200||!Number.isInteger(checks.report.count))throw Error('Lecture Parent via Cloudflare échouée (HTTP '+checks.report.status+', code '+checks.report.code+').');
   if(checks.forbidden.status!==403)throw Error('Protection du cours Tim incorrecte pour Parent : HTTP '+checks.forbidden.status);
   console.log('OK : compte Parent lit les notes et ne peut pas consulter les fonctions réservées à Tim.');
+  if(process.env.TIM_STUDENT_EMAIL&&process.env.TIM_STUDENT_PASSWORD){
+   const timPage=await browser.newPage({viewport:{width:390,height:844},locale:'fr-FR'});
+   await timPage.goto(URL,{waitUntil:'domcontentloaded',timeout:45000});
+   await timPage.locator('#tim-enter').click();
+   await timPage.locator('#login-email').fill(process.env.TIM_STUDENT_EMAIL);
+   await timPage.locator('#login-password').fill(process.env.TIM_STUDENT_PASSWORD);
+   await timPage.locator('#login-button').click();
+   await timPage.waitForFunction(()=>document.body.classList.contains('ready')&&window.__TIM_PARENT===false,{timeout:50000});
+   const count=await timPage.evaluate(()=>({
+     spanish:window.__TIM_DATA?.exercises?.filter(e=>/^SP[QW]_L(?:0[1-9]|1[0-5])_0[1-5]$/.test(e.id)).length||0,
+     canSubmit:Boolean(window.__TIM_BRIDGE?.trainingSubmit)
+   }));
+   if(count.spanish!==150||!count.canSubmit)throw Error('Compte Tim : chargement incomplet du cours ('+count.spanish+' exercices espagnols).');
+   console.log('OK : compte Tim chargé, 150 exercices espagnols accessibles, aucune validation envoyée.');
+  }else{
+   console.log('Compte Tim : contrôle non effectué (identifiants de test non disponibles dans GitHub).');
+  }
  }finally{await browser.close();}
  console.log('CONFIRMATION : accès Cloudflare/Firebase en lecture seule opérationnel. Aucune note ni exercice modifié.');
 })().catch(e=>{console.error('ECHEC DIAGNOSTIC : '+String(e.message||e).slice(0,240));process.exit(1);});
