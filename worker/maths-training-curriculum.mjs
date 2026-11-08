@@ -147,14 +147,14 @@ const CONTENT={
       ]
     ],
     [
-      "Les côtés de l'angle droit mesurent 6 et 8. Quelle est l'hypoténuse ?",
-      "10",
+      "Dans un triangle rectangle, les deux côtés de l'angle droit mesurent 6 cm et 8 cm. Quelle est la longueur de l'hypoténuse ?",
+      "10 cm",
       [
-        "14",
-        "2",
-        "12"
+        "14 cm",
+        "2 cm",
+        "12 cm"
       ],
-      "√(6²+8²) = √100 = 10.",
+      "Pythagore : la longueur de l'hypoténuse vaut √(6² + 8²) = √100 = 10 cm.",
       [
         "On ne trouve pas l'hypoténuse en additionnant 6 et 8.",
         "Soustraire les longueurs ne remplace pas Pythagore.",
@@ -164,14 +164,14 @@ const CONTENT={
   ],
   "MBIS06": [
     [
-      "Hypoténuse 10 et un autre côté 6 : quelle est la longueur manquante ?",
-      "8",
+      "Dans un triangle rectangle, l'hypoténuse mesure 10 cm et un côté de l'angle droit mesure 6 cm. Quelle est la longueur de l'autre côté ?",
+      "8 cm",
       [
-        "4",
-        "16",
-        "√136"
+        "4 cm",
+        "16 cm",
+        "√136 cm"
       ],
-      "√(10²−6²) = √64 = 8.",
+      "Le carré du côté recherché est 10² − 6² = 64. Donc sa longueur vaut √64 = 8 cm.",
       [
         "Calculer 10 − 6 ne suffit pas : Pythagore utilise des carrés.",
         "Ajouter les deux côtés ne donne pas la longueur manquante.",
@@ -179,14 +179,14 @@ const CONTENT={
       ]
     ],
     [
-      "Côtés de l'angle droit 7 et 24 : quelle est l'hypoténuse ?",
-      "25",
+      "Dans un triangle rectangle, les deux côtés de l'angle droit mesurent 7 cm et 24 cm. Quelle est la longueur de l'hypoténuse ?",
+      "25 cm",
       [
-        "31",
-        "17",
-        "√527"
+        "31 cm",
+        "17 cm",
+        "√527 cm"
       ],
-      "√(7²+24²) = √625 = 25.",
+      "L'hypoténuse vaut √(7² + 24²) = √625 = 25 cm.",
       [
         "7 + 24 n'est pas l'hypoténuse : additionne leurs carrés.",
         "17 est une différence de longueurs et non un résultat de Pythagore.",
@@ -211,14 +211,14 @@ const CONTENT={
       ]
     ],
     [
-      "Pour les longueurs 5, 12 et 13, quel côté comparer seul aux deux autres ?",
-      "13",
+      "Les trois côtés d'un triangle mesurent 5 cm, 12 cm et 13 cm. Pour appliquer la réciproque de Pythagore, quelle longueur compare-t-on seule aux deux autres ?",
+      "13 cm",
       [
-        "5",
-        "12",
-        "5 + 12"
+        "5 cm",
+        "12 cm",
+        "5 + 12 cm"
       ],
-      "La plus grande longueur, 13, serait l'hypoténuse.",
+      "On compare le carré du plus grand côté, 13², à la somme 5² + 12².",
       [
         "5 est plus petit que 13 ; le côté candidat est le plus long.",
         "12 est plus petit que 13 ; on teste le plus long côté.",
