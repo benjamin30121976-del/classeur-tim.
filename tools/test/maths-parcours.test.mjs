@@ -78,6 +78,13 @@ test('intégration de la matière et du bilan dans le même classeur',()=>{
  assert.match(app,/window\.TIM_MATH_PATH\.renderParentProgress\(root\)/);
  assert.match(boot,/submitMathTraining/);
  assert.match(boot,/getMathTrainingProgress/);
+ assert.match(boot,/const automatic=\[\.\.\.attempts\.filter\(a=>spanishTraining\(a\.id\)\),\.\.\.mathRecords\]/);
+ assert.match(boot,/validatedCount=attempts\.length\+mathRecords\.length/);
+ assert.match(boot,/const mathMatch=\/\^MT/);
+ assert.match(boot,/if\(mathMatch\)\{/);
+ assert.match(boot,/Bilan :/);
+ assert.match(boot,/leçon BIS/i);
+
  assert.match(path,/Je n’ai pas compris/);
  assert.match(path,/une seule tentative/i);
  assert.doesNotMatch(path,/gagner.*XP|débloquer.*XP/i);
