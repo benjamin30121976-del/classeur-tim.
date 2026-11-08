@@ -1,0 +1,6 @@
+{
+  "mode": "lecture-seule-parent",
+  "site": "https://classeur-tim-v16.pages.dev/",
+  "scope": "Se connecter avec les secrets GitHub Actions, inspecter les cours et les boutons sans modifier les données.",
+  "launch_on_update": true
+}
