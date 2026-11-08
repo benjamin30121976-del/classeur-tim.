@@ -22,7 +22,12 @@ export const submitTimExercise=onCall({region:'europe-west1',enforceAppCheck:tru
   const ex=exDoc.data();
   if(ex.enabled!==true)throw new HttpsError('failed-precondition','Exercice fermé');
   const now=new Date(),date=parisDate(now),state=xpDoc.exists?xpDoc.data():{};
-  if(!suggestedCorrectionAt(ex,date))throw new HttpsError('failed-precondition','Calendrier de cette matière indisponible');
+  let correctionAt=suggestedCorrectionAt(ex,date);
+  if(correctionAt&&Date.parse(correctionAt)<=now.getTime()){
+   const next=new Date(date+'T12:00:00Z');next.setUTCDate(next.getUTCDate()+1);
+   correctionAt=suggestedCorrectionAt(ex,next.toISOString().slice(0,10));
+  }
+  if(!correctionAt)throw new HttpsError('failed-precondition','Calendrier de cette matière indisponible');
   const result=grade(ex,keyDoc.data(),answers);
   const monday=new Date(date+'T12:00:00Z');monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);
   const week=monday.toISOString().slice(0,10),today=state.date===date?state:{earned:0,lost:0,bonus:0};
@@ -32,7 +37,7 @@ export const submitTimExercise=onCall({region:'europe-west1',enforceAppCheck:tru
   const xp=cappedPoints(raw,Number(today.earned||0),Number(today.lost||0),weekEarned,Number(today.bonus||0),category);
   tx.set(xpRef,{date,week,earned:Number(today.earned||0)+Math.max(0,xp),lost:Number(today.lost||0)+Math.max(0,-xp),bonus:Number(today.bonus||0)+(category==='bonus'?Math.max(0,xp):0),weekEarned:weekEarned+Math.max(0,xp),updatedAt:FieldValue.serverTimestamp()});
   const common={exerciseId:id,authorUid:request.auth.uid,submittedAt:FieldValue.serverTimestamp(),score:result.score,total:result.total,needsReview:result.needsReview,policyVersion:17};
-  tx.create(attemptRef,{...common,xp,responses:answers.map(v=>String(v)),suggestedReleaseAt:suggestedCorrectionAt(ex,date),scheduleVerified:true});
+  tx.create(attemptRef,{...common,xp,responses:answers.map(v=>String(v)),suggestedReleaseAt:correctionAt,scheduleVerified:true});
   tx.create(privateRef,{...common,...result});
   return {id,submitted:true,correctionLocked:true};
  });}catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError('internal','Échec de validation');}
