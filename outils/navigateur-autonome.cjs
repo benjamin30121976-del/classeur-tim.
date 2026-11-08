@@ -53,6 +53,10 @@ async function session(browser,device){
     }
     await page.locator('#guest-enter').click();
     await page.locator('body.guest-mode').waitFor({timeout:15000});
+    // L'application et l'animation se chargent APRES l'ajout de guest-mode.
+    // Attendre la vraie fin du chargement pour ne pas cliquer derriere l'animation.
+    await page.waitForFunction(()=>typeof window.openLesson==='function' && !!document.querySelector('#home.page.active'),null,{timeout:20000});
+    await page.waitForTimeout(450);
     log(device+' acces Invite',true);
     const intro=page.locator('#intro-screen');
     if(await intro.isVisible()){
