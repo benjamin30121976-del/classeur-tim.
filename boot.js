@@ -332,7 +332,7 @@ async function startSession(user){
  if(isParent){try{content=await loadCourseAdditions(content);}catch(e){console.warn('Extensions indisponibles :',e);}}
  else if(serverAdditions){const l=new Map(content.lessons.map(x=>[x.id,x]));const e=new Map(content.exercises.map(x=>[x.id,x]));const versions=(serverAdditions.lessons||[]).filter(item=>item?.id&&Array.isArray(item.blocks));for(const item of versions.filter(x=>!x.replacesId))l.set(item.id,item);for(const item of versions.filter(x=>x.replacesId).sort((a,b)=>String(a.savedAt||'').localeCompare(String(b.savedAt||'')))){if(/^[A-Za-z][A-Za-z0-9_-]{1,35}$/.test(item.replacesId))l.set(item.replacesId,{...item,id:item.replacesId,revisionId:item.id});}for(const item of serverAdditions.exercises||[])if(item?.id&&Array.isArray(item.questions))e.set(item.id,item);content={...content,lessons:[...l.values()],exercises:[...e.values()]};}
  content=window.TIM_APPLY_SPANISH_NOV05?.(content)||content;
- const missionPlan=setupMissions(missionSource);
+ const missionPlan=setupMissions(missionSource,new Date(),window.TIM_SPANISH_EDU);
  window.__TIM_CHALLENGES=missionPlan.meta;
  const existingMissionIds=new Set(content.exercises.map(x=>x.id));
  content={...content,exercises:[...content.exercises,...missionPlan.exercises.filter(x=>!existingMissionIds.has(x.id))]};
