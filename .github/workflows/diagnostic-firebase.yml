@@ -18,6 +18,11 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
+      - name: Vérifier que le vrai backend V16 est présent
+        run: |
+          test -f functions/index.mjs || { echo '::error::Backend V16 absent : tests isolés insuffisants'; exit 1; }
+          test -f functions/schedule.mjs || { echo '::error::Calendrier V16 absent'; exit 1; }
+          test -f functions/test/schedule.test.mjs || { echo '::error::Tests calendrier V16 absents'; exit 1; }
       - name: Installer les dépendances Firebase
         run: npm install --no-audit --no-fund --ignore-scripts
       - name: Tester la notation et les XP (JUnit)
