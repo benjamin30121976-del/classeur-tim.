@@ -410,7 +410,7 @@ async function startSession(user){
   mathTrainingSubmit:async(id,answers)=>{
    if(activeUser?.uid!==TIM_UID)throw Error('Seul Tim peut valider une évaluation.');
    if(!/^MT(?:0[1-9]|1[0-9]|2[0-3])$/.test(id)||
-      !Array.isArray(answers)||answers.length!==2)throw Error('Réponses invalides.');
+      !Array.isArray(answers)||answers.length!==10)throw Error('Réponses invalides.');
    const r=await cloudCallable('submitMathTraining')({id,answers});
    if(!r.data?.submitted||r.data?.xp!==0||!Number.isInteger(r.data?.score))
     throw Error('La note ne peut pas être confirmée.');
