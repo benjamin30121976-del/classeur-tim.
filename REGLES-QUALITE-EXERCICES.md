@@ -52,4 +52,10 @@ Dernière révision : 9 novembre 2026.
 - Le parcours `maths-parcours.js` cache également ces blocs si une ancienne copie de leçon provient encore de Firebase. Les leçons BIS affichent un bouton direct vers l'exercice noté de dix questions.
 - La fiche ENT « Deux programmes de calcul » demeure un sujet original de cinq questions, consultable sans note ; un bouton ouvre séparément l'évaluation complémentaire BIS de dix questions notées, sans attribuer au professeur les questions ajoutées.
 - Toutes les nouvelles corrections comportent le mauvais choix particulier, l'explication de ce raisonnement erroné et la méthode correcte. Les tests de sécurité vérifient le retour des dix explications immédiatement dans la réponse de validation et leur consultation ultérieure par Tim et le Parent.
-- L'inspection du site Cloudflare reste non confirmée ; il serait inexact de déclarer sa mise en production vérifiée sans rapport Chromium.
+- **Vérification réelle confirmée le 9 novembre 2026 :** la connexion Parent avec Chromium a réussi sur ordinateur et téléphone, et le rapport indique **0 anomalie** ; les 23 évaluations / 230 questions sont accessibles par l'API Parent, et il ne reste aucun défi quotidien visible. GitHub Actions : https://github.com/benjamin30121976-del/classeur-tim./actions/runs/42536938633 (lecture seule, aucune tentative de Tim soumise).
+
+## Validation du 9 novembre 2026
+- La suite « Vérifier les mathématiques sans XP » a réussi pour la validation unique, la notation et le suivi Parent-Tim : https://github.com/benjamin30121976-del/classeur-tim./actions/runs/42536721835.
+- L'inspection Parent authentifiée a réussi (Chromium ordinateur et mobile, rapport de 0 anomalie) : https://github.com/benjamin30121976-del/classeur-tim./actions/runs/42536938633.
+- Test de 23 exercices BIS, chacun composé de 10 questions. Les copies comportent 10 explications détaillées et sont conservées après notation. Aucun exercice BIS de deux questions n'est encore présenté dans les leçons.
+- La version déployée sur Cloudflare a été interrogée avec le compte Parent ; les 23 évaluations ont bien répondu avec les 230 questions attendues. Les tests automatisés ont simulé les validations sans utiliser le vrai compte de Tim.
