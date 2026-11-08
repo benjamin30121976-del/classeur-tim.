@@ -14,7 +14,7 @@ Dernière révision : 8 novembre 2026.
 7. Vérifier **indépendamment** tous les calculs, toutes les options (aucun doublon équivalent), la bonne réponse, la correction et l'explication de chaque distracteur avant publication.
 8. Une validation par exercice ; **jamais de validation de test sur le compte de Tim**. Le parent peut consulter la note, les erreurs et les leçons à revoir. Une question incomplète doit bloquer l'envoi plutôt que consommer une tentative.
 9. Ne pas promettre une correction immédiate si l'API ne retourne pas effectivement la note et le corrigé. Afficher honnêtement les erreurs serveur. Éviter les pénalités XP pour des questions peu claires ou une correction inaccessible.
-10. Le **défi du jour est suspendu** jusqu'à vérification complète des énoncés, de la correction et de la notation. Ne pas le réactiver par un simple changement de date. Conserver l'historique des tentatives (pas de suppression implicite).
+10. Le **défi du jour est supprimé** de sa génération et de l'interface. Ne pas le recréer. Les traces historiques restent intactes. Conserver l'historique des tentatives (pas de suppression implicite).
 
 ## Contrôle du site
 11. Navigateurs : **Chromium + Playwright avec GitHub Actions**, sans modifier les données d'apprentissage. Workflow : `.github/workflows/inspection-parent-authentifie.yml`; demande de contrôle : `browser-requests/parent.json`.
@@ -25,16 +25,24 @@ Dernière révision : 8 novembre 2026.
 ## Audit du 8 novembre 2026
 - Fiche authentique « Deux programmes de calcul », devoir du 8 octobre : programmes A et B et cinq questions retranscrits dans le parcours `MBIS13`.
 - Huit questions incomplètes corrigées dans les leçons `MBIS14`, `MBIS15`, `MBIS16`, `MBIS18` et `MBIS23`.
-- Les deux questions des 23 mini-évaluations sont délivrées par le serveur : leur validation pédagogique individuelle **reste à faire**.
+- Les 23 évaluations comprennent désormais dix questions chacune, dont huit nouvelles questions vérifiées par sous-leçon ; la validation de leur exécution sur le site publié reste à confirmer.
 - Les exercices historiques du professeur ne sont pas écrasés. Les résultats antérieurs de Tim ne sont pas modifiés.
 
 ## Audit renforcé des évaluations de mathématiques (8 novembre 2026)
-- Banque serveur : worker/maths-training-curriculum.mjs, 23 évaluations MT01 à MT23, deux questions par sous-leçon.
-- 46 questions autonomes. Énoncés complétés pour Pythagore (triangle et unités), Thalès (alignements et parallèles), programmes de calcul et racines carrées.
-- Quatre choix distincts par question. 138 mauvais choix (trois par question), chacun accompagné d'une explication spécifique de l'erreur, puis du calcul ou de la méthode corrects.
-- 184 scénarios de notation vérifiés : quatre choix pour chacune des 46 questions. Score brut de 0, 1 ou 2 sur 2, affiché aussi sur 20 (0, 10 ou 20). La note reste peu fine avec deux questions ; l'affichage précise le nombre de bonnes réponses.
+- Banque serveur : worker/maths-training-curriculum.mjs et worker/maths-training-extra.mjs, 23 évaluations MT01 à MT23, dix questions par sous-leçon.
+- 230 questions autonomes. Énoncés complétés pour Pythagore (triangle et unités), Thalès (alignements et parallèles), programmes de calcul et racines carrées.
+- Quatre choix distincts par question. 690 mauvaises réponses possibles (trois par question). Les 46 premières questions disposent de corrections détaillées par distracteur ; les 184 nouvelles indiquent la réponse choisie puis la démarche correcte.
+- 920 scénarios de notation vérifiés par simulation : quatre choix pour chacune des 230 questions. Score brut de 0 à 10, affiché aussi sur 20 (deux points par réponse exacte), avec le nombre de bonnes réponses.
 - Tim voit la note et la correction immédiatement après confirmation du serveur. La même tentative ne peut pas être validée une deuxième fois.
 - Le serveur utilise mathTrainingAttempts, une transaction Firestore et une précondition exists:false. Les autorisations Tim/Parent sont contrôlées côté serveur.
 - Le compte Parent affiche les résultats à l'ouverture, puis les actualise toutes les 60 secondes tant que la page reste ouverte et visible. Il reçoit les réponses attendues, l'erreur spécifique et la sous-leçon conseillée.
 - Tests de notation, de non-répétition et d'accès Parent/Tim dans worker/test/math-training.test.mjs, ajoutés au contrôle GitHub Actions.
 - Le contrôle Chromium/Playwright du site public a été demandé : sa réussite et la mise en production ne sont pas garanties avant inspection du rapport. Ne pas déclencher de soumission depuis le compte Tim.
+
+## Changement demandé le 8 novembre 2026 : dix questions minimum
+- Le défi du jour ne doit plus apparaître ni être généré. Les missions du samedi et du dimanche restent séparées.
+- Toutes les **évaluations BIS de mathématiques créées pour Tim** comportent dix questions, affichées une à une, avec navigation précédente/suivante et contrôle des réponses avant validation.
+- Les exercices ENT reproduisent fidèlement les sujets des enseignants, même lorsqu'ils comportent moins de dix questions : il ne faut pas leur inventer de questions attribuées au professeur.
+- Chaque évaluation BIS est notée sur 20 : dix questions à deux points, correction immédiatement après enregistrement et bilan Parent. Une seule tentative par identifiant MT01–MT23, y compris depuis un autre appareil.
+- Les anciennes notes déjà enregistrées au format deux questions sont conservées sans retraitement : elles ne donnent pas droit à recommencer la même évaluation.
+- Les tests automatisés doivent vérifier les 230 questions, les 920 combinaisons de choix individuels, la confidentialité des réponses, l'enregistrement unique et les droits Tim/Parent avant publication.
