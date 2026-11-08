@@ -489,7 +489,7 @@ async function startSession(user){
        title:String(detail.title||titles.get(d.id)||data.title||d.id),
        score:Number.isFinite(detail.score)?detail.score:null,
        total:Number.isFinite(detail.total)?detail.total:null,
-       correctionStatus:data.correctionStatus==='released'?'released':'pending-parent'
+       correctionStatus:data.correctionStatus==='released'?'released':'pending-parent',xp:Number(data.xp||0)
       };
      });
      // Les copies privées dont la tentative publique manquerait ne sont
@@ -529,8 +529,9 @@ async function startSession(user){
    // sont corrigés immédiatement ; le compteur "en attente" reste réservé
    // aux devoirs dont la correction doit être débloquée.
    const spanishTraining=id=>/^SP[QW]_L(?:0[1-9]|1[0-5])_0[1-5]$/.test(String(id||''));
-   const automatic=[...attempts.filter(a=>spanishTraining(a.id)),...mathRecords];
-   const schoolAttempts=attempts.filter(a=>!spanishTraining(a.id));
+   const gradedMission=id=>/^DAY_20\d{6}_\d{2}$|^WEEK_20\d{2}W\d{2}$|^SUNDAY_20\d{6}$/.test(String(id||''));
+   const automatic=[...attempts.filter(a=>spanishTraining(a.id)||gradedMission(a.id)),...mathRecords];
+   const schoolAttempts=attempts.filter(a=>!spanishTraining(a.id)&&!gradedMission(a.id));
    const pending=schoolAttempts.filter(a=>a.correctionStatus!=='released');
    const released=schoolAttempts.filter(a=>a.correctionStatus==='released');
    const validatedCount=attempts.length+mathRecords.length;
@@ -562,14 +563,15 @@ async function startSession(user){
     const lesson=mathMatch?window.__TIM_DATA?.lessons?.find(l=>l.id==='MBIS'+mathMatch[1]):
       match?window.TIM_SPANISH_EDU?.[match[2]]:
       window.__TIM_DATA?.lessons?.find(l=>l.id===ex?.lesson);
-    const subject=mathMatch?'Mathématiques':match?'Espagnol':(ex?.subject||'Exercice');
+    const isMission=gradedMission(item.id);
+    const subject=mathMatch?'Mathématiques':match?'Espagnol':isMission?'Défi · Espagnol':(ex?.subject||'Exercice');
     const lessonTitle=lesson?.name||lesson?.title||'';
     const exerciseTitle=match?(match[1]==='Q'?'QCM ':'Écriture ')+Number(match[3]):mathMatch?'Évaluation de la sous-leçon · '+mathMatch[1]:(item.title||'Exercice');
     const heading=document.createElement('strong');heading.textContent=subject+(lessonTitle?' · '+lessonTitle:'');
     heading.style.cssText='display:block;font-size:17px;color:#eef5ff';
     const summary=document.createElement('p');
     const score=Number.isFinite(item.score)&&Number.isFinite(item.total)?item.score+'/'+item.total:'Note indisponible';
-    summary.textContent=exerciseTitle+' · '+score+' · '+(isAutomatic?'Corrigé immédiatement':isReleased?'Correction autorisée':'Correction en attente');
+    summary.textContent=exerciseTitle+' · '+score+' · '+(isAutomatic?'Corrigé immédiatement':isReleased?'Correction autorisée':'Correction en attente')+(isMission&&Number.isFinite(item.xp)?' · '+(item.xp>=0?'+':'')+item.xp+' XP':'');
     summary.style.cssText='margin:5px 0 10px;color:#cbd9ee';
     line.append(heading,summary);
     if(item.orphan){
@@ -666,8 +668,10 @@ async function startSession(user){
       const date=dateValue?.toDate?.();
       if(date instanceof Date&&!Number.isNaN(date.getTime()))
        note('Validé le '+date.toLocaleString('fr-FR',{timeZone:'Europe/Paris'}),'font-size:13px;color:#c3d8f2');
-      if(Number.isFinite(record.score)&&Number.isFinite(record.total))
-       note('Note : '+record.score+'/'+record.total,'font-weight:800;font-size:17px');
+      if(Number.isFinite(record.score)&&Number.isFinite(record.total)){
+       const gained=attemptDoc.exists()?Number(attemptDoc.data()?.xp):Number(item.xp);
+       note('Note : '+record.score+'/'+record.total+(isMission&&Number.isFinite(gained)?' · '+(gained>=0?'+':'')+gained+' XP':''),'font-weight:800;font-size:17px');
+      }
       const answers=Array.isArray(record.answers)?record.answers:[];
       if(!answers.length){
        note('Les questions et les réponses de cette tentative ne sont pas conservées dans ce dossier.');
