@@ -51,7 +51,7 @@ function render(root,opts){
    }));
    matches.sort((a,b)=>b.weight-a.weight);
    dest.hidden=false;
-   dest.innerHTML=matches.length?'<p><strong>Voici où chercher :</strong></p>'+matches.slice(0,5).map(m=>'<button type="button" class="spx-hit" data-find="'+m.ref+'"><strong>'+esc(ED[m.ref].name)+'</strong>'+(m.answer?'<small>'+esc(m.answer)+'</small>':"")+'</button>').join(""):'<p>Je ne retrouve pas ce mot. Essaie une expression plus courte.</p>';
+   dest.innerHTML=matches.length?'<p><strong>Voici où chercher :</strong></p>'+matches.slice(0,5).map(m=>'<button type="button" class="spx-hit" data-find="'+m.ref+'"><strong>'+esc(ED[m.ref].name)+'</strong>'+(m.answer?'<small>'+esc(m.answer)+'</small>':'<small>'+esc(ED[m.ref].intro)+'</small>')+'</button>').join(""):'<p>Je ne retrouve pas ce mot. Essaie une expression plus courte.</p>';
    dest.querySelectorAll("[data-find]").forEach(b=>b.onclick=()=>openLesson(b.dataset.find));
   };
  }
@@ -75,12 +75,27 @@ function render(root,opts){
   root.querySelector("#spx-ent").onclick=()=>opts.original(ref);scroll();
  }
  function questionData(){
-  const x=ED[id],p=x.pairs[qIndex],dir=(set===0||set===3)?0:(set===1?1:(set===2?qIndex%2:(qIndex+1)%2));
+  const x=ED[id],p=x.pairs[qIndex],make=(correct,wrong,prompt,word,dir,cloze)=>{
+   const unique=[];
+   wrong.forEach(v=>{if(v!==correct&&unique.indexOf(v)<0&&unique.length<3)unique.push(v);});
+   for(const pair of x.pairs){if(unique.length>=3)break;const v=cloze?String(pair[0]).split(" ")[cloze==="first"?0:String(pair[0]).split(" ").length-1]:pair[dir===0?1:0];if(v!==correct&&unique.indexOf(v)<0)unique.push(v);}
+   const placement=(qIndex+set)%4,choices=unique.slice(0,3);choices.splice(placement,0,correct);
+   return {p,dir,correct,choices,placement,question:prompt,word,cloze};
+  };
+  if(set===3&&["L09","L10","L13","L15"].indexOf(id)>=0){
+   const parts=p[0].trim().split(/\s+/),correct=parts.pop();
+   if(parts.length){
+    const others=x.pairs.map(t=>t[0].trim().split(/\s+/).pop());
+    return make(correct,others,"Complète la conjugaison pour dire « "+p[1]+" » :",parts.join(" ")+" ___",1,"last");
+   }
+  }
+  if(set===3&&id==="L08"){
+   const parts=p[0].split(" "),correct=parts.shift();
+   return make(correct,x.pairs.map(t=>t[0].split(" ")[0]),"Quel article complète « "+p[1]+" » ?", "___ "+parts.join(" "),1,"first");
+  }
+  const dir=(set===0||set===3)?0:(set===1?1:(set===2?qIndex%2:(qIndex+1)%2));
   const target=dir===0?1:0,source=dir===0?0:1;
-  const correct=p[target],wrong=[];
-  for(let j=1;j<10&&wrong.length<3;j++){const other=x.pairs[(qIndex+j+set)%10][target];if(other!==correct&&wrong.indexOf(other)<0)wrong.push(other);}
-  const placement=(qIndex+set)%4,choices=wrong;choices.splice(placement,0,correct);
-  return {p,dir,correct,choices,placement,question:dir===0?"Que signifie en français ?":"Comment dit-on en espagnol ?",word:p[source]};
+  return make(p[target],x.pairs.map(t=>t[target]),dir===0?"Que signifie en français ?":"Comment dit-on en espagnol ?",p[source],dir,null);
  }
  function begin(n){set=n;qIndex=0;score=0;showQuestion();}
  function showQuestion(){
@@ -102,9 +117,9 @@ function render(root,opts){
    if(selected<0||validated)return;validated=true;
    const ok=selected===q.placement;if(ok)score++;
    root.querySelectorAll("[data-option]").forEach(b=>b.disabled=true);
-   const wrong=q.choices[selected],other=ED[id].pairs.find(p=>p[q.dir===0?1:0]===wrong);
-   const explain=ok?"Tu as retrouvé la bonne traduction.":"Tu as choisi « "+wrong+" »."+(other?" Cette réponse correspond à « "+other[q.dir===0?0:1]+" ».":"");
-   root.querySelector("#spx-correct").innerHTML='<div class="spx-feedback"><strong>'+(ok?"Bonne réponse !":"Pas tout à fait. Regarde pourquoi.")+'</strong><p>'+esc(explain)+'</p><p><strong>Bonne réponse : '+esc(q.correct)+'</strong></p><p>« '+esc(q.p[0])+' » signifie « '+esc(q.p[1])+' ».</p><p>'+esc(ED[id].tip)+'</p></div>';
+   const wrong=q.choices[selected],other=q.cloze?null:ED[id].pairs.find(p=>p[q.dir===0?1:0]===wrong);
+   const explain=ok?"Tu as retrouvé la bonne forme.":"Tu as choisi « "+wrong+" »."+(other?" Cette réponse correspond à « "+other[q.dir===0?0:1]+" ».":"");
+   root.querySelector("#spx-correct").innerHTML='<div class="spx-feedback"><strong>'+(ok?"Bonne réponse !":"Pas tout à fait. Regarde pourquoi.")+'</strong><p>'+esc(explain)+'</p><p><strong>Bonne réponse : '+esc(q.correct)+'</strong></p><p>La forme complète est « '+esc(q.p[0])+' » : « '+esc(q.p[1])+' ».</p><p>'+esc(ED[id].tip)+'</p></div>';
    root.querySelector("#spx-submit").hidden=true;
    root.querySelector("#spx-next").hidden=false;
    root.querySelector("#spx-next").textContent=qIndex===9?"Voir mon bilan →":"Question suivante →";
