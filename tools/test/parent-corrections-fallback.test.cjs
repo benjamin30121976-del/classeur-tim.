@@ -89,7 +89,7 @@ test('Le Parent ouvre une copie espagnole sans rejouer le QCM',async()=>{
   privateDocs:[{id:'SPQ_L01_01',score:10,total:10,answers:[{question:'Que signifie me llamo ?',response:'2',correct:true,expected:"je m'appelle"}]}]
  });
  assert.match(x.text,/Espagnol · Se présenter/);
- assert.match(x.text,/QCM 1 · 10\\/10/);
+ assert.match(x.text,/QCM 1 · 10\/10/);
  const view=x.buttons.find(b=>/Voir la copie/.test(b.textContent));
  assert.ok(view,'Le bouton de lecture doit apparaître');
  await view.onclick();
