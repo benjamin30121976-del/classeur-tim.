@@ -8,7 +8,7 @@ service cloud.firestore {
   match /exercises/{id} { allow read, write: if parent(); }
   match /lessons/{id} { allow read, write: if parent(); }
   match /publicLessons/{id} { allow read: if true; allow write: if parent() && !request.resource.data.keys().hasAny(['answers','answerKeys','corrections','expected','solution','solutions']); }
-  match /publicExercises/{id} { allow read: if family(); allow write: if parent(); }
+  match /publicExercises/{id} { allow read: if family(); allow write: if parent() && !request.resource.data.keys().hasAny(['answers','answerKeys','corrections','expected','solution','solutions','right']); }
   match /answerKeys/{id} { allow read, write: if parent(); }
   match /releasedCorrections/{id} {
    allow read: if parent() || (tim() && resource.data.released == true
