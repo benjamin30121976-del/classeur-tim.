@@ -37,6 +37,21 @@ const code=c=>/^(functions\/[a-z-]+|app-check\/[a-z-]+)$/.test(String(c||''))?c:
    }catch(e){appcheck='token-error:'+String(e.code||'unknown');}
    return {hasKey,called,error,appcheck};
   });
+  // Sonde non authentifiée : aucun jeton, aucune réponse scolaire et aucune écriture.
+  // Une fonction déployée renvoie normalement un refus d'accès à cette requête.
+  const endpoints=['getParentReport','submitTimExercise','setParentCorrectionRelease','getTimCourseContent'];
+  const probes=[];
+  for(const name of endpoints){
+   const endpoint='https://europe-west1-classeur-ba3e7.cloudfunctions.net/'+name;
+   try{
+    const r=await fetch(endpoint,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({data:{}}),signal:AbortSignal.timeout(12000)
+    });
+    probes.push({name,http:r.status,mime:(r.headers.get('content-type')||'').split(';')[0]});
+   }catch(error){probes.push({name,connection:'unavailable'});}
+  }
+  console.log('ENDPOINT_PROBES '+JSON.stringify(probes));
   console.log('RESULT '+JSON.stringify({authenticated:true,appCheckConfigured:result.hasKey,
    callable:result.called,callableError:code(result.error),appCheck:result.appcheck.startsWith('token-error:')?'token-error:'+code(result.appcheck.slice(12)):result.appcheck,
    endpointHttpStatus:http}));
