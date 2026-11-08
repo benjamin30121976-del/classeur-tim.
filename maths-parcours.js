@@ -46,7 +46,8 @@ function sectionBtns(id){
  (course?btn('data-math-ent',id,'1 · Leçon ENT ('+course+')'):'')+
  btn('data-math-bis',id,'2 · Leçon BIS')+
  btn('data-math-help',id,'3 · Je n’ai pas compris')+
- (ex?btn('data-math-ex',id,'Exercices ENT ('+ex+')'):'')+
+ (ex?btn('data-math-ex',id,'Exercices ENT du chapitre ('+ex+')'):'')+
+ (id==='MBIS13'?btn('data-math-programs',id,'Fiche originale · Programmes A et B'):'')+
  btn('data-math-train',id,'Évaluation · une seule fois · 0 XP')+
  '</div>';
 }
@@ -56,6 +57,7 @@ function wire(){
  root.querySelectorAll('[data-math-bis]').forEach(b=>b.onclick=()=>viewBis(b.dataset.mathBis));
  root.querySelectorAll('[data-math-help]').forEach(b=>b.onclick=()=>viewHelp(b.dataset.mathHelp));
  root.querySelectorAll('[data-math-ex]').forEach(b=>b.onclick=()=>viewEntExercises(b.dataset.mathEx));
+ root.querySelectorAll('[data-math-programs]').forEach(b=>b.onclick=()=>viewProgramsOriginal());
  root.querySelectorAll('[data-math-train]').forEach(b=>b.onclick=()=>viewTraining(b.dataset.mathTrain));
  root.querySelectorAll('[data-math-open-original]').forEach(b=>b.onclick=()=>options.original(b.dataset.mathOpenOriginal));
  root.querySelectorAll('[data-math-open-exercise]').forEach(b=>b.onclick=()=>options.exercise(b.dataset.mathOpenExercise));
@@ -93,7 +95,7 @@ function listPage(id,title,rows,kind){
  wire();
 }
 function viewEnt(id){listPage(id,'Leçons ENT — '+groupOfId(id).name,entFor(groupOfId(id)),'original');}
-function viewEntExercises(id){listPage(id,'Exercices ENT — '+groupOfId(id).name,exFor(groupOfId(id)),'exercise');}
+function viewEntExercises(id){listPage(id,'Exercices ENT du chapitre — '+groupOfId(id).name,exFor(groupOfId(id)),'exercise');}
 function blocks(lesson,mode){
  const content=(lesson?.blocks||[]).filter(b=>mode==='bis'||['Comprendre','Méthode étape par étape','Exemples corrigés','Erreur fréquente','Objectif'].includes(b.h));
  return content.map(b=>{
@@ -106,6 +108,27 @@ function blocks(lesson,mode){
   if(b.kind==='note')return '<section class="spx-panel"><h3>'+esc(b.h||'Explication')+'</h3><p>'+esc(b.body||'').replace(/\n/g,'</p><p>')+'</p></section>';
   return '';
  }).join('');
+}
+function viewProgramsOriginal(){
+ const id='MBIS13',g=groupOfId(id);
+ const progA=['Choisir un nombre.','Soustraire 2.','Multiplier par 5.','Ajouter le triple du nombre de départ.'];
+ const progB=['Choisir un nombre.','Multiplier par 4.','Soustraire 5.','Multiplier le résultat par 2.'];
+ const qs=[
+  'Vérifie qu’en prenant 1 comme nombre de départ, on obtient −2 avec le programme A.',
+  'On appelle x le nombre de départ. Donne l’expression littérale associée au programme A, puis développe et réduis cette expression.',
+  'Quel nombre de départ faut-il choisir pour obtenir 0 avec le programme A ?',
+  'Quel résultat obtient-on avec le programme B si on choisit 1 comme nombre de départ ?',
+  'Montre que les programmes A et B donnent toujours le même résultat.'
+ ];
+ const block=(label,steps)=>'<section class="spx-panel"><h3>'+label+'</h3><ol>'+steps.map(step=>'<li>'+esc(step)+'</li>').join('')+'</ol></section>';
+ draw(header('Fiche ENT · Deux programmes de calcul','Devoir du 8 octobre 2026 · Énoncé complet du professeur, sans réponses.')+
+  back('Retour au chapitre Calcul littéral')+
+  '<section class="spx-panel"><h3>Lis l’énoncé avant les questions</h3><p>Cette fiche reproduit l’exercice 3 demandé par Mme Pialet. Les cinq questions se rapportent aux programmes présentés ci-dessous. Il s’agit du travail ENT, pas de la mini-évaluation BIS de deux questions.</p></section>'+
+  block('Programme A',progA)+block('Programme B',progB)+
+  '<section class="spx-panel"><h3>Les cinq questions du professeur</h3><ol>'+qs.map(q=>'<li style="margin:14px 0">'+esc(q)+'</li>').join('')+'</ol><p>Pour répondre, utilise une feuille de brouillon. Les résultats ne sont pas enregistrés ni notés ici.</p></section>'+
+  '<section class="spx-panel"><h3>Besoin de revoir la méthode ?</h3>'+btn('data-math-bis',id,'Lire la leçon BIS · Programmes de calcul')+'</section>',
+  ()=>category(g));
+ wire();
 }
 function viewBis(id){
  selected=id;group=groupOfId(id);const x=lesson(id);if(!x)return;
@@ -161,7 +184,18 @@ async function viewTraining(id){
   if(data.completed){await refreshProgress();const done=grades.attempts.find(a=>a.id===testId);if(done)resultPage(done);else holder.textContent='Exercice déjà validé : la note est en cours de récupération.';return;}
   const task=data.task;
   if(!task||task.lessonId!==id||!Array.isArray(task.questions)||task.questions.length!==2)throw Error('Exercice non disponible.');
-  holder.innerHTML='<h3>Réponds aux deux questions</h3>'+
+  // Une seule tentative : vérifier que chaque question contient des choix valides.
+  const context=['statement','context','instructions','enonce'].map(k=>task[k]).find(v=>typeof v==='string'&&v.trim())||'';
+  const normalizeChoice=v=>String(v).normalize('NFKC').trim().toLowerCase().replace(/\s+/g,' ');
+  const validQuestions=task.questions.every(q=>typeof q.prompt==='string'&&q.prompt.trim().length>=10&&Array.isArray(q.choices)&&q.choices.length===4&&q.choices.every(v=>typeof v==='string'&&v.trim())&&new Set(q.choices.map(normalizeChoice)).size===4);
+  if(!validQuestions)throw Error('Énoncé ou choix de réponses incomplets. Aucune tentative n’a été utilisée.');
+  const dependsOnMissingData=/(programme\s+[AB]|ce programme|la figure|le graphique|le tableau|le schéma|le document|ci-dessus|ci-contre)/i;
+  const embeddedData=/(choisir|choisis|soustraire|soustrais|multiplier|multiplie|ajouter|ajoute|on considère|mesure|longueur|coordonnées|données)/i;
+  if(!context&&task.questions.some(q=>dependsOnMissingData.test(q.prompt)&&!embeddedData.test(q.prompt)))
+   throw Error('Une question renvoie à un programme ou à une figure dont l’énoncé manque. Exercice suspendu, aucune tentative utilisée.');
+  holder.innerHTML='<h3>Deux questions de compréhension</h3>'+
+   '<p><strong>Avant de répondre :</strong> lis les données et la consigne de chaque question. Ce mini-test BIS est distinct des exercices ENT du professeur.</p>'+
+   (context?'<section class="spx-panel"><h3>Énoncé à consulter pour les deux questions</h3><p style="white-space:pre-wrap">'+esc(context)+'</p></section>')+
    '<p>Après la validation définitive, tu recevras la note et les explications. Tu ne pourras pas refaire cet exercice.</p>'+
    '<form id="math-quiz-form">'+task.questions.map((q,i)=>'<fieldset class="spx-training-question"><legend>Question '+(i+1)+' / '+task.questions.length+'</legend><p>'+esc(q.prompt)+'</p>'+
     q.choices.map((v,j)=>'<label class="math-choice"><input type="radio" name="mq'+i+'" value="'+j+'" required> '+esc(v)+'</label>').join('')+'</fieldset>').join('')+
