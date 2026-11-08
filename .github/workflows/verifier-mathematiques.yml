@@ -1,0 +1,41 @@
+name: Vérifier les mathématiques sans XP
+on:
+  pull_request:
+    paths:
+      - 'maths-parcours.js'
+      - 'maths-parcours.css'
+      - 'worker/maths-training-curriculum.mjs'
+      - 'worker/server.mjs'
+      - 'boot.js'
+      - 'app.js'
+      - 'index.html'
+      - 'tools/test/maths-parcours.test.mjs'
+      - '.github/workflows/verifier-mathematiques.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'maths-parcours.js'
+      - 'worker/maths-training-curriculum.mjs'
+      - 'worker/server.mjs'
+      - 'tools/test/maths-parcours.test.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier la syntaxe JavaScript
+        run: |
+          node --check maths-parcours.js
+          node --check worker/maths-training-curriculum.mjs
+          node --check worker/server.mjs
+          node --check boot.js
+          node --check app.js
+      - name: Vérifier le barème et la communication Parent-Tim sans utiliser leurs comptes
+        run: node --test tools/test/maths-parcours.test.mjs
