@@ -74,11 +74,17 @@ async function inspect(browser,label,viewport){
         await picture(page,label+'-onglet-'+id);
       }catch(e){check(label+' onglet '+id,false,'Clic non abouti');}
     }
-    device.correctionsState=await page.locator('#pending-corrections-status').innerText().catch(()=>'absent');
+    // Les résultats individuels ont été volontairement masqués pour les captures.
+    // Lire textContent (et non isVisible/innerText) pour ne pas confondre masquage et panne.
+    await page.waitForFunction(()=>{
+      const el=document.getElementById('pending-corrections-status');
+      return !!el && el.textContent.trim()!=='Chargement…';
+    },null,{timeout:12000}).catch(()=>{});
+    device.correctionsState=await page.locator('#pending-corrections-status').textContent().catch(()=>'absent');
     if(/indisponible|non accessibles/i.test(device.correctionsState)){
       check(label+' suivi corrections Firebase',false,'Fonction indisponible dans la session Parent');
     }else{
-      check(label+' panneau corrections visible',await page.locator('#parent-corrections').isVisible());
+      check(label+' panneau corrections present',(await page.locator('#parent-corrections').count())>0);
     }
     const first=await page.evaluate(()=>window.__TIM_DATA.lessons?.[0]?.id);
     if(first){
