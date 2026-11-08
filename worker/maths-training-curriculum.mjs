@@ -1,3 +1,4 @@
+import {mathExtraQuestions} from './maths-training-extra.mjs';
 /* Évaluations de mathématiques tirées des questions des 23 leçons BIS.
    Une validation définitive par sous-leçon ; les devoirs ENT restent distincts.
    Les notes restent réservées à Tim et au compte Parent. */
@@ -743,10 +744,12 @@ export const MATH_TOTAL=23;
 export function mathId(id){return /^MT(?:0[1-9]|1[0-9]|2[0-3])$/.test(String(id||''));}
 export function mathTask(id){
  if(!mathId(id))return null;
- const suffix=id.slice(2),lessonId='MBIS'+suffix,rows=CONTENT[lessonId];
- if(!rows)return null;
+ const suffix=id.slice(2),lessonId='MBIS'+suffix,base=CONTENT[lessonId];
+ if(!base)return null;
+ const rows=[...base,...mathExtraQuestions(lessonId)];
+ if(rows.length!==10)throw Error('math-curriculum-incomplete');
  const questions=rows.map(([prompt,expected,alternatives,explanation,wrongFeedback],i)=>{
-  const position=(Number(suffix)+i*2)%4;
+  const position=(Number(suffix)+i)%4;
   const choices=alternatives.slice();
   choices.splice(position,0,expected);
   const feedbackByIndex=Array.isArray(wrongFeedback)?wrongFeedback.slice():alternatives.map(()=>"Vérifie les opérations et les données de la question.");
