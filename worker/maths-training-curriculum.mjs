@@ -267,7 +267,12 @@ const CONTENT={
         "7 m",
         "√119 m"
       ],
-      "La diagonale est l'hypoténuse : √(5²+12²) = 13 m."
+      "La diagonale est l'hypoténuse : √(5²+12²) = 13 m.",
+      [
+        "17 m additionne simplement 5 et 12 ; une diagonale se calcule avec les carrés.",
+        "7 m est une différence de côtés, pas la diagonale.",
+        "√119 provient de la soustraction des carrés ; pour la diagonale, on les additionne."
+      ]
     ],
     [
       "Avant d'utiliser le théorème de Pythagore dans un devoir, il faut…",
@@ -277,7 +282,12 @@ const CONTENT={
         "Dire que toutes les longueurs sont égales.",
         "Écrire directement le résultat."
       ],
-      "On indique le triangle et son angle droit avant d'écrire l'égalité de Pythagore."
+      "On indique le triangle et son angle droit avant d'écrire l'égalité de Pythagore.",
+      [
+        "Un dessin mesuré à la règle n'est pas une démonstration.",
+        "Les quatre côtés d'un rectangle ne sont pas nécessairement égaux.",
+        "Il faut d'abord identifier le triangle rectangle et son angle droit."
+      ]
     ]
   ],
   "MBIS10": [
@@ -289,7 +299,12 @@ const CONTENT={
         "5x",
         "7x − 2x"
       ],
-      "Les termes en x se regroupent : 4x + 3x = 7x. Le terme −2 reste."
+      "Les termes en x se regroupent : 4x + 3x = 7x. Le terme −2 reste.",
+      [
+        "Le terme −2 reste présent après la réduction.",
+        "4 + 3 − 2 = 5, mais −2 n'est pas un coefficient de x.",
+        "Le nombre −2 n'est pas un terme en x : il ne devient pas −2x."
+      ]
     ],
     [
       "Calcule 2x + 1 si x = −3.",
@@ -299,7 +314,12 @@ const CONTENT={
         "7",
         "5"
       ],
-      "2 × (−3) + 1 = −6 + 1 = −5."
+      "2 × (−3) + 1 = −6 + 1 = −5.",
+      [
+        "2 × (−3) = −6 : on ajoute ensuite 1 au lieu de le soustraire.",
+        "Le signe négatif de x doit être conservé au remplacement.",
+        "−6 + 1 vaut −5, et non +5."
+      ]
     ]
   ],
   "MBIS11": [
@@ -311,7 +331,12 @@ const CONTENT={
         "6x − 12",
         "8x + 12"
       ],
-      "On distribue le 4 aux deux termes : 4 × 2x = 8x et 4 × (−3) = −12."
+      "On distribue le 4 aux deux termes : 4 × 2x = 8x et 4 × (−3) = −12.",
+      [
+        "Le 4 doit aussi multiplier le −3, ce qui donne −12.",
+        "4 × 2x vaut 8x, pas 6x : on multiplie, on n'additionne pas.",
+        "4 × (−3) donne −12, pas +12."
+      ]
     ],
     [
       "Réduis 7x − (3x + 5).",
@@ -321,7 +346,12 @@ const CONTENT={
         "10x − 5",
         "4x"
       ],
-      "On enlève les parenthèses précédées de − : 7x − 3x − 5 = 4x − 5."
+      "On enlève les parenthèses précédées de − : 7x − 3x − 5 = 4x − 5.",
+      [
+        "Le signe moins devant la parenthèse transforme +5 en −5.",
+        "Il faut soustraire 3x à 7x, et non les additionner.",
+        "Le terme −5 ne disparaît pas pendant la réduction."
+      ]
     ]
   ],
   "MBIS12": [
@@ -333,7 +363,12 @@ const CONTENT={
         "x² − 3",
         "x² − 2x + 3"
       ],
-      "Les quatre produits donnent x² + x − 3x − 3 = x² − 2x − 3."
+      "Les quatre produits donnent x² + x − 3x − 3 = x² − 2x − 3.",
+      [
+        "Le produit −3 × x est négatif, il ne donne pas +3x.",
+        "Il faut calculer les quatre produits, dont x × 1 et −3 × x.",
+        "Le produit −3 × 1 vaut −3 et non +3."
+      ]
     ],
     [
       "Développe (x − 4)(x − 7).",
@@ -343,7 +378,12 @@ const CONTENT={
         "x² + 11x + 28",
         "x² − 28"
       ],
-      "x² − 7x − 4x + 28 = x² − 11x + 28."
+      "x² − 7x − 4x + 28 = x² − 11x + 28.",
+      [
+        "Le produit (−4) × (−7) est positif : +28.",
+        "Les deux termes en x sont négatifs, pas positifs.",
+        "Il manque les termes −7x et −4x dans cette expression."
+      ]
     ]
   ],
   "MBIS13": [
@@ -355,7 +395,12 @@ const CONTENT={
         "x − 10",
         "5x + 2"
       ],
-      "On multiplie tout le résultat x − 2, ce qui impose des parenthèses."
+      "On multiplie tout le résultat x − 2, ce qui impose des parenthèses.",
+      [
+        "Le facteur 5 multiplie tout (x − 2), pas uniquement x.",
+        "Le calcul demandé multiplie (x − 2) par 5, pas x par 1.",
+        "On soustrait d'abord 2 : il ne faut pas changer son signe."
+      ]
     ],
     [
       "Réduis 5(x − 2) + 3x.",
@@ -365,7 +410,12 @@ const CONTENT={
         "5x + 1",
         "2x − 10"
       ],
-      "5x − 10 + 3x = 8x − 10."
+      "5x − 10 + 3x = 8x − 10.",
+      [
+        "5 × (−2) vaut −10, pas −2.",
+        "Après développement, on obtient 5x − 10, puis on ajoute 3x.",
+        "5x + 3x donne 8x, et non 2x."
+      ]
     ]
   ],
   "MBIS14": [
@@ -377,7 +427,12 @@ const CONTENT={
         "Deux longueurs identiques.",
         "Un angle droit seulement."
       ],
-      "On justifie les alignements des points et le parallélisme des segments."
+      "On justifie les alignements des points et le parallélisme des segments.",
+      [
+        "La couleur de la figure ne fait pas partie des hypothèses de Thalès.",
+        "Deux longueurs égales ne remplacent pas la vérification des parallèles.",
+        "Un angle droit seul correspond plutôt à Pythagore ; Thalès exige des parallèles."
+      ]
     ],
     [
       "Dans le triangle ABC, M appartient à [AB], N à [AC] et (MN) est parallèle à (BC). Complète : AM/AB = AN/AC = …",
@@ -387,7 +442,12 @@ const CONTENT={
         "AM/BC",
         "AN/MN"
       ],
-      "Les côtés correspondants des triangles AMN et ABC sont AM/AB, AN/AC et MN/BC."
+      "Les côtés correspondants des triangles AMN et ABC sont AM/AB, AN/AC et MN/BC.",
+      [
+        "BC/MN inverse ce rapport, alors que les autres sont dans le sens petit/grand.",
+        "AM et BC ne sont pas les deux côtés correspondants de ces triangles.",
+        "AN et MN sont deux côtés du petit triangle, pas deux côtés correspondants."
+      ]
     ]
   ],
   "MBIS15": [
@@ -399,7 +459,12 @@ const CONTENT={
         "4 cm",
         "24 cm"
       ],
-      "D'après Thalès : 2/8 = 3/AC, donc AC = 3 × 8 ÷ 2 = 12 cm."
+      "D'après Thalès : 2/8 = 3/AC, donc AC = 3 × 8 ÷ 2 = 12 cm.",
+      [
+        "6 cm ne vérifie pas 2/8 = 3/AC : refais le produit en croix.",
+        "Il ne faut pas inverser les termes du rapport ; AC est quatre fois AN.",
+        "24 cm résulte d'une mauvaise proportion : AC = AN × AB / AM."
+      ]
     ],
     [
       "Dans une configuration de Thalès, MN/BC = 2/5 et BC = 20 cm. Calcule MN.",
@@ -409,7 +474,12 @@ const CONTENT={
         "10 cm",
         "2 cm"
       ],
-      "MN = BC × 2/5 = 20 × 2/5 = 8 cm."
+      "MN = BC × 2/5 = 20 × 2/5 = 8 cm.",
+      [
+        "50 cm correspond à l'inverse du rapport 2/5, ce n'est pas le bon sens.",
+        "10 cm représente la moitié de 20 alors qu'il faut prendre 2/5.",
+        "2 cm reprend le numérateur sans appliquer le rapport à 20 cm."
+      ]
     ]
   ],
   "MBIS16": [
@@ -421,7 +491,12 @@ const CONTENT={
         "2/5",
         "5/7"
       ],
-      "Thalès donne AM/AB = AN/AC = MN/BC. Ainsi MN/BC = 2/7."
+      "Thalès donne AM/AB = AN/AC = MN/BC. Ainsi MN/BC = 2/7.",
+      [
+        "7/2 inverse petit et grand côté : on doit conserver le rapport 2/7.",
+        "Le rapport de départ vaut 2/7 et non 2/5.",
+        "5/7 n'est pas égal à 2/7, donc la proportion n'est pas conservée."
+      ]
     ],
     [
       "Dans le triangle ABC, M est sur [AB], N est sur [AC] et (MN) est parallèle à (BC). L'égalité AB/AM = AN/AC = BC/MN est-elle l'égalité de Thalès correctement écrite ?",
@@ -431,7 +506,12 @@ const CONTENT={
         "Oui, si le triangle est rectangle",
         "Oui, si le triangle est isocèle"
       ],
-      "Non. Si on inverse les rapports, on les inverse tous : AB/AM = AC/AN = BC/MN."
+      "Non. Si on inverse les rapports, on les inverse tous : AB/AM = AC/AN = BC/MN.",
+      [
+        "AN/AC n'est pas inversé, contrairement aux deux autres rapports.",
+        "Un angle droit ne corrige pas l'inversion du rapport du milieu.",
+        "Un triangle isocèle ne dispense pas de garder tous les rapports dans le même sens."
+      ]
     ]
   ],
   "MBIS17": [
