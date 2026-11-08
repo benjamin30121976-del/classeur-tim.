@@ -148,7 +148,7 @@ test('Les 23 leçons BIS ne montrent plus les 46 mini-exercices de deux question
  const lessons=context.window.TIM_MATHS_BIS_PACK.lessons;
  assert.equal(lessons.length,23);
  for(const l of lessons){
-  assert.ok(!l.blocks.some(b=>/^Question d[’']entraînement\\s*[12]$/iu.test(b.h||'')),l.id+' still shows an ungraded two-question exercise');
+  assert.ok(!l.blocks.some(b=>/^Question d[’']entraînement\s*[12]$/iu.test(b.h||'')),l.id+' still shows an ungraded two-question exercise');
  }
 });
 
