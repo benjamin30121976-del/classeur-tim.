@@ -187,4 +187,4 @@ export async function handleRequest(request,env){
   return respond({error:code},status);
  }
 }
-export const TESTABLE={sanitize,resolveExercise,submitExercise,courseContent,parentReport,releaseCorrection,releasedCorrections};
+export const TESTABLE={sanitize,resolveExercise,submitExercise,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress};
