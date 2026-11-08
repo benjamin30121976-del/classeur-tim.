@@ -63,8 +63,8 @@ function createPanel(){
  const preview=el("div","tim-letter-preview");
  frame.append(state,preview);
  panel.append(frame,createWorkshop());
- let openUrl=null;
- const cleanup=()=>{if(openUrl){URL.revokeObjectURL(openUrl);openUrl=null;}preview.replaceChildren();};
+ let openUrl=null,disposeReader=()=>{};
+ const cleanup=()=>{disposeReader();disposeReader=()=>{};if(openUrl){URL.revokeObjectURL(openUrl);openUrl=null;}preview.replaceChildren();};
  const api=window.__TIM_BRIDGE?.attachments;
  if(!api||window.__TIM_GUEST){
   showNote(state,"La photo originale est réservée aux comptes Parent et Tim. Connecte-toi pour la consulter.");
@@ -72,42 +72,51 @@ function createPanel(){
  }
  function matching(items){
   const preferred=items.filter(item=>NAME_PATTERN.test(String(item.title||"")+" "+String(item.fileName||"")));
-  return preferred.find(item=>String(item.mime).startsWith("image/"))||null;
+  return preferred.find(item=>item.mime==="application/pdf")||preferred.find(item=>String(item.mime).startsWith("image/"))||null;
  }
  async function display(item){
-  cleanup();showNote(state,"Ouverture de la photo originale…");
+  cleanup();showNote(state,"Ouverture du document original…");
   try{
    const blob=await api.read(item);
-   if(!String(blob.type).startsWith("image/"))throw Error("La pièce jointe n'est pas une image.");
+   if(!String(blob.type).startsWith("image/")&&blob.type!=="application/pdf")throw Error("Le document n'est ni une photo ni un PDF.");
    openUrl=URL.createObjectURL(blob);
    state.replaceChildren();
-   const img=el("img","tim-letter-original");
-   img.src=openUrl;
-   img.alt="Photographie originale de la lettre manuscrite de Tim, avec les ratures et corrections rouges de Mme Gonzalez";
-   img.loading="eager";
-   const link=el("a","spx-button tim-letter-download","Voir la lettre en grand");
+   if(blob.type==="application/pdf"){
+    const host=el("div","tim-letter-pdf");
+    preview.append(host);
+    const viewer=await import("./pdf-preview.js");
+    const release=await viewer.mountPdfPreview(host,blob);
+    if(typeof release==="function")disposeReader=release;
+   }else{
+    const img=el("img","tim-letter-original");
+    img.src=openUrl;
+    img.alt="Photographie originale de la lettre manuscrite de Tim, avec les ratures et corrections rouges de Mme Gonzalez";
+    img.loading="eager";
+    preview.append(img);
+   }
+   const link=el("a","spx-button tim-letter-download",blob.type==="application/pdf"?"Ouvrir le dossier complet en grand":"Voir la lettre en grand");
    link.href=openUrl;link.target="_blank";link.rel="noopener noreferrer";
-   preview.append(img,link);
-  }catch(e){showNote(state,"La photo n’a pas pu s’ouvrir : "+String(e.message||e));}
+   preview.append(link);
+  }catch(e){showNote(state,"Le document n’a pas pu s’ouvrir : "+String(e.message||e));}
  }
  function uploadBox(){
   if(!window.__TIM_PARENT)return;
   const details=el("details","tim-letter-upload");
-  details.append(el("summary","","Ajouter la photo manuscrite originale (parent seulement)"));
-  details.append(el("p","","Choisis la photo originale au format PNG, JPG ou WebP. Elle restera privée : seuls Tim et son parent pourront l’ouvrir. Ne la redessine pas : nous conservons l’image telle quelle."));
-  const input=el("input","tim-letter-file");input.type="file";input.accept=".png,.jpg,.jpeg,.webp,image/png,image/jpeg,image/webp";
-  input.setAttribute("aria-label","Sélectionner la photo manuscrite originale de Tim");
-  const send=el("button","spx-button","Ajouter la photo originale");send.type="button";
+  details.append(el("summary","","Ajouter la copie originale et sa traduction (parent seulement)"));
+  details.append(el("p","","Choisis de préférence le PDF « Lettre de Tim : originale, traduction et corrections » : il contient la vraie photo manuscrite intacte sur sa première page, suivie des traductions. Tu peux aussi ajouter la photo originale en PNG, JPG ou WebP. Le document restera privé."));
+  const input=el("input","tim-letter-file");input.type="file";input.accept=".pdf,.png,.jpg,.jpeg,.webp,application/pdf,image/png,image/jpeg,image/webp";
+  input.setAttribute("aria-label","Sélectionner le dossier original de Tim avec sa traduction, au format PDF ou image");
+  const send=el("button","spx-button","Ajouter le document privé");send.type="button";
   const progress=el("p","tim-letter-status","");
   send.onclick=async()=>{
     const file=input.files&&input.files[0];
     if(!file){progress.textContent="Sélectionne d’abord la photo originale.";return;}
-    if(!/\.(png|jpe?g|webp)$/i.test(file.name)){progress.textContent="Choisis un PNG, JPG ou WebP.";return;}
+    if(!/\.(pdf|png|jpe?g|webp)$/i.test(file.name)){progress.textContent="Choisis un PDF, PNG, JPG ou WebP.";return;}
     if(file.size>4*1024*1024){progress.textContent="La photo dépasse la limite de 4 Mo.";return;}
     send.disabled=true;progress.textContent="Enregistrement privé en cours…";
     try{
       await api.upload("lesson",TARGET,file,LABEL,value=>{progress.textContent="Enregistrement privé : "+value+" %";});
-      progress.textContent="Photo enregistrée. Tim et toi pouvez maintenant voir la copie originale.";
+      progress.textContent="Document enregistré. Tim et toi pouvez maintenant voir la copie originale et, si tu as choisi le PDF, sa traduction.";
       await reload();
       details.open=false;
     }catch(err){progress.textContent="Enregistrement impossible : "+String(err.message||err);}
