@@ -68,7 +68,7 @@ const CONTENT={
   ],
   "MBIS03": [
     [
-      "Calcule (−3)³.",
+      "Effectue ce calcul : (−3)³. Quel résultat obtiens-tu ?",
       "−27",
       [
         "27",
@@ -83,7 +83,7 @@ const CONTENT={
       ]
     ],
     [
-      "Calcule 2⁻³.",
+      "Effectue ce calcul : 2⁻³. Quel résultat obtiens-tu ?",
       "1/8",
       [
         "−8",
@@ -580,7 +580,7 @@ const CONTENT={
   ],
   "MBIS19": [
     [
-      "Calcule (−4)².",
+      "Calcule le carré du nombre −4, c'est-à-dire (−4)².",
       "16",
       [
         "−16",
