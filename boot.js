@@ -346,7 +346,7 @@ const CONFIG_STORAGE_KEY='mi-espanol-firebase-web-config';
 function parseFirebaseConfig(s){
   let c;try{c=JSON.parse(s);}catch(_){c={};for(const m of s.matchAll(/(apiKey|authDomain|projectId|appId|messagingSenderId|storageBucket|measurementId|appCheckSiteKey)\s*:\s*["']([^"']+)["']/g))c[m[1]]=m[2];}
   if(!c || c.projectId!=='classeur-ba3e7' || !c.apiKey || !c.authDomain || !c.appId) throw Error('Configuration incomplète ou projet différent de classeur-ba3e7.');
-  if(!String(c.appCheckSiteKey||'').trim()) throw Error('Clé reCAPTCHA v3 App Check manquante : elle est indispensable pour envoyer les devoirs et débloquer les corrections.');
+  // L'authentification Firebase peut être initialisée sans App Check ; les fonctions protégées restent indisponibles sans sa clé.
   return c;
 }
 function shareAddress(c){return location.origin+location.pathname+'#fb='+encodeURIComponent(JSON.stringify(c));}
