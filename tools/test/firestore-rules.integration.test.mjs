@@ -43,11 +43,11 @@ test('Tim: réponses, anciens contenus et XP protégés',async()=>{
  for(const path of ['answerKeys/E01','content/legacy','privateAttempts/mine'])await assertFails(getDoc(doc(tim,path)));
  await assertFails(setDoc(doc(tim,'attempts/fake'),{authorUid:timUid,xp:100}));
 });
-test('Tim: correction après validation parent et échéance',async()=>{
+test('Tim: corrections uniquement via fonction serveur, jamais directement',async()=>{
  const tim=db(timUid);
  await assertFails(getDoc(doc(tim,'releasedCorrections/locked')));
  await assertFails(getDoc(doc(tim,'releasedCorrections/future')));
- await assertSucceeds(getDoc(doc(tim,'releasedCorrections/past')));
+ await assertFails(getDoc(doc(tim,'releasedCorrections/past')));
 });
 test('Parent: accès privé, mais ne peut pas fabriquer des XP',async()=>{
  const parent=db(parentUid);
