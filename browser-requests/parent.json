@@ -1,10 +1,10 @@
 {
-  "mode": "lecture-seule-parent",
+  "mode": "lecture-privee-defi-20261108",
   "site": "https://classeur-tim-v16.pages.dev/",
-  "scope": "Se connecter avec les secrets GitHub Actions, inspecter les cours et les boutons sans modifier les données.",
+  "scope": "Chromium/Playwright authentifié compte Parent avec les secrets existants. Vérifier si le défi DAY_20261108_01 a été soumis, lire la note, les réponses privées et les XP, sans modification.",
+  "requestedAt": "2026-11-08T22:30:00+01:00",
+  "checkVersion": "audit-defi-20261108-encrypted",
   "launch_on_update": true,
-  "requestedAt": "2026-11-08T05:49:00+01:00",
-  "note": "Audit lecture seule des 55 leçons et 38 exercices réellement chargés par la session Parent ; uniquement métadonnées et quantités, aucune réponse publiée.",
-  "checkVersion": "corriger-captures-et-inventaire",
-  "audit": "2026-11-08-inventaire-ent-bis-exercices"
+  "privacy": "Rapport chiffré RSA OAEP + AES GCM dans artifact GitHub, ni réponses ni note dans les logs publics",
+  "publicKeyPem": "-----BEGIN PUBLIC KEY-----\nMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAq2wy/GMnGfNlPmmhWlvi\nKI5zFeOYejmTr1Y+LZLurAWECHaU98hduMSCHNm277Gxct5OI7gIDZ5rw2KlOvdF\nHCQX1MQn13e421SIyT6qvGAVfN51UginiNzgCh6c8dLRD1gWiKBsknOuVemIRdq8\nqIg7sSI4+IaV4b/PEjGQInO/oDxJqaiWq9mFGdhClYc5VIgXBbDgsGn2e7ZqsCf7\nZihGKre2yJ/ISvArdT0ZnyQp2uxoIqPew+8YpihFs+RTejIWjS+hlLFU2mhf+rHz\n3AVICbTslQEHB9FGjcVXugkC7TBg77Khq6PgdNFhRI5gj5mVz2jlpFK2iPAtQGHB\nKwIDAQAB\n-----END PUBLIC KEY-----"
 }
