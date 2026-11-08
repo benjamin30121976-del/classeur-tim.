@@ -97,7 +97,7 @@ function el(t,cls,txt){const n=document.createElement(t);if(cls)n.className=cls;
 function renderPanel(id){
  const items=ITEMS[id]||[];
  const panel=el("section","spx-panel spx-ent-translations");
- panel.append(el("span","spx-label","ÉNONCÉS RETROUVÉS DANS LES DOCUMENTS ENT"));
+ panel.append(el("span","spx-label","3 · ÉNONCÉS DES DOCUMENTS ENT"));
  panel.append(el("h3","","Comprendre les consignes originales"));
  if(!items.length){panel.append(el("p","","Aucune consigne espagnole complète n'a pu être vérifiée dans les captures conservées pour cette sous-leçon. Les exercices du classeur restent disponibles, sans être présentés comme des documents officiels."));return panel;}
  panel.append(el("p","","Voici les passages lisibles des aperçus conservés. Le texte en espagnol est suivi de sa traduction et de ce qu'il faut faire. Les réponses à compléter restent volontairement vides."));
