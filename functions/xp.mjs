@@ -1,7 +1,7 @@
 export function rawPoints({kind,category,score,total,needsReview}) {
- if(category==='school'||needsReview||!total)return 0;
+ if(needsReview||!total)return 0;
  const p=Math.max(0,Math.min(1,score/total));
- if(['daily','weekly','sunday'].includes(kind)){
+ if(category==='school'||['daily','weekly','sunday'].includes(kind)){
   const base=p===1?3:p>=.8?2:p>=.6?1:p>=.4?-1:-2;
   return base+(p>=.8?5:0);
  }
