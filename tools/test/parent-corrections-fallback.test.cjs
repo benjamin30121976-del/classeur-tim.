@@ -15,7 +15,7 @@ function node(type='div'){
   replaceChildren(...parts){this.children=[...parts];}};
  return n;
 }
-async function run({publicDocs=[],privateDocs=[],serviceOk=false,readAllowed=true}={}){
+async function run({publicDocs=[],privateDocs=[],mathDocs=[],serviceOk=false,readAllowed=true}={}){
  const status=node('p'),list=node('div'),panel={querySelector(selector){
   if(selector==='#pending-corrections-status')return status;
   if(selector==='#pending-corrections-list')return list;
@@ -24,7 +24,7 @@ async function run({publicDocs=[],privateDocs=[],serviceOk=false,readAllowed=tru
  const docs=rows=>({docs:rows.map(d=>({id:d.id,data:()=>d}))});
  const ctx={
   panel,document:{createElement:node},
-  window:{__TIM_DATA:{exercises:[{id:'MATH_A',title:'Calculs en mathématiques'},{id:'SVT_B',title:'Cellules en SVT'}]},
+  window:{__TIM_DATA:{exercises:[{id:'MATH_A',title:'Calculs en mathématiques'},{id:'SVT_B',title:'Cellules en SVT'}],lessons:[{id:'MBIS05',title:'BIS · Théorème de Pythagore : reconnaître le triangle'}]},
    TIM_SPANISH_EDU:{L01:{name:'Se présenter'}},
    TIM_SPANISH_TRAINING_ENGINE:{buildSpanishTasks:()=>({questions:[{type:'mc',choices:['autre choix','autre réponse',"je m'appelle",'aucun']} ]})}},
   functionsApi:{},collection:(_db,path)=>path,db:{},
@@ -34,6 +34,7 @@ async function run({publicDocs=[],privateDocs=[],serviceOk=false,readAllowed=tru
    return {exists:()=>Boolean(data),data:()=>data};
   },
   cloudCallable:name=>async()=>{
+   if(name==='getMathTrainingProgress')return {data:{attempts:mathDocs}};
    if(name==='getParentReport'&&serviceOk)return {data:{attempts:publicDocs.map(x=>({...x,title:x.title||x.id,correctionStatus:x.correctionStatus||'pending-parent'}))}};
    throw Error('functions/not-found');
   },
@@ -55,7 +56,7 @@ async function run({publicDocs=[],privateDocs=[],serviceOk=false,readAllowed=tru
 }
 test('Sans devoir, la lecture Firestore remplace le message trompeur',async()=>{
  const x=await run();
- assert.match(x.text,/0 devoir\(s\) en attente/);
+ assert.match(x.text,/0 devoir en attente/);
  assert.match(x.text,/Consultation des résultats : disponible via Firebase/);
  assert.doesNotMatch(x.text,/Suivi indisponible : fonctions Firebase/);
  assert.equal(x.buttons.length,1,'Seul Actualiser doit être proposé');
@@ -67,7 +68,7 @@ test('Notes Maths et SVT accessibles, sans bouton de déblocage non opérationne
  });
  assert.match(x.text,/Calculs en mathématiques · 8\/10/);
  assert.match(x.text,/Cellules en SVT · 6\/10/);
- assert.match(x.text,/1 devoir\(s\) en attente/);
+ assert.match(x.text,/1 devoir en attente/);
  assert.equal(x.buttons.length,3,'Deux boutons pour ouvrir les copies et un bouton Actualiser');
 });
 test('En cas de double refus, aucun succès fictif',async()=>{
@@ -77,7 +78,7 @@ test('En cas de double refus, aucun succès fictif',async()=>{
 });
 test('Si le backend fonctionne, les boutons de correction demeurent',async()=>{
  const x=await run({serviceOk:true,publicDocs:[{id:'MATH_A',score:8,total:10}]});
- assert.match(x.text,/1 devoir\(s\) en attente/);
+ assert.match(x.text,/1 devoir en attente/);
  assert.equal(x.buttons.length,3);
  assert.match(x.buttons[0].textContent,/Débloquer/);
  assert.match(x.buttons[1].textContent,/Voir la copie/);
@@ -97,4 +98,29 @@ test('Le Parent ouvre une copie espagnole sans rejouer le QCM',async()=>{
  assert.match(x.allText(),/Réponse de Tim : je m'appelle/);
  assert.match(x.allText(),/Bonne réponse/);
  assert.doesNotMatch(x.allText(),/Valider définitivement/);
+});
+
+test('Les mathématiques partagent le compteur Parent et le bouton Voir la copie, sans attente ni XP',async()=>{
+ const x=await run({
+  mathDocs:[{
+   id:'MT05',lessonId:'MBIS05',score:1,total:2,submittedAt:'2026-11-08T18:14:00Z',xp:0,
+   items:[
+    {prompt:"Dans un triangle rectangle en B, quelle est l'hypoténuse ?",response:'AC',expected:'AC',correct:true,explanation:"AC est opposé à l'angle droit."},
+    {prompt:"Calcule une hypoténuse.",response:'12',expected:'10',correct:false,explanation:'Utiliser la racine de la somme des carrés.'}
+   ]
+  }]
+ });
+ assert.match(x.text,/0 devoir en attente/);
+ assert.match(x.text,/1 exercice validé en ligne/);
+ assert.match(x.text,/Mathématiques · BIS · Théorème de Pythagore/);
+ assert.match(x.text,/Évaluation de la sous-leçon · 01 · 1\/2/);
+ const view=x.buttons.find(b=>/Voir la copie/.test(b.textContent));
+ assert.ok(view,'Le Parent doit pouvoir ouvrir le détail depuis le même encart');
+ await view.onclick();
+ assert.match(x.allText(),/Note : 1\/2 · 0 XP/);
+ assert.match(x.allText(),/Réponse de Tim : AC/);
+ assert.match(x.allText(),/Réponse de Tim : 12/);
+ assert.match(x.allText(),/Réponse attendue : 10/);
+ assert.match(x.allText(),/Utiliser la racine de la somme des carrés/);
+ assert.match(x.allText(),/Relire la leçon BIS/);
 });
