@@ -83,6 +83,7 @@ function render(root,opts){
    ["Je comprends les expressions","Je retrouve les mots espagnols","Je m'entraîne dans les deux sens","Je comprends les phrases","Je révise toute la sous-leçon"].map((label,i)=>'<button type="button" class="spx-row" data-set="'+i+'"><span class="spx-chip">'+(i+1)+'</span><span><strong>'+esc(label)+'</strong><small>10 questions · correction expliquée</small></span><span>›</span></button>').join("")+'</section>'+
    '<section class="spx-panel"><span class="spx-label">6 · LE COURS DE L’ENT</span><h3>Retrouver le cours de la classe</h3><p>Repère dans le classeur : '+esc(date)+'. Les documents d’origine restent accessibles lorsqu’ils sont disponibles.</p><button class="spx-button subtle" type="button" id="spx-ent">Voir la fiche du cours</button></section>');
   if(window.TIM_SPANISH_ENT_ORIGINALS){const originalPanel=window.TIM_SPANISH_ENT_ORIGINALS.renderPanel(ref);const second=root.querySelectorAll(".spx-panel")[1];if(second)second.after(originalPanel);}
+  if(ref==="L05"&&window.TIM_SPANISH_LETTER){const first=root.querySelector(".spx-panel");if(first)first.after(window.TIM_SPANISH_LETTER.createPanel());}
   bindBack(()=>openCategory(category));root.querySelectorAll("[data-set]").forEach(b=>b.onclick=()=>begin(+b.dataset.set));
   root.querySelector("#spx-ent").onclick=()=>opts.original(ref);scroll();
  }

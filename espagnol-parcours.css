@@ -72,3 +72,15 @@
 .spx-ent-item .spx-ent-action{background:#fff;border-left:3px solid #e7bd39;border-radius:0 7px 7px 0;padding:8px;font-size:13px;line-height:1.55;color:#45576a;margin:0 0 7px}
 .spx-ent-item .spx-ent-source{display:block;font-size:11px;line-height:1.45;color:#677487}
 .spx-ent-disclaimer{font-size:12px!important;line-height:1.5;color:#6d7890!important}
+
+/* Photo manuscrite originale en pièce jointe sécurisée : style espagnol local. */
+.tim-letter-panel{border-color:#efd9aa}
+.tim-letter-panel .tim-letter-frame{border:1px solid #eedfca;border-radius:13px;background:#fffaf0;padding:12px;margin:12px 0}
+.tim-letter-original{display:block;max-width:100%;width:auto;height:auto;max-height:1100px;object-fit:contain;margin:0 auto 13px;border-radius:8px;border:1px solid #ddd2cc;background:white}
+.tim-letter-status{font-size:13px;color:#54647a;line-height:1.5}
+.tim-letter-preview{display:flex;flex-direction:column;align-items:center}
+.tim-letter-download{display:inline-flex;text-decoration:none!important}
+.tim-letter-upload{padding:12px;border:1px solid #e6dcce;border-radius:12px;background:#fffdf7}
+.tim-letter-upload summary{cursor:pointer;color:#833246;font-weight:850;font-size:14px}
+.tim-letter-upload input[type=file]{width:100%;max-width:100%;display:block;background:#fff;color:#25314b;font-size:13px;margin:12px 0;padding:9px;border:1px solid #d9dce5;border-radius:9px}
+.tim-letter-upload .spx-button:disabled{opacity:.4;cursor:default}
