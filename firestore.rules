@@ -7,7 +7,7 @@ service cloud.firestore {
   match /content/{id} { allow read, write: if parent(); }
   match /exercises/{id} { allow read, write: if parent(); }
   match /lessons/{id} { allow read, write: if parent(); }
-  match /publicLessons/{id} { allow read: if family(); allow write: if parent(); }
+  match /publicLessons/{id} { allow read: if true; allow write: if parent() && !request.resource.data.keys().hasAny(['answers','answerKeys','corrections','expected','solution','solutions']); }
   match /publicExercises/{id} { allow read: if family(); allow write: if parent(); }
   match /answerKeys/{id} { allow read, write: if parent(); }
   match /releasedCorrections/{id} {
