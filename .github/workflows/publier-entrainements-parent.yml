@@ -27,6 +27,8 @@ jobs:
           mkdir -p /tmp/tim-parent-publish
           npm install --prefix /tmp/tim-parent-publish --no-audit --no-fund playwright
           /tmp/tim-parent-publish/node_modules/.bin/playwright install --with-deps chromium
+      # Relance après publication des droits Parent le 08/11/2026 à 13 h 56 (heure de Paris).
+      # Le script vérifie d'abord la lecture privée et n'ajoute que les identifiants absents.
       - name: Ajouter les entraînements manquants dans la base Firebase existante
         env:
           NODE_PATH: /tmp/tim-parent-publish/node_modules
