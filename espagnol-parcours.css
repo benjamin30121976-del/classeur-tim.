@@ -63,3 +63,12 @@
 .spx-action{margin:10px 0 0!important;background:#fff;border-left:3px solid #e6b937;border-radius:0 8px 8px 0;padding:10px;color:#3f5064!important;font-size:13px!important}
 .spx-action[hidden]{display:none}
 @media(max-width:520px){.spx-guide-list{grid-template-columns:1fr}}
+
+/* Transcriptions et explications des vrais énoncés ENT : propres à Espagnol. */
+.spx-ent-list{display:grid;grid-template-columns:1fr;gap:10px;margin:12px 0}
+.spx-ent-item{border:1px solid #e9dfd8;border-radius:13px;background:#fffaf4;padding:13px 14px}
+.spx-ent-item .spx-ent-spanish{font-size:15px;font-weight:850;color:#8d2a43;line-height:1.55;margin:0 0 6px}
+.spx-ent-item .spx-ent-french{font-size:14px;line-height:1.55;color:#233753;margin:0 0 7px}
+.spx-ent-item .spx-ent-action{background:#fff;border-left:3px solid #e7bd39;border-radius:0 7px 7px 0;padding:8px;font-size:13px;line-height:1.55;color:#45576a;margin:0 0 7px}
+.spx-ent-item .spx-ent-source{display:block;font-size:11px;line-height:1.45;color:#677487}
+.spx-ent-disclaimer{font-size:12px!important;line-height:1.5;color:#6d7890!important}
