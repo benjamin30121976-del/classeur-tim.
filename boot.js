@@ -302,6 +302,7 @@ async function startSession(user){
     const pending=attempts.filter(a=>a.correctionStatus==='pending-parent');
     document.getElementById('pending-corrections-status').textContent=pending.length+' exercice(s) en attente de correction';
     const list=document.getElementById('pending-corrections-list');list.replaceChildren();
+    if(!pending.length){const empty=document.createElement('p');empty.textContent='Aucun devoir en attente. Les corrections déjà autorisées restent accessibles à Tim.';list.append(empty);}
     for(const item of pending){
      const line=document.createElement('div');line.style.cssText='padding:10px 0;border-top:1px solid #456';
      const title=document.createElement('span');title.textContent=item.title+' ';
