@@ -28,6 +28,7 @@ test('Invité: leçons publiques seulement',async()=>{
  await assertSucceeds(getDoc(doc(guest,'publicLessons/L01')));
  await assertFails(getDoc(doc(guest,'publicExercises/E01')));
  await assertFails(getDoc(doc(guest,'answerKeys/E01')));
+ await assertFails(getDocs(collection(guest,'privateAttempts')));
  await assertFails(setDoc(doc(guest,'attempts/fake'),{authorUid:timUid,xp:100}));
 });
 test('Tim: énoncés et résultats personnels uniquement',async()=>{
@@ -41,6 +42,7 @@ test('Tim: énoncés et résultats personnels uniquement',async()=>{
 test('Tim: réponses, anciens contenus et XP protégés',async()=>{
  const tim=db(timUid);
  for(const path of ['answerKeys/E01','content/legacy','privateAttempts/mine'])await assertFails(getDoc(doc(tim,path)));
+ await assertFails(getDocs(collection(tim,'privateAttempts')));
  await assertFails(setDoc(doc(tim,'attempts/fake'),{authorUid:timUid,xp:100}));
 });
 test('Tim: corrections uniquement via fonction serveur, jamais directement',async()=>{
@@ -53,6 +55,8 @@ test('Parent: accès privé, mais ne peut pas fabriquer des XP',async()=>{
  const parent=db(parentUid);
  await assertSucceeds(getDoc(doc(parent,'answerKeys/E01')));
  await assertSucceeds(getDoc(doc(parent,'privateAttempts/mine')));
+ await assertSucceeds(getDocs(collection(parent,'privateAttempts')));
+ await assertSucceeds(getDocs(collection(parent,'attempts')));
  await assertFails(setDoc(doc(parent,'releasedCorrections/new'),{released:false,releaseAt:Timestamp.fromDate(new Date('2099-01-01'))}));
  await assertFails(setDoc(doc(parent,'attempts/fake'),{authorUid:timUid,xp:100}));
 });
