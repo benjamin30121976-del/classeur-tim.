@@ -523,7 +523,12 @@ const CONTENT={
         "x² + 5",
         "5x²"
       ],
-      "x(x + 5) = x² + 5x."
+      "x(x + 5) = x² + 5x.",
+      [
+        "x(x + 5) n'est pas 2x + 5 : il faut effectuer deux multiplications.",
+        "Dans x × 5, le x reste : le terme est 5x et non 5.",
+        "Distribue x aux deux termes séparément : x × x et x × 5."
+      ]
     ],
     [
       "Quel indice annonce qu'on peut utiliser Thalès ?",
@@ -533,7 +538,12 @@ const CONTENT={
         "Un angle droit sans parallèles.",
         "Une addition de fractions."
       ],
-      "Thalès repose sur les alignements et les parallèles, pas sur un programme de calcul."
+      "Thalès repose sur les alignements et les parallèles, pas sur un programme de calcul.",
+      [
+        "La présence de x signale du calcul littéral, pas une configuration de Thalès.",
+        "Un angle droit sans parallèles évoque Pythagore, pas Thalès.",
+        "L'addition de fractions n'est pas la condition géométrique de Thalès."
+      ]
     ]
   ],
   "MBIS18": [
@@ -545,7 +555,12 @@ const CONTENT={
         "Une proportionnalité sans justification",
         "La règle de trois seule"
       ],
-      "Puisque le triangle est rectangle en D, CG² = CD² + DG²."
+      "Puisque le triangle est rectangle en D, CG² = CD² + DG².",
+      [
+        "Aucun parallélisme n'est donné pour Thalès, mais le triangle est rectangle en D.",
+        "Une simple proportionnalité ne remplace pas le théorème applicable au triangle rectangle.",
+        "La règle de trois sans justification ne permet pas ici de calculer CG."
+      ]
     ],
     [
       "Dans le triangle CDG, E est sur [CD], F est sur [CG] et (EF) est parallèle à (DG). Quel théorème permet de calculer EF à partir de DG, CE et CD ?",
@@ -555,7 +570,12 @@ const CONTENT={
         "La somme des angles seulement",
         "Une règle graduée sur le dessin"
       ],
-      "Avec les points alignés et (EF) parallèle à (DG), Thalès donne EF/DG = CE/CD."
+      "Avec les points alignés et (EF) parallèle à (DG), Thalès donne EF/DG = CE/CD.",
+      [
+        "Aucun angle droit nécessaire à Pythagore n'est donné pour cette situation.",
+        "La somme des angles ne permet pas de calculer les longueurs demandées.",
+        "Une mesure à la règle dépend de l'échelle du dessin ; utilise les rapports de Thalès."
+      ]
     ]
   ],
   "MBIS19": [
@@ -567,7 +587,12 @@ const CONTENT={
         "−8",
         "8"
       ],
-      "(−4) × (−4) = 16."
+      "(−4) × (−4) = 16.",
+      [
+        "Deux nombres négatifs multipliés donnent un produit positif.",
+        "L'exposant 2 signifie une multiplication par soi-même, pas un doublement.",
+        "(−4)² vaut 16 ; 8 n'est pas le carré de −4."
+      ]
     ],
     [
       "Calcule 1/3 + 1/6.",
@@ -577,7 +602,12 @@ const CONTENT={
         "2/6",
         "1/9"
       ],
-      "1/3 = 2/6, donc 2/6 + 1/6 = 3/6 = 1/2."
+      "1/3 = 2/6, donc 2/6 + 1/6 = 3/6 = 1/2.",
+      [
+        "On ne peut pas additionner directement les dénominateurs des fractions.",
+        "1/3 vaut 2/6, auquel il faut ajouter 1/6 : on obtient 3/6.",
+        "Le dénominateur ne se multiplie pas lors d'une addition de fractions."
+      ]
     ]
   ],
   "MBIS20": [
@@ -589,7 +619,12 @@ const CONTENT={
         "5x + 10",
         "x − 10"
       ],
-      "5 × x = 5x et 5 × (−2) = −10."
+      "5 × x = 5x et 5 × (−2) = −10.",
+      [
+        "Le 5 multiplie aussi −2 ; le résultat contient −10 et pas −2.",
+        "Le produit 5 × (−2) est négatif, pas positif.",
+        "Le x doit aussi être multiplié par 5 : le coefficient est 5x."
+      ]
     ],
     [
       "Réduis 6a² + 4a + 3a.",
@@ -599,7 +634,12 @@ const CONTENT={
         "13a",
         "6a² + 12a"
       ],
-      "4a + 3a = 7a ; 6a² est un terme d'un autre degré."
+      "4a + 3a = 7a ; 6a² est un terme d'un autre degré.",
+      [
+        "6a² ne s'additionne pas à 7a : ces termes sont de degrés différents.",
+        "Le terme 6a² reste un terme en a², il ne devient pas un terme en a.",
+        "4a + 3a donne 7a, on ne multiplie pas les coefficients entre eux."
+      ]
     ]
   ],
   "MBIS21": [
@@ -611,7 +651,12 @@ const CONTENT={
         "La distributivité",
         "La somme des fractions"
       ],
-      "3² + 4² = 5² ; la réciproque permet de prouver l'angle droit."
+      "3² + 4² = 5² ; la réciproque permet de prouver l'angle droit.",
+      [
+        "Thalès a besoin de parallèles et d'alignements, pas uniquement de trois longueurs.",
+        "La distributivité développe une expression : elle ne démontre aucun angle droit.",
+        "L'addition de fractions ne permet pas de prouver qu'un triangle est rectangle."
+      ]
     ],
     [
       "Dans le triangle ABC, M est sur [AB], N sur [AC] et (MN) est parallèle à (BC). Quel théorème permet de calculer BC à partir de AM, AB et MN ?",
@@ -621,7 +666,12 @@ const CONTENT={
         "Une multiplication de nombres relatifs",
         "Le calcul d'une aire"
       ],
-      "La configuration permet d'écrire avec Thalès : AM/AB = MN/BC."
+      "La configuration permet d'écrire avec Thalès : AM/AB = MN/BC.",
+      [
+        "La réciproque de Pythagore exige la comparaison des carrés de trois côtés.",
+        "Multiplier des nombres relatifs n'utilise pas les parallèles de cette figure.",
+        "Calculer une aire ne permet pas ici de retrouver BC à partir des côtés correspondants."
+      ]
     ]
   ],
   "MBIS22": [
@@ -633,7 +683,12 @@ const CONTENT={
         "Côté 1 × côté 2",
         "(Côté 1 + côté 2) ÷ 2"
       ],
-      "Les deux côtés de l'angle droit servent de base et de hauteur : leur produit divisé par deux."
+      "Les deux côtés de l'angle droit servent de base et de hauteur : leur produit divisé par deux.",
+      [
+        "L'addition de deux longueurs ne donne pas une aire.",
+        "Le produit des deux côtés de l'angle droit est le double de l'aire du triangle.",
+        "La moyenne des côtés n'est pas la formule de l'aire du triangle rectangle."
+      ]
     ],
     [
       "Avant d'écrire les rapports de Thalès, que faut-il vérifier ?",
@@ -643,7 +698,12 @@ const CONTENT={
         "Uniquement la longueur du plus petit côté.",
         "Que le triangle est équilatéral."
       ],
-      "Il faut vérifier les alignements, les parallèles et la correspondance des côtés."
+      "Il faut vérifier les alignements, les parallèles et la correspondance des côtés.",
+      [
+        "La couleur ne donne aucune information sur le parallélisme.",
+        "Connaître seulement le plus petit côté n'est pas suffisant pour Thalès.",
+        "Le triangle n'a pas besoin d'être équilatéral pour utiliser Thalès."
+      ]
     ]
   ],
   "MBIS23": [
@@ -655,7 +715,12 @@ const CONTENT={
         "5,25 m",
         "6,75 m"
       ],
-      "On calcule la racine carrée de 20,25 : MN = 4,5 m."
+      "On calcule la racine carrée de 20,25 : MN = 4,5 m.",
+      [
+        "1,5² vaut 2,25 et non 20,25 : vérifie la racine carrée.",
+        "5,25² ne vaut pas 20,25 : vérifie en élevant la longueur proposée au carré.",
+        "6,75² ne vaut pas 20,25 : vérifie en élevant la longueur proposée au carré."
+      ]
     ],
     [
       "Peut-on regrouper directement un terme en x² avec un terme en x ?",
@@ -665,7 +730,12 @@ const CONTENT={
         "Seulement si x est négatif",
         "Toujours après une division"
       ],
-      "Ce sont des termes de degrés différents : ils ne sont pas semblables."
+      "Ce sont des termes de degrés différents : ils ne sont pas semblables.",
+      [
+        "x² et x n'ont pas le même degré : on ne les additionne pas en un seul terme.",
+        "Le signe de x ne change pas la nature des termes x² et x.",
+        "Une division ne rend pas automatiquement les termes x² et x semblables."
+      ]
     ]
   ]
 };
