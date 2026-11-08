@@ -60,3 +60,18 @@ test('Compte inconnu: refus',async()=>{
  await assertFails(getDoc(doc(other,'publicLessons/L01')));
  await assertFails(getDoc(doc(other,'answerKeys/E01')));
 });
+
+
+test('Tim cannot bypass release through listing or changing parent settings',async()=>{
+ const tim=db(timUid);
+ await assertFails(getDocs(collection(tim,'releasedCorrections')));
+ await assertFails(setDoc(doc(tim,'settings/correctionPolicy'),{released:true}));
+ await assertFails(setDoc(doc(tim,'answerKeys/E01'),{questions:[]}));
+});
+test('No browser account, including Parent, may write XP aggregates',async()=>{
+ for(const uid of [null,timUid,parentUid,'unknown']){
+  const client=db(uid);
+  await assertFails(getDoc(doc(client,'xpState/tim')));
+  await assertFails(setDoc(doc(client,'xpState/tim'),{earned:9999,weekEarned:9999}));
+ }
+});
