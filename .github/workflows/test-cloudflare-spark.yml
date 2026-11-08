@@ -6,6 +6,7 @@ on:
       - 'boot.js'
       - 'worker/**'
       - 'tools/test/cloudflare-spark-backend.test.mjs'
+      - 'tools/test/cloudflare-spark-auth.test.mjs'
       - '.github/workflows/test-cloudflare-spark.yml'
   workflow_dispatch:
 permissions:
@@ -29,7 +30,7 @@ jobs:
           node --check functions/grading.mjs
           node --check functions/xp.mjs
       - name: Tests de sécurité et de notation dans une base fictive
-        run: node --test tools/test/cloudflare-spark-backend.test.mjs
+        run: node --test tools/test/cloudflare-spark-backend.test.mjs tools/test/cloudflare-spark-auth.test.mjs
       - name: Confirmer le branchement conditionnel côté navigateur
         run: |
           node - <<'NODE'
