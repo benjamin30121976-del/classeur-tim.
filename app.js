@@ -307,10 +307,10 @@ if(old){
  const submit=button('Valider définitivement cet exercice',async()=>{const vals=values();if(vals.some(v=>!safe(v).trim())){alert('Réponds à toutes les questions avant de valider.');return;}if(attemptFor(id)){openExercise(id);return;}if(!confirm('Confirmer ? Cet exercice sera définitivement terminé, sur tous les appareils.'))return;submit.disabled=true;submit.textContent='Enregistrement sécurisé…';
  try {const saved=await window.__TIM_BRIDGE.submit(id,vals);window.__CLOUD_ATTEMPTS.push(saved);
 const mailAttempt=window.__TIM_BRIDGE.notifyAlert?.(id,saved);if(mailAttempt?.catch)mailAttempt.catch(()=>{});
- const d=drafts();delete d[id];save(DRAFT_KEY,d);v7NewAttempt(saved);alert('Devoir envoyé. '+(saved.xp>=0?'+':'')+saved.xp+' XP. Correction en attente du parent.');openExercise(id);
+ const d=drafts();delete d[id];save(DRAFT_KEY,d);v7NewAttempt(saved);alert((saved.correctionStatus==='released'?'Défi terminé et corrigé. ':'Devoir envoyé. ')+(saved.xp>=0?'+':'')+saved.xp+' XP.'+(saved.correctionStatus==='released'?' Consulte tes réponses.':' Correction en attente du parent.'));openExercise(id);
  }catch(err){submit.disabled=false;submit.textContent='Valider définitivement cet exercice';
  alert('L’exercice n’a pas été enregistré. Rien n’est perdu : vérifie ta connexion et réessaie. '+(err?.message||''));
- await window.__TIM_BRIDGE.refresh();if(attemptFor(id))openExercise(id);}},'btn');root.append(E('p','small','Après validation, le bilan XP s’affiche immédiatement (0 XP pour les devoirs ENT). La correction reste bloquée jusqu’à l’autorisation du parent.'),submit);}
+ await window.__TIM_BRIDGE.refresh();if(attemptFor(id))openExercise(id);}},'btn');root.append(E('p','small','Une seule validation. Pour les défis, la note et la correction sont immédiates ; les devoirs scolaires restent à 0 XP et sous contrôle du parent.'),submit);}
 if(!old && !window.__TIM_PARENT && controls.length>1){
   const questionNodes=[...form.querySelectorAll('.q')];
   const submit=root.querySelector('button.btn');
