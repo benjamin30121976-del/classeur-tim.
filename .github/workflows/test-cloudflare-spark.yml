@@ -3,6 +3,7 @@ on:
   pull_request:
     paths:
       - '_worker.js'
+      - 'boot.js'
       - 'worker/**'
       - 'tools/test/cloudflare-spark-backend.test.mjs'
       - '.github/workflows/test-cloudflare-spark.yml'
@@ -21,6 +22,7 @@ jobs:
       - name: Analyser le code du Worker et ses dépendances
         run: |
           node --check _worker.js
+          node --check boot.js
           node --check worker/auth.mjs
           node --check worker/firestore.mjs
           node --check worker/server.mjs
@@ -28,6 +30,17 @@ jobs:
           node --check functions/xp.mjs
       - name: Tests de sécurité et de notation dans une base fictive
         run: node --test tools/test/cloudflare-spark-backend.test.mjs
+      - name: Confirmer le branchement conditionnel côté navigateur
+        run: |
+          node - <<'NODE'
+          const fs=require('node:fs');
+          const text=fs.readFileSync('boot.js','utf8');
+          const expected=['/api/status','/api/tim','cloudCallable','activeUser.getIdToken()','httpsCallable(functionsApi,name)(data)'];
+          for(const marker of expected)if(!text.includes(marker))throw Error('Pont Cloudflare incomplet : '+marker);
+          const direct=(text.match(/httpsCallable\(functionsApi,/g)||[]).length;
+          if(direct!==1)throw Error('Appels Firebase non transférés : '+direct);
+          console.log('OK : Cloudflare s’active seulement avec un secret serveur configuré.');
+          NODE
       - name: Démarrer Cloudflare Pages en local sans secret
         run: |
           npm install --prefix /tmp/tim-wrangler --no-audit --no-fund wrangler
