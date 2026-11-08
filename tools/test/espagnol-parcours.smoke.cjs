@@ -122,6 +122,28 @@ const out=path.join(process.cwd(),'test-espagnol-results');fs.mkdirSync(out,{rec
    await subject.locator('.spx-back').click();
    await subject.locator('[data-course="L09"]').click();
    if(!(await page.locator('#lesson-detail .lesson-type-label.ent').isVisible()))throw Error('ENT course shortcut not opening original');
+   // Mode local transitoire (simulateur de Firebase indisponible) : Tim peut travailler
+   // sans faux enregistrement distant, puis les résultats se synchronisent plus tard.
+   await selectSpanish();
+   await openGroup(0);
+   await page.evaluate(()=>{window.__TIM_SPANISH_PROGRESS={status:'unavailable',attempts:[],message:'Firebase en attente'};});
+   await subject.locator('[data-training="L09"]').click();
+   if(!(await subject.locator('.spx-training-warning').first().innerText()).includes('Mode provisoire'))throw Error('Offline warning missing');
+   await subject.locator('[data-training-id="SPW_L09_02"]').click();
+   const written=await page.evaluate(()=>window.TIM_SPANISH_TRAINING_ENGINE.buildSpanishTasks('SPW_L09_02',window.TIM_SPANISH_EDU).questions.map(q=>q.answer));
+   for(let i=0;i<10;i++)await subject.locator('[data-response="'+i+'"]').fill(written[i]);
+   await subject.locator('#spx-training-submit').click();
+   await subject.locator('#spx-training-confirm').click();
+   if(!(await subject.locator('.spx-training-score').innerText()).includes('sur cet appareil'))throw Error('Offline grade presented as cloud-saved');
+   await subject.locator('#spx-training-return').click();
+   if(!(await subject.locator('[data-training-id="SPW_L09_02"]').innerText()).includes('Terminé'))throw Error('Offline result did not lock exercise');
+   const localRecord=await page.evaluate(()=>JSON.parse(localStorage.getItem('tim_spanish_training_completed_local_v1')||'{}').SPW_L09_02);
+   if(!localRecord?.localOnly||localRecord.score!==10)throw Error('Offline result not stored locally');
+   await page.evaluate(()=>{window.__TIM_SPANISH_PROGRESS={status:'ok',attempts:[]};});
+   await subject.locator('.spx-back').click();
+   await subject.locator('[data-training="L09"]').click();
+   await page.waitForFunction(()=>!!window.__TIM_SPANISH_PROGRESS?.attempts?.find(a=>a.id==='SPW_L09_02'),{timeout:5000});
+   if(await page.evaluate(()=>Boolean(JSON.parse(localStorage.getItem('tim_spanish_training_completed_local_v1')||'{}').SPW_L09_02)))throw Error('Synced local result not cleared');
    await selectSpanish();
    await openGroup(4);
    await subject.locator('[data-easy="L05"]').click();
