@@ -112,57 +112,6 @@ async function submitExercise(db,uid,payload){
  return autoRelease?{id,submitted:true,xp:points,correctionLocked:false,correctionStatus:'released',score:evaluated.score,total:evaluated.total,answers:evaluated.answers}:
   {id,submitted:true,xp:points,correctionLocked:true,correctionStatus:'pending-parent'};
 }
-/* Annulation ponctuelle et nominative du seul essai du 08/11, à la demande du Parent.
-   Toute autre tentative reste intouchable. Firestore exécute les suppressions en transaction. */
-async function cancelNovemberTrial(db,uid){
- permitted(uid,'parent');
- const id='DAY_20261108_01';
- const tx=await db.transaction();
- const [attempt,privateRecord,release,state]=await Promise.all([
-  db.get('attempts/'+id,tx),db.get('privateAttempts/'+id,tx),
-  db.get('releasedCorrections/'+id,tx),db.get('xpState/tim',tx)
- ]);
- const found=Boolean(attempt||privateRecord||release);
- const writes=[];
- for(const [path,exists] of [
-  ['attempts/'+id,Boolean(attempt)],['privateAttempts/'+id,Boolean(privateRecord)],
-  ['releasedCorrections/'+id,Boolean(release)]
- ])if(exists)writes.push({delete:db.docName(path)});
- let adjusted=false;
- if(attempt&&state&&attempt.authorUid===TIM_UID){
-  const dateValue=new Date(attempt.submittedAt||'');
-  if(Number.isFinite(dateValue.getTime())){
-   const targetDay=parisDate(dateValue),targetWeek=mondayOf(targetDay);
-   const changes={};
-   const xp=Number(attempt.xp||0);
-   if(state.date===targetDay){
-    changes.earned=Math.max(0,Number(state.earned||0)-Math.max(0,xp));
-    changes.lost=Math.max(0,Number(state.lost||0)-Math.max(0,-xp));
-   }
-   if(state.week===targetWeek){
-    // Reconstruire les compteurs depuis les autres validations enregistrées,
-    // sans supposer que la semaine était vide avant le défi test.
-    const all=await db.list('attempts',1000);
-    const remaining=all.filter(x=>x.id!==id&&x.data?.authorUid===TIM_UID&&
-      Number.isFinite(new Date(x.data.submittedAt||'').getTime())&&
-      mondayOf(parisDate(new Date(x.data.submittedAt)))===state.week)
-     .sort((a,b)=>String(a.data.submittedAt||'').localeCompare(String(b.data.submittedAt||'')));
-    let earned=0,weekXp=0;
-    for(const row of remaining){
-     const amount=Number(row.data.xp)||0;
-     earned+=Math.max(0,amount);
-     weekXp=Math.max(0,weekXp+amount);
-    }
-    changes.weekEarned=earned;changes.weekXp=weekXp;
-   }
-   if(Object.keys(changes).length){writes.push(updateWrite('xpState/tim',changes));adjusted=true;}
-  }
- }
- if(writes.length)await db.commit(writes,tx);
- return {id,removed:found,deleted:{
-  attempt:Boolean(attempt),privateCopy:Boolean(privateRecord),correction:Boolean(release)
- },xpAdjusted:adjusted};
-}
 async function parentReport(db,uid){
  permitted(uid,'parent');
  const [notes,attempts]=await Promise.all([db.list('privateAttempts',1000),db.list('attempts',1000)]);
@@ -263,7 +212,6 @@ const ACTIONS={
  submitMathTraining:submitMathTraining,
  getMathTrainingProgress:getMathTrainingProgress,
  getParentReport:parentReport,
- cancelNovemberTrial:cancelNovemberTrial,
  submitTimExercise:submitExercise,
  setParentCorrectionRelease:releaseCorrection,
  getTimReleasedCorrections:releasedCorrections,
@@ -294,4 +242,4 @@ export async function handleRequest(request,env){
   return respond({error:code},status);
  }
 }
-export const TESTABLE={sanitize,resolveExercise,submitExercise,courseContent,parentReport,cancelNovemberTrial,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress};
+export const TESTABLE={sanitize,resolveExercise,submitExercise,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress};
