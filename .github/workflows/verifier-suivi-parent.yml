@@ -1,0 +1,23 @@
+name: Vérifier suivi Parent sans fonctions Firebase
+on:
+  pull_request:
+    paths:
+      - 'boot.js'
+      - 'tools/test/parent-corrections-fallback.test.cjs'
+      - '.github/workflows/verifier-suivi-parent.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  suivi-parent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Valider la syntaxe du classeur
+        run: node --check boot.js
+      - name: Tester lecture privée, absence de devoir, notes et permissions
+        run: node --test tools/test/parent-corrections-fallback.test.cjs
