@@ -49,6 +49,10 @@ jobs:
           import assert from 'node:assert/strict';
           const read=f=>fs.readFileSync(f,'utf8');
           const guest=read('guest-access.js'),boot=read('boot.js'),app=read('app.js'),backend=read('functions/index.mjs'),rules=read('firestore.rules');
+          const html=read('index.html');
+          for(const id of ['guest-enter','tim-enter','parent-enter'])assert.match(html,new RegExp('id="'+id+'"'));
+          assert.match(html,/src="\.\/guest-access\.js"/);
+          assert.match(html,/src="\.\/boot\.js"/);
           assert.match(guest,/__TIM_GUEST=true/);
           assert.match(guest,/window\.__TIM_DATA=strip\(window\.__TIM_DATA\)/);
           assert.match(guest,/aucune validation autorisée/);
