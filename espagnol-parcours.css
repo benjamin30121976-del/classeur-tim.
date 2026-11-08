@@ -106,3 +106,27 @@
 .spx-listen:hover{background:#ffe8a3!important}
 .spx-words td:first-child{vertical-align:middle}
 .spx-words .spx-listen{float:right}
+
+/* Inventaire lisible des cours, exercices ENT recensés et entraînements indépendants. */
+.spx-metrics{display:flex;flex-direction:column;align-items:flex-start;gap:4px;margin:11px 0 2px;color:#5c667a;font-size:11.5px;line-height:1.4;text-align:left}
+.spx-metrics>span{display:block;padding-left:11px;position:relative;font-weight:650}
+.spx-metrics>span:before{content:"•";position:absolute;left:0;color:#b13d50}
+.spx-card .spx-metrics{border-top:1px solid #f0e6e5;padding-top:9px;font-size:11.5px}
+.spx-card .spx-metrics>span:last-child,.spx-row .spx-metrics>span:last-child{color:#93354b;font-weight:850}
+.spx-chapter-overview{background:#fffaf0;border:1px solid #ebdcc3;border-radius:11px;padding:11px 13px;color:#6f3b4b;font-size:12px;line-height:1.6;margin:5px 0 15px}
+.spx-chapter-overview .spx-metrics{margin:0}
+.spx-lesson-item{background:#fff;border:1px solid #e7dce0;border-radius:15px;margin:10px 0;overflow:hidden}
+.spx-lesson-item>.spx-row{border:0;margin:0;border-radius:0}
+.spx-lesson-item .spx-metrics{border-top:1px solid #f0e4e3;padding-top:7px;margin-top:9px}
+.spx-easy-shortcut{display:block!important;width:100%;border:0!important;border-top:1px solid #efd79b!important;background:#fff4d8!important;text-align:left!important;color:#91344b!important;padding:12px 17px!important;font-size:13px!important;font-weight:900!important;cursor:pointer!important;border-radius:0!important;line-height:1.4!important}
+.spx-easy-shortcut:hover{background:#ffe8ba!important}
+.spx-easy-lesson{border:2px solid #efcc6b;border-radius:16px;background:#fffaf0;overflow:hidden;margin:9px 0 16px;color:#25314a}
+.spx-easy-lesson summary{cursor:pointer;background:#fff0bc;color:#7d3045;font-size:15px;font-weight:900;padding:16px 18px;list-style:revert}
+.spx-easy-lesson summary span{display:block;font-size:12px;font-weight:600;color:#6d4550;padding:5px 0 0 18px}
+.spx-easy-content{padding:15px 19px 18px}
+.spx-easy-content h3{margin:0 0 8px;color:#783049;font-size:18px}
+.spx-easy-content h4{font-size:14px;margin:14px 0 8px;color:#77364b}
+.spx-easy-content p,.spx-easy-content li{font-size:14px;color:#405169;line-height:1.65}
+.spx-easy-content ol{margin:7px 0 14px;padding-left:22px}
+.spx-easy-content li{margin:7px 0}
+@media(max-width:520px){.spx-card>.spx-metrics{grid-column:2;align-items:flex-start;margin:5px 0 0;padding-top:7px}.spx-card{min-height:auto}.spx-lesson-item .spx-row{padding:12px}.spx-easy-shortcut{padding:12px!important}}
