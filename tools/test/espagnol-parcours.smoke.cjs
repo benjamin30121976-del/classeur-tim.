@@ -61,6 +61,16 @@ fs.mkdirSync(out,{recursive:true});
    await page.locator('#spx-ent').click();
    if(!(await page.locator('#lesson-detail.active').isVisible()))throw Error(device+': original ENT lesson not opened');
    if(!(await page.locator('#lesson-detail .spx-ent-translations').isVisible()))throw Error(device+': translations not displayed with original ENT lesson');
+   // Retour aux matières et contrôle que la photo manuscrite privée n'est jamais affichée aux invités.
+   await page.locator('[data-nav="matieres"]:visible').first().click();
+   await page.locator('#matieres-content .matter-card').filter({hasText:'Espagnol'}).first().click();
+   await page.locator('#matieres-content .spx-card').filter({hasText:'Poser des questions et écrire'}).click();
+   await page.locator('#matieres-content .spx-row[data-lesson="L05"]').click();
+   if(!(await page.locator('#matieres-content .tim-letter-panel').isVisible()))throw Error(device+': original handwritten letter panel not accessible');
+   if(!(await page.locator('#matieres-content .tim-letter-state').isVisible()))throw Error(device+': private access explanation missing');
+   if(await page.locator('#matieres-content .tim-letter-original').count())throw Error(device+': personal image visible in guest mode');
+   if(await page.locator('#matieres-content .tim-letter-upload').count())throw Error(device+': guest should not see private upload');
+   await page.screenshot({path:path.join(out,device+'-atelier-lettre.png'),fullPage:true});
    if(errors.length)throw Error(device+': JS error(s): '+errors.join('; '));
    console.log('OK '+device+' : 6 categories, search, 5 series, 10 questions and repeat');
    await page.close();
