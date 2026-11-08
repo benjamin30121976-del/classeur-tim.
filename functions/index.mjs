@@ -3,7 +3,7 @@ import {initializeApp} from 'firebase-admin/app';
 import {getFirestore,FieldValue} from 'firebase-admin/firestore';
 import {grade} from './grading.mjs';
 import {rawPoints,cappedPoints} from './xp.mjs';
-import {suggestedCorrectionAt} from './schedule.mjs';
+import {nextCorrectionAfterSubmission} from './schedule.mjs';
 initializeApp();
 const db=getFirestore();
 const timUid=process.env.TIM_STUDENT_UID,parentUid=process.env.TIM_PARENT_UID;
@@ -22,11 +22,7 @@ export const submitTimExercise=onCall({region:'europe-west1',enforceAppCheck:tru
   const ex=exDoc.data();
   if(ex.enabled!==true)throw new HttpsError('failed-precondition','Exercice fermé');
   const now=new Date(),date=parisDate(now),state=xpDoc.exists?xpDoc.data():{};
-  let correctionAt=suggestedCorrectionAt(ex,date);
-  if(correctionAt&&Date.parse(correctionAt)<=now.getTime()){
-   const next=new Date(date+'T12:00:00Z');next.setUTCDate(next.getUTCDate()+1);
-   correctionAt=suggestedCorrectionAt(ex,next.toISOString().slice(0,10));
-  }
+  const correctionAt=nextCorrectionAfterSubmission(ex,now);
   if(!correctionAt)throw new HttpsError('failed-precondition','Calendrier de cette matière indisponible');
   const result=grade(ex,keyDoc.data(),answers);
   const monday=new Date(date+'T12:00:00Z');monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);
