@@ -29,6 +29,7 @@ jobs:
         run: npm install --prefix functions --no-audit --no-fund --ignore-scripts
       - name: Vérifier la syntaxe du backend et des interfaces
         run: |
+          node --check functions/spanish-nov05-private.mjs
           node --check functions/index.mjs
           node --check boot.js
           node --check app.js
@@ -38,6 +39,9 @@ jobs:
           node --check guest-data.js
           node --check espagnol-05-novembre.js
           node --input-type=module -e 'import fs from "node:fs"; const re=/"(?:right|also|why|answerKey|expected|solution|correction)"\s*:/g; for (const f of ["guest-data.js","espagnol-05-novembre.js"]) { const matches=[...fs.readFileSync(f,"utf8").matchAll(re)]; if(matches.length) { console.error(`${f}: ${matches.length} champs de corrigé détectés`); process.exitCode=1; } else console.log(`${f}: aucun champ de corrigé`); }'
+      - name: Vérifier les corrigés espagnols réservés au serveur
+        run: |
+          node --input-type=module -e 'import {spanishNov05Exercises as e} from "./functions/spanish-nov05-private.mjs"; import fs from "node:fs"; const s=fs.readFileSync("espagnol-05-novembre.js","utf8"); for(const ex of e){if(!s.includes(ex.id)||!ex.questions?.length||ex.questions.some(q=>q.right===undefined))throw Error("Corrigé espagnol manquant : "+ex.id);} console.log(e.length+" exercices espagnols corrigibles côté serveur");'
       - name: Tester la notation et les XP (JUnit)
         run: |
           mkdir -p test-results
