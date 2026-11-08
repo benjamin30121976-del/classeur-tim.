@@ -82,7 +82,7 @@ function category(g){
  }).join('');
  draw(header(g.name,'Cours, méthodes et exercices de ce chapitre.')+back('Toutes les rubriques')+
  '<h3 class="spx-subheading">Choisis une sous-leçon</h3>'+rows+
- '<p class="spx-note">Les exercices ENT sont des documents du professeur. Les petites évaluations de compréhension sont créées à partir des leçons BIS : une tentative, correction immédiate et bilan Parent.</p>',home);
+ '<p class="spx-note">Les exercices ENT sont les documents originaux du professeur. Les évaluations BIS comportent chacune dix questions : une tentative, note sur 20, correction immédiate expliquée et bilan Parent.</p>',home);
  wire();
 }
 function listPage(id,title,rows,kind){
@@ -126,14 +126,14 @@ function viewProgramsOriginal(){
   '<section class="spx-panel"><h3>Lis l’énoncé avant les questions</h3><p>Cette fiche reproduit l’exercice 3 demandé par Mme Pialet. Les cinq questions se rapportent aux programmes présentés ci-dessous. Il s’agit du travail ENT, pas de l’évaluation BIS de dix questions.</p></section>'+
   block('Programme A',progA)+block('Programme B',progB)+
   '<section class="spx-panel"><h3>Les cinq questions du professeur</h3><ol>'+qs.map(q=>'<li style="margin:14px 0">'+esc(q)+'</li>').join('')+'</ol><p>Pour répondre, utilise une feuille de brouillon. Les résultats ne sont pas enregistrés ni notés ici.</p></section>'+
-  '<section class="spx-panel"><h3>Besoin de revoir la méthode ?</h3>'+btn('data-math-bis',id,'Lire la leçon BIS · Programmes de calcul')+'</section>',
+  '<section class="spx-panel"><h3>Exercice complémentaire noté · 10 questions</h3><p>Les cinq questions du professeur restent inchangées et ne sont pas notées ici. Pour un contrôle interactif de dix questions sur la même notion, fais l’évaluation BIS : correction immédiate après validation.</p>'+btn('data-math-train',id,'Faire les 10 questions notées')+'</section>'+ '<section class="spx-panel"><h3>Besoin de revoir la méthode ?</h3>'+btn('data-math-bis',id,'Lire la leçon BIS · Programmes de calcul')+'</section>',
   ()=>category(g));
  wire();
 }
 function viewBis(id){
  selected=id;group=groupOfId(id);const x=lesson(id);if(!x)return;
  draw(header('Leçon simplifiée : '+cleanTitle(x.title),'Niveau 2 · Explications, exemples et schémas.')+back('Retour aux sous-leçons')+
- blocks(x,'bis')+'<section class="spx-panel"><h3>Pour continuer</h3>'+sectionBtns(id)+'</section>',()=>category(group));
+ blocks(x,'bis')+'<section class="spx-panel"><h3>Exercice noté · 10 questions</h3><p>Les deux anciennes questions courtes font désormais partie de l’évaluation complète. Réponds aux dix questions, puis valide une seule fois pour obtenir immédiatement ta note sur 20 et une correction expliquée question par question.</p>'+btn('data-math-train',id,'Faire les 10 questions et recevoir ma correction')+'</section><section class="spx-panel"><h3>Pour continuer</h3>'+sectionBtns(id)+'</section>',()=>category(group));
  wire();
 }
 function viewHelp(id){
