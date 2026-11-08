@@ -1,0 +1,24 @@
+/* Même organisation et densité que le parcours Espagnol ; aucune animation. */
+.math-path .spx-hero{background:#204c7c;border-color:#a3bfdc}
+.math-path .spx-hero:after{display:none}
+.math-path .spx-card strong,.math-path .spx-panel h3,.math-path .spx-row strong{color:#24547f}
+.math-path .spx-card small,.math-path .spx-back{color:#24547f!important}
+.math-path .spx-icon,.math-path .spx-chip{background:#e7f0fb;color:#24547f}
+.math-path .spx-label{background:#e4effd;color:#24547f}
+.math-path .spx-button{background:#24547f;color:#fff}
+.math-path .spx-button.subtle{background:#e6f0fc;color:#24547f}
+.math-path .spx-quick-link{border-color:#b7cbe1;color:#284c75}
+.math-path .spx-training-question{background:#fff;border:1px solid #d9e3ef;border-radius:12px;margin:12px 0;padding:14px;color:#26374c}
+.math-path .spx-training-question legend{padding:0 8px;font-weight:800;color:#254e79}
+.math-path .math-choice{display:flex;align-items:flex-start;gap:12px;min-height:46px;padding:11px;margin:7px 0;background:#f3f7fd;border:1px solid #d9e4ef;border-radius:10px;cursor:pointer;color:#24364e}
+.math-path .math-choice input{flex:0 0 auto;margin-top:5px;accent-color:#24547f}
+.math-path .math-diagram{max-width:100%;overflow:auto}
+.math-path .math-diagram svg{max-width:100%;height:auto;min-height:120px}
+.math-path .math-correction.correct{border-left:4px solid #32825c}
+.math-path .math-correction.incorrect{border-left:4px solid #b86539}
+.math-path .spx-lesson-copy small{font-weight:700;color:#4f6887}
+.math-parent-progress .spx-parent-result{padding:12px;border:1px solid #3f5978;border-radius:11px;margin:10px 0;color:#eaf4ff}
+.math-parent-progress .spx-parent-result summary{cursor:pointer;font-weight:800}
+.math-parent-progress .spx-parent-result p{line-height:1.5;overflow-wrap:anywhere}
+.math-parent-progress .spx-button{background:#234b77;color:#fff;border-radius:10px;padding:12px}
+@media(max-width:600px){.math-path .spx-grid{grid-template-columns:1fr}.math-path .spx-training-question{padding:10px}}
