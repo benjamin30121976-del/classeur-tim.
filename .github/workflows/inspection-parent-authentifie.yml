@@ -20,6 +20,11 @@ jobs:
       TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
     steps:
       - uses: actions/checkout@v4
+      - name: Verifier la syntaxe JavaScript des exercices
+        run: |
+          node --check app.js
+          node --check maths-parcours.js
+          node --check outils/inspecter-parent-securise.cjs
       - name: Verifier la configuration des secrets sans les afficher
         id: verify
         run: |
