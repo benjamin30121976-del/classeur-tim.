@@ -1,4 +1,4 @@
-/* V12 · Devoir scolaire 0 XP, bonus (+2/+1/0), défi (+5 si 80 %).
+/* V18 · Devoir scolaire 0 XP, bonus libre (+2/+1/0), missions quotidiennes et grands défis.
    La V10 et les validations antérieures sont conservées par leur barème d'origine. */
 (()=>{'use strict';
 const f=new Intl.DateTimeFormat('fr-CA',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'});
@@ -7,10 +7,10 @@ const monday=s=>{const d=new Date(s+'T12:00:00Z');d.setUTCDate(d.getUTCDate()-((
 const isChallenge=ex=>['daily','weekly','sunday'].includes(ex?.kind);
 function exercisePoints(a){if(a.needsReview||!a.total)return 0;const p=Math.max(0,Math.min(1,(a.score||0)/a.total));return p===1?3:p>=.8?2:p>=.6?1:p>=.4?-1:-2;}
 function bonusPoints(a){if(a.needsReview||!a.total)return 0;const p=Math.max(0,Math.min(1,(a.score||0)/a.total));return p===1?2:p>=.6?1:0;}
-function canSubmit(ex,time){if(!ex)return false;const d=day(time);
- if(ex.kind==='daily')return ex.id==='DAY_'+d.replace(/-/g,'') && window.__TIM_CHALLENGES?.daily===ex.id;
- if(ex.kind==='sunday')return new Date(d+'T12:00:00Z').getUTCDay()===0 && ex.id==='SUNDAY_'+d.replace(/-/g,'') && window.__TIM_CHALLENGES?.sunday===ex.id;
- if(ex.kind==='weekly'){const date=new Date(d+'T12:00:00Z'),w=date.getUTCDay();return (w===5||w===6||w===0)&&window.__TIM_CHALLENGES?.weekly===ex.id;}
+function canSubmit(ex,time){if(!ex)return false;const d=day(time);const dow=new Date(d+'T12:00:00Z').getUTCDay();
+ if(ex.kind==='daily')return dow>=1&&dow<=5&&window.__TIM_CHALLENGES?.dailyIds?.includes(ex.id)===true&&ex.id.startsWith('DAY_'+d.replace(/-/g,'')+'_');
+ if(ex.kind==='sunday')return dow===0&&ex.id==='SUNDAY_'+d.replace(/-/g,'')&&window.__TIM_CHALLENGES?.sunday===ex.id;
+ if(ex.kind==='weekly')return dow===6&&window.__TIM_CHALLENGES?.weekly===ex.id;
  if(window.TIM_EXERCISE?.mode(ex,time)==='upcoming')return false;
  return true;
 }
@@ -39,12 +39,15 @@ function contributionV10(a,ex){if(!ex)return 0;if(isChallenge(ex))return contrib
 }
 function isBonus(ex,attemptDate){return !!ex&&!isChallenge(ex)&&window.TIM_EXERCISE?.mode(ex,attemptDate)==='bonus';}
 function contribution(a,ex){if(!ex)return 0;
+ if(isChallenge(ex)&&a.policyVersion>=18){const p=a.total>0?a.score/a.total:0;if(a.needsReview||!a.total)return 0;
+  return ex.kind==='daily'?(p>=.9?3:p>=.7?2:p>=.5?1:p>=.2?0:-1):ex.kind==='weekly'?(p>=.85?10:p>=.75?7:p>=.6?4:p>=.5?1:p>=.4?0:-1):(p>=.85?20:p>=.75?14:p>=.6?8:p>=.5?2:p>=.4?0:-2);
+ }
  // Le bonus +5 est ajouté aux points de l’épreuve (-2 à +3), comme avant V12.
  if(isChallenge(ex))return contributionV9(a,ex);
  if(window.TIM_EXERCISE?.school(ex))return 0;
  if(window.TIM_EXERCISE?.mode(ex,a.date)==='upcoming')return 0;
  return bonusPoints(a);
 }
-function reward(xp,weeklyPassed){return xp>=45&&weeklyPassed?10:xp>=30?5:xp>=15?2:0;}
+function reward(xp){return xp>=75?10:xp>=38?5:xp>=19?2:0;}
 window.TIM_XP={day,monday,exercisePoints,bonusPoints,isBonus,contribution,contributionV9,contributionV10,reward,canSubmit};
 })();
