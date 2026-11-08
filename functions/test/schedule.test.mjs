@@ -47,3 +47,8 @@ test('cours annulé et créneau Q1/Q2 après remise',()=>{
  assert.equal(nextCorrectionAfterSubmission({subject:'mathématiques',excludedClassDates:['2026-11-13']},'2026-11-12T10:00:00Z'),'2026-11-16T17:00:00.000Z');
  assert.equal(nextCorrectionAfterSubmission({subject:'espagnol'},'2026-11-16T14:00:00Z'),'2026-11-18T17:00:00.000Z');
 });
+
+test('calendrier malformé : correction verrouillée',()=>{
+ assert.equal(nextCorrectionAfterSubmission({subject:'maths',excludedClassDates:'invalide'},'2026-11-10T12:00:00Z'),null);
+ assert.equal(nextCorrectionAfterSubmission({subject:'maths',excludedClassDates:['demain']},'2026-11-10T12:00:00Z'),null);
+});
