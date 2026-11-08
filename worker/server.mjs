@@ -5,6 +5,7 @@ import {PROJECT,TIM_UID,PARENT_UID,ApiFault,verifyFirebaseToken} from './auth.mj
 import {firestore,createWrite,upsertWrite,updateWrite,NOW} from './firestore.mjs';
 import {grade} from '../functions/grading.mjs';
 import {rawPoints,cappedPoints} from '../functions/xp.mjs';
+import {buildMission,isMissionId,isMissionOpen} from '../functions/missions-v18.mjs';
 import {mathId,mathTask,mathPublicTask,gradeMathTask} from './maths-training-curriculum.mjs';
 
 const PRIVATE_FIELDS=new Set(['right','also','why','expected','answer','answers','answerKey','answerKeys','solution','solutions','correction','corrections','explanation','rubric']);
@@ -41,6 +42,12 @@ function checkOrigin(req){
  if(fetchSite==='cross-site')throw new ApiFault(403,'origin-denied');
 }
 async function resolveExercise(db,id){
+ if(isMissionId(id)){
+  const source=await db.get('content/main'),mission=buildMission(id,source);
+  if(!mission)throw new ApiFault(404,'mission-not-found');
+  if(!isMissionOpen(mission))throw new ApiFault(409,'mission-not-open');
+  return {exercise:{...sanitize(mission),enabled:true},key:{questions:mission.questions.map(q=>({right:q.right,also:q.also,why:q.why}))}};
+ }
  const extra=await db.get('exercises/'+id);
  let raw=extra;
  if(!raw){
@@ -72,6 +79,7 @@ async function submitExercise(db,uid,payload){
  const today=parisDate(new Date()),week=mondayOf(today),state=xpRecord||{};
  const current=state.date===today?state:{earned:0,lost:0,bonus:0};
  const weekEarned=state.week===week?Number(state.weekEarned||0):0;
+ const weekXp=state.week===week?Number(state.weekXp??state.weekEarned??0):0;
  const category=exercise.category||'school';
  let raw,points;
  try{
@@ -83,15 +91,15 @@ async function submitExercise(db,uid,payload){
   earned:Number(current.earned||0)+Math.max(0,points),
   lost:Number(current.lost||0)+Math.max(0,-points),
   bonus:Number(current.bonus||0)+(category==='bonus'?Math.max(0,points):0),
-  weekEarned:weekEarned+Math.max(0,points)
+  weekEarned:weekEarned+Math.max(0,points),weekXp:Math.max(0,weekXp+points),policyVersion:18
  };
  const details={
   exerciseId:id,title:String(exercise.title||id).slice(0,200),authorUid:uid,
   score:evaluated.score,total:evaluated.total,needsReview:evaluated.needsReview,
-  policyVersion:17,...evaluated
+  policyVersion:18,...evaluated
  };
  const pending={
-  exerciseId:id,authorUid:uid,policyVersion:17,xp:points,correctionStatus:'pending-parent'
+  exerciseId:id,authorUid:uid,policyVersion:18,xp:points,correctionStatus:'pending-parent'
  };
  await db.commit([
   createWrite('attempts/'+id,pending,NOW),
