@@ -344,7 +344,7 @@ async function startSession(user){
 // Netlify Drop: Firebase Web config (public client identifiers, never passwords).
 const CONFIG_STORAGE_KEY='mi-espanol-firebase-web-config';
 function parseFirebaseConfig(s){
-  let c;try{c=JSON.parse(s);}catch(_){c={};for(const m of s.matchAll(/(apiKey|authDomain|projectId|appId|messagingSenderId|storageBucket|measurementId|appCheckSiteKey)\s*:\s*["']([^"']+)["']/g))c[m[1]]=m[2];}
+  let c;if(s&&typeof s==='object'){c=s;}else try{c=JSON.parse(s);}catch(_){c={};for(const m of s.matchAll(/(apiKey|authDomain|projectId|appId|messagingSenderId|storageBucket|measurementId|appCheckSiteKey)\s*:\s*["']([^"']+)["']/g))c[m[1]]=m[2];}
   if(!c || c.projectId!=='classeur-ba3e7' || !c.apiKey || !c.authDomain || !c.appId) throw Error('Configuration incomplète ou projet différent de classeur-ba3e7.');
   // L'authentification Firebase peut être initialisée sans App Check ; les fonctions protégées restent indisponibles sans sa clé.
   return c;
@@ -360,21 +360,32 @@ function configureHelp(){
 function installShareLink(c){
   if(document.getElementById('share-setup-link'))return;
   const b=document.createElement('button');b.id='share-setup-link';b.type='button';b.style.cssText='margin-top:12px;background:#e9edff;color:#3b49ae;';b.textContent='Copier le lien pour l’iPhone de Tim';
-  b.onclick=async()=>{try{await navigator.clipboard.writeText(shareAddress(c));b.textContent='Lien copié';}catch(e){message('Impossible de copier automatiquement : ouvre la page dans Chrome.');}};
+  b.onclick=async()=>{try{await navigator.clipboard.writeText(location.origin+location.pathname);b.textContent='Lien copié';}catch(e){message('Impossible de copier automatiquement : ouvre la page dans Chrome.');}};
   access.append(b);
 }
+// Firebase Web identifiers are public; no user credentials are stored in source.
+const DEFAULT_FIREBASE_CONFIG={
+  apiKey:'AIzaSyBjKcuPZ5AcaHiZ44-3W1yIQzAun9mZH9c',
+  authDomain:'classeur-ba3e7.firebaseapp.com',
+  projectId:'classeur-ba3e7',
+  storageBucket:'classeur-ba3e7.firebasestorage.app',
+  messagingSenderId:'418090384222',
+  appId:'1:418090384222:web:4e2c1e264fdd7352e02dcf'
+};
 function loadConfiguredFirebase(){
+  // A previously saved App Check site key is retained if present.
+  let saved={};
   try{
-    if(location.hash.startsWith('#fb=')){
-      const c=parseFirebaseConfig(decodeURIComponent(location.hash.slice(4)));
-      localStorage.setItem(CONFIG_STORAGE_KEY,JSON.stringify(c));
-      history.replaceState(null,'',location.pathname+location.search);
-      return c;
-    }
     const stored=localStorage.getItem(CONFIG_STORAGE_KEY);
-    if(stored) return parseFirebaseConfig(stored);
-  }catch(e){message('Configuration du projet non reconnue : '+e.message);}
-  configureHelp();return null;
+    if(stored){const candidate=JSON.parse(stored);if(candidate?.projectId===DEFAULT_FIREBASE_CONFIG.projectId)saved=candidate;}
+    if(location.hash.startsWith('#fb=')){
+      const candidate=parseFirebaseConfig(decodeURIComponent(location.hash.slice(4)));
+      saved=candidate;
+      localStorage.setItem(CONFIG_STORAGE_KEY,JSON.stringify(candidate));
+      history.replaceState(null,'',location.pathname+location.search);
+    }
+  }catch(e){console.warn('Configuration personnalisée ignorée :',e);}
+  return parseFirebaseConfig({...DEFAULT_FIREBASE_CONFIG,...saved});
 }
 try{
  const cfg=loadConfiguredFirebase();
