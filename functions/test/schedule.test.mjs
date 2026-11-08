@@ -18,3 +18,11 @@ test('créneaux Q1 et Q2 du tableau de référence',()=>{
 test('date de devoir antérieure à la soumission ne déclenche pas de correction passée',()=>{
  assert.equal(suggestedCorrectionDay({subject:'mathématiques',dueDate:'2026-11-05',submittedDate:'2026-11-10'}),'2026-11-12');
 });
+
+test('jour sans cours exclu : report au prochain vrai créneau',()=>{
+ assert.equal(suggestedCorrectionDay({subject:'mathématiques',submittedDate:'2026-11-10',excludedDates:['2026-11-12']}),'2026-11-13');
+ assert.equal(suggestedCorrectionDay({subject:'espagnol',submittedDate:'2026-11-11',excludedDates:['2026-11-11']}),'2026-11-12');
+});
+test('exclusion du jour de cours dans le calcul de 18h',()=>{
+ assert.equal(suggestedCorrectionAt({subject:'mathématiques',excludedClassDates:['2026-11-12']},'2026-11-10'),'2026-11-13T17:00:00.000Z');
+});
