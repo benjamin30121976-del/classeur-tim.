@@ -26,24 +26,6 @@
  const subject=l=>l.subject||'Espagnol';
  function build(id,content){const lessons=(content.lessons||[]).filter(l=>l.id);const seen=new Set();let chosen=[],isWeekly=false,covered=[],missing=[];
   if(/^DAY_20\d{6}$/.test(id))return null;
-  if(false&&/^DAY_20\d{6}$/.test(id)){
-    const stamp=id.slice(4);const day=`${stamp.slice(0,4)}-${stamp.slice(4,6)}-${stamp.slice(6)}`;
-    // Pas de recyclage d'anciens cours : seules les leçons mises en ligne aujourd'hui.
-    // Les exercices authentiques de l'ENT ne sont pas utilisés dans le défi.
-    const todays=lessons.filter(l=>lessonDay(l.publishedAt)===day);
-    const groups=new Map();
-    for(const l of todays){const qs=qlist(content,l).map(q=>({l,q})).sort((a,b)=>hash(id+a.q.sourceId)-hash(id+b.q.sourceId));
-      const name=subject(l);if(!groups.has(name))groups.set(name,[]);groups.get(name).push(...qs);
-    }
-    const names=[...groups.keys()].sort((a,b)=>hash(id+a)-hash(id+b)||a.localeCompare(b));
-    // Une première question par matière quand son cours possède des questions bonus.
-    const limit=Math.max(5,names.length);
-    for(const name of names){const item=groups.get(name).shift();if(item&&!seen.has(item.q.sourceId)){seen.add(item.q.sourceId);chosen.push(item);}}
-    // Puis répartir les questions restantes entre les matières, à tour de rôle.
-    let progress=true;while(chosen.length<limit&&progress){progress=false;for(const name of names){if(chosen.length>=limit)break;let item=groups.get(name).shift();while(item&&seen.has(item.q.sourceId))item=groups.get(name).shift();if(item){chosen.push(item);seen.add(item.q.sourceId);progress=true;}}}
-    if(chosen.length<5)return null;
-    return {id,title:'Défi du jour · '+day,description:`${chosen.length} questions tirées des leçons publiées aujourd’hui, ${names.length} matière(s).`,level:'Mission quotidienne',subject:'Défis',lesson:chosen[0].l.id,kind:'daily',questions:chosen.map(x=>({...x.q,q:`${subject(x.l)} · ${x.q.q}`})),realLessons:[...new Set(chosen.map(x=>x.l.title))]};
-  }
   const sm=id.match(/^SUNDAY_(20\d{6})$/);
   if(sm){
    const stamp=sm[1],on=`${stamp.slice(0,4)}-${stamp.slice(4,6)}-${stamp.slice(6)}`;
