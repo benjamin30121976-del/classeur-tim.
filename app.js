@@ -513,35 +513,57 @@ function makeRewardsTile(){const b=E('button','reward-open');b.type='button';
   dialog.setAttribute('tabindex','-1');if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');dialog.scrollTop=0;dialog.focus({preventScroll:true});
  });return b;}
 document.getElementById('rewards-close')?.addEventListener('click',()=>{const d=document.getElementById('rewards-dialog');if(d.close)d.close();else d.removeAttribute('open');});
+function dailyMissionsCard(){
+ const meta=window.__TIM_CHALLENGES||{},ids=meta.dailyIds||[];
+ if(!ids.length)return document.createDocumentFragment();
+ const c=E('section','daily-card game-challenge');c.id='challenge-section';
+ const head=E('div','challenge-top');head.append(E('strong','','🎯 PETITS DÉFIS DU JOUR'),E('span','challenge-xp-tag','JUSQU’À +3 XP PAR DÉFI'));c.append(head);
+ const body=E('div','challenge-main'),copy=E('div','challenge-main-copy');
+ copy.append(E('p','challenge-detail','10 questions par défi, tirées des leçons déjà étudiées. Plusieurs défis disponibles aujourd’hui. À chaque fois, une seule validation.'));
+ const completed=ids.filter(id=>attemptFor(id)).length;
+ copy.append(E('p','challenge-meta',completed+' défi'+(completed>1?'s':'')+' terminé'+(completed>1?'s':'')+' aujourd’hui'));
+ body.append(copy);
+ const wolfWrap=E('div','challenge-wolf-scene'),img=E('img','challenge-wolf challenge-wolf-daily');
+ img.src='./assets/loup-daily'+(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'-statique.webp':'-anime.webp');
+ img.alt='Loup joueur faisant un clin d’œil';img.loading='lazy';img.width=126;img.height=100;
+ wolfWrap.append(img);body.append(wolfWrap);c.append(body);
+ const actions=E('div','challenge-card-actions');
+ const visible=Math.max(3,window.__TIM_DAILY_VISIBLE||3);
+ for(const [idx,id] of ids.slice(0,visible).entries()){
+  const ex=DATA.exercises.find(x=>x.id===id);if(!ex)continue;
+  const old=attemptFor(id),text='Défi '+(idx+1)+' · '+ex.questions.length+' questions';
+  actions.append(button((old?'✓ ':window.__TIM_PARENT?'Aperçu · ':'')+text,()=>openExercise(id),old?'small-cta':'mission-launch'));
+ }
+ if(ids.length>visible)actions.append(button('Afficher 3 autres défis',()=>{window.__TIM_DAILY_VISIBLE=visible+3;renderHome();},'small-cta'));
+ if(!actions.childNodes.length)actions.append(badge('Défis en préparation'));
+ c.append(actions);return c;
+}
 function missionCard(kind){
- const meta=window.__TIM_CHALLENGES||{},id=kind==='daily'?meta.daily:kind==='weekly'?meta.weekly:meta.sunday;
- const ex=DATA.exercises.find(x=>x.id===id),done=ex&&attemptFor(ex.id),sunday=kind==='sunday',weekly=kind==='weekly';
- const c=E('section',kind==='daily'?'daily-card game-challenge':sunday?'sunday-card game-challenge':'weekly-card game-challenge');if(kind==='daily')c.id='challenge-section';
+ if(kind==='daily')return dailyMissionsCard();
+ const meta=window.__TIM_CHALLENGES||{},id=kind==='weekly'?meta.weekly:meta.sunday;
+ const ex=DATA.exercises.find(x=>x.id===id),done=ex&&attemptFor(ex.id),sunday=kind==='sunday';
+ const c=E('section',sunday?'sunday-card game-challenge':'weekly-card game-challenge');
  const head=E('div','challenge-top');
- head.append(E('strong','',kind==='daily'?'🎯 DÉFI DU JOUR':sunday?'👑 GRAND DÉFI DU DIMANCHE':'🏆 DÉFI DE LA SEMAINE'),E('span','challenge-xp-tag','BONUS +5 XP'));
+ head.append(E('strong','',sunday?'👑 GRAND DÉFI DU DIMANCHE':'🏆 DÉFI DU SAMEDI'),E('span','challenge-xp-tag',sunday?'JUSQU’À +20 XP':'JUSQU’À +10 XP'));
  c.append(head);
  const body=E('div','challenge-main'),copy=E('div','challenge-main-copy');
- if(!ex){copy.append(E('p','challenge-detail',sunday?'Dès que les cours permettront de composer 5 questions, ton défi sera prêt.':weekly?'Le défi apparaîtra quand les exercices de cette semaine seront publiés.':'En attente de cinq questions issues des leçons publiées aujourd’hui. Aucun ancien cours n’est réutilisé automatiquement.'));}
+ if(!ex){copy.append(E('p','challenge-detail','Le grand contrôle nécessite au moins 20 questions issues des cours disponibles.'));}
  else{
-  copy.append(E('p','challenge-detail',kind==='daily'?`${ex.questions.length} questions sur les leçons publiées aujourd’hui, dans les matières disponibles.`:sunday?`${ex.questions.length} questions pour retrouver les cours depuis la rentrée.`:`${ex.questions.length} questions sur les cours publiés cette semaine.`));
-  if(sunday){const subjects=[...new Set(ex.questions.map(q=>q.q.split(' · ')[0]))];copy.append(E('p','challenge-meta',`Depuis septembre · ${subjects.join(', ')} · ${ex.realLessons.length} leçon(s)`));}
-  else if(weekly){copy.append(E('p','challenge-meta',`${ex.realLessons.length} leçon(s) · Toutes les matières disponibles`));}
-  copy.append(E('p','challenge-success','🎯 80 % de bonnes réponses = +5 XP bonus'));
+  copy.append(E('p','challenge-detail',sunday?'20 questions de révision sur les leçons depuis la rentrée.':'20 questions sur les leçons de la semaine et les révisions.'));
+  copy.append(E('p','challenge-meta',ex.realLessons.length+' leçon'+(ex.realLessons.length>1?'s':'')+' · '+(sunday?'Depuis septembre':'Contrôle hebdomadaire')));
+  copy.append(E('p','challenge-success','🎯 Dès 17/20 : '+(sunday?'20':'10')+' XP'));
  }
  body.append(copy);
- const wolfWrap=E('div','challenge-wolf-scene');
- const artKind=kind==='daily'?'daily':sunday?'sunday':'weekly';
+ const wolfWrap=E('div','challenge-wolf-scene'),artKind=sunday?'sunday':'weekly';
  const img=E('img','challenge-wolf challenge-wolf-'+artKind);
  img.src='./assets/loup-'+artKind+(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'-statique.webp':'-anime.webp');
- img.alt=kind==='daily'?'Loup joueur faisant un clin d’œil':sunday?'Loup couronné du grand défi':'Loup victorieux avec une coupe';
- img.loading='lazy';img.width=126;img.height=100;
+ img.alt=sunday?'Loup couronné du grand défi':'Loup victorieux avec une coupe';img.loading='lazy';img.width=126;img.height=100;
  wolfWrap.append(img);body.append(wolfWrap);c.append(body);
- const dayOfWeek=new Date((meta.today||'2026-11-06')+'T12:00:00Z').getUTCDay();
- const open=kind==='daily'||(sunday?dayOfWeek===0:dayOfWeek>=5||dayOfWeek===0);
+ const dow=new Date((meta.today||'2026-11-08')+'T12:00:00Z').getUTCDay(),open=sunday?dow===0:dow===6;
  const actions=E('div','challenge-card-actions');
- if(!ex){actions.append(badge('À venir'));}
- else if(done){const unlocked=(done.correctionStatus==='released'&&Array.isArray(done.answers)&&done.answers.length>0);actions.append(badge(unlocked?'✓ Déjà validé · '+done.score+'/'+done.total:'✓ Déjà validé · correction en attente du parent','green'),button(unlocked?'Voir les réponses':'Voir ma validation',()=>openExercise(ex.id),'small-cta'));}
- else if(!open){actions.append(badge(sunday?'Disponible dimanche':'Disponible vendredi'));}
+ if(!ex)actions.append(badge('À venir'));
+ else if(done)actions.append(badge('✓ Déjà validé · '+(done.score===null?'correction en attente':done.score+'/'+done.total),'green'),button('Voir ma validation',()=>openExercise(ex.id),'small-cta'));
+ else if(!open)actions.append(badge(sunday?'Disponible dimanche':'Disponible samedi'));
  else if(window.__TIM_GUEST)actions.append(badge('Lecture seule · invité'));
  else actions.append(button(window.__TIM_PARENT?'Prévisualiser le défi':'LANCER LE DÉFI',()=>openExercise(ex.id),'mission-launch'));
  c.append(actions);return c;
@@ -676,7 +698,8 @@ function __timRefreshCalendar(){
    if(__timLastCorrectionAccess!==access){__timLastCorrectionAccess=access;openExercise(a.id);return;}}
  }
  if(dateChanged){
-  window.__TIM_CHALLENGE_SETUP?.(DATA);
+  // Le cours et les missions sont reconstruits pour la nouvelle journée.
+  window.location.reload();return;
   const el=document.getElementById('exercices');if(el?.classList.contains('active')){
    renderExerciseIndex();
    const tip=document.getElementById('tim-exercise-mode-info');const ex=exerciseBy(window.__TIM_OPEN_EXERCISE_ID);
