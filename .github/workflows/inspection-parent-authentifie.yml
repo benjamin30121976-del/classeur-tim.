@@ -25,7 +25,12 @@ jobs:
           node --check app.js
           node --check maths-parcours.js
           node --check maths-bis-data.js
+          node --check worker/server.mjs
+          node --check worker/maths-training-curriculum.mjs
+          node --check worker/test/math-training.test.mjs
           node --check outils/inspecter-parent-securise.cjs
+      - name: Tester les 23 évaluations et la sécurité des tentatives
+        run: node --test worker/test/math-training.test.mjs
       - name: Verifier la configuration des secrets sans les afficher
         id: verify
         run: |
