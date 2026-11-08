@@ -319,7 +319,7 @@ const CONTENT={
       [
         "2 × (−3) = −6 : on ajoute ensuite 1 au lieu de le soustraire.",
         "Le signe négatif de x doit être conservé au remplacement.",
-        "−6 + 1 vaut −5, et non +5."
+        "Tu as changé le signe du résultat. Or 2 × (−3) + 1 = −6 + 1 = −5, et non +5."
       ]
     ]
   ],
@@ -336,7 +336,7 @@ const CONTENT={
       [
         "Le 4 doit aussi multiplier le −3, ce qui donne −12.",
         "4 × 2x vaut 8x, pas 6x : on multiplie, on n'additionne pas.",
-        "4 × (−3) donne −12, pas +12."
+        "Tu as oublié le signe moins de la parenthèse : 4 × (−3) = −12, et non +12."
       ]
     ],
     [
@@ -413,9 +413,9 @@ const CONTENT={
       ],
       "5x − 10 + 3x = 8x − 10.",
       [
-        "5 × (−2) vaut −10, pas −2.",
+        "Tu n'as pas multiplié −2 par 5 : 5 × (−2) donne −10, pas −2.",
         "Après développement, on obtient 5x − 10, puis on ajoute 3x.",
-        "5x + 3x donne 8x, et non 2x."
+        "Tu as soustrait les coefficients au lieu de les additionner : 5x + 3x = 8x, et non 2x."
       ]
     ]
   ],
