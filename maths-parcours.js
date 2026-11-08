@@ -97,7 +97,7 @@ function listPage(id,title,rows,kind){
 function viewEnt(id){listPage(id,'Leçons ENT — '+groupOfId(id).name,entFor(groupOfId(id)),'original');}
 function viewEntExercises(id){listPage(id,'Exercices ENT du chapitre — '+groupOfId(id).name,exFor(groupOfId(id)),'exercise');}
 function blocks(lesson,mode){
- const content=(lesson?.blocks||[]).filter(b=>mode==='bis'||['Comprendre','Méthode étape par étape','Exemples corrigés','Erreur fréquente','Objectif'].includes(b.h));
+ const content=(lesson?.blocks||[]).filter(b=>!/^Question d[’']entraînement\s*[12]$/iu.test(b.h||'')&&(mode==='bis'||['Comprendre','Méthode étape par étape','Exemples corrigés','Erreur fréquente','Objectif'].includes(b.h)));
  return content.map(b=>{
   if(b.kind==='svg'&&typeof b.svg==='string'){
    // Dessins vectoriels de la leçon BIS archivée : pas de script ni d'évènement exécutable.
