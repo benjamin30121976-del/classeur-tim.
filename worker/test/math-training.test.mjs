@@ -100,7 +100,7 @@ test('Tim gets a durable score and feedback, Parent can read it, no duplicate su
  assert.equal(result.score,9);
  assert.equal(result.total,10);
  assert.equal(result.xp,0);
- assert.equal(result.items.length,2);
+ assert.equal(result.items.length,10);
  assert.equal(result.items[1].correct,false);
  assert.ok(result.items[1].explanation.includes(' '));
  const taskAfter=await getMathTrainingTask(db,TIM_UID,{id});
@@ -123,7 +123,7 @@ test('Two simultaneous submissions cannot create a second result',async()=>{
  const correct=task.questions.map(q=>q.correctIndex);
  const responses=await Promise.allSettled([
   submitMathTraining(db,TIM_UID,{id:'MT05',answers:correct}),
-  submitMathTraining(db,TIM_UID,{id:'MT05',answers:[(correct[0]+1)%4,correct[1]]})
+  submitMathTraining(db,TIM_UID,{id:'MT05',answers:correct.map((v,i)=>i===0?(v+1)%4:v)})
  ]);
  assert.equal(responses.filter(x=>x.status==='fulfilled').length,1);
  assert.equal(responses.filter(x=>x.status==='rejected').length,1);
