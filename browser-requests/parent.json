@@ -3,6 +3,6 @@
   "site": "https://classeur-tim-v16.pages.dev/",
   "scope": "Inspecter le site avec le navigateur Chromium/Playwright et les secrets Parent déjà configurés, sans modifier les données.",
   "launch_on_update": true,
-  "note": "Inspection Chromebook Chromium/Playwright, lecture seule. Le défi du jour reste suspendu ; aucune validation ni résultat de Tim n’est modifié.",
-  "checkVersion": "audit-enonces-maths-programmes-a-b-2026-11-08"
+  "note": "Inspection Chromium/Playwright post-correctif, lecture seule, aucune validation de Tim.",
+  "checkVersion": "audit-maths-a-b-syntaxe-corrigee-2026-11-08"
 }
