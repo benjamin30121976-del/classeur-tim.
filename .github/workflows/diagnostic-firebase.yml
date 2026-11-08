@@ -33,6 +33,11 @@ jobs:
           node --check boot.js
           node --check app.js
           node --check guest-access.js
+      - name: Vérifier l'absence de corrigés dans les fichiers publics
+        run: |
+          node --check guest-data.js
+          node --check espagnol-05-novembre.js
+          node --input-type=module -e "import fs from 'node:fs'; for (const f of ['guest-data.js','espagnol-05-novembre.js']) { const s=fs.readFileSync(f,'utf8'); if (/\\\"(?:right|also|why|answerKey|expected|solution|correction)\\\"\\s*:/.test(s)) { console.error('Corrigé détecté dans '+f); process.exitCode=1; } }"
       - name: Tester la notation et les XP (JUnit)
         run: |
           mkdir -p test-results
