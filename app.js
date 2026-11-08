@@ -458,6 +458,13 @@ function xpBarV9(a){return window.TIM_XP.contributionV9(a,exerciseBy(a.id));}
 function xpBarV10(a){return window.TIM_XP.contributionV10(a,exerciseBy(a.id));}
 function xpBarV5(a){if(a.needsReview||!a.total)return 0;const p=Math.max(0,Math.min(1,a.score/a.total));let v=p===1?10:p>=.8?6:p>=.6?2:p>=.4?-2:-5;if((a.id.startsWith('DAY_')||a.id.startsWith('WEEK_')||a.id.startsWith('SUNDAY_'))&&p>=.8)v+=5;return v;}
 function xpInfo(done=attempts()){
+ if(done.every(a=>typeof a.xp==='number')){
+  const ordered=[...done].sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
+  let total=0,peak=0;const week=window.TIM_XP.monday(parisDay(new Date()));let weekly=0;
+  for(const a of ordered){total=Math.max(0,total+Number(a.xp||0));peak=Math.max(peak,total);if(parisDay(a.date)&&window.TIM_XP.monday(parisDay(a.date))===week)weekly+=Number(a.xp||0);}
+  const level=Math.floor(peak/100)+1;
+  return {total,perfect:done.filter(a=>a.correctionStatus==='released'&&a.total>0&&a.score===a.total).length,peak,level,inLevel:Math.max(0,Math.min(100,total-(level-1)*100)),done:done.length,week:weekly,rawWeek:weekly,reward:null,legacy:0,weeklyPass:false};
+ }
  const daily=new Map();let legacy=0,perfect=0;
  for(const a of done){if(a.total>0&&a.score===a.total&&(a.correctionStatus==='released'&&Array.isArray(a.answers)&&a.answers.length>0))perfect++;
   if(!a.date||a.date<XP_V5_START){legacy+=a.needsReview?5:(Math.max(0,Number(a.score)||0)*10+(a.total>0&&a.score===a.total?20:0));continue;}
