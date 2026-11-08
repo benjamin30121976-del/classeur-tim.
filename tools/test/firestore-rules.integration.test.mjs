@@ -23,9 +23,10 @@ before(async()=>{
  });
 });
 after(async()=>{if(env)await env.cleanup()});
-test('Invité: aucun accès Firestore',async()=>{
+test('Invité: leçons publiques seulement',async()=>{
  const guest=db(null);
- await assertFails(getDoc(doc(guest,'publicLessons/L01')));
+ await assertSucceeds(getDoc(doc(guest,'publicLessons/L01')));
+ await assertFails(getDoc(doc(guest,'publicExercises/E01')));
  await assertFails(getDoc(doc(guest,'answerKeys/E01')));
  await assertFails(setDoc(doc(guest,'attempts/fake'),{authorUid:timUid,xp:100}));
 });
@@ -79,4 +80,11 @@ test('No browser account, including Parent, may write XP aggregates',async()=>{
 test('Parent cannot bypass server by writing release time directly',async()=>{
  const parent=db(parentUid);
  await assertFails(setDoc(doc(parent,'releasedCorrections/past'),{released:true,releaseAt:Timestamp.fromDate(new Date('2020-01-01'))}));
+});
+
+test('Public lessons cannot contain answer-key fields',async()=>{
+ const parent=db(parentUid);
+ await assertFails(setDoc(doc(parent,'publicLessons/unsafe'),{title:'Secret',answers:['secret']}));
+ await assertFails(setDoc(doc(parent,'publicLessons/unsafe2'),{title:'Secret',solutions:['secret']}));
+ await assertSucceeds(setDoc(doc(parent,'publicLessons/safe'),{title:'Cours public',body:'Leçon'}));
 });
