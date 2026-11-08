@@ -9,7 +9,9 @@
  function play(name){if(name==='tap')click();if(name==='intro'){[0,.34,.7,1.08,1.45,1.8,2.2,2.55].forEach((d,i)=>note(390+i*24,710+i*15,.17,d,'sine',.019));}if(name==='welcome'){[523,659,784,1046].forEach((n,i)=>note(n,n*1.03,.23,i*.125,'triangle',.038));}if(name==='win'){[510,660,830].forEach((n,i)=>note(n,n*1.05,.18,i*.10,'sine',.035));}if(name==='lose'){[370,290,220].forEach((n,i)=>note(n,n*.78,.16,i*.11,'triangle',.03));}}
  function setMode(v){if(['bulle','arcade','muet'].includes(v)){mode=v;store();if(mode!=='muet')play('tap');}}
  function setOn(v){on=!!v;store();if(on)play('tap');}
+ // Coupe les sons Web Audio en cours sans désactiver le son dans les préférences.
+ function stopAll(){if(!ctx)return;const previous=ctx;ctx=null;try{const p=previous.close();if(p&&typeof p.catch==='function')p.catch(()=>{});}catch(e){}}
  // Les sons des touches sont joués sur un geste utilisateur et ne bloquent pas la navigation.
- document.addEventListener('click',e=>{const b=e.target.closest('button,[role="button"],label.choose');if(!b||b.disabled||b.id==='intro-play'||b.id==='intro-silent'||b.id==='sound-toggle')return;play('tap');},true);
- window.TIM_SOUND={play,get mode(){return mode;},get on(){return on;},setMode,setOn,unlock:audio};
+ document.addEventListener('click',e=>{const b=e.target.closest('button,[role="button"],label.choose');if(!b||b.disabled||b.id==='intro-play'||b.id==='intro-silent'||b.id==='intro-skip'||b.id==='sound-toggle')return;play('tap');},true);
+ window.TIM_SOUND={play,get mode(){return mode;},get on(){return on;},setMode,setOn,stopAll,unlock:audio};
 })();

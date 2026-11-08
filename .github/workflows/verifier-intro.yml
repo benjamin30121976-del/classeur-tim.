@@ -1,0 +1,37 @@
+name: Verification du bouton Passer l'animation
+on:
+  pull_request:
+    paths:
+      - 'intro.js'
+      - 'index.html'
+      - 'sound.js'
+      - 'tools/test/intro-skip.smoke.cjs'
+      - '.github/workflows/verifier-intro.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  intro:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Installer Chromium pour Playwright
+        run: |
+          mkdir -p /tmp/tim-intro-test
+          npm install --prefix /tmp/tim-intro-test --no-audit --no-fund playwright
+          /tmp/tim-intro-test/node_modules/.bin/playwright install --with-deps chromium
+      - name: Tester le classeur sans navigateur externe payant
+        env:
+          NODE_PATH: /tmp/tim-intro-test/node_modules
+        run: |
+          python3 -m http.server 8778 --bind 127.0.0.1 >/tmp/tim-intro-http.log 2>&1 &
+          sleep 3
+          node tools/test/intro-skip.smoke.cjs
+      - name: Captures ecran du choix de son et de l'accueil
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: captures-intro
+          path: test-intro-results/
+          retention-days: 7

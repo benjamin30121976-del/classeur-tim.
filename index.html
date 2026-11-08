@@ -323,6 +323,13 @@ body{font-size:18px;line-height:1.55;padding-bottom:calc(130px + env(safe-area-i
   .tabs .nav-icon svg{width:30px!important;height:30px!important}
 }
 
+
+/* Accès direct à l'accueil dès l'ouverture, avec ou sans lancement du son. */
+#intro-screen #intro-skip{position:absolute;z-index:8;top:calc(12px + env(safe-area-inset-top));right:calc(14px + env(safe-area-inset-right));display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:44px;max-width:calc(100vw - 28px);padding:10px 15px;border-radius:12px;border:1px solid #91bbd0;background:#152c48f2;color:#f5fbff;font:800 13px/1.3 system-ui,-apple-system,sans-serif;box-shadow:0 5px 15px #030d2540;cursor:pointer}
+#intro-screen #intro-skip:hover{background:#234768}
+#intro-screen #intro-skip:focus-visible{outline:3px solid #8af9e0;outline-offset:3px}
+@media(max-width:400px){#intro-screen #intro-skip{top:calc(8px + env(safe-area-inset-top));right:10px;min-height:42px;padding:8px 11px;font-size:12px}}
+
 /* Séquence d'ouverture après authentification - ne modifie pas les cours/XP/Firebase */
 #intro-screen[hidden]{display:none!important}
 #intro-screen{position:fixed;inset:0;z-index:300;display:flex;align-items:center;justify-content:center;overflow:hidden;background:radial-gradient(ellipse 80% 58% at 50% 40%,#0b315b 0%,#0b1930 62%,#070e1d 100%);color:#f2f7ff;padding:calc(64px + env(safe-area-inset-top)) 14px calc(56px + env(safe-area-inset-bottom));box-sizing:border-box}
@@ -566,6 +573,7 @@ body.intro-open{overflow:hidden}
 @media (min-width:760px){.v16-import-row{grid-template-columns:1fr 1fr}}
  .role-choices{display:grid;gap:12px;margin:20px 0}.role-enter{width:100%;border:1px solid #6788b2;background:#182c4c;color:#fff;padding:15px;border-radius:15px;font-weight:900;font-size:18px}.role-enter small{display:block;font-weight:500;font-size:12px}.role-choices[hidden],#login-form[hidden]{display:none!important}#role-back{background:transparent;border:0;color:#b9dfff;padding:8px 0} </style><meta name="app-build-version" content="V16-2026-11-07"><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="./espagnol-parcours.css"><script src="./school-pack.js" defer></script><script src="./challenges.js" defer></script><script src="./exercise-policy.js" defer></script><script src="./bonus-missions.js" defer></script><script src="./xp-rules.js" defer></script><script src="./lesson-editor.js" defer></script><script src="./sound.js" defer></script></head><body>
 <section id="intro-screen" role="dialog" aria-modal="true" aria-label="Animation d’ouverture" hidden>
+  <button id="intro-skip" class="intro-skip" type="button" aria-label="Passer l’animation et ouvrir l’accueil">Passer l’animation <span aria-hidden="true">→</span></button>
   <audio id="intro-music" src="./assets/intro-arcade-v9.mp3" preload="auto" aria-hidden="true"></audio>
   
   <div class="intro-stage">
