@@ -389,29 +389,103 @@ async function startSession(user){
   panel.innerHTML='<h2>Corrections des devoirs — contrôle parental</h2><p id="pending-corrections-status">Chargement…</p><div id="pending-corrections-list"></div>';
   document.getElementById('account-strip').after(panel);
   const refreshCorrections=async()=>{
+   const status=panel.querySelector('#pending-corrections-status');
+   const list=panel.querySelector('#pending-corrections-list');
+   status.textContent='Actualisation du suivi des devoirs…';list.replaceChildren();
+   let attempts=[],releaseServiceAvailable=true;
    try{
+    // Conserver le circuit serveur et ses boutons quand il est opérationnel.
     const response=await httpsCallable(functionsApi,'getParentReport')({});
-    const attempts=response.data.attempts||[];
-    const pending=attempts.filter(a=>a.correctionStatus==='pending-parent');
-    const released=attempts.filter(a=>a.correctionStatus==='released');
-    document.getElementById('pending-corrections-status').textContent=pending.length+' exercice(s) en attente de correction';
-    const list=document.getElementById('pending-corrections-list');list.replaceChildren();
-    if(!pending.length){const empty=document.createElement('p');empty.textContent='Aucun devoir en attente. Les corrections déjà autorisées restent accessibles à Tim.';list.append(empty);}
-    for(const item of released){
-     const line=document.createElement('div');line.style.cssText='padding:10px 0;border-top:1px solid #456';
-     const title=document.createElement('span');title.textContent=item.title+' — correction autorisée ';
-     const lock=document.createElement('button');lock.type='button';lock.textContent='Reverrouiller';
-     lock.onclick=async()=>{lock.disabled=true;try{await httpsCallable(functionsApi,'setParentCorrectionRelease')({id:item.id,released:false});await refreshCorrections();}catch(e){lock.disabled=false;alert('Verrouillage impossible : '+(e.message||'Erreur Firebase'));}};
-     line.append(title,lock);list.append(line);
+    if(!Array.isArray(response.data?.attempts))throw Error('Réponse de suivi incomplète');
+    attempts=response.data.attempts;
+   }catch(serviceError){
+    // Les notes sont déjà lisibles en Firestore par le parent authentifié.
+    // Ne pas présenter une panne de fonctions comme une panne de la base.
+    releaseServiceAvailable=false;
+    try{
+     const [submissions,privateNotes]=await Promise.all([
+      getDocs(collection(db,'attempts')),
+      getDocs(collection(db,'privateAttempts'))
+     ]);
+     const titles=new Map((window.__TIM_DATA?.exercises||[]).map(ex=>[ex.id,ex.title]));
+     const grades=new Map(privateNotes.docs.map(d=>[d.id,d.data()]));
+     attempts=submissions.docs.map(d=>{
+      const data=d.data(),detail=grades.get(d.id)||{};
+      return {
+       id:d.id,
+       title:String(detail.title||titles.get(d.id)||data.title||d.id),
+       score:Number.isFinite(detail.score)?detail.score:null,
+       total:Number.isFinite(detail.total)?detail.total:null,
+       correctionStatus:data.correctionStatus==='released'?'released':'pending-parent'
+      };
+     });
+     // Les copies privées dont la tentative publique manquerait ne sont
+     // jamais masquées : l'anomalie sera visible au compte Parent.
+     for(const [id,data] of grades){
+      if(attempts.some(a=>a.id===id))continue;
+      attempts.push({
+       id,title:String(data.title||titles.get(id)||id),
+       score:Number.isFinite(data.score)?data.score:null,
+       total:Number.isFinite(data.total)?data.total:null,
+       correctionStatus:'pending-parent',orphan:true
+      });
+     }
+    }catch(readError){
+     status.textContent='Lecture des résultats Firebase indisponible. Réessaie après reconnexion.';
+     const note=document.createElement('p');
+     note.textContent='Les résultats ne sont pas effacés. Ce message signale seulement un échec de lecture de la base.';
+     list.append(note);
+     console.warn('Lecture directe du suivi Parent refusée :',readError.code||readError.message);
+     return;
     }
-    for(const item of pending){
-     const line=document.createElement('div');line.style.cssText='padding:10px 0;border-top:1px solid #456';
-     const title=document.createElement('span');title.textContent=item.title+' ';
-     const release=document.createElement('button');release.type='button';release.textContent='Débloquer la correction';
-     release.onclick=async()=>{release.disabled=true;try{await httpsCallable(functionsApi,'setParentCorrectionRelease')({id:item.id,released:true});await refreshCorrections();}catch(e){release.disabled=false;alert('Déblocage impossible : '+(e.message||'Erreur Firebase'));}};
-     line.append(title,release);list.append(line);
+   }
+   const pending=attempts.filter(a=>a.correctionStatus!=='released');
+   const released=attempts.filter(a=>a.correctionStatus==='released');
+   status.textContent=pending.length+' devoir(s) en attente de correction · '+attempts.length+' validation(s) en ligne';
+   if(!releaseServiceAvailable){
+    const info=document.createElement('p');
+    info.textContent='Consultation des résultats : disponible via Firebase. Autoriser ou reverrouiller les corrections nécessite toujours le service serveur, actuellement inaccessible. Les notes restent enregistrées.';
+    info.style.cssText='font-size:14px;line-height:1.5;color:#d8e7ff';
+    list.append(info);
+   }
+   if(!pending.length){
+    const empty=document.createElement('p');empty.textContent='Aucun devoir en attente de correction.';list.append(empty);
+   }
+   const addLine=(item,isReleased)=>{
+    const line=document.createElement('div');line.style.cssText='padding:10px 0;border-top:1px solid #456';
+    const score=Number.isFinite(item.score)&&Number.isFinite(item.total)?' · '+item.score+'/'+item.total:'';
+    const title=document.createElement('span');
+    title.textContent=item.title+score+' — '+(isReleased?'correction autorisée':'correction en attente')+' ';
+    line.append(title);
+    if(item.orphan){
+     const warning=document.createElement('small');
+     warning.textContent='Détail enregistré, tentative associée introuvable.';
+     line.append(warning);
     }
-   }catch(e){document.getElementById('pending-corrections-status').textContent='Suivi indisponible : fonctions Firebase non accessibles.';}
+    if(releaseServiceAvailable){
+     const action=document.createElement('button');action.type='button';
+     action.textContent=isReleased?'Reverrouiller':'Débloquer la correction';
+     action.onclick=async()=>{
+      action.disabled=true;
+      try{
+       await httpsCallable(functionsApi,'setParentCorrectionRelease')({id:item.id,released:!isReleased});
+       await refreshCorrections();
+      }catch(error){
+       action.disabled=false;
+       alert('Modification non confirmée : fonction Firebase de contrôle indisponible. La note n’a pas été changée.');
+      }
+     };
+     line.append(action);
+    }
+    list.append(line);
+   };
+   released.forEach(x=>addLine(x,true));
+   pending.forEach(x=>addLine(x,false));
+   const reload=document.createElement('button');reload.type='button';
+   reload.textContent='Actualiser les résultats';
+   reload.style.cssText='padding:9px;margin-top:9px;border-radius:8px';
+   reload.onclick=async()=>{reload.disabled=true;await refreshCorrections();};
+   list.append(reload);
   };
   refreshCorrections();
  }
