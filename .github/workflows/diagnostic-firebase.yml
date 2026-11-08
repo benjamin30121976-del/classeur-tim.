@@ -42,6 +42,26 @@ jobs:
       - name: Vérifier les corrigés espagnols réservés au serveur
         run: |
           node --input-type=module -e 'import {spanishNov05Exercises as e} from "./functions/spanish-nov05-private.mjs"; import fs from "node:fs"; const s=fs.readFileSync("espagnol-05-novembre.js","utf8"); for(const ex of e){if(!s.includes(ex.id)||!ex.questions?.length||ex.questions.some(q=>q.right===undefined))throw Error("Corrigé espagnol manquant : "+ex.id);} console.log(e.length+" exercices espagnols corrigibles côté serveur");'
+      - name: Vérifier les trois profils et le diagnostic parental
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          const read=f=>fs.readFileSync(f,'utf8');
+          const guest=read('guest-access.js'),boot=read('boot.js'),app=read('app.js'),backend=read('functions/index.mjs'),rules=read('firestore.rules');
+          assert.match(guest,/__TIM_GUEST=true/);
+          assert.match(guest,/window\.__TIM_DATA=strip\(window\.__TIM_DATA\)/);
+          assert.match(guest,/aucune validation autorisée/);
+          assert.match(boot,/httpsCallable\(functionsApi,'submitTimExercise'\)/);
+          assert.match(boot,/httpsCallable\(functionsApi,'getParentReport'\)/);
+          assert.match(boot,/httpsCallable\(functionsApi,'setParentCorrectionRelease'\)/);
+          assert.match(boot,/unauthorizedAttemptWriteBlocked/);
+          assert.match(app,/out\.parentContentRead&&out\.attemptsRead&&out\.unauthorizedAttemptWriteBlocked&&out\.backendReport/);
+          assert.doesNotMatch(boot,/collection\(db,'test_attempts'\)/);
+          assert.match(backend,/enforceAppCheck:true/);
+          assert.match(rules,/match \/privateAttempts\/\{id\}/);
+          console.log('Trois profils et diagnostic parent : contrôles de structure réussis');
+          NODE
       - name: Tester la notation et les XP (JUnit)
         run: |
           mkdir -p test-results
