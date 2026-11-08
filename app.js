@@ -279,7 +279,7 @@ function answerValue(input){if(input.type==='radio'){const chosen=document.query
 function freeOrTextAnswer(question,answer){if(question.type==='free')return null;const correct=question.type==='mc'?String(question.right)===String(answer):[question.right,...(question.also||[])].some(x=>norm(x)===norm(answer));return correct;}
 function openExercise(id){const ex=exerciseBy(id);if(!ex)return;window.__TIM_OPEN_EXERCISE_ID=id;page('exercices');document.getElementById('exercise-index').classList.add('hide');const root=clear(document.getElementById('exercise-detail'));root.classList.add('active');root.append(button('← Retour aux exercices',()=>{root.classList.remove('active');document.getElementById('exercise-index').classList.remove('hide');renderExerciseIndex();scrollTop();},'plain back'));root.append(badge(ex.level),E('h2','',ex.title),E('p','intro',exerciseDescription(ex)),E('p','small','Leçon associée : '+lessonBy(ex.lesson).title));root.append(button('Voir la leçon correspondante',()=>openLesson(ex.lesson),'plain'));root.append(makeAttachmentPanel('exercise',ex.id));if(!window.__TIM_GUEST&&!ex.kind&&!attemptFor(ex.id)){
  const mode=window.TIM_EXERCISE.mode(ex);
- const modeInfo=notice(mode==='school'?'📚 DEVOIR DE L’ÉCOLE · XP selon le résultat. Ton parent débloquera la correction.':mode==='bonus'?'⭐ EXERCICE BONUS · 100 % = +2 XP ; dès 60 % = +1 XP ; sinon 0. Maximum +3 XP par jour.':'Cet exercice n’est pas encore disponible.');modeInfo.id='tim-exercise-mode-info';root.append(modeInfo);
+ const modeInfo=notice(mode==='school'?'📚 DEVOIR DE L’ÉCOLE · 0 XP. Ton parent débloquera la correction.':mode==='bonus'?'⭐ EXERCICE BONUS · 100 % = +2 XP ; dès 60 % = +1 XP ; sinon 0. Maximum +3 XP par jour.':'Cet exercice n’est pas encore disponible.');modeInfo.id='tim-exercise-mode-info';root.append(modeInfo);
 }
 if(window.__TIM_GUEST){root.append(notice('Visite en lecture seule : tu peux voir les questions, mais tu ne peux ni répondre ni valider.','guest-preview'));
  for(const [i,q] of ex.questions.entries()){const row=E('div','q');row.append(E('strong','',(i+1)+'. '+q.q));if(q.type==='mc'){const ul=E('ul');for(const option of q.options)ul.append(E('li','',option));row.append(ul);}root.append(row);}return;}
@@ -306,7 +306,7 @@ const mailAttempt=window.__TIM_BRIDGE.notifyAlert?.(id,saved);if(mailAttempt?.ca
  const d=drafts();delete d[id];save(DRAFT_KEY,d);v7NewAttempt(saved);alert('Devoir envoyé. '+(saved.xp>=0?'+':'')+saved.xp+' XP. Correction en attente du parent.');openExercise(id);
  }catch(err){submit.disabled=false;submit.textContent='Valider définitivement cet exercice';
  alert('L’exercice n’a pas été enregistré. Rien n’est perdu : vérifie ta connexion et réessaie. '+(err?.message||''));
- await window.__TIM_BRIDGE.refresh();if(attemptFor(id))openExercise(id);}},'btn');root.append(E('p','small','Après validation, les XP gagnés ou perdus sont affichés immédiatement. La correction reste bloquée jusqu’à l’autorisation du parent.'),submit);}
+ await window.__TIM_BRIDGE.refresh();if(attemptFor(id))openExercise(id);}},'btn');root.append(E('p','small','Après validation, le bilan XP s’affiche immédiatement (0 XP pour les devoirs ENT). La correction reste bloquée jusqu’à l’autorisation du parent.'),submit);}
 if(!old && !window.__TIM_PARENT && controls.length>1){
   const questionNodes=[...form.querySelectorAll('.q')];
   const submit=root.querySelector('button.btn');
