@@ -13,7 +13,7 @@ service cloud.firestore {
   match /releasedCorrections/{id} {
    allow read: if parent() || (tim() && resource.data.released == true
      && resource.data.releaseAt is timestamp && request.time >= resource.data.releaseAt);
-   allow write: if parent();
+   allow write: if false; // Only trusted server function may approve release.
   }
   match /attempts/{id} {
    allow get, list: if parent() || (tim() && resource.data.authorUid == request.auth.uid);
