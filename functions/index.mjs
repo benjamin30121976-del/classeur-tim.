@@ -4,6 +4,8 @@ import {getFirestore,FieldValue} from 'firebase-admin/firestore';
 import {grade} from './grading.mjs';
 import {rawPoints,cappedPoints} from './xp.mjs';
 import {spanishNov05Exercises} from './spanish-nov05-private.mjs';
+import {SPANISH_COURSE} from './spanish-training-curriculum.mjs';
+import {buildSpanishTasks,evaluateSpanishTask} from './spanish-training-engine.mjs';
 initializeApp();
 const db=getFirestore();
 const timUid=process.env.TIM_STUDENT_UID||'uqZI3Up97YWzKvWhssWQidn4TJO2',parentUid=process.env.TIM_PARENT_UID||'BPEuNAhHVyX8ewQ2I54s56m11vj1';
@@ -108,4 +110,49 @@ export const getTimCourseContent=onCall({region:'europe-west1',enforceAppCheck:t
  const parse=d=>{const v=d.data();return decodeCourse(v.payloadJson?JSON.parse(v.payloadJson):v);};
  const additions={lessons:lessons.docs.map(parse),exercises:exercises.docs.map(parse)};
  return {content:sanitizeCourse(content),additions:sanitizeCourse(additions)};
+});
+
+
+/* Un essai unique, sans XP, pour chacun des 150 entraînements espagnols.
+   Aucune écriture directe depuis le navigateur : les réponses sont corrigées
+   puis enregistrées atomiquement côté serveur. Les corrections restent
+   consultables ensuite par Tim et son parent. */
+export const submitSpanishTraining=onCall({region:'europe-west1',enforceAppCheck:true},async request=>{
+ role(request,'tim');
+ const {id,answers}=request.data||{};
+ const task=buildSpanishTasks(id,SPANISH_COURSE);
+ if(!task||!Array.isArray(answers)||answers.length!==10||
+    answers.some(v=>!['string','number'].includes(typeof v)||String(v).length>300))
+  throw new HttpsError('invalid-argument','Exercice ou réponses invalides.');
+ const evaluated=evaluateSpanishTask(task,answers);
+ const ref=db.doc('spanishTrainingAttempts/'+id);
+ try{
+  return await db.runTransaction(async tx=>{
+   const existing=await tx.get(ref);
+   if(existing.exists)throw new HttpsError('already-exists','Cet exercice a déjà été validé. Tu peux consulter la correction, sans le refaire.');
+   tx.create(ref,{
+    id,authorUid:request.auth.uid,lessonId:task.lesson,mode:task.mode,
+    series:task.series,score:evaluated.score,total:10,
+    submittedAt:FieldValue.serverTimestamp(),xp:0,
+    items:evaluated.items,version:1
+   });
+   return {...evaluated,submitted:true,xp:0};
+  });
+ }catch(error){
+  if(error instanceof HttpsError)throw error;
+  throw new HttpsError('internal','Enregistrement indisponible : aucune validation confirmée.');
+ }
+});
+export const getSpanishTrainingProgress=onCall({region:'europe-west1',enforceAppCheck:true},async request=>{
+ const uid=request.auth?.uid;
+ if(uid!==timUid&&uid!==parentUid)throw new HttpsError('permission-denied','Réservé à Tim et à son parent.');
+ const snapshot=await db.collection('spanishTrainingAttempts').where('authorUid','==',timUid).limit(200).get();
+ const attempts=snapshot.docs.map(doc=>{
+  const data=doc.data();
+  const date=data.submittedAt?.toDate?.().toISOString()||'';
+  return {id:doc.id,lessonId:data.lessonId,mode:data.mode,series:data.series,
+    score:Number(data.score)||0,total:10,submittedAt:date,xp:0,
+    items:Array.isArray(data.items)?data.items:[]};
+ }).filter(record=>Boolean(buildSpanishTasks(record.id,SPANISH_COURSE)));
+ return {attempts};
 });
