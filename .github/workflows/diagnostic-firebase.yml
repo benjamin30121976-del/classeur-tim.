@@ -20,7 +20,24 @@ jobs:
           java-version: '21'
       - name: Installer les dépendances Firebase
         run: npm install --no-audit --no-fund --ignore-scripts
-      - name: Tester la logique de notation hors ligne
-        run: node --test functions/test/*.test.mjs
-      - name: Tester les autorisations sur l'émulateur
-        run: npm run test:rules
+      - name: Tester la notation et les XP (JUnit)
+        run: |
+          mkdir -p test-results
+          node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=test-results/notation-xp.xml functions/test/*.test.mjs
+      - name: Tester les règles sur Firestore Emulator (JUnit)
+        run: |
+          npx firebase emulators:exec --project tim-access-rules-local-test --only firestore "node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=test-results/firestore.xml tools/test/firestore-rules.integration.test.mjs"
+      - name: Publier les rapports de test comme artefacts privés
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapports-tests-firebase
+          path: test-results/*.xml
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Récapitulatif
+        if: always()
+        run: |
+          echo '### Tests Firebase - branche isolée, aucune publication' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Les rapports JUnit sont joints à cette exécution. Le statut vert signifie que toutes les étapes obligatoires ont réussi.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Attention : cette branche contient encore un banc de test isolé, pas le déploiement complet V16.' >> "$GITHUB_STEP_SUMMARY"
