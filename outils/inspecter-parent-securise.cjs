@@ -208,5 +208,7 @@ async function inspect(browser,label,viewport){
  fs.writeFileSync(path.join(output,'rapport-parent.md'),report);
  fs.writeFileSync(path.join(output,'rapport-parent.json'),JSON.stringify(data,null,2));
  console.log(report);
+ // Un contrôle rouge doit faire échouer l'inspection automatisée, après sauvegarde du rapport.
+ if(errors.length)process.exitCode=1;
  // L'échec de fonctions Firebase est consigné sans empêcher la collecte des autres données.
 })().catch(e=>{console.error('Inspection Parent interrompue : '+e.message);process.exitCode=1;});
