@@ -474,8 +474,13 @@ async function startSession(user){
      return;
     }
    }
-   const pending=attempts.filter(a=>a.correctionStatus!=='released');
-   const released=attempts.filter(a=>a.correctionStatus==='released');
+   // Les 150 entraînements espagnols sont corrigés immédiatement après validation
+   // et n'ont jamais à passer par le déblocage parental des devoirs ordinaires.
+   const spanishTraining=id=>/^SP[QW]_L(?:0[1-9]|1[0-5])_0[1-5]$/.test(String(id||''));
+   const automatic=attempts.filter(a=>spanishTraining(a.id));
+   const schoolAttempts=attempts.filter(a=>!spanishTraining(a.id));
+   const pending=schoolAttempts.filter(a=>a.correctionStatus!=='released');
+   const released=schoolAttempts.filter(a=>a.correctionStatus==='released');
    status.textContent=pending.length+' devoir(s) en attente de correction · '+attempts.length+' validation(s) en ligne';
    if(!releaseServiceAvailable){
     const info=document.createElement('p');
@@ -486,18 +491,18 @@ async function startSession(user){
    if(!pending.length){
     const empty=document.createElement('p');empty.textContent='Aucun devoir en attente de correction.';list.append(empty);
    }
-   const addLine=(item,isReleased)=>{
+   const addLine=(item,isReleased,isAutomatic=false)=>{
     const line=document.createElement('div');line.style.cssText='padding:10px 0;border-top:1px solid #456';
     const score=Number.isFinite(item.score)&&Number.isFinite(item.total)?' · '+item.score+'/'+item.total:'';
     const title=document.createElement('span');
-    title.textContent=item.title+score+' — '+(isReleased?'correction autorisée':'correction en attente')+' ';
+    title.textContent=item.title+score+' — '+(isAutomatic?'corrigé immédiatement · 0 XP':isReleased?'correction autorisée':'correction en attente')+' ';
     line.append(title);
     if(item.orphan){
      const warning=document.createElement('small');
      warning.textContent='Détail enregistré, tentative associée introuvable.';
      line.append(warning);
     }
-    if(releaseServiceAvailable){
+    if(releaseServiceAvailable&&!isAutomatic){
      const action=document.createElement('button');action.type='button';
      action.textContent=isReleased?'Reverrouiller':'Débloquer la correction';
      action.onclick=async()=>{
@@ -514,11 +519,12 @@ async function startSession(user){
     }
     list.append(line);
    };
+   automatic.forEach(x=>addLine(x,true,true));
    released.forEach(x=>addLine(x,true));
    pending.forEach(x=>addLine(x,false));
    const reload=document.createElement('button');reload.type='button';
    reload.textContent='Actualiser les résultats';
-   reload.style.cssText='padding:9px;margin-top:9px;border-radius:8px';
+   reload.style.cssText='padding:10px 15px;margin-top:12px;border-radius:8px;border:1px solid #93b1e1;background:#f0f5ff;color:#1c3157;font-weight:700;cursor:pointer';
    reload.onclick=async()=>{reload.disabled=true;await refreshCorrections();};
    list.append(reload);
   };
