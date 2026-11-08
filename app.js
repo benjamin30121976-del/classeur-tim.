@@ -288,15 +288,17 @@ ex.questions.forEach((question,i)=>{const row=E('div','q');row.append(E('div','q
 function values(){return controls.map(c=>c.kind==='mc'?(document.querySelector('input[name="'+c.name+'"]:checked')?.value??''):c.node.value.trim());}
 function saveDraft(){if(old)return;const d=drafts();d[id]=values();save(DRAFT_KEY,d);}
 if(old){
- const disclosed=window.TIM_EXERCISE.canShow(old,new Date(),!!window.__TIM_PARENT);
- if(disclosed){root.append(E('div','banner-good','Exercice terminé · correction disponible.'));renderFeedback(ex,old,root);}
- else{
-  const panel=E('div','correction-pending');panel.append(E('strong','','✓ Exercice validé et enregistré'),E('p','',window.TIM_EXERCISE.school(ex)?'Ton devoir scolaire est enregistré : 0 XP, comme prévu.':'Tes XP sont calculés immédiatement et pris en compte dans ta progression.'),E('p','release-date','Correction disponible '+window.TIM_EXERCISE.releaseLabel(old)+'.'),E('p','','Tu pourras voir tes erreurs et les bonnes réponses à cette date.'));
-  const recap=E('div','exercise-submission-recap');recap.append(E('strong','','Tes réponses enregistrées :'));
-  const list=E('ol');for(const [i,a] of old.answers.entries()){const li=E('li','',ex.questions[i]?.type==='mc'?(ex.questions[i]?.options?.[Number(a.response)]||'Sans réponse'):a.response);list.append(li);}recap.append(list);panel.append(recap);root.append(panel);
+ const locked=old.correctionStatus==='pending-parent'||old.correctionLocked===true;
+ if(locked){
+  const panel=E('div','correction-pending');
+  panel.append(E('strong','','Devoir envoyé — correction en attente du parent'),E('p','','Tes XP sont calculés immédiatement. Ton parent décidera quand afficher le corrigé.'));
+  root.append(panel);
+ }else{
+  const disclosed=window.TIM_EXERCISE.canShow(old,new Date(),!!window.__TIM_PARENT);
+  if(disclosed){root.append(E('div','banner-good','Exercice terminé · correction disponible.'));renderFeedback(ex,old,root);}
+  else root.append(notice('Correction en attente du parent.'));
  }
- const gain=old.date<XP_V5_START?(old.needsReview?5:(old.score*10+(old.total>0&&old.score===old.total?20:0))):old.date<XP_START?xpBarV5(old):old.date<XP_V10_START?xpBarV9(old):old.policyVersion>=12?xpBar(old):xpBarV10(old);
- root.append(E('div','xp-award',window.TIM_EXERCISE.school(ex)?'📚 Devoir de l’école : 0 XP.':('⭐ '+(gain>=0?'+':'')+gain+' XP sur cet exercice (avant plafonds). Total actuel : '+xpInfo().total+' XP.')));
+ if(typeof old.xp==='number')root.append(E('div','xp-award',(old.xp>=0?'+':'')+old.xp+' XP'));
 } else if(window.__TIM_PARENT){controls.forEach(c=>{if(c.node)c.node.disabled=true;else for(const el of form.querySelectorAll('input'))el.disabled=true;});root.append(notice('Aperçu parent : seul Tim peut répondre et valider cet exercice.'));}else{
  const submit=button('Valider définitivement cet exercice',async()=>{const vals=values();if(vals.some(v=>!safe(v).trim())){alert('Réponds à toutes les questions avant de valider.');return;}if(attemptFor(id)){openExercise(id);return;}if(!confirm('Confirmer ? Cet exercice sera définitivement terminé, sur tous les appareils.'))return;const answers=ex.questions.map((question,i)=>({question:question.q,response:vals[i],correct:freeOrTextAnswer(question,vals[i]),expected:question.type==='mc'?question.options[question.right]:question.type==='free'?question.right:question.right,skill:question.skill,explanation:question.why}));const graded=answers.filter(a=>a.correct!==null);const t={id,date:new Date().toISOString(),title:ex.title,lesson:ex.lesson,score:graded.reduce((sum,a)=>sum+(a.correct?1:0),0),total:graded.length,needsReview:graded.length===0,answers};submit.disabled=true;submit.textContent='Enregistrement sécurisé…';
  try {const saved=await window.__TIM_BRIDGE.submit(id,vals);window.__CLOUD_ATTEMPTS.push(saved);
