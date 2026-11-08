@@ -59,7 +59,7 @@ const CONTENT={
         "15",
         "60"
       ],
-      "30 × 2 ÷ 5 = 12.",
+      "On divise 30 par 5 pour trouver un cinquième (6), puis on multiplie par 2 : 6 × 2 = 12.",
       [
         "6 est seulement un cinquième de 30 ; il faut deux cinquièmes.",
         "2/5 n'est pas une moitié : 30 ÷ 5 × 2.",
@@ -91,7 +91,7 @@ const CONTENT={
         "8",
         "1/6"
       ],
-      "2⁻³ = 1/(2³) = 1/8.",
+      "L'exposant négatif signifie qu'on prend l'inverse de la puissance : 2⁻³ = 1/(2³) = 1/8.",
       [
         "Un exposant négatif ne rend pas automatiquement le résultat négatif.",
         "Il faut prendre l'inverse de 2³, pas garder 8.",
@@ -524,7 +524,7 @@ const CONTENT={
         "x² + 5",
         "5x²"
       ],
-      "x(x + 5) = x² + 5x.",
+      "Le nombre de départ est x : on obtient x + 5, puis on multiplie tout par x. Ainsi x(x + 5) = x² + 5x.",
       [
         "x(x + 5) n'est pas 2x + 5 : il faut effectuer deux multiplications.",
         "Dans x × 5, le x reste : le terme est 5x et non 5.",
@@ -588,7 +588,7 @@ const CONTENT={
         "−8",
         "8"
       ],
-      "(−4) × (−4) = 16.",
+      "Un carré est le produit d'un nombre par lui-même : (−4) × (−4) = 16, positif car les deux signes sont négatifs.",
       [
         "Deux nombres négatifs multipliés donnent un produit positif.",
         "L'exposant 2 signifie une multiplication par soi-même, pas un doublement.",
