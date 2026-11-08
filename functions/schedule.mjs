@@ -1,5 +1,7 @@
 // Planning indicatif Q1/Q2. Ne prouve pas qu'un professeur a corrigé.
 // Semaine du 2 novembre 2026 = Q2.
+// Transcrit du dossier bibliothèque Suivi_Tim_3D_reference.md, photo EDT 01/09/2026.
+// Les vacances, jours fériés et changements ENT ne sont pas encore modélisés.
 const schedule={
  'mathématiques':{1:['10:30'],4:['09:30','15:00@Q1'],5:['14:00']},
  'français':{1:['09:30'],2:['08:30@Q1','15:00@Q2'],3:['10:30'],4:['11:30']},
