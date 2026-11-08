@@ -30,6 +30,70 @@ const INSTRUCTIONS=[
  ["Escribe una frase.","Écris une phrase.","Rédige une phrase entière, pas seulement un mot."],
  ["Verdadero o falso.","Vrai ou faux.","Décide si la phrase est vraie ou fausse, puis vérifie si tu dois justifier."]
 ];
+/* Questions ciblées, rédigées à l'avance : pas de promesse d'IA ni de coût API.
+   Distinctes de la leçon simplifiée. Chaque fiche dispose d'au moins deux difficultés fréquentes. */
+const HELP_TOPICS={
+ L01:[
+  ["Pourquoi on dit « tengo quince años » et pas « soy quince años » ?","Pour indiquer son âge, l'espagnol utilise le verbe tener (avoir). En français on dit « j'ai quinze ans » : en espagnol, « tengo quince años ».","Essaie : tengo doce años = j'ai douze ans. La forme tengo reste la même."],
+  ["Comment demander le prénom et l'âge ?","Pour le prénom : ¿Cómo te llamas? Pour l'âge : ¿Cuántos años tienes? Le premier demande un nom, le deuxième un nombre d'années.","Tu peux répondre « Me llamo… » puis « Tengo… años »."]
+ ],
+ L02:[
+  ["Pourquoi « el lunes » veut dire « le lundi » ?","Pour parler d'un jour où tu as habituellement cours, on emploie souvent l'article el devant le jour : el lunes, el martes, el miércoles.","Voy a clase el lunes = Je vais en cours le lundi."],
+  ["Quelle différence entre « por la mañana » et « por la tarde » ?","Por la mañana = le matin ; por la tarde = l'après-midi. Ces expressions donnent le moment de la journée.","Exemple : Tengo español por la mañana = J'ai espagnol le matin."]
+ ],
+ L03:[
+  ["C'est quoi un pays hispanophone ?","Un pays hispanophone est un pays où l'on parle espagnol. Ce n'est pas forcément un pays situé en Espagne ou en Europe.","Le Mexique, l'Argentine et l'Espagne sont des exemples de pays hispanophones."],
+  ["Quelle différence entre « España » et « español » ?","España est le nom du pays : l'Espagne. Español désigne la langue espagnole ou peut vouloir dire espagnol pour une personne.","Vivo en España = J'habite en Espagne. Hablo español = Je parle espagnol."]
+ ],
+ L04:[
+  ["Pourquoi « me gusta » et « me gustan » sont différents ?","Me gusta accompagne une activité ou une seule chose. Me gustan accompagne plusieurs choses au pluriel.","Me gusta la música = J'aime la musique ; me gustan los perros = J'aime les chiens."],
+  ["Comment dire ce que je n'aime pas ?","Ajoute no devant me gusta ou me gustan. Cela donne no me gusta ou no me gustan.","No me gusta el fútbol = Je n'aime pas le football."]
+ ],
+ L05:[
+  ["Comment organiser ma lettre au correspondant ?","Fais de petits paragraphes : 1. Dire bonjour ; 2. Te présenter ; 3. Parler de tes goûts ; 4. Poser une question ; 5. Terminer la lettre.","Exemple de début : ¡Hola! Me llamo… Tengo… años."],
+  ["Quelles corrections regarder dans ma lettre ?","Regarde si l'âge est indiqué avec tener, si tu dis el pueblo pour un village ou la ciudad pour une ville, et si l'invitation comporte une date complète. La photo conserve les annotations de la professeure.","Lis une correction à la fois, puis essaie de réécrire seulement la phrase concernée."]
+ ],
+ L06:[
+  ["Pourquoi « soy » apparaît dans la description de l'horoscope ?","Soy est une forme du verbe ser (être). On l'utilise notamment pour dire son signe astrologique ou décrire un trait de caractère.","Soy Leo = Je suis Lion ; soy simpático = Je suis sympathique."],
+  ["Qu'est-ce que « estoy de acuerdo » ?","Estoy de acuerdo veut dire je suis d'accord. No estoy de acuerdo veut dire je ne suis pas d'accord.","Utilise cette expression pour dire si la description de l'horoscope te correspond."]
+ ],
+ L07:[
+  ["Pourquoi « simpático » devient « simpática » ?","De nombreux adjectifs terminés par -o deviennent -a pour décrire une fille ou un mot féminin.","Un chico simpático / una chica simpática."],
+  ["Comment mettre un adjectif au pluriel ?","Pour beaucoup d'adjectifs, on ajoute -s après une voyelle. Certains adjectifs terminés par -z deviennent -ces au pluriel.","Simpático → simpáticos ; vivaz → vivaces."]
+ ],
+ L08:[
+  ["Comment choisir entre « el », « la », « los » et « las » ?","Commence par identifier si le nom est masculin ou féminin, puis s'il est singulier ou pluriel. El = masculin singulier, la = féminin singulier, los = masculin pluriel, las = féminin pluriel.","El libro, la casa, los libros, las casas."],
+  ["Pourquoi « una » et « un » ne sont pas pareils ?","Un est généralement devant un nom masculin singulier ; una devant un nom féminin singulier.","Un perro = un chien ; una perra = une chienne."]
+ ],
+ L09:[
+  ["Pourquoi « yo hablo » et pas « yo habla » ?","Au présent, le verbe régulier hablar prend -o avec yo (je). Avec él ou ella, il prend -a. On doit d'abord identifier la personne.","Yo hablo = Je parle ; ella habla = Elle parle."],
+  ["Comment savoir si je dois écrire -o, -as ou -a ?","Repère le pronom : yo = je, tú = tu, él/ella = il/elle. Avec hablar : hablo, hablas, habla. Entraîne-toi d'abord avec un seul verbe.","Yo hablo, tú hablas, ella habla."]
+ ],
+ L10:[
+  ["Pourquoi « soy » et « estoy » veulent tous les deux dire « je suis » ?","Ser sert surtout pour l'identité ou une caractéristique. Estar sert notamment pour un état ou un lieu. Le contexte indique le verbe.","Soy francés = Je suis français ; estoy cansado = Je suis fatigué."],
+  ["Pourquoi on dit « me llamo », « te llamas », « se llama » ?","Llamarse est un verbe pronominal : le petit mot change selon la personne. Me avec je, te avec tu, se avec il/elle.","Me llamo Tim ; te llamas Ana ; se llama Luis."]
+ ],
+ L11:[
+  ["Pourquoi il y a « ¿ » au début d'une question ?","En espagnol, une question commence par ¿ et finit par ?. Le premier signe indique tout de suite qu'il s'agit d'une question.","¿Cómo te llamas? = Comment t'appelles-tu ?"],
+  ["Comment choisir entre « cómo », « dónde » et « cuándo » ?","Cómo demande comment ; dónde demande où ; cuándo demande quand.","¿Dónde vives? = Où habites-tu ?"]
+ ],
+ L12:[
+  ["Pourquoi « su » peut vouloir dire « son » ou « votre » ?","Le possessif su change de sens selon la personne dont on parle. Il peut signifier son, sa ou votre dans la formule de politesse.","Su libro peut être son livre ou votre livre selon le contexte."],
+  ["À quoi sert « usted » ?","Usted est un vous de politesse utilisé pour parler à une seule personne. Le verbe se conjugue comme avec il/elle.","¿Cómo se llama usted? = Comment vous appelez-vous ?"]
+ ],
+ L13:[
+  ["Pourquoi « mi perro y yo » correspond à « nosotros » ?","Mi perro y yo signifie mon chien et moi : nous sommes deux. C'est donc nous, qui se dit nosotros en espagnol.","Mi perro y yo corremos = Mon chien et moi courons."],
+  ["Comment conjuguer un verbe avec « se » ?","Pour un verbe pronominal, repère la personne et le petit pronom : me, te, se, nos… Puis conjugue le verbe.","Anita se baña = Anita se baigne."]
+ ],
+ L14:[
+  ["Quelle différence entre « completa » et « justifica » ?","Completa te demande de remplir ce qui manque. Justifica te demande d'expliquer pourquoi ta réponse est correcte, parfois en citant un passage.","Completa la frase = Complète la phrase ; justifica tu respuesta = Justifie ta réponse."],
+  ["Je ne comprends pas la consigne de l'exercice, que faire ?","Traduis d'abord le verbe d'action : lee = lis, elige = choisis, traduce = traduis. Puis regarde si la réponse doit être un mot, une phrase ou une justification.","Avant de répondre, reformule en français : « Je dois… »."]
+ ],
+ L15:[
+  ["Comment mémoriser dix verbes au présent ?","Travaille deux ou trois verbes à la fois. Cache les réponses, écris une forme, vérifie, puis recommence. N'apprends pas tout le tableau d'un coup.","Commence par yo soy, yo estoy, yo tengo, puis ajoute les autres."],
+  ["Pourquoi « ser » et « estar » signifient être ?","En espagnol, l'idée « être » se partage entre deux verbes. Ser indique notamment l'identité ; estar indique souvent un état ou une localisation.","Soy alumno = Je suis élève ; estoy aquí = Je suis ici."]
+ ]
+};
 const ED=window.TIM_SPANISH_EDU||{};
 /* Comptage prudent des activités/exercices IDENTIFIÉS dans les captures ENT,
    jamais un inventaire exhaustif des devoirs de la professeure.
