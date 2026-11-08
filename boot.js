@@ -461,6 +461,16 @@ async function startSession(user){
   const panel=document.createElement('section');panel.id='parent-corrections';panel.style.cssText='margin:16px auto;padding:16px;max-width:850px;border:1px solid #6788b2;border-radius:16px;background:#14253e;color:white';
   panel.innerHTML='<h2>Résultats et copies de Tim</h2><p id="pending-corrections-status">Chargement…</p><div id="pending-corrections-list"></div>';
   document.getElementById('account-strip').after(panel);
+  if(window.__TIM_CHALLENGES?.today==='2026-11-08'){
+   const shortcut=document.createElement('button');shortcut.type='button';
+   shortcut.textContent='Voir le défi d’essai de ce soir · jusqu’à minuit';
+   shortcut.style.cssText='display:block;margin:12px 0;padding:11px 15px;border-radius:11px;border:1px solid #f2ce6c;background:#f7d777;color:#20324b;font-weight:800;cursor:pointer';
+   shortcut.onclick=()=>{
+    document.querySelector('[data-nav="home"]')?.click();
+    document.getElementById('challenge-section')?.scrollIntoView({behavior:'smooth',block:'start'});
+   };
+   panel.querySelector('h2').after(shortcut);
+  }
   const refreshCorrections=async()=>{
    const status=panel.querySelector('#pending-corrections-status');
    const list=panel.querySelector('#pending-corrections-list');
