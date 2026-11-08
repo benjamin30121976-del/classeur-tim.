@@ -31,11 +31,18 @@ fs.mkdirSync(out,{recursive:true});
    const rows=await page.locator('#matieres-content .spx-row[data-lesson]').count();
    if(rows!==4)throw Error(device+': expected four verbs sub-lessons, got '+rows);
    await page.locator('#matieres-content .spx-row[data-lesson]').first().click();
+   const referenceInstructions=await page.locator('#matieres-content .spx-guide').count();
+   if(referenceInstructions!==8)throw Error(device+': expected 8 translated teacher instructions, got '+referenceInstructions);
    const series=await page.locator('#matieres-content .spx-row[data-set]').count();
    if(series!==5)throw Error(device+': expected 5 training series, got '+series);
    await page.screenshot({path:path.join(out,device+'-verbes-lecon.png'),fullPage:true});
    await page.locator('#matieres-content .spx-row[data-set]').first().click();
    for(let q=0;q<10;q++){
+    const es=await page.locator('.spx-instruction-es').textContent();
+    const fr=await page.locator('.spx-instruction-fr').textContent();
+    if(!es?.trim() || !fr?.includes('En français'))throw Error(device+': Spanish instruction or French translation missing on question '+(q+1));
+    await page.locator('#spx-explain').click();
+    if(!(await page.locator('#spx-action').isVisible()))throw Error(device+': explanation of the instruction not accessible');
     await page.locator('#matieres-content .spx-option').first().click();
     await page.locator('#spx-submit').click();
     if(!(await page.locator('#matieres-content .spx-feedback').isVisible()))throw Error(device+': correction missing question '+(q+1));
