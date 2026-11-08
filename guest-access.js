@@ -8,7 +8,7 @@ go.addEventListener('click',async()=>{
  if(!source||!Array.isArray(source.lessons)||!source.lessons.length){document.getElementById('access-status').textContent='Le catalogue public est indisponible.';return;}
  window.__TIM_GUEST=true;window.__TIM_PARENT=false;
  const {setupMissions}=await import('./missions-v18.mjs');
- const plan=setupMissions(source);window.__TIM_CHALLENGES=plan.meta;
+ const plan=setupMissions(source,new Date(),window.TIM_SPANISH_EDU);window.__TIM_CHALLENGES=plan.meta;
  const base=window.TIM_APPLY_SPANISH_NOV05?.(source)||source;
  window.__TIM_DATA={...base,exercises:[...base.exercises,...plan.exercises]};window.__CLOUD_ATTEMPTS=[];
  // Defense in depth: optional exercise packs must never expose answer keys to guests.
