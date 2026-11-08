@@ -301,10 +301,10 @@ if(old){
  const submit=button('Valider définitivement cet exercice',async()=>{const vals=values();if(vals.some(v=>!safe(v).trim())){alert('Réponds à toutes les questions avant de valider.');return;}if(attemptFor(id)){openExercise(id);return;}if(!confirm('Confirmer ? Cet exercice sera définitivement terminé, sur tous les appareils.'))return;const answers=ex.questions.map((question,i)=>({question:question.q,response:vals[i],correct:freeOrTextAnswer(question,vals[i]),expected:question.type==='mc'?question.options[question.right]:question.type==='free'?question.right:question.right,skill:question.skill,explanation:question.why}));const graded=answers.filter(a=>a.correct!==null);const t={id,date:new Date().toISOString(),title:ex.title,lesson:ex.lesson,score:graded.reduce((sum,a)=>sum+(a.correct?1:0),0),total:graded.length,needsReview:graded.length===0,answers};submit.disabled=true;submit.textContent='Enregistrement sécurisé…';
  try {const saved=await window.__TIM_BRIDGE.submit(id,vals);window.__CLOUD_ATTEMPTS.push(saved);
 const mailAttempt=window.__TIM_BRIDGE.notifyAlert?.(id,saved);if(mailAttempt?.catch)mailAttempt.catch(()=>{});
- const d=drafts();delete d[id];save(DRAFT_KEY,d);v7NewAttempt(saved);openExercise(id);
+ const d=drafts();delete d[id];save(DRAFT_KEY,d);v7NewAttempt(saved);alert('Devoir envoyé. '+(saved.xp>=0?'+':'')+saved.xp+' XP. Correction en attente du parent.');openExercise(id);
  }catch(err){submit.disabled=false;submit.textContent='Valider définitivement cet exercice';
  alert('L’exercice n’a pas été enregistré. Rien n’est perdu : vérifie ta connexion et réessaie. '+(err?.message||''));
- await window.__TIM_BRIDGE.refresh();if(attemptFor(id))openExercise(id);}},'btn');root.append(E('p','small',window.TIM_EXERCISE.school(ex)?'Devoir scolaire : aucun XP. La correction apparaîtra demain à partir de 18 h pour Tim ; le parent la consulte dès la validation.':'Après validation, les XP sont calculés immédiatement. La correction apparaîtra le lendemain à partir de 18 h pour Tim ; le parent la consulte tout de suite.'),submit);}
+ await window.__TIM_BRIDGE.refresh();if(attemptFor(id))openExercise(id);}},'btn');root.append(E('p','small','Après validation, les XP gagnés ou perdus sont affichés immédiatement. La correction reste bloquée jusqu’à l’autorisation du parent.'),submit);}
 if(!old && !window.__TIM_PARENT && controls.length>1){
   const questionNodes=[...form.querySelectorAll('.q')];
   const submit=root.querySelector('button.btn');
