@@ -269,7 +269,7 @@ async function startSession(user){
  const knownLessonIds=new Set(content.lessons.map(l=>l.id));
  content={...content,lessons:[...content.lessons,...builtInBis.filter(l=>!knownLessonIds.has(l.id))]};
  if(isParent){try{content=await loadCourseAdditions(content);}catch(e){console.warn('Extensions indisponibles :',e);}}
- else if(serverAdditions){const l=new Map(content.lessons.map(x=>[x.id,x]));const e=new Map(content.exercises.map(x=>[x.id,x]));for(const item of serverAdditions.lessons||[])if(item?.id&&Array.isArray(item.blocks))l.set(item.id,item);for(const item of serverAdditions.exercises||[])if(item?.id&&Array.isArray(item.questions))e.set(item.id,item);content={...content,lessons:[...l.values()],exercises:[...e.values()]};}
+ else if(serverAdditions){const l=new Map(content.lessons.map(x=>[x.id,x]));const e=new Map(content.exercises.map(x=>[x.id,x]));const versions=(serverAdditions.lessons||[]).filter(item=>item?.id&&Array.isArray(item.blocks));for(const item of versions.filter(x=>!x.replacesId))l.set(item.id,item);for(const item of versions.filter(x=>x.replacesId).sort((a,b)=>String(a.savedAt||'').localeCompare(String(b.savedAt||'')))){if(/^[A-Za-z][A-Za-z0-9_-]{1,35}$/.test(item.replacesId))l.set(item.replacesId,{...item,id:item.replacesId,revisionId:item.id});}for(const item of serverAdditions.exercises||[])if(item?.id&&Array.isArray(item.questions))e.set(item.id,item);content={...content,lessons:[...l.values()],exercises:[...e.values()]};}
  content=window.TIM_APPLY_SPANISH_NOV05?.(content)||content;
  if(window.__TIM_CHALLENGE_SETUP) content=window.__TIM_CHALLENGE_SETUP(content);
  // Tim never receives answer fields through the application state.
