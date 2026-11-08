@@ -44,7 +44,7 @@ export const submitTimExercise=onCall({region:'europe-west1',enforceAppCheck:tru
   const [attemptDoc,privateDoc,xpDoc]=await Promise.all([tx.get(attemptRef),tx.get(privateRef),tx.get(xpRef)]);
 
   if(attemptDoc.exists||privateDoc.exists)throw new HttpsError('already-exists','Déjà validé');
-  const ex=resolved.exercise;
+  const ex=resolved.exercise,autoRelease=isMissionId(id);
   if(ex.enabled!==true)throw new HttpsError('failed-precondition','Exercice fermé');
   const now=new Date(),date=parisDate(now),state=xpDoc.exists?xpDoc.data():{};
   const result=grade(ex,resolved.key,answers);
@@ -57,9 +57,11 @@ export const submitTimExercise=onCall({region:'europe-west1',enforceAppCheck:tru
   const xp=cappedPoints(raw,Number(today.earned||0),Number(today.lost||0),weekEarned,Number(today.bonus||0),category);
   tx.set(xpRef,{date,week,earned:Number(today.earned||0)+Math.max(0,xp),lost:Number(today.lost||0)+Math.max(0,-xp),bonus:Number(today.bonus||0)+(category==='bonus'?Math.max(0,xp):0),weekEarned:weekEarned+Math.max(0,xp),weekXp:Math.max(0,weekXp+xp),policyVersion:18,updatedAt:FieldValue.serverTimestamp()});
   const common={exerciseId:id,title:String(ex.title||id).slice(0,200),authorUid:request.auth.uid,submittedAt:FieldValue.serverTimestamp(),score:result.score,total:result.total,needsReview:result.needsReview,policyVersion:18};
-  tx.create(attemptRef,{exerciseId:id,authorUid:request.auth.uid,submittedAt:FieldValue.serverTimestamp(),policyVersion:18,xp,correctionStatus:'pending-parent'});
+  tx.create(attemptRef,{exerciseId:id,authorUid:request.auth.uid,submittedAt:FieldValue.serverTimestamp(),policyVersion:18,xp,correctionStatus:autoRelease?'released':'pending-parent'});
   tx.create(privateRef,{...common,...result});
-  return {id,submitted:true,xp,correctionLocked:true,correctionStatus:'pending-parent'};
+  if(autoRelease)tx.set(db.doc('releasedCorrections/'+id),{released:true,updatedAt:FieldValue.serverTimestamp()});
+  return autoRelease?{id,submitted:true,xp,correctionLocked:false,correctionStatus:'released',score:result.score,total:result.total,answers:result.answers}:
+   {id,submitted:true,xp,correctionLocked:true,correctionStatus:'pending-parent'};
  });}catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError('internal','Échec de validation');}
 });
 export const getParentReport=onCall({region:'europe-west1',enforceAppCheck:true},async request=>{
