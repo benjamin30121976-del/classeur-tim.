@@ -1,8 +1,8 @@
 {
   "mode": "lecture-seule-parent",
   "site": "https://classeur-tim-v16.pages.dev/",
-  "scope": "Inspecter le site avec le navigateur Chromium/Playwright et les secrets Parent déjà configurés, sans modifier les données.",
+  "scope": "Vérifier en lecture seule les 23 évaluations de maths, leurs 46 questions, la fiche A/B, l'espace Parent ; lancer les tests de sécurité sans soumettre de réponse au vrai compte Tim.",
   "launch_on_update": true,
-  "note": "Contrôle Chromium/Playwright lecture seule : fiche A/B, 23 leçons BIS, navigation et syntaxe. Aucun test validé sur Tim.",
-  "checkVersion": "audit-maths-a-b-bis-8-exercices-corriges"
+  "note": "TinyFish hors service (crédits épuisés). Chromium/Playwright via GitHub Actions. Aucune validation de l'élève.",
+  "checkVersion": "audit-maths-23-questions-corrections-verrouillage-parent-2026-11-08"
 }
