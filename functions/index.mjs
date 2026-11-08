@@ -21,9 +21,9 @@ export const submitTimExercise=onCall({region:'europe-west1',enforceAppCheck:tru
   if(attemptDoc.exists||privateDoc.exists)throw new HttpsError('already-exists','Déjà validé');
   const ex=exDoc.data();
   if(ex.enabled!==true)throw new HttpsError('failed-precondition','Exercice fermé');
+  const now=new Date(),date=parisDate(now),state=xpDoc.exists?xpDoc.data():{};
   if(!suggestedCorrectionAt(ex,date))throw new HttpsError('failed-precondition','Calendrier de cette matière indisponible');
   const result=grade(ex,keyDoc.data(),answers);
-  const now=new Date(),date=parisDate(now),state=xpDoc.exists?xpDoc.data():{};
   const monday=new Date(date+'T12:00:00Z');monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);
   const week=monday.toISOString().slice(0,10),today=state.date===date?state:{earned:0,lost:0,bonus:0};
   const weekEarned=state.week===week?Number(state.weekEarned||0):0;
