@@ -502,7 +502,8 @@ async function startSession(user){
    const schoolAttempts=attempts.filter(a=>!spanishTraining(a.id));
    const pending=schoolAttempts.filter(a=>a.correctionStatus!=='released');
    const released=schoolAttempts.filter(a=>a.correctionStatus==='released');
-   status.textContent=pending.length+' devoir(s) en attente de correction · '+attempts.length+' validation(s) en ligne';
+   status.textContent=pending.length+' devoir(s) en attente de correction\n'+attempts.length+' exercice(s) validé(s) en ligne';
+   status.style.whiteSpace='pre-line';
    if(!releaseServiceAvailable){
     const info=document.createElement('p');
     info.textContent='Consultation des résultats : disponible via Firebase. Autoriser ou reverrouiller les corrections nécessite toujours le service serveur, actuellement inaccessible. Les notes restent enregistrées.';
