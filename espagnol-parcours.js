@@ -2,13 +2,24 @@
 (function(){
 "use strict";
 const C=[
- {title:"Les verbes et la conjugaison",text:"C'est quoi un verbe ? Comment le conjuguer ?",icon:"V",ids:["L09","L10","L13","L15"],keywords:"être conjuguer avoir faire aller"},
- {title:"Les adjectifs et le caractère",text:"C'est quoi un adjectif ? Comment décrire quelqu'un et parler de son horoscope ?",icon:"A",ids:["L06","L07"],keywords:"féminin masculin qualités horoscope"},
- {title:"Se présenter et parler de soi",text:"Dire son prénom, son âge, ses goûts et ses activités.",icon:"S",ids:["L01","L02","L04"],keywords:"nom âge aimer sport jour cours"},
- {title:"La grammaire : construire une phrase",text:"Comprendre les petits mots comme « le », « la », « mon », « son ».",icon:"G",ids:["L08","L12"],keywords:"article adjectif possessif politesse"},
- {title:"Poser des questions et écrire",text:"Comment poser une question, écrire une lettre et comprendre une consigne ?",icon:"?",ids:["L11","L05","L14"],keywords:"lettre contrôle question consigne énoncé écrire"},
- {title:"Les pays où l'on parle espagnol",text:"Découvrir l'Espagne, le Mexique et les autres pays hispanophones.",icon:"P",ids:["L03"],keywords:"géographie pays espagne mexique"}
+ {title:"Les verbes et la conjugaison",text:"C'est quoi un verbe ? Comment le conjuguer ?",icon:"conversation",ids:["L09","L10","L13","L15"],keywords:"être conjuguer avoir faire aller"},
+ {title:"Les adjectifs et le caractère",text:"C'est quoi un adjectif ? Comment décrire quelqu'un et parler de son horoscope ?",icon:"smile",ids:["L06","L07"],keywords:"féminin masculin qualités horoscope"},
+ {title:"Se présenter et parler de soi",text:"Dire son prénom, son âge, ses goûts et ses activités.",icon:"person",ids:["L01","L02","L04"],keywords:"nom âge aimer sport jour cours"},
+ {title:"La grammaire : construire une phrase",text:"Comprendre les petits mots comme « le », « la », « mon », « son ».",icon:"puzzle",ids:["L08","L12"],keywords:"article adjectif possessif politesse"},
+ {title:"Poser des questions et écrire",text:"Comment poser une question, écrire une lettre et comprendre une consigne ?",icon:"pencil",ids:["L11","L05","L14"],keywords:"lettre contrôle question consigne énoncé écrire"},
+ {title:"Les pays où l'on parle espagnol",text:"Découvrir l'Espagne, le Mexique et les autres pays hispanophones.",icon:"globe",ids:["L03"],keywords:"géographie pays espagne mexique"}
 ];
+/* Petits pictogrammes vectoriels du même style, liés au contenu de chaque rubrique.
+   Aucune police ou bibliothèque externe : un rendu constant sur Android et iPhone. */
+const ICON_PATHS={
+ conversation:'<path d="M21 11.5a8.4 8.4 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.4 8.4 0 0 1-3.8-.9L3 21l1.9-5.7a8.4 8.4 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.4 8.4 0 0 1 3.8-.9h.5a8.5 8.5 0 0 1 8 8z"/><path d="M8 11h8M8 14h5"/>',
+ smile:'<circle cx="12" cy="12" r="9"/><path d="M8 14.5c1.2 1.5 2.4 2.2 4 2.2s2.8-.7 4-2.2"/><path d="M9 9.5h.01M15 9.5h.01"/>',
+ person:'<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+ puzzle:'<path d="M13 4V3a2 2 0 0 0-4 0v1H5a1 1 0 0 0-1 1v4h1a2 2 0 0 1 0 4H4v6a1 1 0 0 0 1 1h4v-1a2 2 0 0 1 4 0v1h6a1 1 0 0 0 1-1v-5h1a2 2 0 0 0 0-4h-1V5a1 1 0 0 0-1-1z"/>',
+ pencil:'<path d="m15 5 4 4M4 20l4.8-1 10.8-10.8a2.8 2.8 0 0 0-4-4L4.8 15 4 20z"/><path d="M9 21h11"/>',
+ globe:'<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c-3 3-4.5 6-4.5 9s1.5 6 4.5 9M12 3c3 3 4.5 6 4.5 9s-1.5 6-4.5 9"/>'
+};
+const iconSvg=key=>'<svg class="spx-topic-svg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">'+(ICON_PATHS[key]||ICON_PATHS.conversation)+'</svg>';
 const INSTRUCTIONS=[
  ["Lee el texto.","Lis le texte.","Lis le passage avant de répondre aux questions."],
  ["Completa la frase.","Complète la phrase.","Cherche le mot ou la forme qui manque dans la phrase."],
@@ -58,7 +69,7 @@ function render(root,opts){
    '<div class="spx-search">⌕ <input type="search" id="spx-find" autocomplete="off" placeholder="Ex. : je suis, horoscope, lettre, consigne…" aria-label="Rechercher un mot ou une leçon"></div>'+
    '<div id="spx-results" class="spx-results" hidden></div>'+
    '<h3 class="spx-subheading">Qu’est-ce que tu veux apprendre ?</h3>'+
-   '<div class="spx-grid">'+C.map((c,i)=>'<button type="button" class="spx-card" data-category="'+i+'"><span class="spx-icon">'+esc(c.icon)+'</span><strong>'+esc(c.title)+'</strong><p>'+esc(c.text)+'</p><small>'+c.ids.length+' sous-leçon'+(c.ids.length>1?"s":"")+' →</small>'+statLine(c.ids,true)+'</button>').join("")+'</div>'+
+   '<div class="spx-grid">'+C.map((c,i)=>'<button type="button" class="spx-card" data-category="'+i+'"><span class="spx-icon">'+iconSvg(c.icon)+'</span><strong>'+esc(c.title)+'</strong><p>'+esc(c.text)+'</p><small>'+c.ids.length+' sous-leçon'+(c.ids.length>1?"s":"")+' →</small>'+statLine(c.ids,true)+'</button>').join("")+'</div>'+
    '<p class="spx-note">« Activités/exercices ENT » = ceux identifiés dans les captures conservées, pas forcément tous les travaux de la professeure. Les cinq entraînements de dix questions par sous-leçon sont des exercices créés pour Tim, à 0 XP et répétables. Les bonus restent à l’accueil général.</p>');
   bindBack(opts.back);
   root.querySelectorAll("[data-category]").forEach(b=>b.onclick=()=>openCategory(+b.dataset.category));

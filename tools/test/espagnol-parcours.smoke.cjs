@@ -24,6 +24,15 @@ fs.mkdirSync(out,{recursive:true});
    if(!(await page.locator('#matieres > .pagehead').isHidden()))throw Error(device+': redundant subject choice header still visible inside Spanish');
    const categories=await page.locator('#matieres-content .spx-card').count();
    if(categories!==6)throw Error(device+': 6 categories expected, found '+categories);
+   const pictures=page.locator('#matieres-content .spx-card .spx-topic-svg');
+   if(await pictures.count()!==6)throw Error(device+': expected 6 different vector pictograms');
+   const paths=await pictures.evaluateAll(nodes=>nodes.map(n=>n.innerHTML));
+   if(new Set(paths).size!==6)throw Error(device+': topic pictograms must be distinct');
+   for(const card of await page.locator('#matieres-content .spx-card').all()){
+     const badge=card.locator('.spx-icon');
+     const label=(await badge.textContent()).trim();
+     if(label)throw Error(device+': old letter label still present: '+label);
+   }
    const firstCardText=await page.locator('#matieres-content .spx-card').first().innerText();
    if(!firstCardText.includes('fiches de cours ENT')||!firstCardText.includes('ENT repérés')||!firstCardText.includes('20 entraînements')||!firstCardText.includes('Je n’ai pas compris'))throw Error(device+': overview inventory missing on Spanish cards');
    await page.screenshot({path:path.join(out,device+'-espagnol-accueil.png'),fullPage:true});
