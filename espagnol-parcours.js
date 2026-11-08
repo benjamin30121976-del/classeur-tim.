@@ -134,7 +134,7 @@ function render(root,opts){
    '<div id="spx-results" class="spx-results" hidden></div>'+
    '<h3 class="spx-subheading">Qu’est-ce que tu veux apprendre ?</h3>'+
    '<div class="spx-grid">'+C.map((c,i)=>'<button type="button" class="spx-card" data-category="'+i+'"><span class="spx-icon">'+iconSvg(c.icon)+'</span><strong>'+esc(c.title)+'</strong><p>'+esc(c.text)+'</p><small>'+c.ids.length+' sous-leçon'+(c.ids.length>1?"s":"")+' →</small>'+statLine(c.ids,true)+'</button>').join("")+'</div>'+
-   '<p class="spx-note">« Activités/exercices ENT » = ceux identifiés dans les captures conservées, pas forcément tous les travaux de la professeure. Les cinq entraînements de dix questions par sous-leçon sont des exercices créés pour Tim, à 0 XP et répétables. Les bonus restent à l’accueil général.</p>');
+   '<p class="spx-note">« Activités/exercices ENT » = ceux identifiés dans les captures conservées, pas forcément tous les travaux de la professeure. Les dix exercices de dix questions par sous-leçon (5 QCM et 5 réponses écrites) sont créés pour Tim : une seule tentative, note et correction conservées, 0 XP. Les bonus restent à l’accueil général.</p>');
   bindBack(opts.back);
   root.querySelectorAll("[data-category]").forEach(b=>b.onclick=()=>openCategory(+b.dataset.category));
   const inp=root.querySelector("#spx-find"),dest=root.querySelector("#spx-results");
@@ -186,7 +186,7 @@ function render(root,opts){
    '<p class="spx-chapter-overview">'+plural(entCourseCount(c.ids),'fiche de cours ENT','fiches de cours ENT')+' · '+plural(entActivityCount(c.ids),'activité/exercice ENT repéré','activités/exercices ENT repérés')+' · '+(c.ids.length*TRAINING_SERIES*2)+' exercices à faire une fois (5 QCM + 5 écrits par sous-leçon)</p>'+
    '<h3 class="spx-subheading">Choisis une sous-leçon</h3>'+
    c.ids.map(item).join("")+
-   '<p class="spx-note">Les leçons ENT viennent du classeur de cours ; les exercices ENT sont ceux retrouvés dans les documents. Les exercices d’entraînement sont créés pour Tim, répétables, à 0 XP.</p>');
+   '<p class="spx-note">Les leçons ENT viennent du classeur de cours ; les exercices ENT sont ceux retrouvés dans les documents. Les dix exercices d’entraînement par sous-leçon sont créés pour Tim : une seule tentative, avec correction consultable, à 0 XP.</p>');
   bindBack(home);
   root.querySelectorAll("[data-easy]").forEach(b=>b.onclick=()=>openSimplified(b.dataset.easy));
   root.querySelectorAll("[data-help]").forEach(b=>b.onclick=()=>openHelp(b.dataset.help));
