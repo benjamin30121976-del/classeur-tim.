@@ -18,6 +18,15 @@ before(async()=>{
    authorUid:timUid,score:7,total:10,answers:[{question:'Exemple',response:'Réponse'}]
   });
   await setDoc(doc(admin,'attempts/SPW_L09_01'),{authorUid:timUid,xp:0});
+  // Jeux d'essai fictifs : mêmes collections pour maths et futures matières.
+  await setDoc(doc(admin,'privateAttempts/MATH_Q01'),{
+   authorUid:timUid,score:8,total:10,subject:'Mathématiques',answers:[{question:'Calcul',response:'12',correct:true}]
+  });
+  await setDoc(doc(admin,'attempts/MATH_Q01'),{authorUid:timUid,xp:0});
+  await setDoc(doc(admin,'privateAttempts/SVT_Q01'),{
+   authorUid:timUid,score:6,total:10,subject:'SVT',answers:[{question:'Cellule',response:'Membrane',correct:true}]
+  });
+  await setDoc(doc(admin,'attempts/SVT_Q01'),{authorUid:timUid,xp:0});
  });
 });
 after(async()=>{if(env)await env.cleanup()});
@@ -26,14 +35,22 @@ test('Le parent connecté consulte la note et liste les corrections privées',as
  const attempt=await assertSucceeds(getDoc(doc(db,'privateAttempts/SPW_L09_01')));
  assert.equal(attempt.data().score,7);
  const list=await assertSucceeds(getDocs(collection(db,'privateAttempts')));
- assert.equal(list.size,1);
+ assert.equal(list.size,3);
+ const maths=await assertSucceeds(getDoc(doc(db,'privateAttempts/MATH_Q01')));
+ const svt=await assertSucceeds(getDoc(doc(db,'privateAttempts/SVT_Q01')));
+ assert.equal(maths.data().score,8);
+ assert.equal(svt.data().score,6);
  await assertSucceeds(getDocs(collection(db,'attempts')));
 });
 test('Tim voit son état personnel mais pas le détail privé réservé au parent',async()=>{
  const db=client(timUid);
  await assertSucceeds(getDoc(doc(db,'attempts/SPW_L09_01')));
+ await assertSucceeds(getDoc(doc(db,'attempts/MATH_Q01')));
+ await assertSucceeds(getDoc(doc(db,'attempts/SVT_Q01')));
  await assertSucceeds(getDocs(query(collection(db,'attempts'),where('authorUid','==',timUid))));
  await assertFails(getDoc(doc(db,'privateAttempts/SPW_L09_01')));
+ await assertFails(getDoc(doc(db,'privateAttempts/MATH_Q01')));
+ await assertFails(getDoc(doc(db,'privateAttempts/SVT_Q01')));
  await assertFails(getDocs(collection(db,'privateAttempts')));
  await assertFails(setDoc(doc(db,'privateAttempts/SPW_L09_02'),{score:10}));
 });
