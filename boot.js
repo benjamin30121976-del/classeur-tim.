@@ -235,14 +235,22 @@ async function startSession(user){
  if(!(isParent||user.uid===TIM_UID)){await signOut(auth);message('Cet utilisateur n’est pas autorisé à accéder au classeur.');return;}
  if(appLoaded){window.location.reload();return;}
  message('Ouverture des cours privés…',true);
- let snapshot;try{snapshot=await getDoc(doc(db,'content','main'));}catch(e){message('Les règles Firestore bloquent encore la lecture des cours. Configure les règles correspondantes avant de continuer.');return;}
- if(!snapshot.exists()){if(isParent)showImport();else message('Les cours ne sont pas encore chargés. Le parent doit les importer.');return;}
- let content=decodeFromFirestore(snapshot.data());if(!Array.isArray(content.lessons)||!Array.isArray(content.exercises)){message('Le contenu du cours est incomplet.');return;}
+ let content,serverAdditions=null;
+ if(isParent){
+  let snapshot;try{snapshot=await getDoc(doc(db,'content','main'));}catch(e){message('Lecture des cours parent impossible : '+(e.message||'Firestore'));return;}
+  if(!snapshot.exists()){showImport();return;}
+  content=decodeFromFirestore(snapshot.data());
+ }else{
+  try{const response=await httpsCallable(functionsApi,'getTimCourseContent')({});content=decodeFromFirestore(response.data.content);serverAdditions=response.data.additions;}
+  catch(e){message('Chargement des cours de Tim impossible : '+(e.message||'Firebase'));return;}
+ }
+ if(!Array.isArray(content.lessons)||!Array.isArray(content.exercises)){message('Le contenu du cours est incomplet.');return;}
  // V16 Cloudflare : 23 leçons BIS déjà disponibles, sans import manuel ni écrasement Firebase.
  const builtInBis=window.TIM_MATHS_BIS_PACK?.lessons||[];
  const knownLessonIds=new Set(content.lessons.map(l=>l.id));
  content={...content,lessons:[...content.lessons,...builtInBis.filter(l=>!knownLessonIds.has(l.id))]};
- try{content=await loadCourseAdditions(content);}catch(e){console.warn('Extension de cours indisponible avant mise à jour des règles Firebase :',e);}
+ if(isParent){try{content=await loadCourseAdditions(content);}catch(e){console.warn('Extensions indisponibles :',e);}}
+ else if(serverAdditions){const l=new Map(content.lessons.map(x=>[x.id,x]));const e=new Map(content.exercises.map(x=>[x.id,x]));for(const item of serverAdditions.lessons||[])if(item?.id&&Array.isArray(item.blocks))l.set(item.id,item);for(const item of serverAdditions.exercises||[])if(item?.id&&Array.isArray(item.questions))e.set(item.id,item);content={...content,lessons:[...l.values()],exercises:[...e.values()]};}
  content=window.TIM_APPLY_SPANISH_NOV05?.(content)||content;
  if(window.__TIM_CHALLENGE_SETUP) content=window.__TIM_CHALLENGE_SETUP(content);
  // Tim never receives answer fields through the application state.
