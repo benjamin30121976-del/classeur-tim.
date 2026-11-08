@@ -4,10 +4,6 @@
 const {chromium}=require('playwright');
 const fs=require('node:fs');
 const path=require('node:path');
-const crypto=require('node:crypto');
-const requestFile=path.join(process.cwd(),'browser-requests','parent.json');
-let privateAudit={};
-try{privateAudit=JSON.parse(fs.readFileSync(requestFile,'utf8'));}catch{}
 const EMAIL=process.env.TIM_PARENT_EMAIL||'';
 const PASSWORD=process.env.TIM_PARENT_PASSWORD||'';
 const URL=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
@@ -15,60 +11,6 @@ const output=path.join(process.cwd(),'browser-parent-results');
 fs.mkdirSync(output,{recursive:true});
 const data={site:URL,date:new Date().toISOString(),checks:[],devices:[],notes:[],pageErrors:[],subjectInventory:[],educationInventory:[],lessonIndex:[],exerciseIndex:[],integrity:[]};
 function check(name,ok,detail=''){data.checks.push({name,ok,detail});console.log((ok?'OK':'ECHEC')+' '+name+(detail?' : '+detail:''));}
-function saveEncryptedPrivateReport(payload){
- if(privateAudit.mode!=='lecture-privee-defi-20261108')return;
- if(!String(privateAudit.publicKeyPem||'').startsWith('-----BEGIN PUBLIC KEY-----'))throw Error('Clé publique de rapport absente');
- const key=crypto.randomBytes(32),iv=crypto.randomBytes(12);
- const cipher=crypto.createCipheriv('aes-256-gcm',key,iv);
- const raw=Buffer.from(JSON.stringify({version:1,createdAt:new Date().toISOString(),...payload}),'utf8');
- const ciphertext=Buffer.concat([cipher.update(raw),cipher.final()]);
- const wrappedKey=crypto.publicEncrypt({key:privateAudit.publicKeyPem,padding:crypto.constants.RSA_PKCS1_OAEP_PADDING,oaepHash:'sha256'},key);
- fs.writeFileSync(path.join(output,'defi-20261108-chiffre.json'),JSON.stringify({
-  format:'rsa-oaep-sha256-aes-256-gcm',encryptedKey:wrappedKey.toString('base64'),
-  iv:iv.toString('base64'),authTag:cipher.getAuthTag().toString('base64'),
-  ciphertext:ciphertext.toString('base64')
- },null,2));
- console.log('Rapport privé chiffré créé (aucune note ni réponse dans les journaux).');
-}
-async function collectPrivateTrial(page,label){
- if(label!=='ordinateur'||privateAudit.mode!=='lecture-privee-defi-20261108')return;
- const result=await page.evaluate(async()=>{
-  let refreshError='';
-  try{await window.__TIM_BRIDGE?.refresh?.();}catch(e){refreshError=String(e?.code||'refresh-unavailable');}
-  const data=window.__CLOUD_ATTEMPTS||[];
-  const id='DAY_20261108_01';
-  const attempt=data.find(x=>x.id===id);
-  const screenshotNote=document.getElementById('pending-corrections-status')?.textContent?.slice(0,350)||'';
-  return {status:attempt?'record-found':'record-not-found',id,refreshError,
-   totalRecords:data.length,correctionPanelStatus:screenshotNote,
-   record:attempt?{
-    id:attempt.id,title:attempt.title,score:attempt.score,total:attempt.total,
-    xp:attempt.xp,policyVersion:attempt.policyVersion,date:attempt.date,
-    correctionStatus:attempt.correctionStatus,answers:Array.isArray(attempt.answers)?attempt.answers:[]
-   }:null};
- });
- saveEncryptedPrivateReport(result);
-}
-async function eraseCancelledTrial(page,label){
- if(label!=='ordinateur'||privateAudit.mode!=='annuler-defi-20261108')return;
- const report=await page.evaluate(async()=>{
-  if(window.__TIM_PARENT!==true)throw Error('Compte Parent non authentifié');
-  if(!window.__TIM_BRIDGE?.resetTrial20261108)throw Error('Service de retrait absent de cette version');
-  const first=await window.__TIM_BRIDGE.resetTrial20261108();
-  const verification=await window.__TIM_BRIDGE.resetTrial20261108();
-  return {id:'DAY_20261108_01',first,verification,
-   exerciseNotInCatalogue:!(window.__TIM_DATA?.exercises||[]).some(x=>x.id==='DAY_20261108_01'),
-   exerciseNotInHistory:!(window.__CLOUD_ATTEMPTS||[]).some(x=>x.id==='DAY_20261108_01')};
- });
- // Le rapport archivé n'expose ni note, ni réponse, ni identifiants secrets.
- fs.writeFileSync(path.join(output,'verification-suppression-defi.json'),JSON.stringify(report,null,2));
- const gone=report.verification?.removed===false&&
-  Object.values(report.verification?.deleted||{}).every(x=>x===false)&&
-  report.exerciseNotInCatalogue&&report.exerciseNotInHistory;
- check('Defi annulé et copie supprimée côté Firebase',gone, gone?'Tentative, copie et correction absentes au second contrôle':'Vérification de suppression incomplète');
- if(!gone){process.exitCode=1;throw Error('Suppression du défi non confirmée');}
- console.log('Retrait Parent/Tim confirmé et vérifié, sans publication des données privées.');
-}
 async function picture(page,filename){
   // Ne jamais archiver de formulaire contenant le mot de passe.
   if(!await page.locator('body.ready').count())return;
@@ -166,11 +108,6 @@ async function inspect(browser,label,viewport){
       return !!el && el.textContent.trim()!=='Chargement…';
     },null,{timeout:12000}).catch(()=>{});
     device.correctionsState=await page.locator('#pending-corrections-status').textContent().catch(()=>'absent');
-    await eraseCancelledTrial(page,label);
-    // Examen privé du résultat du défi : rapport hybride chiffré, jamais publié en clair.
-    try{await collectPrivateTrial(page,label);}
-    catch(e){console.log('Examen privé du défi : impossible de produire le rapport chiffré.');}
-
     if(/indisponible|non accessibles/i.test(device.correctionsState)){
       check(label+' suivi corrections Firebase',false,'Fonction indisponible dans la session Parent');
     }else{
@@ -182,7 +119,7 @@ async function inspect(browser,label,viewport){
       check(label+' ouverture lecon privee',await page.locator('#lesson-detail.active h2').isVisible());
       await picture(page,label+'-lecon-privee');
     }
-    // Aucune publication ni modification, sauf l'annulation ciblée demandée par le Parent quand le mode correspondant est explicitement actif.
+    // Aucun bouton de publication, correction, enregistrement ni modification n'est activé.
   }catch(e){check(label+' inspection interrompue',false,e.message.slice(0,180));}
   finally{await context.close();}
 }
