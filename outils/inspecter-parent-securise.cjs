@@ -101,6 +101,19 @@ async function inspect(browser,label,viewport){
         await picture(page,label+'-onglet-'+id);
       }catch(e){check(label+' onglet '+id,false,'Clic non abouti');}
     }
+    // Vérifier la lisibilité de la fiche de mathématiques sur téléphone et ordinateur.
+    // Lecture seule : aucun exercice n'est soumis et aucun résultat n'est créé.
+    try{
+      await page.locator('[data-nav="matieres"]:visible').first().click({timeout:9000});
+      await page.locator('#matieres-content .matter-card').filter({hasText:'Mathématiques'}).first().click({timeout:9000});
+      await page.locator('.math-path .spx-card').filter({hasText:'Calcul littéral'}).first().click({timeout:9000});
+      await page.locator('[data-math-programs="MBIS13"]').first().click({timeout:9000});
+      const headings=await page.locator('.math-path section.spx-panel h3').allTextContents();
+      check(label+' programmes A et B visibles',headings.includes('Programme A')&&headings.includes('Programme B'));
+      const five=page.locator('.math-path section.spx-panel').filter({has:page.locator('h3:text-is("Les cinq questions du professeur")')}).locator('ol li');
+      check(label+' exercice complet avec cinq questions',(await five.count())===5,'Fiche ENT sans validation');
+      await picture(page,label+'-maths-programmes-a-b');
+    }catch(e){check(label+' fiche programmes A/B',false,'Navigation ou affichage incomplet : '+String(e.message||e).slice(0,110));}
     // Les résultats individuels ont été volontairement masqués pour les captures.
     // Lire textContent (et non isVisible/innerText) pour ne pas confondre masquage et panne.
     await page.waitForFunction(()=>{
