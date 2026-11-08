@@ -32,7 +32,7 @@ export const submitTimExercise=onCall({region:'europe-west1',enforceAppCheck:tru
   const common={exerciseId:id,authorUid:request.auth.uid,submittedAt:FieldValue.serverTimestamp(),score:result.score,total:result.total,needsReview:result.needsReview,policyVersion:17};
   tx.create(attemptRef,{...common,xp,responses:answers.map(v=>String(v)),correctionStatus:'pending-parent'});
   tx.create(privateRef,{...common,...result});
-  return {id,submitted:true,correctionLocked:true};
+  return {id,submitted:true,xp,correctionLocked:true,correctionStatus:'pending-parent'};
  });}catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError('internal','Échec de validation');}
 });
 export const getParentReport=onCall({region:'europe-west1',enforceAppCheck:true},async request=>{
