@@ -17,7 +17,7 @@ async function resolveExercise(id){
  if(extra.exists){const v=extra.data();exercise=decodeCourse(v.payloadJson?JSON.parse(v.payloadJson):v);}
  if(!exercise&&source.exists){const raw=source.data();const data=decodeCourse(raw?.payloadJson?JSON.parse(raw.payloadJson):raw);exercise=(data.exercises||[]).find(x=>x.id===id);}
  if(!exercise)throw new HttpsError('not-found','Exercice introuvable');
- return {exercise:{...sanitizeCourse(exercise),enabled:true},key:{questions:(exercise.questions||[]).map(q=>({right:q.right,also:q.also,why:q.why}))}};
+ return {exercise:{...sanitizeCourse(exercise),enabled:exercise.enabled!==false},key:{questions:(exercise.questions||[]).map(q=>({right:q.right,also:q.also,why:q.why}))}};
 }
 export const submitTimExercise=onCall({region:'europe-west1',enforceAppCheck:true},async request=>{
  role(request,'tim');
