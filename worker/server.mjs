@@ -5,6 +5,7 @@ import {PROJECT,TIM_UID,PARENT_UID,ApiFault,verifyFirebaseToken} from './auth.mj
 import {firestore,createWrite,upsertWrite,updateWrite,NOW} from './firestore.mjs';
 import {grade} from '../functions/grading.mjs';
 import {rawPoints,cappedPoints} from '../functions/xp.mjs';
+import {mathId,mathTask,mathPublicTask,gradeMathTask} from './maths-training-curriculum.mjs';
 
 const PRIVATE_FIELDS=new Set(['right','also','why','expected','answer','answers','answerKey','answerKeys','solution','solutions','correction','corrections','explanation','rubric']);
 function sanitize(value){
@@ -155,7 +156,49 @@ async function oldTrainingProgress(db,uid){
   xp:0,items:uid===PARENT_UID?(x.data.items||[]):[]
  }))};
 }
+/* Évaluations mathématiques : une tentative, correction immédiate, 0 XP.
+   Le serveur note et écrit avant de rendre la réponse à Tim.
+   Les deux comptes autorisés peuvent consulter le résultat ; aucun invité. */
+function allowedFamily(uid){
+ if(uid!==TIM_UID&&uid!==PARENT_UID)throw new ApiFault(403,'forbidden');
+}
+async function getMathTrainingTask(db,uid,payload){
+ allowedFamily(uid);
+ if(!mathId(payload?.id))throw new ApiFault(400,'invalid-exercise');
+ const task=mathPublicTask(payload.id);
+ if(!task)throw new ApiFault(404,'exercise-not-found');
+ const existing=await db.get('mathTrainingAttempts/'+payload.id);
+ return {task,completed:Boolean(existing&&existing.authorUid===TIM_UID)};
+}
+async function submitMathTraining(db,uid,payload){
+ permitted(uid,'tim');
+ const id=payload?.id,answers=payload?.answers;
+ if(!mathId(id)||!Array.isArray(answers)||answers.length!==2||
+    answers.some(x=>!Number.isInteger(x)||x<0||x>3))
+  throw new ApiFault(400,'invalid-answers');
+ let result;
+ try{result=gradeMathTask(id,answers);}
+ catch{throw new ApiFault(400,'invalid-answers');}
+ const tx=await db.transaction();
+ const existing=await db.get('mathTrainingAttempts/'+id,tx);
+ if(existing)throw new ApiFault(409,'already-exists');
+ await db.commit([createWrite('mathTrainingAttempts/'+id,{
+   ...result,authorUid:uid,subject:'Mathématiques',answers,
+   title:mathTask(id).title,version:1
+ },NOW)],tx);
+ return {...result,submitted:true,submittedAt:new Date().toISOString()};
+}
+async function getMathTrainingProgress(db,uid){
+ allowedFamily(uid);
+ const attempts=await db.list('mathTrainingAttempts',100);
+ return {attempts:attempts.filter(x=>mathId(x.id)&&x.data?.authorUid===TIM_UID)
+   .map(x=>({...x.data,id:x.id,xp:0})).sort((a,b)=>String(b.submittedAt||'').localeCompare(String(a.submittedAt||'')))};
+}
+
 const ACTIONS={
+ getMathTrainingTask:getMathTrainingTask,
+ submitMathTraining:submitMathTraining,
+ getMathTrainingProgress:getMathTrainingProgress,
  getParentReport:parentReport,
  submitTimExercise:submitExercise,
  setParentCorrectionRelease:releaseCorrection,
@@ -187,4 +230,4 @@ export async function handleRequest(request,env){
   return respond({error:code},status);
  }
 }
-export const TESTABLE={sanitize,resolveExercise,submitExercise,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress};
+export const TESTABLE={sanitize,resolveExercise,submitExercise,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress};
