@@ -20,6 +20,11 @@ function chooseRole(role){
  roleChoices.hidden=true;form.hidden=false;
  roleLabel.textContent=role==='tim'?'Connexion de Tim':'Connexion du parent';
  document.getElementById('login-email').focus();
+ if(auth?.currentUser){
+  const expected=role==='tim'?TIM_UID:PARENT_UID;
+  if(auth.currentUser.uid===expected){startSession(auth.currentUser);}
+  else {signOut(auth).catch(()=>message('Impossible de changer de compte.'));}
+ }
 }
 document.getElementById('tim-enter').addEventListener('click',()=>chooseRole('tim'));
 document.getElementById('parent-enter').addEventListener('click',()=>chooseRole('parent'));
@@ -312,7 +317,11 @@ function loadConfiguredFirebase(){
 }
 try{
  const cfg=loadConfiguredFirebase();
- if(!cfg) throw {setupWaiting:true};
+ if(!cfg){
+  document.getElementById('tim-enter').addEventListener('click',()=>message('Configuration Firebase nécessaire pour la connexion de Tim.'));
+  document.getElementById('parent-enter').addEventListener('click',()=>message('Configuration Firebase nécessaire pour la connexion Parent.'));
+  throw {setupWaiting:true};
+ }
  installShareLink(cfg);
  const app=initializeApp(cfg);auth=getAuth(app);db=getFirestore(app);
  form.addEventListener('submit',async(e)=>{
