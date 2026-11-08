@@ -442,7 +442,7 @@ async function startSession(user){
  loadSpanishProgress().catch(()=>{});
  if(isParent){
   const panel=document.createElement('section');panel.id='parent-corrections';panel.style.cssText='margin:16px auto;padding:16px;max-width:850px;border:1px solid #6788b2;border-radius:16px;background:#14253e;color:white';
-  panel.innerHTML='<h2>Corrections des devoirs — contrôle parental</h2><p id="pending-corrections-status">Chargement…</p><div id="pending-corrections-list"></div>';
+  panel.innerHTML='<h2>Résultats et copies de Tim</h2><p id="pending-corrections-status">Chargement…</p><div id="pending-corrections-list"></div>';
   document.getElementById('account-strip').after(panel);
   const refreshCorrections=async()=>{
    const status=panel.querySelector('#pending-corrections-status');
@@ -513,11 +513,24 @@ async function startSession(user){
     const empty=document.createElement('p');empty.textContent='Aucun devoir en attente de correction.';list.append(empty);
    }
    const addLine=(item,isReleased,isAutomatic=false)=>{
-    const line=document.createElement('div');line.style.cssText='padding:10px 0;border-top:1px solid #456';
-    const score=Number.isFinite(item.score)&&Number.isFinite(item.total)?' · '+item.score+'/'+item.total:'';
-    const title=document.createElement('span');
-    title.textContent=item.title+score+' — '+(isAutomatic?'corrigé immédiatement · 0 XP':isReleased?'correction autorisée':'correction en attente')+' ';
-    line.append(title);
+    // Toutes les données de copies restent privées et sont lues uniquement
+    // par le compte Parent : jamais de réponses ou de notes dans l'URL.
+    const line=document.createElement('article');
+    line.style.cssText='padding:14px;margin:12px 0;border:1px solid #526b8b;border-radius:13px;background:#1a304d;overflow-wrap:anywhere';
+    const match=/^SP([QW])_(L(?:0[1-9]|1[0-5]))_0([1-5])$/.exec(String(item.id||''));
+    const ex=window.__TIM_DATA?.exercises?.find(e=>e.id===item.id);
+    const lesson=match?window.TIM_SPANISH_EDU?.[match[2]]:
+      window.__TIM_DATA?.lessons?.find(l=>l.id===ex?.lesson);
+    const subject=match?'Espagnol':(ex?.subject||'Exercice');
+    const lessonTitle=lesson?.name||lesson?.title||'';
+    const exerciseTitle=match?(match[1]==='Q'?'QCM ':'Écriture ')+Number(match[3]):item.title;
+    const heading=document.createElement('strong');heading.textContent=subject+(lessonTitle?' · '+lessonTitle:'');
+    heading.style.cssText='display:block;font-size:17px;color:#eef5ff';
+    const summary=document.createElement('p');
+    const score=Number.isFinite(item.score)&&Number.isFinite(item.total)?item.score+'/'+item.total:'Note indisponible';
+    summary.textContent=exerciseTitle+' · '+score+' · '+(isAutomatic?'Corrigé immédiatement':isReleased?'Correction autorisée':'Correction en attente');
+    summary.style.cssText='margin:5px 0 10px;color:#cbd9ee';
+    line.append(heading,summary);
     if(item.orphan){
      const warning=document.createElement('small');
      warning.textContent='Détail enregistré, tentative associée introuvable.';
@@ -538,6 +551,83 @@ async function startSession(user){
      };
      line.append(action);
     }
+    const view=document.createElement('button');view.type='button';
+    view.textContent='Voir la copie et les réponses';
+    view.style.cssText='display:block;padding:10px 13px;margin:7px 0;border-radius:9px;border:1px solid #adcaed;background:#f0f5ff;color:#21385b;font-weight:750;max-width:100%;white-space:normal;text-align:left';
+    const copy=document.createElement('div');copy.hidden=true;
+    copy.style.cssText='padding:13px 0 3px;border-top:1px solid #58718e;margin-top:12px';
+    let loaded=false;
+    const note=(value,style='')=>{
+     const p=document.createElement('p');p.textContent=String(value??'');
+     p.style.cssText='margin:5px 0 10px;white-space:pre-wrap;'+style;copy.append(p);
+    };
+    view.onclick=async()=>{
+     if(!copy.hidden){copy.hidden=true;view.textContent='Voir la copie et les réponses';return;}
+     copy.hidden=false;view.textContent='Masquer la copie';
+     if(loaded)return;
+     note('Chargement de la copie enregistrée…');
+     try{
+      // Le service de résumé peut être indisponible : les copies sont déjà
+      // lisibles dans privateAttempts via les règles Firestore Parent.
+      const [privateDoc,attemptDoc]=await Promise.all([
+       getDoc(doc(db,'privateAttempts',item.id)),
+       getDoc(doc(db,'attempts',item.id))
+      ]);
+      copy.replaceChildren();
+      if(!privateDoc.exists()){
+       note('La copie détaillée n’est pas disponible dans Firebase pour cet exercice.');
+       return;
+      }
+      const record=privateDoc.data();
+      const dateValue=attemptDoc.exists()?attemptDoc.data()?.submittedAt:record?.submittedAt;
+      const date=dateValue?.toDate?.();
+      if(date instanceof Date&&!Number.isNaN(date.getTime()))
+       note('Validé le '+date.toLocaleString('fr-FR',{timeZone:'Europe/Paris'}),'font-size:13px;color:#c3d8f2');
+      if(Number.isFinite(record.score)&&Number.isFinite(record.total))
+       note('Note : '+record.score+'/'+record.total,'font-weight:800;font-size:17px');
+      const answers=Array.isArray(record.answers)?record.answers:[];
+      if(!answers.length){
+       note('Les questions et les réponses de cette tentative ne sont pas conservées dans ce dossier.');
+       loaded=true;return;
+      }
+      const training=match?window.TIM_SPANISH_TRAINING_ENGINE?.buildSpanishTasks?.(item.id,window.TIM_SPANISH_EDU):null;
+      for(const [index,answer] of answers.entries()){
+       const exerciseQuestion=ex?.questions?.[index];
+       const taskQuestion=training?.questions?.[index];
+       let response=String(answer.response??'');
+       // Un QCM sauvegarde l'index du choix : afficher sa vraie réponse,
+       // pas le numéro de case coché (0, 1, 2 ou 3).
+       const choices=taskQuestion?.type==='mc'?taskQuestion.choices:
+        exerciseQuestion?.type==='mc'?exerciseQuestion.options:null;
+       if(Array.isArray(choices)&&/^\\d+$/.test(response)&&choices[Number(response)]!==undefined)
+        response=String(choices[Number(response)]);
+       const section=document.createElement('section');
+       section.style.cssText='margin:12px 0;padding:10px 12px;background:#203954;border:1px solid #506781;border-radius:10px';
+       const question=document.createElement('strong');
+       question.textContent=(index+1)+'. '+String(answer.question||answer.prompt||taskQuestion?.prompt||exerciseQuestion?.q||'Question');
+       question.style.cssText='display:block;margin-bottom:7px';
+       const responseLine=document.createElement('p');responseLine.textContent='Réponse de Tim : '+response;
+       responseLine.style.cssText='margin:0 0 5px;white-space:pre-wrap';
+       section.append(question,responseLine);
+       const result=document.createElement('p');
+       result.textContent=answer.correct===true?'Bonne réponse':answer.correct===false?'Réponse à revoir':'Réponse enregistrée';
+       result.style.cssText='font-weight:700;margin:0;color:'+(answer.correct===false?'#ffb6a7':'#a4e9c8');
+       section.append(result);
+       if(answer.correct===false&&answer.expected!==undefined){
+        const expected=document.createElement('p');
+        expected.textContent='Réponse attendue : '+String(answer.expected);
+        expected.style.cssText='margin:6px 0 0';section.append(expected);
+       }
+       copy.append(section);
+      }
+      loaded=true;
+     }catch(error){
+      copy.replaceChildren();
+      note('Impossible de charger la copie pour le moment. Réessaie après reconnexion.');
+      console.warn('Copie Parent indisponible :',error.code||error.message);
+     }
+    };
+    line.append(view,copy);
     list.append(line);
    };
    automatic.forEach(x=>addLine(x,true,true));
