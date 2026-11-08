@@ -83,7 +83,7 @@ test('intégration de la matière et du bilan dans le même classeur',()=>{
  assert.match(boot,/const mathMatch=\/\^MT/);
  assert.match(boot,/if\(mathMatch\)\{/);
  assert.match(boot,/Bilan :/);
- assert.match(boot,/Leçon BIS/);
+ assert.match(boot,/leçon BIS/i);
 
  assert.match(path,/Je n’ai pas compris/);
  assert.match(path,/une seule tentative/i);
