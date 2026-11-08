@@ -4,6 +4,7 @@
 (()=>{'use strict';
 const ENGINE=window.TIM_SPANISH_TRAINING_ENGINE;
 const COURSE=()=>window.TIM_SPANISH_EDU||{};
+const GUIDE=()=>window.TIM_SPANISH_REINFORCEMENT;
 const esc=x=>String(x??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 const draftKey=id=>"tim_spanish_unique_training_draft_v1_"+id;
 const draft=id=>{try{const d=JSON.parse(localStorage.getItem(draftKey(id))||"null");return Array.isArray(d)&&d.length===10?d.map(v=>String(v??"")):null;}catch(e){return null;}};
@@ -64,7 +65,7 @@ async function syncPending(){
 function listIds(lesson){return ["Q","W"].flatMap(mode=>[1,2,3,4,5].map(n=>"SP"+mode+"_"+lesson+"_0"+n));}
 function count(lesson){return listIds(lesson).filter(id=>found(id)).length;}
 function progressLabel(lesson){const n=count(lesson);return n+" / 10 exercices terminés";}
-function mount(root,{lesson,onBack}){
+function mount(root,{lesson,onBack,onHelp,onLesson}){
  const slot=root.querySelector("#spx-training-list");if(!slot)return;
  let currentId=null;
  function drawList(){
@@ -99,13 +100,16 @@ function mount(root,{lesson,onBack}){
   const prev=draft(id)||Array(10).fill('');
   const title=task.mode==='Q'?'QCM '+task.series:'Écriture '+task.series;
   const blocks=task.questions.map((q,i)=>{
+   const canListen=/^(Que signifie en français|Écris en français)/.test(q.prompt);
+   const audio=canListen?'<span class="spx-training-audio"><button type="button" class="spx-listen" data-say-es="'+esc(q.source)+'">Écouter</button><button type="button" class="spx-listen" data-say-speed="slow" data-say-es="'+esc(q.source)+'">Lentement</button></span>':'';
    const control=q.type==='mc'?'<div class="spx-training-options">'+q.choices.map((x,k)=>'<label><input type="radio" name="q'+i+'" value="'+k+'"'+(prev[i]===String(k)?' checked':'')+(canAnswer?'':' disabled')+'><span>'+esc(x)+'</span></label>').join('')+'</div>':
     '<input class="spx-training-text" type="text" autocomplete="off" autocapitalize="none" spellcheck="false" data-response="'+i+'" value="'+esc(prev[i])+'" placeholder="Écris ta réponse" maxlength="300"'+(canAnswer?'':' disabled')+'>';
-   return '<fieldset class="spx-training-question"><legend>Question '+(i+1)+' / 10</legend><p>'+esc(q.prompt)+'</p>'+control+'</fieldset>';
+   return '<fieldset class="spx-training-question"><legend>Question '+(i+1)+' / 10</legend><p>'+esc(q.prompt)+'</p>'+audio+control+'</fieldset>';
   }).join('');
   slot.innerHTML='<button class="spx-training-back" type="button" id="spx-training-return">← Liste des exercices</button>'+
    '<h3>'+title+' — '+esc(COURSE()[lesson].name)+'</h3>'+
    '<p class="spx-training-reminder">Une seule validation définitive. Tu pourras ensuite consulter la correction et la note, sans rejouer. Aucun XP.</p>'+
+   '<p class="spx-training-method"><strong>Méthode :</strong> '+esc(GUIDE()?.DATA?.[lesson]?.steps?.[0]||'Lis bien la consigne avant de répondre.')+' Les mises en situation libres restent accessibles depuis la page précédente.</p>'+
    (['unavailable','local'].includes(progress().status)&&isTim()?'<p class="spx-training-warning">Sauvegarde provisoire sur ce téléphone seulement : synchronisation avec le compte Tim en attente.</p>':'')+
    (!canAnswer?'<p class="spx-training-warning">Seul le compte Tim peut répondre et enregistrer une note.</p>':'')+
    '<form id="spx-training-form">'+blocks+
@@ -181,9 +185,15 @@ function mount(root,{lesson,onBack}){
     '<p>'+esc(item.prompt||task.questions[i].prompt)+'</p>'+
     '<p><strong>Ta réponse :</strong> '+esc(task.questions[i].type==='mc'?(task.questions[i].choices[Number(item.response)]||item.response):item.response)+'</p>'+
     '<p><strong>Réponse attendue :</strong> '+esc(item.expected)+'</p>'+
-    '<p>'+esc(item.explanation||'')+'</p></section>').join('')+
-   '<p class="spx-note">Si tu veux continuer à travailler cette notion après validation, les bonus XP restent disponibles à l’accueil général.</p>';
+    '<p>'+esc(item.explanation||'')+'</p>'+
+    (!item.correct?'<p class="spx-error-tip"><strong>Pour comprendre :</strong> '+esc(GUIDE()?.errorHint(lesson,task.questions[i])||'Reviens à la leçon et observe l’exemple.')+'</p>':'')+'</section>').join('')+
+   '<div class="spx-correction-next"><h4>Pour comprendre les erreurs</h4><p>'+esc(GUIDE()?.difficulty(lesson)||'Reprends la leçon et vérifie les exemples.')+'</p>'+
+   '<button type="button" class="spx-button subtle" id="spx-review-lesson">Revoir la leçon expliquée</button>'+
+   '<button type="button" class="spx-button subtle" id="spx-review-help">Je n’ai pas compris</button></div>'+
+   '<p class="spx-note">Pour continuer sans changer ta note, utilise les mises en situation libres ou les bonus XP de l’accueil.</p>';
   slot.querySelector('#spx-training-return').onclick=drawList;
+  slot.querySelector('#spx-review-lesson').onclick=()=>onLesson?.();
+  slot.querySelector('#spx-review-help').onclick=()=>onHelp?.();
  }
  drawList();
  const update=()=>{if(!currentId){drawList();syncPending().then(()=>{if(!currentId)drawList();}).catch(()=>{});}};
@@ -202,12 +212,24 @@ function renderParentProgress(root){
  const render=()=>{
   const p=progress();if(p.status!=='ok'){slot.innerHTML='<p class="spx-training-warning">'+esc(p.message||'Chargement du suivi…')+'</p>';return;}
   const ids=Object.keys(COURSE()),total=(p.attempts||[]).length;
-  slot.innerHTML='<p><strong>'+total+' / 150</strong> exercices terminés par Tim. Une seule note par exercice, sans meilleure note ni seconde tentative.</p>'+
+  const complete=(p.attempts||[]).filter(a=>a.score!==null&&Array.isArray(a.items)&&a.items.length===10);
+  const wrong=complete.flatMap(a=>a.items.filter(it=>it.correct===false).map(it=>({lesson:a.lessonId,item:it})));
+  const difficulties=ids.map(ref=>({
+    ref,name:COURSE()[ref].name,
+    wrong:wrong.filter(x=>x.lesson===ref).length,
+    count:complete.filter(a=>a.lessonId===ref).length
+  })).filter(x=>x.wrong>0).sort((a,b)=>b.wrong-a.wrong);
+  const diagnosis=complete.length?
+   '<section class="spx-parent-diagnostic"><h4>Notions à revoir en priorité</h4>'+
+   '<p>'+wrong.length+' réponse(s) incorrecte(s) sur '+(complete.length*10)+' questions corrigées dans les entraînements réalisés. Ce bilan n’est pas une note de l’ENT.</p>'+
+   (difficulties.length?'<ol>'+difficulties.slice(0,5).map(x=>'<li><strong>'+esc(x.name)+'</strong> : '+x.wrong+' erreur(s) sur '+x.count+' exercice(s). <span>'+esc(GUIDE()?.DATA?.[x.ref]?.pitfall||'Revoir la leçon.')+'</span></li>').join('')+'</ol>':'<p>Aucune erreur dans les exercices corrigés.</p>')+'</section>':
+   '<p class="spx-note">Le diagnostic apparaîtra après le premier exercice terminé par Tim.</p>';
+  slot.innerHTML='<p><strong>'+total+' / 150</strong> exercices terminés par Tim. Une seule note par exercice, sans meilleure note ni seconde tentative.</p>'+diagnosis+
    ids.map(id=>{
     const attempts=listIds(id).map(key=>found(key)).filter(Boolean);
     return '<details class="spx-parent-chapter"><summary>'+esc(COURSE()[id].name)+' — '+attempts.length+'/10 fait(s)</summary>'+
      (attempts.length?attempts.map(a=>'<details class="spx-parent-result"><summary>'+(a.mode==='Q'?'QCM ':'Écriture ')+a.series+' — '+(a.score===null?'note indisponible':a.score+'/10')+'</summary>'+
-      (a.items||[]).map((it,i)=>'<p><strong>Question '+(i+1)+'</strong> : '+esc(it.prompt)+'<br>Tim : '+esc(it.response)+' · attendu : '+esc(it.expected)+' · '+(it.correct?'correct':'à revoir')+'</p>').join('')+'</details>').join(''):'<p>Aucun exercice terminé.</p>')+'</details>';
+      (a.items||[]).map((it,i)=>'<p><strong>Question '+(i+1)+'</strong> : '+esc(it.prompt)+'<br>Tim : '+esc(it.response)+' · attendu : '+esc(it.expected)+' · '+(it.correct?'correct':'à revoir')+(!it.correct?' · <strong>Conseil :</strong> '+esc(GUIDE()?.errorHint(id,ENGINE.buildSpanishTasks(a.id,COURSE())?.questions?.[i])||'Revoir le cours.'):'')+'</p>').join('')+'</details>').join(''):'<p>Aucun exercice terminé.</p>')+'</details>';
    }).join('')+
    '<button type="button" class="spx-button subtle" id="spx-parent-refresh">Actualiser le suivi</button>';
   slot.querySelector('#spx-parent-refresh').onclick=async()=>{

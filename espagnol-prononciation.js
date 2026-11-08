@@ -14,7 +14,7 @@
    window.speechSynthesis.cancel();
    const utterance=new SpeechSynthesisUtterance(value);
    utterance.lang="es-ES";
-   utterance.rate=0.82;
+   utterance.rate=button?.getAttribute('data-say-speed')==='slow'?0.65:0.86;
    utterance.pitch=1;
    const voices=window.speechSynthesis.getVoices();
    const spanish=voices.find(v=>/^es[-_]es$/i.test(v.lang))||voices.find(v=>/^es(?:[-_]|$)/i.test(v.lang));

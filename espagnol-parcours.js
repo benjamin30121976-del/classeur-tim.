@@ -95,6 +95,7 @@ const HELP_TOPICS={
  ]
 };
 const ED=window.TIM_SPANISH_EDU||{};
+const BOOST=window.TIM_SPANISH_REINFORCEMENT;
 /* Comptage prudent des activités/exercices IDENTIFIÉS dans les captures ENT,
    jamais un inventaire exhaustif des devoirs de la professeure.
    L01 fiche de renseignements ; L02 question d'emploi du temps ;
@@ -221,7 +222,9 @@ function render(root,opts){
    '<h3>On reprend doucement</h3><p>'+esc(explanation)+'</p>'+
    '<h4>Les étapes à retenir</h4><ol class="spx-simple-steps">'+steps.map(step=>'<li>'+esc(step)+'</li>').join("")+'</ol>'+
    '<div class="spx-example"><strong>Exemple :</strong> '+esc(example)+'</div>'+
-   '<p><strong>À retenir :</strong> '+esc(x.tip)+'</p></section>'+
+   '<p><strong>À retenir :</strong> '+esc(x.tip)+'</p></section>'+ 
+   (BOOST?.guide(ref)||'')+
+   (BOOST?.practice(ref)||'')+
    '<section class="spx-panel"><h3>Mon petit dictionnaire</h3><p>Appuie sur 🔊 pour écouter les expressions en espagnol.</p>'+
    '<table class="spx-words"><tr><th>Espagnol</th><th>Français</th></tr>'+
    x.pairs.map(p=>'<tr><td><span lang="es">'+esc(p[0])+'</span> '+listen(p[0])+'</td><td>'+esc(p[1])+'</td></tr>').join("")+'</table></section>'+
@@ -236,10 +239,11 @@ function render(root,opts){
    '<section class="spx-panel spx-practice-page"><span class="spx-label">EXERCICES DE LA LEÇON SIMPLIFIÉE · 0 XP</span>'+
    '<h3>5 QCM et 5 exercices à écrire</h3>'+
    '<p>10 questions par exercice, une seule tentative. Après validation définitive, Tim conserve sa note et la correction. Le compte Parent peut consulter les résultats.</p>'+
+   '<div class="spx-training-prep"><details><summary>Avant la validation : 3 mises en situation sans note</summary>'+(BOOST?.practice(ref)||'')+'</details></div>'+
    '<div id="spx-training-list"></div>'+
    navButtons(ref,[["easy","2 · Leçon simplifiée"],["help","3 · Je n’ai pas compris"]])+'</section>');
   bindBack(listBack);bindSwitch();
-  if(window.TIM_SPANISH_TRAINING_UI)window.TIM_SPANISH_TRAINING_UI.mount(root,{lesson:ref,onBack:listBack});
+  if(window.TIM_SPANISH_TRAINING_UI)window.TIM_SPANISH_TRAINING_UI.mount(root,{lesson:ref,onBack:listBack,onHelp:()=>openHelp(ref),onLesson:()=>openSimplified(ref)});
   else root.querySelector("#spx-training-list").textContent="Le module d’entraînement n’est pas disponible.";
   scroll();
  }
