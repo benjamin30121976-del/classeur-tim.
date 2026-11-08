@@ -104,3 +104,17 @@ test('Toute tentative invalide ou écriture libre est refusée',async()=>{
  }
  assert.equal(db.commits(),0);
 });
+
+test('Les anciennes corrections d’espagnol restent privées tant que le Parent ne les a pas autorisées',async()=>{
+ const db=fakeDB({
+  'spanishTrainingAttempts/SPW_L09_01':{
+   authorUid:TIM_UID,lessonId:'L09',mode:'W',series:1,score:5,total:10,
+   items:[{question:'Conjugaison',response:'hablo',expected:'hablamos',correct:false}]
+  }
+ });
+ const tim=await TESTABLE.oldTrainingProgress(db,TIM_UID);
+ const parent=await TESTABLE.oldTrainingProgress(db,PARENT_UID);
+ assert.equal(tim.attempts.length,1);
+ assert.equal(tim.attempts[0].items.length,0);
+ assert.equal(parent.attempts[0].items.length,1);
+});
