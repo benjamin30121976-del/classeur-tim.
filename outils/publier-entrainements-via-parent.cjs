@@ -56,11 +56,18 @@ const assert=require('assert').strict;
   }
   // Relire l'index parent Firestore après import (pas seulement la réponse d'écriture).
   await page.reload({waitUntil:'domcontentloaded'});
-  await page.locator('#parent-enter').click();
-  await page.locator('#login-email').fill(email);
-  await page.locator('#login-password').fill(password);
-  await page.locator('#login-button').click();
-  await page.waitForFunction(()=>document.body.classList.contains('ready')&&window.__TIM_PARENT===true,{timeout:45000});
+  try{
+   await page.waitForFunction(()=>document.body.classList.contains('ready')&&window.__TIM_PARENT===true,{timeout:18000});
+  }catch(error){
+   // Les comptes Firebase conservent normalement leur session entre deux chargements.
+   if(await page.locator('#parent-enter').isVisible()){
+    await page.locator('#parent-enter').click();
+    await page.locator('#login-email').fill(email);
+    await page.locator('#login-password').fill(password);
+    await page.locator('#login-button').click();
+   }
+   await page.waitForFunction(()=>document.body.classList.contains('ready')&&window.__TIM_PARENT===true,{timeout:45000});
+  }
   const count=await page.evaluate(ids=>{
    const present=new Set((window.__TIM_DATA?.exercises||[]).map(x=>x.id));
    return ids.filter(id=>present.has(id)).length;
