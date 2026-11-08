@@ -1,0 +1,23 @@
+name: Tester la note et le corrigé immédiats des défis
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'app.js'
+      - 'tools/test/challenge-feedback.test.mjs'
+      - 'tools/test/xp-v18.test.mjs'
+      - '.github/workflows/check-challenge-feedback.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  feedback:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier la note, les XP, les dix corrections et la non-réouverture du test annulé
+        run: node --test tools/test/challenge-feedback.test.mjs tools/test/xp-v18.test.mjs
