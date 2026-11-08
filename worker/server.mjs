@@ -6,6 +6,7 @@ import {firestore,createWrite,upsertWrite,updateWrite,NOW} from './firestore.mjs
 import {grade} from '../functions/grading.mjs';
 import {rawPoints,cappedPoints} from '../functions/xp.mjs';
 import {buildMission,isMissionId,isMissionOpen} from '../functions/missions-v18.mjs';
+import {SPANISH_COURSE} from '../functions/spanish-training-curriculum.mjs';
 import {mathId,mathTask,mathPublicTask,gradeMathTask} from './maths-training-curriculum.mjs';
 
 const PRIVATE_FIELDS=new Set(['right','also','why','expected','answer','answers','answerKey','answerKeys','solution','solutions','correction','corrections','explanation','rubric']);
@@ -43,7 +44,7 @@ function checkOrigin(req){
 }
 async function resolveExercise(db,id){
  if(isMissionId(id)){
-  const source=await db.get('content/main'),mission=buildMission(id,source);
+  const source=await db.get('content/main'),mission=buildMission(id,source,SPANISH_COURSE);
   if(!mission)throw new ApiFault(404,'mission-not-found');
   if(!isMissionOpen(mission))throw new ApiFault(409,'mission-not-open');
   return {exercise:{...sanitize(mission),enabled:true},key:{questions:mission.questions.map(q=>({right:q.right,also:q.also,why:q.why}))}};
