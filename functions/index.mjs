@@ -50,7 +50,8 @@ export const getTimReleasedCorrections=onCall({region:'europe-west1',enforceAppC
  role(request,'tim');
  const [attempts,releases]=await Promise.all([db.collection('attempts').where('authorUid','==',request.auth.uid).limit(1000).get(),db.collection('releasedCorrections').limit(1000).get()]);
  const eligibleAttempts=new Map(attempts.docs.map(d=>[d.id,d.data()])),now=Date.now();
- const eligible=releases.docs.filter(d=>eligibleAttempts.has(d.id)&&typeof eligibleAttempts.get(d.id).suggestedReleaseAt==='string'&&Date.parse(eligibleAttempts.get(d.id).suggestedReleaseAt)<=now&&d.get('released')===true&&typeof d.get('releaseAt')?.toMillis==='function'&&d.get('releaseAt').toMillis()<=now);
+ const settings=new Map(releases.docs.map(d=>[d.id,d.data()]));
+ const eligible=[...eligibleAttempts.entries()].filter(([id,a])=>{const s=settings.get(id);return typeof a.suggestedReleaseAt==='string'&&Number.isFinite(Date.parse(a.suggestedReleaseAt))&&Date.parse(a.suggestedReleaseAt)<=now&&s?.released!==false&&(!s?.releaseAt||typeof s.releaseAt.toMillis==='function'&&s.releaseAt.toMillis()<=now);}).map(([id])=>({id}));
  const docs=await Promise.all(eligible.map(d=>db.doc('privateAttempts/'+d.id).get()));
  return {corrections:docs.filter(d=>d.exists).map(d=>({id:d.id,answers:d.data().answers||[],score:d.data().score,total:d.data().total}))};
 });
