@@ -51,6 +51,39 @@ async function session(browser,device){
       await capture(page,device+'-connexion-'+name);
       await page.locator('#role-back').click();
     }
+    if(cfg.mode==='parent-login'){
+      await page.locator('#parent-enter').click();
+      const roleText=await page.locator('#selected-role-label').innerText();
+      log(device+' compte Parent selectionne',roleText.includes('parent'),roleText);
+      const details=await page.evaluate(()=>{
+        const email=document.getElementById('login-email'),password=document.getElementById('login-password'),submit=document.getElementById('login-button');
+        return {formVisible:!document.getElementById('login-form').hidden,
+          emailType:email.type,emailRequired:email.required,emailAutocomplete:email.autocomplete,
+          passwordType:password.type,passwordRequired:password.required,passwordAutocomplete:password.autocomplete,
+          submitText:submit.textContent.trim(),buttonDisabled:submit.disabled};
+      });
+      log(device+' formulaire parent affiche',details.formVisible);
+      log(device+' adresse email demandee',details.emailType==='email'&&details.emailRequired);
+      log(device+' mot de passe masque et obligatoire',details.passwordType==='password'&&details.passwordRequired);
+      log(device+' bouton de connexion utilisable',details.submitText==='Se connecter'&&!details.buttonDisabled);
+      await capture(page,device+'-parent-ecran-principal');
+      const formValidEmpty=await page.locator('#login-form').evaluate(form=>form.checkValidity());
+      log(device+' connexion vide refusee par le navigateur',!formValidEmpty);
+      await page.locator('#login-email').fill('test-sans-connexion@example.invalid');
+      const incomplete=await page.locator('#login-form').evaluate(form=>form.checkValidity());
+      log(device+' mot de passe requis pour valider',!incomplete);
+      // Validation locale seulement : aucun appel d'authentification ni tentative de mot de passe.
+      await page.locator('#login-email').fill('');
+      const state=await page.locator('#access-status').innerText();
+      result.notes.push(device+' : message Firebase affiche au formulaire Parent : '+state.slice(0,220));
+      result.notes.push(device+' : le compte Parent ne peut pas etre ouvert sans une vraie session Firebase.');
+      const protectedContent=await page.evaluate(()=>document.body.classList.contains('ready'));
+      log(device+' contenu prive non ouvert sans identification',!protectedContent);
+      await page.locator('#role-back').click();
+      log(device+' retour vers les trois espaces',await page.locator('#guest-enter').isVisible()&&await page.locator('#tim-enter').isVisible()&&await page.locator('#parent-enter').isVisible());
+      await capture(page,device+'-parent-retour-roles');
+      result.notes.push(device+' : verification uniquement de l’interface publique de connexion; connexion reelle NON testee.');
+    } else {
     await page.locator('#guest-enter').click();
     await page.locator('body.guest-mode').waitFor({timeout:15000});
     // L'application et l'animation se chargent APRES l'ajout de guest-mode.
@@ -116,6 +149,7 @@ async function session(browser,device){
         if(cfg.screenshotAllExercises||i<2)await capture(page,device+'-exercice-'+String(i+1).padStart(2,'0')+'-'+ex.id);
         if(!ok)log(device+' exercice '+ex.id,false,'Questions '+shown+'/'+ex.questions);
       }catch(e){result.exercises.push({...ex,ok:false,error:e.message.slice(0,220)});log(device+' exercice '+ex.id,false,e.message.slice(0,220));}
+    }
     }
     for(let i=0;i<(cfg.actions||[]).length;i++){
       const act=cfg.actions[i];
