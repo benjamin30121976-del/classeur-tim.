@@ -56,9 +56,10 @@ test('Parent: accès privé, mais ne peut pas fabriquer des XP',async()=>{
  await assertFails(setDoc(doc(parent,'releasedCorrections/new'),{released:false,releaseAt:Timestamp.fromDate(new Date('2099-01-01'))}));
  await assertFails(setDoc(doc(parent,'attempts/fake'),{authorUid:timUid,xp:100}));
 });
-test('Compte inconnu: refus',async()=>{
+test('Compte inconnu: leçons publiques uniquement',async()=>{
  const other=db('unknown');
- await assertFails(getDoc(doc(other,'publicLessons/L01')));
+ await assertSucceeds(getDoc(doc(other,'publicLessons/L01')));
+ await assertFails(getDoc(doc(other,'publicExercises/E01')));
  await assertFails(getDoc(doc(other,'answerKeys/E01')));
 });
 
