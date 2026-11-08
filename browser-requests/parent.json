@@ -1,9 +1,8 @@
 {
-  "mode": "annuler-defi-20261108",
+  "mode": "lecture-seule-parent",
   "site": "https://classeur-tim-v16.pages.dev/",
-  "scope": "Utiliser uniquement le compte Parent déjà configuré et le navigateur Chromium Playwright gratuit pour supprimer la tentative DAY_20261108_01, sa copie privée, sa correction et rétablir les XP.",
+  "scope": "Inspecter le site avec le navigateur Chromium/Playwright et les secrets Parent déjà configurés, sans modifier les données.",
   "launch_on_update": true,
-  "requestedAt": "2026-11-08",
-  "action": "Suppression définitive du seul défi d'essai du 8 novembre, sans toucher aux autres exercices.",
-  "verification": "Exécuter la suppression puis une seconde lecture idempotente pour confirmer absence des trois documents et comparer les historiques chargés."
+  "note": "Navigateur gratuit réutilisable pour les contrôles du classeur ; le défi test du 8 novembre est annulé et ses données sont supprimées.",
+  "checkVersion": "inspection-generale-sans-modification"
 }
