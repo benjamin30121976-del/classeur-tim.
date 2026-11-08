@@ -152,3 +152,25 @@
 .spx-quick-link:focus-visible{outline:3px solid #aa3150!important;outline-offset:2px}
 .spx-panel,.spx-ent-translations,.spx-easy-lesson{scroll-margin-top:130px}
 @media(max-width:520px){.spx-lesson-intro{padding:14px 12px 11px;gap:11px}.spx-lesson-copy h4{font-size:16px}.spx-lesson-intro .spx-metrics>span{font-size:11.5px}.spx-quick-links{padding:11px 12px 14px;gap:8px}.spx-quick-link{font-size:12px!important;min-height:45px}}
+
+/* Trois niveaux d'enseignement bien séparés : cours ENT, leçon simplifiée, aide ciblée. */
+.spx-quick-link.spx-quick-help{background:#eef5ff!important;border-color:#cbdcf3!important;color:#31547e!important}
+.spx-quick-link.spx-quick-help:hover{background:#e0eeff!important}
+.spx-practice-page,.spx-simplified-page,.spx-personal-help{scroll-margin-top:118px}
+.spx-simplified-page h4{font-size:15px;color:#753447;margin:16px 0 9px}
+.spx-simple-steps{margin:10px 0 16px;padding-left:23px}
+.spx-simple-steps li{font-size:14px;color:#41536e;line-height:1.65;padding-left:4px;margin:9px 0}
+.spx-sibling-nav{display:flex;flex-wrap:wrap;gap:7px;margin-top:10px}
+.spx-sibling-nav .spx-button{margin:2px 0;flex:1;min-width:135px}
+.spx-help-choices{display:grid;grid-template-columns:1fr;gap:8px;margin:12px 0 17px}
+.spx-help-prompt{display:block;width:100%;text-align:left;background:#fff4df!important;color:#7c3046!important;border:1px solid #efd4a3!important;border-radius:11px!important;padding:13px!important;font-size:14px!important;font-weight:750!important;line-height:1.5!important;cursor:pointer!important}
+.spx-help-prompt:hover{background:#ffebc3!important}
+.spx-help-label{font-size:14px;color:#293a57;font-weight:850;display:block;margin:8px 0}
+#spx-help-input{display:block;min-height:100px;width:100%;box-sizing:border-box;background:white!important;border:1px solid #d8d8e0!important;border-radius:12px!important;padding:12px!important;color:#253149!important;line-height:1.55!important;font-size:15px!important;resize:vertical}
+#spx-help-input:focus-visible{outline:3px solid #edc852!important;outline-offset:1px}
+.spx-help-answer{margin-top:12px;padding:15px;background:#f2f8ff;border-left:4px solid #557ac1;border-radius:0 12px 12px 0;color:#293a53;font-size:14px;line-height:1.65}
+.spx-help-answer strong{color:#2e567f}
+.spx-help-answer p{font-size:14px;line-height:1.6;color:#394a61}
+.spx-help-answer .spx-example{margin:10px 0 0}
+.spx-practice-page .spx-row{min-height:65px}
+@media(max-width:520px){.spx-sibling-nav{display:grid;grid-template-columns:1fr 1fr}.spx-sibling-nav .spx-button{min-width:0;margin:0;font-size:12px}.spx-help-prompt{font-size:13px!important;padding:11px!important}.spx-simplified-page{padding:15px}}
