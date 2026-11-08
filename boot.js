@@ -206,7 +206,7 @@ async function fetchAttempts(content){
  if(activeUser?.uid===TIM_UID&&list.some(x=>x.correctionStatus==='released')){
   const response=await httpsCallable(functionsApi,'getTimReleasedCorrections')({});
   const released=new Map((response.data?.corrections||[]).map(x=>[x.id,x]));
-  for(const attempt of list){const correction=released.get(attempt.id);if(!correction)continue;
+  for(const attempt of list){const correction=released.get(attempt.id);if(!correction){attempt.correctionLocked=true;attempt.correctionStatus='pending-parent';continue;}
    attempt.answers=Array.isArray(correction.answers)?correction.answers:[];
    attempt.score=correction.score;attempt.total=correction.total;
    attempt.correctionLocked=false;
