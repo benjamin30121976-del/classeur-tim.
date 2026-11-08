@@ -59,12 +59,8 @@ export function buildMission(id,content,curriculum=null){
  const dm=id.match(/^DAY_(20\d{2})(\d{2})(\d{2})_(\d{2})$/);
  const wm=id.match(/^WEEK_(20\d{2})W(\d{2})$/);
  const sm=id.match(/^SUNDAY_(20\d{2})(\d{2})(\d{2})$/);
- if(dm){
-  const on=dm[1]+'-'+dm[2]+'-'+dm[3],number=Number(dm[4]);
-  const dow=dateUTC(on).getUTCDay();
-  if(!validDate(on)||dow===0||dow===6)return null;
-  chosen=select(pool(content,on),10,'DAY_'+on,(number-1)*10);
-  kind='daily';period=on;label='Petit défi du jour n°'+number; }else if(wm){
+ if(dm){return null;}
+ if(wm){
   const year=Number(wm[1]),num=Number(wm[2]),jan4=new Date(Date.UTC(year,0,4,12));
   jan4.setUTCDate(jan4.getUTCDate()-((jan4.getUTCDay()+6)%7)+(num-1)*7);
   const start=jan4.toISOString().slice(0,10);if(weekId(start)!==id)return null;
@@ -97,9 +93,9 @@ export function isMissionOpen(ex,today=parisDay(new Date())){
 }
 export function setupMissions(content,now=new Date(),curriculum=null){
  const today=parisDay(now),dow=dateUTC(today).getUTCDay();
- const dailyIds=dow>=1&&dow<=5?Array.from({length:DAILY_MISSION_COUNT},(_,i)=>'DAY_'+today.replace(/-/g,'')+'_'+String(i+1).padStart(2,'0')):[];
+ const dailyIds=[]; // Défi du jour supprimé ; conserver les traces historiques sans nouvelles missions.
  const saturday=addDays(monday(today),5),sunday=addDays(monday(today),6);
  const weekly=weekId(today),sundayId='SUNDAY_'+sunday.replace(/-/g,'');
- const ids=[...dailyIds,weekly,sundayId],exercises=ids.map(id=>buildMission(id,content,curriculum)).filter(Boolean);
+ const ids=[weekly,sundayId],exercises=ids.map(id=>buildMission(id,content,curriculum)).filter(Boolean);
  return {meta:{today,weekStart:monday(today),weekEnd:sunday, daily:dailyIds[0]||null,dailyIds,weekly,sunday:sundayId,saturdayDate:saturday,sundayDate:sunday},exercises};
 }
