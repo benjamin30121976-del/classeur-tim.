@@ -334,8 +334,19 @@ async function startSession(user){
  content=window.TIM_APPLY_SPANISH_NOV05?.(content)||content;
  const missionPlan=setupMissions(missionSource,new Date(),window.TIM_SPANISH_EDU);
  window.__TIM_CHALLENGES=missionPlan.meta;
+ // Pendant le week-end, le Parent peut déjà prévisualiser le défi du lundi.
+ // Cette prévisualisation n'ouvre pas la validation de Tim avant lundi.
+ let nextDaily=null;
+ const todayDow=new Date(missionPlan.meta.today+'T12:00:00Z').getUTCDay();
+ if(todayDow===0||todayDow===6){
+  const mondayDate=new Date(missionPlan.meta.today+'T12:00:00Z');
+  mondayDate.setUTCDate(mondayDate.getUTCDate()+(todayDow===0?1:2));
+  const mondayPlan=setupMissions(missionSource,mondayDate,window.TIM_SPANISH_EDU);
+  nextDaily=mondayPlan.exercises.find(ex=>ex.id===mondayPlan.meta.dailyIds[0])||null;
+ }
+ window.__TIM_NEXT_DAILY=nextDaily?.id||null;
  const existingMissionIds=new Set(content.exercises.map(x=>x.id));
- content={...content,exercises:[...content.exercises,...missionPlan.exercises.filter(x=>!existingMissionIds.has(x.id))]};
+ content={...content,exercises:[...content.exercises,...[...missionPlan.exercises,...(nextDaily?[nextDaily]:[])].filter(x=>!existingMissionIds.has(x.id))]};
  // Tim never receives answer fields through the application state.
  // Server-side storage/rules must also be migrated before production release.
  if(!isParent){
