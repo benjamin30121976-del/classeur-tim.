@@ -18,7 +18,7 @@ function explainWrongChoices(prompt,expected,wrong,method){
    'Cette proposition correspond à une addition des valeurs, alors que l’opération demandée est une multiplication.',
    'Cette proposition additionne les valeurs et perd le signe négatif du produit.'
   ];
- }else if(prompt.startsWith('Calcule (−')&&prompt.includes(')²')){
+ }else if((prompt.startsWith('Calcule (−')||prompt.startsWith('Calcule le carré de'))&&prompt.includes(')²')){
   reasons=[
    'Le carré est positif : multiplier deux facteurs négatifs donne un produit positif.',
    'Tu as doublé le nombre au lieu de le multiplier par lui-même.',
