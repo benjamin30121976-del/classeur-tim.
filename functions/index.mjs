@@ -9,19 +9,30 @@ const timUid=process.env.TIM_STUDENT_UID||'uqZI3Up97YWzKvWhssWQidn4TJO2',parentU
 const validId=id=>typeof id==='string'&&/^[A-Za-z][A-Za-z0-9_-]{1,35}$/.test(id);
 function role(request,which){const uid=which==='tim'?timUid:parentUid;if(!uid||request.auth?.uid!==uid)throw new HttpsError('permission-denied','Accès non autorisé');}
 function parisDate(d){const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);const get=t=>p.find(x=>x.type===t).value;return `${get('year')}-${get('month')}-${get('day')}`;}
+async function resolveExercise(id){
+ const [publicDoc,keyDoc]=await Promise.all([db.doc('publicExercises/'+id).get(),db.doc('answerKeys/'+id).get()]);
+ if(publicDoc.exists&&keyDoc.exists)return {exercise:publicDoc.data(),key:keyDoc.data()};
+ const source=await db.doc('content/main').get();
+ if(!source.exists)throw new HttpsError('not-found','Cours non importés');
+ const raw=source.data();const data=decodeCourse(raw?.payloadJson?JSON.parse(raw.payloadJson):raw);
+ const exercise=(data.exercises||[]).find(x=>x.id===id);
+ if(!exercise)throw new HttpsError('not-found','Exercice introuvable');
+ return {exercise:{...sanitizeCourse(exercise),enabled:true},key:{questions:(exercise.questions||[]).map(q=>({right:q.right,also:q.also,why:q.why}))}};
+}
 export const submitTimExercise=onCall({region:'europe-west1',enforceAppCheck:true},async request=>{
  role(request,'tim');
  const {id,answers}=request.data||{};
  if(!validId(id)||!Array.isArray(answers)||answers.length>100||answers.some(v=>!['string','number','boolean'].includes(typeof v)||String(v).length>2000))throw new HttpsError('invalid-argument','Exercice invalide');
- const exerciseRef=db.doc('publicExercises/'+id),keyRef=db.doc('answerKeys/'+id),attemptRef=db.doc('attempts/'+id),privateRef=db.doc('privateAttempts/'+id),xpRef=db.doc('xpState/tim');
+ const attemptRef=db.doc('attempts/'+id),privateRef=db.doc('privateAttempts/'+id),xpRef=db.doc('xpState/tim');
+ const resolved=await resolveExercise(id);
  try{return await db.runTransaction(async tx=>{
-  const [exDoc,keyDoc,attemptDoc,privateDoc,xpDoc]=await Promise.all([tx.get(exerciseRef),tx.get(keyRef),tx.get(attemptRef),tx.get(privateRef),tx.get(xpRef)]);
-  if(!exDoc.exists||!keyDoc.exists)throw new HttpsError('not-found','Exercice indisponible');
+  const [attemptDoc,privateDoc,xpDoc]=await Promise.all([tx.get(attemptRef),tx.get(privateRef),tx.get(xpRef)]);
+
   if(attemptDoc.exists||privateDoc.exists)throw new HttpsError('already-exists','Déjà validé');
-  const ex=exDoc.data();
+  const ex=resolved.exercise;
   if(ex.enabled!==true)throw new HttpsError('failed-precondition','Exercice fermé');
   const now=new Date(),date=parisDate(now),state=xpDoc.exists?xpDoc.data():{};
-  const result=grade(ex,keyDoc.data(),answers);
+  const result=grade(ex,resolved.key,answers);
   const monday=new Date(date+'T12:00:00Z');monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);
   const week=monday.toISOString().slice(0,10),today=state.date===date?state:{earned:0,lost:0,bonus:0};
   const weekEarned=state.week===week?Number(state.weekEarned||0):0;
