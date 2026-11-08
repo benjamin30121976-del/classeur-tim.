@@ -1,8 +1,8 @@
 {
   "mode": "lecture-seule-parent",
   "site": "https://classeur-tim-v16.pages.dev/",
-  "scope": "Vérifier en lecture seule les 23 évaluations BIS (10 questions chacune), l'absence des anciens mini-exercices de 2 questions, et les notes/corrections disponibles dans l'espace Parent, sur téléphone et ordinateur. Ne jamais soumettre un exercice de Tim.",
+  "scope": "En lecture seule : s'assurer que les anciennes questions BIS en double ont disparu, que chaque évaluation comporte dix questions, que la note et le corrigé sont consultables par Tim et Parent. Ne soumettre aucune tentative.",
   "launch_on_update": true,
-  "note": "Tests automatiques : 230 questions, 920 scénarios de notation, correction immédiate renvoyée, précondition de tentative unique et lecture par les deux comptes ; aucune validation réelle.",
-  "checkVersion": "maths-bis-10questions-corrections-uniques-audit-2026-11-09"
+  "note": "Tests Node des 230 questions et 920 réponses, correction détaillée et tentative unique ; puis Chromium sur téléphone et ordinateur. Ne pas utiliser TinyFish.",
+  "checkVersion": "maths-corrections-completes-et-230q-2026-11-09-r2"
 }
