@@ -174,3 +174,42 @@
 .spx-help-answer .spx-example{margin:10px 0 0}
 .spx-practice-page .spx-row{min-height:65px}
 @media(max-width:520px){.spx-sibling-nav{display:grid;grid-template-columns:1fr 1fr}.spx-sibling-nav .spx-button{min-width:0;margin:0;font-size:12px}.spx-help-prompt{font-size:13px!important;padding:11px!important}.spx-simplified-page{padding:15px}}
+
+/* Exercices espagnols : 5 QCM + 5 réponses rédigées ; une seule validation. */
+.spx-training-status{font-size:15px;font-weight:850;color:#793f51;margin:8px 0 10px}
+.spx-training-track{width:100%;height:10px;border-radius:10px;background:#e7e9ef;overflow:hidden;margin-bottom:18px}
+.spx-training-track>span{display:block;height:100%;border-radius:10px;background:#2d9663}
+.spx-training-group-title{font-size:16px;color:#823044;margin:20px 0 10px}
+.spx-training-item{display:grid!important;grid-template-columns:40px minmax(0,1fr) 16px;align-items:center;gap:10px;width:100%;padding:11px 12px!important;margin:8px 0!important;background:#fff!important;color:#293b54!important;border:1px solid #eadde2!important;border-radius:13px!important;text-align:left!important;box-shadow:none!important;min-height:65px;cursor:pointer!important}
+.spx-training-item.is-done{background:#f0f9f4!important;border-color:#b3ddc5!important}
+.spx-training-item:disabled{opacity:.7;cursor:not-allowed!important}
+.spx-training-state{display:grid;place-items:center;width:38px;height:38px;border-radius:10px;background:#fff0bd;color:#8c3b50;font-weight:900}
+.spx-training-item.is-done .spx-training-state{background:#cdeedb;color:#176f42}
+.spx-training-item strong,.spx-training-item small{display:block;line-height:1.4}
+.spx-training-item strong{font-size:14px;color:#283b54}
+.spx-training-item small{font-size:12px;color:#60738b;padding-top:3px}
+.spx-training-warning{border:1px solid #e2c5a3;background:#fff2db;color:#7e4f22;font-size:13px;line-height:1.6;border-radius:11px;padding:12px;margin:12px 0}
+.spx-training-reminder{background:#fff4dd;padding:11px 13px;border-radius:10px;border:1px solid #edd9ad;font-size:13px;color:#684a3d}
+.spx-training-question{border:1px solid #e6dfe1;border-radius:14px;padding:13px;margin:14px 0;background:#fff}
+.spx-training-question legend{padding:0 7px;color:#88364d;font-weight:900;font-size:13px}
+.spx-training-question>p{font-size:15px;color:#293b54;line-height:1.6;margin:5px 0 12px}
+.spx-training-options{display:grid;gap:8px}
+.spx-training-options label{display:flex;gap:9px;align-items:flex-start;border:1px solid #e0dce5;background:#f9fbfd;border-radius:10px;padding:10px;color:#35465a;cursor:pointer;font-size:14px}
+.spx-training-options label:has(input:checked){border-color:#ba4962;background:#fff1db}
+.spx-training-options input{accent-color:#b13e57;margin-top:4px;flex:none}
+.spx-training-text{display:block!important;width:100%!important;box-sizing:border-box;background:#fff!important;color:#263752!important;border:1px solid #aebacb!important;border-radius:10px!important;padding:12px!important;font-size:15px!important;min-height:47px}
+.spx-training-text:focus-visible{outline:3px solid #d8aa48!important;outline-offset:1px}
+.spx-training-score{display:inline-block;font-size:17px;font-weight:950;color:#155c3a;background:#e6f7eb;border-radius:10px;padding:11px 14px}
+.spx-training-back{background:transparent!important;border:1px solid #e9dddf!important;border-radius:10px!important;color:#81394b!important;padding:11px!important;font-size:13px!important;font-weight:850!important;margin-bottom:15px;cursor:pointer}
+.spx-training-correction{border:1px solid #e7dce0;border-radius:12px;padding:13px;margin:13px 0;background:#fff}
+.spx-training-correction.good{border-left:4px solid #2b955f}
+.spx-training-correction.bad{border-left:4px solid #dc9c48}
+.spx-training-correction h4{color:#783749;margin:0 0 9px;font-size:14px}
+.spx-training-correction p{color:#344761;font-size:13px;line-height:1.55;margin:6px 0}
+.spx-parent-progress h3{font-size:18px}
+.spx-parent-chapter{padding:10px;border:1px solid #e2e4eb;background:#f8fafc;border-radius:10px;margin:7px 0}
+.spx-parent-chapter summary{font-weight:800;color:#27394f;cursor:pointer}
+.spx-parent-result{padding:9px;background:#fff;border:1px solid #e1e5eb;border-radius:9px;margin:9px 0}
+.spx-parent-result summary{color:#34614c;font-size:13px}
+.spx-parent-result p{font-size:12px;line-height:1.5;padding:7px 0;border-bottom:1px solid #eee}
+@media(max-width:520px){.spx-training-item{grid-template-columns:36px minmax(0,1fr) 14px}.spx-training-state{width:34px;height:34px}.spx-training-question{padding:11px}.spx-training-item strong{font-size:13px}}

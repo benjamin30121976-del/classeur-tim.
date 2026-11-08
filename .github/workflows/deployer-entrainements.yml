@@ -1,0 +1,67 @@
+name: Publier la correction Firebase des entraînements Espagnol
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'functions/index.mjs'
+      - 'functions/spanish-training-*.mjs'
+      - 'firebase.json'
+      - '.github/workflows/deployer-entrainements.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  publication:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Vérifier si la connexion Firebase est disponible sans afficher de secret
+        id: creds
+        run: |
+          if [ -n "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo "mode=service" >> "$GITHUB_OUTPUT"
+            echo "Compte de service Firebase disponible."
+          elif [ -n "$FIREBASE_TOKEN" ]; then
+            echo "mode=token" >> "$GITHUB_OUTPUT"
+            echo "Jeton Firebase disponible."
+          else
+            echo "mode=none" >> "$GITHUB_OUTPUT"
+            echo "::warning::Publication des entraînements impossible : aucun secret FIREBASE_SERVICE_ACCOUNT ou FIREBASE_TOKEN configuré. Les résultats ne peuvent pas encore être enregistrés sur plusieurs appareils."
+          fi
+      - uses: actions/setup-node@v4
+        if: steps.creds.outputs.mode != 'none'
+        with:
+          node-version: '22'
+      - name: Vérifier le moteur et installer Firebase
+        if: steps.creds.outputs.mode != 'none'
+        run: |
+          npm install --ignore-scripts --no-audit --no-fund
+          npm install --prefix functions --ignore-scripts --no-audit --no-fund
+          node --test functions/test/spanish-training.test.mjs
+          node --check functions/index.mjs
+      - name: Publier uniquement les deux fonctions d'entraînement
+        if: steps.creds.outputs.mode != 'none'
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.creds.outputs.mode }}" = "service" ]; then
+            printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$RUNNER_TEMP/firebase-service-account.json"
+            chmod 600 "$RUNNER_TEMP/firebase-service-account.json"
+            export GOOGLE_APPLICATION_CREDENTIALS="$RUNNER_TEMP/firebase-service-account.json"
+            npx firebase deploy --only functions:submitSpanishTraining,functions:getSpanishTrainingProgress --project classeur-ba3e7 --non-interactive
+            rm -f "$RUNNER_TEMP/firebase-service-account.json"
+          else
+            npx firebase deploy --only functions:submitSpanishTraining,functions:getSpanishTrainingProgress --project classeur-ba3e7 --token "$FIREBASE_TOKEN" --non-interactive
+          fi
+      - name: Résumé de la publication
+        if: always()
+        run: |
+          if [ "${{ steps.creds.outputs.mode }}" = "none" ]; then
+            echo "Le site est prêt, mais l'enregistrement Firebase des nouveaux exercices est en attente d'autorisation de publication." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Vérifier l'état de cette exécution pour savoir si les deux fonctions Firebase ont réellement été publiées." >> "$GITHUB_STEP_SUMMARY"
+          fi

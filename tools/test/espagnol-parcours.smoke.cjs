@@ -40,7 +40,7 @@ const out=path.join(process.cwd(),'test-espagnol-results');fs.mkdirSync(out,{rec
     for(const id of lessonIds){
      const card=subject.locator('.spx-lesson-item').filter({has:page.locator('[data-easy="'+id+'"]')});
      const labels=await card.locator('.spx-quick-link').allTextContents();
-     for(const must of ['1 · Leçon ENT','2 · Leçon simplifiée','3 · Je n’ai pas compris','Exercices d’entraînement · 5 × 10']){
+     for(const must of ['1 · Leçon ENT','2 · Leçon simplifiée','3 · Je n’ai pas compris','Exercices d’entraînement · 10 × 10']){
       if(!labels.some(x=>x.includes(must)))throw Error(id+': missing shortcut '+must+'; available '+JSON.stringify(labels));
      }
      if(labels.some(x=>x.trim()==='Leçon'||x.includes('Je n’ai pas compris ?')))throw Error(id+': obsolete duplicate');
@@ -71,24 +71,50 @@ const out=path.join(process.cwd(),'test-espagnol-results');fs.mkdirSync(out,{rec
    await subject.locator('.spx-back').click();
    await subject.locator('[data-training="L09"]').click();
    if(!(await subject.locator('.spx-practice-page').isVisible()))throw Error('Training view missing');
-   if(await subject.locator('[data-set]').count()!==5)throw Error('5 exercises required');
+   if(await subject.locator('.spx-training-item').count()!==10)throw Error('Expected five QCM and five writing exercises');
    const practice=await subject.locator('.spx-practice-page').innerText();
-   if(!practice.includes('0 XP')||!practice.includes('10 questions'))throw Error('Practice description missing');
-   await subject.locator('[data-set="0"]').click();
-   for(let q=0;q<10;q++){
-    if(!(await subject.locator('.spx-instruction-fr').isVisible()))throw Error('French question translation missing');
-    await subject.locator('#spx-explain').click();
-    if(!(await subject.locator('#spx-action').isVisible()))throw Error('Guidance missing');
-    await subject.locator('.spx-option').first().click();
-    await subject.locator('#spx-submit').click();
-    if(!(await subject.locator('.spx-feedback').isVisible()))throw Error('Correction missing');
-    await subject.locator('#spx-next').click();
-   }
-   if(!(await subject.locator('#spx-repeat').isVisible()))throw Error('End-of-series repeat missing');
-   await subject.locator('#spx-repeat').click();
-   if(!(await subject.locator('.spx-option').first().isVisible()))throw Error('Repeat exercise failed');
+   if(!practice.includes('0 XP')||!practice.includes('une seule tentative'))throw Error('Training rules missing');
+   if(await subject.locator('.spx-training-item:not(:disabled)').count()!==0)throw Error('Guest should not validate school exercises');
+   // Navigateur de test : simule des réponses Firebase, sans écrire dans les données de Tim.
+   await page.evaluate(()=>{
+    window.__TIM_GUEST=false;window.__TIM_PARENT=false;
+    window.__TIM_SPANISH_PROGRESS={status:'ok',attempts:[]};
+    window.__TIM_BRIDGE={
+      trainingProgress:async()=>window.__TIM_SPANISH_PROGRESS,
+      trainingSubmit:async(id,answers)=>{
+        const p=window.__TIM_SPANISH_PROGRESS;
+        if(p.attempts.some(a=>a.id===id))throw Error('already-exists');
+        const task=window.TIM_SPANISH_TRAINING_ENGINE.buildSpanishTasks(id,window.TIM_SPANISH_EDU);
+        const report=window.TIM_SPANISH_TRAINING_ENGINE.evaluateSpanishTask(task,answers);
+        p.attempts.push({...report,mode:task.mode,series:task.series,lessonId:task.lesson,submittedAt:new Date().toISOString(),xp:0});
+        return {...report,submitted:true,xp:0};
+      }
+    };
+   });
    await subject.locator('.spx-back').click();
-   if(!(await subject.locator('.spx-practice-page').isVisible()))throw Error('Back from quiz must go to training list');
+   await subject.locator('[data-training="L09"]').click();
+   await subject.locator('[data-training-id="SPQ_L09_01"]').click();
+   if(await subject.locator('.spx-training-question').count()!==10)throw Error('10 multiple-choice questions required');
+   for(let i=0;i<10;i++)await subject.locator('.spx-training-question').nth(i).locator('input[type="radio"]').first().check();
+   await subject.locator('#spx-training-submit').click();
+   await subject.locator('#spx-training-confirm').click();
+   if(!(await subject.locator('.spx-training-score').isVisible()))throw Error('Score not displayed after permanent validation');
+   if(await subject.locator('.spx-training-correction').count()!==10)throw Error('Ten reviewed answers missing');
+   if(await subject.locator('#spx-training-submit').count())throw Error('Terminated task still submit-able');
+   await subject.locator('#spx-training-return').click();
+   if(!(await subject.locator('[data-training-id="SPQ_L09_01"]').innerText()).includes('Terminé'))throw Error('Persisted score not displayed');
+   await subject.locator('[data-training-id="SPQ_L09_01"]').click();
+   if(await subject.locator('.spx-training-question').count())throw Error('Completed task replayed');
+   await subject.locator('#spx-training-return').click();
+   await subject.locator('[data-training-id="SPW_L09_01"]').click();
+   if(await subject.locator('.spx-training-question').count()!==10)throw Error('Ten written questions required');
+   const correct=await page.evaluate(()=>window.TIM_SPANISH_TRAINING_ENGINE.buildSpanishTasks('SPW_L09_01',window.TIM_SPANISH_EDU).questions.map(q=>q.answer));
+   for(let i=0;i<correct.length;i++)await subject.locator('[data-response="'+i+'"]').fill(correct[i]);
+   await subject.locator('#spx-training-submit').click();
+   await subject.locator('#spx-training-confirm').click();
+   if(!(await subject.locator('.spx-training-score').innerText()).includes('10 / 10'))throw Error('Written answers wrongly corrected');
+   await subject.locator('#spx-training-return').click();
+   if(!(await subject.locator('.spx-training-status').innerText()).includes('2 / 10'))throw Error('One-time progress not displayed');
    await subject.locator('.spx-back').click();
    await subject.locator('[data-ent-exercises="L13"]').click();
    if(!(await subject.locator('.spx-ent-translations').isVisible()))throw Error('ENT exercise extracts not displayed');
@@ -103,7 +129,7 @@ const out=path.join(process.cwd(),'test-espagnol-results');fs.mkdirSync(out,{rec
    if(await subject.locator('.tim-letter-original').count())throw Error('Guest must not see private letter');
    if(errors.length)throw Error('Browser JS errors: '+errors.join(' / '));
    await page.screenshot({path:path.join(out,device+'-lettre-simplifiee.png'),fullPage:true});
-   console.log('OK '+device+': 6 groups, 15x3 lesson levels, ENT, help, 5x10 exercises, no XP');
+   console.log('OK '+device+': 15x3 lesson levels, 10 unique tasks per lesson, writing, marking, ENT, no XP');
    await page.close();
   }
  }finally{await browser.close();}
