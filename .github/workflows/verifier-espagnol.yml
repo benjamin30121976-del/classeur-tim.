@@ -1,0 +1,39 @@
+name: Verification du parcours Espagnol
+on:
+  pull_request:
+    paths:
+      - 'espagnol-parcours.js'
+      - 'espagnol-pedagogie-data.js'
+      - 'espagnol-parcours.css'
+      - 'app.js'
+      - 'index.html'
+      - 'tools/test/espagnol-parcours.smoke.cjs'
+      - '.github/workflows/verifier-espagnol.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  espagnol:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Installer Playwright Chromium
+        run: |
+          mkdir -p /tmp/tim-spanish
+          npm install --prefix /tmp/tim-spanish --no-audit --no-fund playwright
+          /tmp/tim-spanish/node_modules/.bin/playwright install --with-deps chromium
+      - name: Tester le site en local (sans toucher aux donnees de Tim)
+        env:
+          NODE_PATH: /tmp/tim-spanish/node_modules
+        run: |
+          python3 -m http.server 8778 --bind 127.0.0.1 >/tmp/tim-spanish-http.log 2>&1 &
+          sleep 3
+          node tools/test/espagnol-parcours.smoke.cjs
+      - name: Archiver les captures du nouveau parcours
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: captures-espagnol
+          path: test-espagnol-results/
+          retention-days: 7
