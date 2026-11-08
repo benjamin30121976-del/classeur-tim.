@@ -25,7 +25,8 @@
  function qlist(content,lesson){const all=[];for(const ex of content.exercises||[]){if(ex.kind||ex.lesson!==lesson.id||window.TIM_EXERCISE?.school(ex))continue;for(let i=0;i<(ex.questions||[]).length;i++){const q=ex.questions[i];if(q.type==='mc'||q.type==='text')all.push({...q,sourceId:ex.id+':'+i});}}return all;}
  const subject=l=>l.subject||'Espagnol';
  function build(id,content){const lessons=(content.lessons||[]).filter(l=>l.id);const seen=new Set();let chosen=[],isWeekly=false,covered=[],missing=[];
-  if(/^DAY_20\d{6}$/.test(id)){
+  if(/^DAY_20\d{6}$/.test(id))return null;
+  if(false&&/^DAY_20\d{6}$/.test(id)){
     const stamp=id.slice(4);const day=`${stamp.slice(0,4)}-${stamp.slice(4,6)}-${stamp.slice(6)}`;
     // Pas de recyclage d'anciens cours : seules les leçons mises en ligne aujourd'hui.
     // Les exercices authentiques de l'ENT ne sont pas utilisés dans le défi.
@@ -91,8 +92,9 @@
  }
  function ensure(content,id){if(content.exercises.some(x=>x.id===id))return content.exercises.find(x=>x.id===id);const ex=build(id,content);if(ex)content.exercises.push(ex);return ex;}
  function setup(content){const today=isoDate(new Date());const daily='DAY_'+today.replaceAll('-','');const weekly=weekId(today);const weekStart=monday(today);const sundayDate=sundayFor(today);const sunday='SUNDAY_'+sundayDate.replaceAll('-','');
-  ensure(content,daily);ensure(content,weekly);ensure(content,sunday);
-  window.__TIM_CHALLENGES={today,weekStart,weekEnd:addDays(weekStart,6),daily,weekly,sunday,sundayDate,schoolStart:schoolStart(sundayDate)};
+  // Défi du jour supprimé définitivement ; conserver seulement les missions hebdomadaires.
+  ensure(content,weekly);ensure(content,sunday);
+  window.__TIM_CHALLENGES={today,weekStart,weekEnd:addDays(weekStart,6),daily:null,dailyIds:[],weekly,sunday,sundayDate,schoolStart:schoolStart(sundayDate)};
   return content;
  }
  window.__TIM_CHALLENGE_BUILD=build;window.__TIM_CHALLENGE_SETUP=setup;window.__TIM_CHALLENGE_ENSURE=ensure;window.__TIM_CHALLENGE_FROM_REFS=fromRefs;
