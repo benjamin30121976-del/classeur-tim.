@@ -1,4 +1,6 @@
 import test from 'node:test';
+import {readFileSync} from 'node:fs';
+import {runInNewContext} from 'node:vm';
 import assert from 'node:assert/strict';
 import {mathId, mathTask, mathPublicTask, gradeMathTask, MATH_TOTAL} from '../maths-training-curriculum.mjs';
 import {getMathTrainingTask, submitMathTraining, getMathTrainingProgress} from '../server.mjs';
@@ -45,6 +47,7 @@ test('23 mathematical evaluations, each with ten complete questions',()=>{
    assert.equal(new Set(q.choices.map(x=>x.trim().toLowerCase())).size,4,t.id+' question '+i+' duplicated options');
    assert.equal(q.expected,q.choices[q.correctIndex],t.id+' question '+i+' wrong answer position');
    assert.equal(q.feedbackByIndex.length,4);
+   assert.equal(new Set(q.feedbackByIndex.filter(Boolean)).size,3,t.id+' question '+i+' needs an explanation for each wrong option');
    assert.equal(q.feedbackByIndex[q.correctIndex],null);
    assert.ok(q.explanation.length>=20);
    for(const [j,feedback] of q.feedbackByIndex.entries()){
@@ -136,4 +139,31 @@ test('Invalid answers and unknown exercises cannot create attempts',async()=>{
  await assert.rejects(()=>submitMathTraining(db,TIM_UID,{id:'MT00',answers:[0,0]}),e=>e.status===400);
  await assert.rejects(()=>submitMathTraining(db,TIM_UID,{id:'MT15',answers:[0,0,0,0,0,0,0,0,0,4]}),e=>e.status===400);
  assert.equal(db.data.size,0);
+});
+
+test('Les 23 leçons BIS ne montrent plus les 46 mini-exercices de deux questions',()=>{
+ const content=readFileSync(new URL('../../maths-bis-data.js',import.meta.url),'utf8');
+ const context={window:{}};
+ runInNewContext(content,context);
+ const lessons=context.window.TIM_MATHS_BIS_PACK.lessons;
+ assert.equal(lessons.length,23);
+ for(const l of lessons){
+  assert.ok(!l.blocks.some(b=>/^Question d[’']entraînement\\s*[12]$/iu.test(b.h||'')),l.id+' still shows an ungraded two-question exercise');
+ }
+});
+
+test('La note et les dix explications sont restituées dès la validation',async()=>{
+ const db=mockFirestore(),id='MT11',task=mathTask(id);
+ const replies=task.questions.map(q=>q.correctIndex);
+ replies[3]=(replies[3]+2)%4;
+ const answer=await submitMathTraining(db,TIM_UID,{id,answers:replies});
+ assert.equal(answer.score,9);
+ assert.equal(answer.total,10);
+ assert.equal(answer.items.length,10);
+ assert.ok(answer.items.every(it=>it.expected&&it.explanation));
+ assert.ok(answer.items[3].correct===false);
+ const parent=await getMathTrainingProgress(db,PARENT_UID);
+ assert.equal(parent.attempts[0].total,10);
+ assert.equal(parent.attempts[0].items.length,10);
+ assert.equal(parent.attempts[0].items[3].explanation,answer.items[3].explanation);
 });
