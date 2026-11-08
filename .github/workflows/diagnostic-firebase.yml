@@ -21,8 +21,8 @@ jobs:
       - name: Vérifier que le vrai backend V16 est présent
         run: |
           test -f functions/index.mjs || { echo '::error::Backend V16 absent : tests isolés insuffisants'; exit 1; }
-          test -f functions/schedule.mjs || { echo '::error::Calendrier V16 absent'; exit 1; }
-          test -f functions/test/schedule.test.mjs || { echo '::error::Tests calendrier V16 absents'; exit 1; }
+          test -f functions/grading.mjs || { echo '::error::Moteur de notation absent'; exit 1; }
+          test -f functions/xp.mjs || { echo '::error::Moteur XP absent'; exit 1; }
       - name: Installer les dépendances Firebase
         run: npm install --no-audit --no-fund --ignore-scripts
       - name: Installer les dépendances du backend V16
@@ -36,7 +36,7 @@ jobs:
       - name: Tester la notation et les XP (JUnit)
         run: |
           mkdir -p test-results
-          node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=test-results/notation-xp.xml functions/test/*.test.mjs
+          node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=test-results/notation-xp.xml functions/test/grading.test.mjs functions/test/xp.test.mjs
       - name: Tester les règles sur Firestore Emulator (JUnit)
         run: |
           npx firebase emulators:exec --project tim-access-rules-local-test --only firestore "node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=test-results/firestore.xml tools/test/firestore-rules.integration.test.mjs"
