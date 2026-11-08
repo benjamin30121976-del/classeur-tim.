@@ -1,5 +1,9 @@
 name: Navigateur Chromium - inspection visuelle du classeur
 on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/inspection-navigateur.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -56,7 +60,8 @@ jobs:
                 if(await intro.isVisible()){
                   const silent=page.locator('#intro-silent');
                   if(await silent.isVisible())await silent.click();
-                  await page.waitForTimeout(1500);
+                  await intro.waitFor({state:'hidden',timeout:15000});
+                  check(label+' : animation d\'entree terminee',true);
                 }
                 await page.screenshot({path:path.join(dir,label+'-invite-apres-intro.png'),fullPage:true});
                 const nav=await page.locator('[data-nav]:visible').all();
@@ -70,6 +75,27 @@ jobs:
                     check(label+' : onglet '+target,true);
                   }catch(e){check(label+' : onglet '+target,false,e.message.slice(0,150));}
                 }
+                const guestCounts=await page.evaluate(()=>({lessons:window.__TIM_DATA?.lessons?.length||0,exercises:window.__TIM_DATA?.exercises?.length||0}));
+                report.notes.push(label+' : '+guestCounts.lessons+' lecons et '+guestCounts.exercises+' exercices disponibles en mode invite');
+                try {
+                  await page.locator('[data-nav="matieres"]:visible').first().click();
+                  await page.locator('#matieres-content .matter-card').filter({hasText:'Espagnol'}).first().click();
+                  const chapters=await page.locator('#matieres-content details.chapter-section').count();
+                  check(label+' : chapitres espagnol accessibles',chapters>0,chapters+' chapitres');
+                  if(chapters>0){
+                    await page.locator('#matieres-content details.chapter-section summary').first().click();
+                    const tile=page.locator('#matieres-content details.chapter-section[open] .chapter-body .clicklist button.tile').first();
+                    if(await tile.count()){
+                      await tile.click();
+                      check(label+' : premiere lecon espagnol ouverte',await page.locator('#lesson-detail.active h2').isVisible());
+                      await page.screenshot({path:path.join(dir,label+'-lecon-espagnol.png'),fullPage:true});
+                    }else check(label+' : lecon espagnol trouvable',false,'Aucune fiche dans le premier chapitre');
+                  }
+                  await page.locator('[data-nav="exercices"]:visible').first().click();
+                  await page.locator('#exercise-list .matter-card').filter({hasText:'Espagnol'}).first().click();
+                  check(label+' : choix exercice espagnol accessible',(await page.locator('#exercise-list .exercise-type-tile').count())>=2);
+                  await page.screenshot({path:path.join(dir,label+'-choix-exercice-espagnol.png'),fullPage:true});
+                }catch(e){check(label+' : navigation lecons et exercices',false,e.message.slice(0,200));}
                 const images=await page.locator('img').evaluateAll(nodes=>nodes.map(n=>({src:n.currentSrc||n.src,ok:!n.complete||n.naturalWidth>0,visible:!!(n.offsetWidth||n.offsetHeight||n.getClientRects().length)})));
                 report.brokenImages.push(...images.filter(i=>i.visible&&!i.ok).map(i=>label+': '+i.src));
                 report.notes.push(label+' : '+images.length+' images HTML trouvees');
