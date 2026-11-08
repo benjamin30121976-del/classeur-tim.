@@ -38,6 +38,15 @@ const assert=require('assert').strict;
   await page.locator('#login-password').fill(password);
   await page.locator('#login-button').click();
   await page.waitForFunction(()=>document.body.classList.contains('ready')&&window.__TIM_PARENT===true&&!!window.__TIM_BRIDGE?.publish,{timeout:45000});
+  // Vérifie avant toute écriture que le Parent peut lire les notes privées.
+  // Seul le nombre de documents est rapporté, aucun résultat individuel.
+  const parentReads=await page.evaluate(async()=>{
+   const {getApp}=await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js');
+   const {getFirestore,collection,getDocs}=await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js');
+   const snap=await getDocs(collection(getFirestore(getApp()),'privateAttempts'));
+   return snap.size;
+  });
+  console.log('Lecture privée des résultats autorisée dans le compte Parent (documents : '+parentReads+').');
   // Ne pas publier un exercice dont la leçon ENT d'origine n'est pas présente.
   const plan=await page.evaluate(candidates=>{
    const lessons=new Set((window.__TIM_DATA?.lessons||[]).map(x=>x.id));
