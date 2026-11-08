@@ -1,0 +1,51 @@
+name: Inspection Parent authentifiee
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'browser-requests/parent.json'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: inspection-parent-authentifiee
+  cancel-in-progress: true
+jobs:
+  parent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+      TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
+      TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verifier la configuration des secrets sans les afficher
+        id: verify
+        run: |
+          if [ -n "$TIM_PARENT_EMAIL" ] && [ -n "$TIM_PARENT_PASSWORD" ]; then
+            echo 'configured=true' >> "$GITHUB_OUTPUT"
+            echo 'Secrets de connexion presents.'
+          else
+            echo 'configured=false' >> "$GITHUB_OUTPUT"
+            echo 'Secrets manquants : TIM_PARENT_EMAIL et TIM_PARENT_PASSWORD. Aucun test prive execute.'
+          fi
+      - name: Installer Chromium
+        if: steps.verify.outputs.configured == 'true'
+        run: |
+          mkdir -p /tmp/tim-parent-browser
+          npm install --prefix /tmp/tim-parent-browser --no-audit --no-fund playwright
+          /tmp/tim-parent-browser/node_modules/.bin/playwright install --with-deps chromium
+      - name: Tester la vraie connexion Parent en lecture seule
+        if: steps.verify.outputs.configured == 'true'
+        env:
+          NODE_PATH: /tmp/tim-parent-browser/node_modules
+        run: node outils/inspecter-parent-securise.cjs
+      - name: Archiver uniquement les captures avec donnees individuelles masquees
+        if: steps.verify.outputs.configured == 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inspection-parent-captures-masquees
+          path: browser-parent-results/
+          retention-days: 1
+          if-no-files-found: warn
