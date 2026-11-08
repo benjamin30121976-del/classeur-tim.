@@ -154,7 +154,7 @@ async function refreshProgress(){
  }catch(e){grades={status:'error',attempts:grades.attempts||[],message:e.message||'Erreur de lecture des notes'};}
  return grades;
 }
-function mark20(record){return Number.isInteger(record?.score)&&record.total===2?String(record.score*10)+' / 20 ('+record.score+' / 2 bonnes réponses)':String(record?.score??'?')+' / '+String(record?.total??'?');}
+function mark20(record){const n=Number(record?.total),score=Number(record?.score);return Number.isInteger(score)&&n>0?String(Math.round(20*score/n))+' / 20 ('+score+' / '+n+' bonnes réponses'+(n===2?' · ancien format':'')+')':'Note indisponible';}
 function resultPage(record){
  if(!record)return;
  const id=record.lessonId, x=lesson(id);selected=id;group=groupOfId(id);
@@ -178,17 +178,17 @@ async function viewTraining(id){
  if(completed){resultPage(completed);return;}
  draw(header('Évaluation : '+cleanTitle(x.title),'Une seule tentative. Correction et note dès la validation ; aucun XP.')+
  back('Retour aux sous-leçons')+
- '<section class="spx-panel"><h3>Avant de commencer</h3><p>Deux questions, 10 points par bonne réponse. Lis toute la consigne avant de choisir. Tu peux revoir la méthode sans utiliser ta tentative.</p>'+btn('data-math-bis',id,'Revoir la leçon BIS')+btn('data-math-help',id,'Je n’ai pas compris')+'</section>'+
+ '<section class="spx-panel"><h3>Avant de commencer</h3><p>10 questions, 2 points par bonne réponse. Lis toute la consigne avant de choisir. Tu peux revoir la méthode sans utiliser ta tentative.</p>'+btn('data-math-bis',id,'Revoir la leçon BIS')+btn('data-math-help',id,'Je n’ai pas compris')+'</section>'+
  '<section class="spx-panel" id="math-quiz"><p>Chargement sécurisé de l’exercice…</p></section>',()=>category(group));
  wire();
- if(window.__TIM_PARENT||window.__TIM_GUEST){const p=root.querySelector('#math-quiz');p.innerHTML='<p>Seul le compte Tim peut répondre à une évaluation. Le compte Parent consulte les notes et les corrections.</p>';return;}
+ if(window.__TIM_GUEST){const p=root.querySelector('#math-quiz');p.innerHTML='<p>Le questionnaire est réservé aux comptes Tim et Parent. La visite en invité reste en lecture seule.</p>';return;}
  const holder=root.querySelector('#math-quiz');
  try{
   const data=await options.task(testId);
   if(!holder?.isConnected)return;
-  if(data.completed){await refreshProgress();const done=grades.attempts.find(a=>a.id===testId);if(done)resultPage(done);else holder.textContent='Exercice déjà validé : la note est en cours de récupération.';return;}
+  if(data.completed&&!window.__TIM_PARENT){await refreshProgress();const done=grades.attempts.find(a=>a.id===testId);if(done)resultPage(done);else holder.textContent='Exercice déjà validé : la note est en cours de récupération.';return;}
   const task=data.task;
-  if(!task||task.lessonId!==id||!Array.isArray(task.questions)||task.questions.length!==2)throw Error('Exercice non disponible.');
+  if(!task||task.lessonId!==id||!Array.isArray(task.questions)||task.questions.length!==10)throw Error('Exercice incomplet : dix questions sont nécessaires.');
   // Une seule tentative : vérifier que chaque question contient des choix valides.
   const context=['statement','context','instructions','enonce'].map(k=>task[k]).find(v=>typeof v==='string'&&v.trim())||'';
   const normalizeChoice=v=>String(v).normalize('NFKC').trim().toLowerCase().replace(/\s+/g,' ');
@@ -198,19 +198,34 @@ async function viewTraining(id){
   const embeddedData=/(choisir|choisis|soustraire|soustrais|multiplier|multiplie|ajouter|ajoute|on considère|mesure|longueur|coordonnées|données)/i;
   if(!context&&task.questions.some(q=>dependsOnMissingData.test(q.prompt)&&!embeddedData.test(q.prompt)))
    throw Error('Une question renvoie à un programme ou à une figure dont l’énoncé manque. Exercice suspendu, aucune tentative utilisée.');
-  holder.innerHTML='<h3>Deux questions de compréhension</h3>'+
-   '<p><strong>Avant de répondre :</strong> lis les données et la consigne de chaque question. Ce mini-test BIS est distinct des exercices ENT du professeur.</p>'+
-   (context?'<section class="spx-panel"><h3>Énoncé à consulter pour les deux questions</h3><p style="white-space:pre-wrap">'+esc(context)+'</p></section>':'')+
+  if(window.__TIM_PARENT){holder.innerHTML='<h3>Aperçu Parent · 10 questions (lecture seule)</h3><p>Ces questions ne sont pas les réponses correctes. Aucune tentative n’est créée lors de cet aperçu.</p>'+task.questions.map((q,i)=>'<section class="spx-training-question"><h4>Question '+(i+1)+' / 10</h4><p>'+esc(q.prompt)+'</p><ul>'+q.choices.map(c=>'<li>'+esc(c)+'</li>').join('')+'</ul></section>').join('');return;}
+  holder.innerHTML='<h3>10 questions de compréhension</h3>'+ 
+   '<p><strong>Avant de répondre :</strong> lis les données et la consigne de chaque question. Ce questionnaire BIS de dix questions est distinct des exercices ENT du professeur.</p>'+
+   (context?'<section class="spx-panel"><h3>Énoncé à consulter pour les dix questions</h3><p style="white-space:pre-wrap">'+esc(context)+'</p></section>':'')+
    '<p>Après la validation définitive, tu recevras la note et les explications. Tu ne pourras pas refaire cet exercice.</p>'+
    '<form id="math-quiz-form">'+task.questions.map((q,i)=>'<fieldset class="spx-training-question"><legend>Question '+(i+1)+' / '+task.questions.length+'</legend><p>'+esc(q.prompt)+'</p>'+
-    q.choices.map((v,j)=>'<label class="math-choice"><input type="radio" name="mq'+i+'" value="'+j+'" required> '+esc(v)+'</label>').join('')+'</fieldset>').join('')+
-   '<button type="submit" class="spx-button">Valider définitivement mes réponses</button><p id="math-quiz-status" role="status" aria-live="polite"></p></form>';
+    q.choices.map((v,j)=>'<label class="math-choice"><input type="radio" name="mq'+i+'" value="'+j+'"> '+esc(v)+'</label>').join('')+'</fieldset>').join('')+
+   '<div class="spx-quiz-navigation"><p id="math-quiz-progress" role="status" aria-live="polite"></p><button type="button" id="math-quiz-prev" class="spx-back">← Question précédente</button> <button type="button" id="math-quiz-next" class="spx-button">Question suivante →</button></div><button type="submit" id="math-quiz-submit" class="spx-button">Valider définitivement les 10 réponses</button><p id="math-quiz-status" role="status" aria-live="polite"></p></form>';
   const form=holder.querySelector('#math-quiz-form');
+  const questions=[...form.querySelectorAll('fieldset.spx-training-question')];
+  const prev=form.querySelector('#math-quiz-prev'),next=form.querySelector('#math-quiz-next'),submit=form.querySelector('#math-quiz-submit'),progress=form.querySelector('#math-quiz-progress');
+  let step=0;
+  const showStep=()=>{
+   questions.forEach((q,i)=>q.hidden=i!==step);
+   prev.hidden=step===0;next.hidden=step===questions.length-1;
+   submit.hidden=step!==questions.length-1;
+   const answered=questions.filter((q,i)=>form.querySelector('input[name="mq'+i+'"]:checked')).length;
+   progress.textContent='Question '+(step+1)+' / '+questions.length+' · '+answered+' réponse(s) renseignée(s) sur '+questions.length;
+  };
+  prev.onclick=()=>{if(step>0){step--;showStep();}};
+  next.onclick=()=>{if(step<questions.length-1){step++;showStep();}};
+  form.addEventListener('change',showStep);
+  showStep();
   form.onsubmit=async ev=>{
    ev.preventDefault();
    const answers=task.questions.map((q,i)=>{const checked=form.querySelector('input[name="mq'+i+'"]:checked');return checked?Number(checked.value):null;});
    const status=holder.querySelector('#math-quiz-status');
-   if(answers.some(a=>a===null)){status.textContent='Réponds aux deux questions avant de valider.';return;}
+   if(answers.some(a=>a===null)){step=answers.indexOf(null);showStep();status.textContent='Il reste des questions sans réponse. Complète la question '+(step+1)+' avant de valider.';return;}
    if(!window.confirm('Valider cet exercice une seule fois ? La note et la correction seront définitives.'))return;
    const buttons=holder.querySelectorAll('button,input');buttons.forEach(b=>b.disabled=true);
    status.textContent='Enregistrement de la note…';
