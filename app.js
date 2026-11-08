@@ -446,7 +446,7 @@ function parentAdminPanels(root){
  },'plain');mail.append(hook,saveMail,mailStatus);root.prepend(mail);
  if(window.TIM_LESSON_EDITOR?.render)root.prepend(window.TIM_LESSON_EDITOR.render({lessons:DATA.lessons,bridge:window.__TIM_BRIDGE,onSaved:()=>window.location.reload()}));
 }
-function renderParent(){const root=clear(document.getElementById('parent-content'));if(window.__TIM_BRIDGE){root.append(button('↻ Actualiser les résultats en ligne',async()=>{try{await window.__TIM_BRIDGE.refresh();await window.__TIM_BRIDGE.trainingProgress?.();renderParent();}catch(e){alert('Résultats indisponibles : vérifie la connexion.');}},'plain'));}let loc=attempts();let stats=E('div','mini-grid');stats.append(E('div','info-stat',loc.length+' exercices'),E('div','info-stat',loc.filter(x=>!x.needsReview).length+' notés'),E('div','info-stat',loc.filter(x=>x.needsReview).length+' rédactions'));root.append(stats);root.append(parentTrialResultCard(),makeXPPanel(),makeRewardsTile());
+function renderParent(){const root=clear(document.getElementById('parent-content'));if(window.__TIM_BRIDGE){root.append(button('↻ Actualiser les résultats en ligne',async()=>{try{await window.__TIM_BRIDGE.refresh();await window.__TIM_BRIDGE.trainingProgress?.();renderParent();}catch(e){alert('Résultats indisponibles : vérifie la connexion.');}},'plain'));}let loc=attempts();let stats=E('div','mini-grid');stats.append(E('div','info-stat',loc.length+' exercices'),E('div','info-stat',loc.filter(x=>!x.needsReview).length+' notés'),E('div','info-stat',loc.filter(x=>x.needsReview).length+' rédactions'));root.append(stats);root.append(makeXPPanel(),makeRewardsTile());
 let toolbar=E('div','panel');toolbar.append(E('h3','','Exporter les résultats enregistrés en ligne'),E('p','small','Le fichier contient les réponses, la date de validation et les corrections ; il peut être transmis au parent, puis joint à ChatGPT pour un bilan.'));const buttons=E('div','btnrow');buttons.append(button('Exporter les résultats (.json)',exportJSON,'btn'));buttons.append(button('Copier le bilan',async()=>{try{await navigator.clipboard.writeText(reportText(loc));alert('Bilan copié.');}catch(e){const ta=E('textarea');ta.value=reportText(loc);document.body.append(ta);ta.select();document.execCommand('copy');ta.remove();alert('Copie tentée ; sinon utilise l’export JSON.');}},'plain'));toolbar.append(buttons);root.append(toolbar);let list=E('div','results-list');renderAttempts(list,loc);root.append(E('h3','','Validations enregistrées en ligne'),list);
 let other=E('div','panel');other.append(E('h3','','Importer un ancien fichier de résultats'),E('p','small','Pour consulter les résultats récents, utilise la liste ci-dessus. Cet import est réservé aux anciens fichiers locaux et ne modifie pas Firestore.'));let uploader=E('input');uploader.type='file';uploader.accept='.json,application/json';other.append(uploader);const imported=E('div');const present=load(IMPORT_KEY,null);function showImported(payload){clear(imported);if(!payload){imported.append(E('p','subtle','Aucun fichier importé.'));return;}imported.append(E('p','banner-good',payload.attempts.length+' résultat(s) importé(s).'));let list=E('div');renderAttempts(list,payload.attempts);imported.append(list);}uploader.addEventListener('change',async()=>{const f=uploader.files?.[0];if(!f)return;try{const data=JSON.parse(await f.text());if(data.app!=='classeur_espagnol_tim'||!Array.isArray(data.attempts)||data.attempts.some(x=>typeof x.id!=='string'||!Array.isArray(x.answers)))throw Error('Fichier de résultats incorrect.');save(IMPORT_KEY,data);showImported(data);}catch(e){alert('Ce fichier n’est pas un export valide du classeur.');}});other.append(imported);showImported(present);root.append(other);if(window.__TIM_BRIDGE?.diagnose){parentAdminPanels(root);}if(window.TIM_SPANISH_TRAINING_UI)window.TIM_SPANISH_TRAINING_UI.renderParentProgress(root);if(window.TIM_MATH_PATH)window.TIM_MATH_PATH.renderParentProgress(root);root.append(notice('Il n’est pas possible ici de modifier un contrôle à distance. Les informations officielles d’un prochain contrôle doivent être relevées par le parent dans l’ENT, puis ajoutées à une mise à jour du classeur.','note info'));}
 
@@ -605,54 +605,11 @@ function missionCard(kind){
 function makeSoundSettings(){const zone=E('div','sound-settings');zone.append(E('span','','🔊 Bruit des touches : '));
  const selector=E('select');selector.setAttribute('aria-label','Son des boutons');for(const [value,name] of [['bulle','Bulle · pop'],['arcade','Tir arcade · pew'],['muet','Sans bruit']])selector.add(new Option(name,value));selector.value=window.TIM_SOUND?.mode||'bulle';selector.addEventListener('change',()=>window.TIM_SOUND?.setMode(selector.value));zone.append(selector);return zone;
 }
-function parentTrialResultCard(){
- if(!window.__TIM_PARENT)return document.createDocumentFragment();
- const id='DAY_20261108_01',a=attemptFor(id);
- const card=E('section','panel parent-trial-report');
- card.id='parent-trial-report';
- card.style.cssText='margin:15px 0;padding:18px;border:2px solid #e6c776;border-radius:16px;background:#152d45;color:#fff';
- card.append(E('h2','','Résultat de Tim — défi espagnol du 8 novembre'));
- card.append(E('p','small','Défi inversé — Se présenter · 10 traductions écrites · une seule validation'));
- const refresh=button('Actualiser sa note et sa copie',async()=>{
-  refresh.disabled=true;refresh.textContent='Lecture des résultats…';
-  try{await window.__TIM_BRIDGE.refresh();renderHome();if(document.getElementById('parent')?.classList.contains('active'))renderParent();}
-  catch(e){refresh.disabled=false;refresh.textContent='Actualiser sa note et sa copie';card.append(notice('Lecture temporairement indisponible : '+String(e?.message||e)));}
- },'mission-launch');
- if(!a){
-  card.append(E('p','challenge-detail','Aucune validation de ce défi retrouvée dans les résultats chargés. Actualise pour vérifier le dernier enregistrement.'));
-  card.append(refresh);
-  return card;
- }
- const score=Number.isFinite(a.score)&&Number.isFinite(a.total)?a.score+'/'+a.total:'Note non encore lisible';
- const xp=Number.isFinite(a.xp)?(a.xp>=0?'+':'')+a.xp+' XP':'XP non encore lisibles';
- const title=E('div','xp-award',score+' · '+xp);title.style.margin='8px 0';card.append(title);
- if(a.date){const d=new Date(a.date);if(!Number.isNaN(d.getTime()))card.append(E('p','challenge-meta','Validé le '+d.toLocaleString('fr-FR',{timeZone:'Europe/Paris'})));}
- const answers=Array.isArray(a.answers)?a.answers:[];
- if(answers.length){
-  const errors=answers.filter(x=>x.correct===false);
-  card.append(E('p','challenge-detail',errors.length?'Bilan : '+errors.length+' erreur'+(errors.length>1?'s':'')+' parmi les '+answers.length+' réponses.':'Bilan : '+answers.length+' réponses correctes.'));
-  const details=E('details','parent-trial-answers');details.open=true;
-  details.append(E('summary','','Voir les '+answers.length+' réponses de Tim et leur correction'));
-  for(const [i,ans] of answers.entries()){
-   const line=E('div','parent-trial-answer');line.style.cssText='border-top:1px solid #627c98;margin-top:12px;padding-top:10px;overflow-wrap:anywhere';
-   line.append(E('strong','',(i+1)+'. '+String(ans.question||'Question')));
-   line.append(E('p','','Réponse de Tim : '+String(ans.response??'')));
-   const correct=E('p','',ans.correct===true?'Bonne réponse':ans.correct===false?'Erreur à corriger':'Réponse enregistrée');
-   correct.style.color=ans.correct===false?'#ffc6b5':'#b4f2cd';line.append(correct);
-   if(ans.correct===false&&ans.expected!==undefined)line.append(E('p','','Réponse attendue : '+String(ans.expected)));
-   if(ans.correct===false&&ans.explanation)line.append(E('p','small','Explication : '+String(ans.explanation)));
-   details.append(line);
-  }
-  card.append(details);
- }else card.append(E('p','challenge-detail','La validation est visible, mais les dix réponses privées ne sont pas chargées sur cette session. Actualise pour réessayer.'));
- card.append(refresh);
- return card;
-}
 function renderHome(){
  const root=clear(document.getElementById('home-content'));refreshXPHeader();
  const hero=E('section','mission-hero');
  const copy=E('div','mission-copy');copy.append(E('div','shout','CLASSEUR · 3e'),E('h1','','CHOISIS TA MISSION'),E('p','','Cours, défis et progression. À toi de jouer.'));
- copy.append(button('Choisir une matière →',()=>page('matieres'),'lobo-go'));hero.append(copy);const wolf=E('img','mission-wolf');wolf.src='./assets/loup-accueil.webp';wolf.alt='Le loup jongleur du classeur';hero.append(wolf);root.append(hero,...(window.__TIM_PARENT?[parentTrialResultCard()]:[]),missionCard('daily'),...(window.__TIM_GUEST?[]:[makeXPPanel()]),makeRewardsTile(),makeSoundSettings(),bonusMissionPanel(true),missionCard('weekly'),missionCard('sunday'));
+ copy.append(button('Choisir une matière →',()=>page('matieres'),'lobo-go'));hero.append(copy);const wolf=E('img','mission-wolf');wolf.src='./assets/loup-accueil.webp';wolf.alt='Le loup jongleur du classeur';hero.append(wolf);root.append(hero,...(window.__TIM_CHALLENGES?.today==='2026-11-08'?[]:[missionCard('daily')]),...(window.__TIM_GUEST?[]:[makeXPPanel()]),makeRewardsTile(),makeSoundSettings(),bonusMissionPanel(true),missionCard('weekly'),missionCard('sunday'));
  root.append(E('h2','home-section-title','Que veux-tu travailler ?'));
  const cards=E('div','home-grid');
  for(const o of [{name:'Matières',sub:'Cours classés par matière',icon:'▦',cls:'cours',dest:'matieres'},
