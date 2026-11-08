@@ -3,7 +3,6 @@ import {initializeApp} from 'firebase-admin/app';
 import {getFirestore,FieldValue} from 'firebase-admin/firestore';
 import {grade} from './grading.mjs';
 import {rawPoints,cappedPoints} from './xp.mjs';
-import {nextCorrectionAfterSubmission} from './schedule.mjs';
 initializeApp();
 const db=getFirestore();
 const timUid=process.env.TIM_STUDENT_UID,parentUid=process.env.TIM_PARENT_UID;
@@ -22,8 +21,6 @@ export const submitTimExercise=onCall({region:'europe-west1',enforceAppCheck:tru
   const ex=exDoc.data();
   if(ex.enabled!==true)throw new HttpsError('failed-precondition','Exercice fermé');
   const now=new Date(),date=parisDate(now),state=xpDoc.exists?xpDoc.data():{};
-  const correctionAt=nextCorrectionAfterSubmission(ex,now);
-  if(!correctionAt)throw new HttpsError('failed-precondition','Calendrier de cette matière indisponible');
   const result=grade(ex,keyDoc.data(),answers);
   const monday=new Date(date+'T12:00:00Z');monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);
   const week=monday.toISOString().slice(0,10),today=state.date===date?state:{earned:0,lost:0,bonus:0};
@@ -33,7 +30,7 @@ export const submitTimExercise=onCall({region:'europe-west1',enforceAppCheck:tru
   const xp=cappedPoints(raw,Number(today.earned||0),Number(today.lost||0),weekEarned,Number(today.bonus||0),category);
   tx.set(xpRef,{date,week,earned:Number(today.earned||0)+Math.max(0,xp),lost:Number(today.lost||0)+Math.max(0,-xp),bonus:Number(today.bonus||0)+(category==='bonus'?Math.max(0,xp):0),weekEarned:weekEarned+Math.max(0,xp),updatedAt:FieldValue.serverTimestamp()});
   const common={exerciseId:id,authorUid:request.auth.uid,submittedAt:FieldValue.serverTimestamp(),score:result.score,total:result.total,needsReview:result.needsReview,policyVersion:17};
-  tx.create(attemptRef,{...common,xp,responses:answers.map(v=>String(v)),suggestedReleaseAt:correctionAt,scheduleVerified:true});
+  tx.create(attemptRef,{...common,xp,responses:answers.map(v=>String(v)),correctionStatus:'pending-parent'});
   tx.create(privateRef,{...common,...result});
   return {id,submitted:true,correctionLocked:true};
  });}catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError('internal','Échec de validation');}
@@ -44,31 +41,29 @@ export const getParentReport=onCall({region:'europe-west1',enforceAppCheck:true}
  const attempts=await Promise.all(snap.docs.map(async d=>{
   const [record,ex]=await Promise.all([db.doc('attempts/'+d.id).get(),db.doc('publicExercises/'+d.id).get()]);
   const data=record.exists?record.data():{};
-  return {id:d.id,title:ex.exists?(ex.data().title||d.id):d.id,score:data.score??d.get('score')??0,total:data.total??d.get('total')??0,needsReview:Boolean(data.needsReview??d.get('needsReview')),xp:data.xp??0};
+  return {id:d.id,title:ex.exists?(ex.data().title||d.id):d.id,score:data.score??d.get('score')??0,total:data.total??d.get('total')??0,needsReview:Boolean(data.needsReview??d.get('needsReview')),xp:data.xp??0,correctionStatus:data.correctionStatus==='released'?'released':'pending-parent'};
  }));
- return {attempts};
+ return {attempts,pendingCorrections:attempts.filter(a=>a.correctionStatus==='pending-parent').length};
 });
 export const getTimReleasedCorrections=onCall({region:'europe-west1',enforceAppCheck:true},async request=>{
  role(request,'tim');
  const [attempts,releases]=await Promise.all([db.collection('attempts').where('authorUid','==',request.auth.uid).limit(1000).get(),db.collection('releasedCorrections').limit(1000).get()]);
- const eligibleAttempts=new Map(attempts.docs.map(d=>[d.id,d.data()])),now=Date.now();
+ const eligibleAttempts=new Map(attempts.docs.map(d=>[d.id,d.data()]));
  const settings=new Map(releases.docs.map(d=>[d.id,d.data()]));
- const eligible=[...eligibleAttempts.entries()].filter(([id,a])=>{const s=settings.get(id);return typeof a.suggestedReleaseAt==='string'&&Number.isFinite(Date.parse(a.suggestedReleaseAt))&&Date.parse(a.suggestedReleaseAt)<=now&&s?.released!==false&&(!s?.releaseAt||typeof s.releaseAt.toMillis==='function'&&s.releaseAt.toMillis()<=now);}).map(([id])=>({id}));
+ const eligible=[...eligibleAttempts.entries()].filter(([id,a])=>a.correctionStatus==='released'&&settings.get(id)?.released===true).map(([id])=>({id}));
  const docs=await Promise.all(eligible.map(d=>db.doc('privateAttempts/'+d.id).get()));
  return {corrections:docs.filter(d=>d.exists).map(d=>({id:d.id,answers:d.data().answers||[],score:d.data().score,total:d.data().total}))};
 });
 export const setParentCorrectionRelease=onCall({region:'europe-west1',enforceAppCheck:true},async request=>{
  role(request,'parent');
- const {id,releaseAt,released}=request.data||{},millis=Date.parse(releaseAt);
- if(!validId(id)||typeof released!=='boolean'||!Number.isFinite(millis)||millis<Date.UTC(2026,0,1)||millis>Date.now()+366*86400000)throw new HttpsError('invalid-argument','Paramètres invalides');
- const attempt=await db.doc('attempts/'+id).get();
- if(!attempt.exists)throw new HttpsError('not-found','Tentative introuvable');
- // Parent may postpone, never advance the release before the scheduled class at 18:00 Paris.
- const earliest=attempt.get('suggestedReleaseAt');
- if(released===true){
-   if(typeof earliest!=='string'||!Number.isFinite(Date.parse(earliest)))throw new HttpsError('failed-precondition','Horaire scolaire non validé');
-   if(millis<Date.parse(earliest))throw new HttpsError('failed-precondition','Correction avant la fin du cours à 18 h');
- }
- await db.doc('releasedCorrections/'+id).set({released,releaseAt:new Date(millis),updatedAt:FieldValue.serverTimestamp()});
- return {saved:true,id,released,releaseAt:new Date(millis).toISOString()};
+ const {id,released}=request.data||{};
+ if(!validId(id)||typeof released!=='boolean')throw new HttpsError('invalid-argument','Paramètres invalides');
+ const attemptRef=db.doc('attempts/'+id),releaseRef=db.doc('releasedCorrections/'+id);
+ await db.runTransaction(async tx=>{
+  const attempt=await tx.get(attemptRef);
+  if(!attempt.exists)throw new HttpsError('not-found','Tentative introuvable');
+  tx.update(attemptRef,{correctionStatus:released?'released':'pending-parent'});
+  tx.set(releaseRef,{released,updatedAt:FieldValue.serverTimestamp()});
+ });
+ return {saved:true,id,released};
 });
