@@ -9,16 +9,15 @@ const PASSWORD=process.env.TIM_PARENT_PASSWORD||'';
 const URL=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
 const output=path.join(process.cwd(),'browser-parent-results');
 fs.mkdirSync(output,{recursive:true});
-const data={site:URL,date:new Date().toISOString(),checks:[],devices:[],notes:[],pageErrors:[]};
+const data={site:URL,date:new Date().toISOString(),checks:[],devices:[],notes:[],pageErrors:[],subjectInventory:[]};
 function check(name,ok,detail=''){data.checks.push({name,ok,detail});console.log((ok?'OK':'ECHEC')+' '+name+(detail?' : '+detail:''));}
 async function picture(page,filename){
   // Ne jamais archiver de formulaire contenant le mot de passe.
   if(!await page.locator('body.ready').count())return;
-  try{await page.screenshot({
-    path:path.join(output,filename+'.png'),fullPage:true,animations:'disabled',
-    mask:page.locator('#parent-corrections, #parent-content .results-list, #account-name'),
-    maskColor:'#414b60',timeout:15000
-  });}catch(e){data.notes.push('Capture impossible : '+filename);}
+  try{
+    await page.addStyleTag({content:'#parent-corrections, #parent-content .results-list, #account-name { visibility: hidden !important; }'});
+    await page.screenshot({path:path.join(output,filename+'.jpg'),type:'jpeg',quality:62,fullPage:true,animations:'disabled',timeout:12000});
+  }catch(e){data.notes.push('Capture impossible : '+filename+' — '+String(e.message||e).slice(0,220));}
 }
 async function inspect(browser,label,viewport){
   const context=await browser.newContext({viewport,locale:'fr-FR'});
@@ -59,9 +58,14 @@ async function inspect(browser,label,viewport){
     device.lessonCount=stats.lessons;device.exerciseCount=stats.exercises;device.subjectsCount=stats.subjects;
     check(label+' menu Parent visible',stats.parentNav);
     check(label+' lecons chargees',stats.lessons>0,'Nombre : '+stats.lessons);
+    const subjects=await page.evaluate(()=>{
+      const lessons=window.__TIM_DATA?.lessons||[],exercises=window.__TIM_DATA?.exercises||[];
+      return [...new Set([...lessons.map(x=>x.subject||'Espagnol'),...exercises.map(x=>x.subject||'Espagnol')])].map(name=>({name,lessons:lessons.filter(x=>(x.subject||'Espagnol')===name).length,exercises:exercises.filter(x=>(x.subject||'Espagnol')===name).length}));
+    });
+    if(label==='ordinateur')data.subjectInventory=subjects;
     check(label+' exercices charges',stats.exercises>0,'Nombre : '+stats.exercises);
     await picture(page,label+'-accueil-parent');
-    for(const id of ['matieres','cours','exercices','parent']){
+    for(const id of ['matieres','exercices','parent']){
       const tab=page.locator('[data-nav="'+id+'"]:visible').first();
       try{
         await tab.click({timeout:9000});
@@ -109,6 +113,9 @@ async function inspect(browser,label,viewport){
  '',
  '## Inventaire',
  ...data.devices.map(d=>'- '+d.label+' : session '+(d.authenticated?'authentifiée':'non ouverte')+', '+d.lessonCount+' leçons, '+d.exerciseCount+' exercices, '+d.subjectsCount+' matières représentées.'),
+ '',
+ '## Répartition des matières',
+ ...data.subjectInventory.map(s=>'- '+s.name+' : '+s.lessons+' leçons, '+s.exercises+' exercices'),
  '',
  '## Erreurs JavaScript',
  ...(data.pageErrors.length?data.pageErrors:['Aucune erreur capturée']),
