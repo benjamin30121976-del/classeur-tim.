@@ -99,15 +99,18 @@ async function submitExercise(db,uid,payload){
   score:evaluated.score,total:evaluated.total,needsReview:evaluated.needsReview,
   policyVersion:18,...evaluated
  };
+ const autoRelease=isMissionId(id);
  const pending={
-  exerciseId:id,authorUid:uid,policyVersion:18,xp:points,correctionStatus:'pending-parent'
+  exerciseId:id,authorUid:uid,policyVersion:18,xp:points,correctionStatus:autoRelease?'released':'pending-parent'
  };
  await db.commit([
   createWrite('attempts/'+id,pending,NOW),
   createWrite('privateAttempts/'+id,details,NOW),
-  upsertWrite('xpState/tim',stateAfter,[{fieldPath:'updatedAt',setToServerValue:'REQUEST_TIME'}])
+  upsertWrite('xpState/tim',stateAfter,[{fieldPath:'updatedAt',setToServerValue:'REQUEST_TIME'}]),
+  ...(autoRelease?[createWrite('releasedCorrections/'+id,{released:true},NOW)]:[])
  ],transaction);
- return {id,submitted:true,xp:points,correctionLocked:true,correctionStatus:'pending-parent'};
+ return autoRelease?{id,submitted:true,xp:points,correctionLocked:false,correctionStatus:'released',score:evaluated.score,total:evaluated.total,answers:evaluated.answers}:
+  {id,submitted:true,xp:points,correctionLocked:true,correctionStatus:'pending-parent'};
 }
 async function parentReport(db,uid){
  permitted(uid,'parent');
