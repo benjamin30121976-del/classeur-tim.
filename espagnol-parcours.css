@@ -130,3 +130,8 @@
 .spx-easy-content ol{margin:7px 0 14px;padding-left:22px}
 .spx-easy-content li{margin:7px 0}
 @media(max-width:520px){.spx-card>.spx-metrics{grid-column:2;align-items:flex-start;margin:5px 0 0;padding-top:7px}.spx-card{min-height:auto}.spx-lesson-item .spx-row{padding:12px}.spx-easy-shortcut{padding:12px!important}}
+
+/* Les initiales ont été remplacées par des pictogrammes vectoriels cohérents. */
+.spx-icon .spx-topic-svg{display:block;width:27px;height:27px;color:#a32b41;flex:none}
+.spx-card:hover .spx-topic-svg{transform:scale(1.07);transition:transform .15s ease}
+@media (prefers-reduced-motion:reduce){.spx-card:hover .spx-topic-svg{transform:none;transition:none}}
