@@ -201,6 +201,15 @@ async function fetchAttempts(content){
   // Never reconstruct the correct answers in the browser before parent approval.
   list.push({id:d.id,date:a.submittedAt?.toDate?.().toISOString()||new Date().toISOString(),title:ex.title,lesson:ex.lesson,xp:Number(a.xp||0),correctionStatus:a.correctionStatus==='released'?'released':'pending-parent',correctionLocked:a.correctionStatus!=='released',answers:[],score:null,total:null,needsReview:false});
  });
+ if(activeUser?.uid===TIM_UID&&list.some(x=>x.correctionStatus==='released')){
+  const response=await httpsCallable(functionsApi,'getTimReleasedCorrections')({});
+  const released=new Map((response.data?.corrections||[]).map(x=>[x.id,x]));
+  for(const attempt of list){const correction=released.get(attempt.id);if(!correction)continue;
+   attempt.answers=Array.isArray(correction.answers)?correction.answers:[];
+   attempt.score=correction.score;attempt.total=correction.total;
+   attempt.correctionLocked=false;
+  }
+ }
  list.sort((a,b)=>a.date.localeCompare(b.date));window.__CLOUD_ATTEMPTS=list;return list;
 }
 
