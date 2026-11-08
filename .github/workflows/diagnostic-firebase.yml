@@ -1,4 +1,4 @@
-name: Diagnostic Firebase (sans publication)
+name: Tests Firebase isolés (aucune publication)
 on:
   push:
     branches: [tests-firebase-sans-publication]
@@ -6,9 +6,9 @@ on:
 permissions:
   contents: read
 jobs:
-  diagnostic:
+  firestore-security:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -18,18 +18,7 @@ jobs:
         with:
           distribution: temurin
           java-version: '21'
-      - name: Installer Firebase CLI
-        run: npm install --no-save --no-audit --no-fund firebase-tools
-      - name: Vérifier les versions
-        run: |
-          node --version
-          java -version
-          npx firebase --version
-      - name: Vérifier la présence des tests de sécurité
-        shell: bash
-        run: |
-          if [[ -f firebase.json && -f package.json ]]; then
-            echo "Configuration Firebase trouvée."
-          else
-            echo "::notice::La configuration Firebase et les tests V16 doivent encore être transférés sur cette branche."
-          fi
+      - name: Installer les dépendances Firebase
+        run: npm install --no-audit --no-fund --ignore-scripts
+      - name: Tester les autorisations sur l'émulateur
+        run: npm run test:rules
