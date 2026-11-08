@@ -515,28 +515,60 @@ function makeRewardsTile(){const b=E('button','reward-open');b.type='button';
 document.getElementById('rewards-close')?.addEventListener('click',()=>{const d=document.getElementById('rewards-dialog');if(d.close)d.close();else d.removeAttribute('open');});
 function dailyMissionsCard(){
  const meta=window.__TIM_CHALLENGES||{},ids=meta.dailyIds||[];
- if(!ids.length)return document.createDocumentFragment();
+ const isUpcoming=ids.length===0,featuredId=ids[0]||window.__TIM_NEXT_DAILY;
+ const featured=DATA.exercises.find(ex=>ex.id===featuredId);
+ const done=featured&&attemptFor(featured.id);
  const c=E('section','daily-card game-challenge');c.id='challenge-section';
- const head=E('div','challenge-top');head.append(E('strong','','🎯 PETITS DÉFIS DU JOUR'),E('span','challenge-xp-tag','JUSQU’À +3 XP PAR DÉFI'));c.append(head);
+ const head=E('div','challenge-top');
+ head.append(E('strong','','🎯 DÉFI DU JOUR À L’HONNEUR'),E('span','challenge-xp-tag','JUSQU’À +3 XP'));
+ c.append(head);
  const body=E('div','challenge-main'),copy=E('div','challenge-main-copy');
- copy.append(E('p','challenge-detail','10 questions par défi, tirées des leçons déjà étudiées. Plusieurs défis disponibles aujourd’hui. À chaque fois, une seule validation.'));
- const completed=ids.filter(id=>attemptFor(id)).length;
- copy.append(E('p','challenge-meta',completed+' défi'+(completed>1?'s':'')+' terminé'+(completed>1?'s':'')+' aujourd’hui'));
+ if(featured){
+  copy.append(E('h3','',featured.title));
+  copy.append(E('p','challenge-detail',featured.description||'Un défi de 10 questions sur les leçons déjà étudiées.'));
+  copy.append(E('p','challenge-meta',isUpcoming?'Prochain défi : disponible lundi.':done?'Défi déjà validé. Tu peux revoir la correction.':'10 questions · Un seul essai · Correction immédiate'));
+ }else{
+  copy.append(E('p','challenge-detail',isUpcoming?'Prochain défi du jour dès lundi.':'Le défi du jour est en préparation.'));
+ }
  body.append(copy);
  const wolfWrap=E('div','challenge-wolf-scene'),img=E('img','challenge-wolf challenge-wolf-daily');
  img.src='./assets/loup-daily'+(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'-statique.webp':'-anime.webp');
  img.alt='Loup joueur faisant un clin d’œil';img.loading='lazy';img.width=126;img.height=100;
  wolfWrap.append(img);body.append(wolfWrap);c.append(body);
  const actions=E('div','challenge-card-actions');
- const visible=Math.max(3,window.__TIM_DAILY_VISIBLE||3);
- for(const [idx,id] of ids.slice(0,visible).entries()){
-  const ex=DATA.exercises.find(x=>x.id===id);if(!ex)continue;
-  const old=attemptFor(id),text='Défi '+(idx+1)+' · '+ex.questions.length+' questions';
-  actions.append(button((old?'✓ ':window.__TIM_PARENT?'Aperçu · ':'')+text,()=>openExercise(id),old?'small-cta':'mission-launch'));
+ if(!featured){actions.append(badge('En préparation'));}
+ else if(isUpcoming){
+  actions.append(badge('Disponible lundi'));
+  if(window.__TIM_PARENT)actions.append(button('Prévisualiser le défi du lundi',()=>openExercise(featured.id),'mission-launch'));
  }
- if(ids.length>visible)actions.append(button('Afficher 3 autres défis',()=>{window.__TIM_DAILY_VISIBLE=visible+3;renderHome();},'small-cta'));
- if(!actions.childNodes.length)actions.append(badge('Défis en préparation'));
- c.append(actions);return c;
+ else if(done){
+  actions.append(button('✓ Voir ma validation et les réponses',()=>openExercise(featured.id),'small-cta'));
+ }
+ else if(window.__TIM_GUEST){actions.append(badge('Lecture seule · invité'));}
+ else actions.append(button(window.__TIM_PARENT?'Prévisualiser le défi':'LANCER LE DÉFI',()=>openExercise(featured.id),'mission-launch'));
+ c.append(actions);
+ // Seul le défi principal apparaît au départ. Les autres restent facultatifs.
+ if(ids.length>1){
+  const more=E('details','challenge-more'),summary=E('summary','','Voir les autres petits défis du jour');
+  const list=E('div','challenge-card-actions');
+  let next=1;
+  function appendMore(){
+   const until=Math.min(ids.length,next+3);
+   for(let k=next;k<until;k++){
+    const ex=DATA.exercises.find(item=>item.id===ids[k]);if(!ex)continue;
+    const old=attemptFor(ex.id);
+    list.append(button((old?'✓ ':'')+'Défi '+(k+1)+' · '+ex.questions.length+' questions',
+      ()=>openExercise(ex.id),old?'small-cta':'mission-launch'));
+   }
+   next=until;
+   moreButton.hidden=next>=ids.length;
+  }
+  const moreButton=button('Afficher 3 autres défis',appendMore,'small-cta');
+  more.append(summary,list,moreButton);
+  more.addEventListener('toggle',()=>{if(more.open&&next===1)appendMore();});
+  c.append(more);
+ }
+ return c;
 }
 function missionCard(kind){
  if(kind==='daily')return dailyMissionsCard();
@@ -575,7 +607,7 @@ function renderHome(){
  const root=clear(document.getElementById('home-content'));refreshXPHeader();
  const hero=E('section','mission-hero');
  const copy=E('div','mission-copy');copy.append(E('div','shout','CLASSEUR · 3e'),E('h1','','CHOISIS TA MISSION'),E('p','','Cours, défis et progression. À toi de jouer.'));
- copy.append(button('Choisir une matière →',()=>page('matieres'),'lobo-go'));hero.append(copy);const wolf=E('img','mission-wolf');wolf.src='./assets/loup-accueil.webp';wolf.alt='Le loup jongleur du classeur';hero.append(wolf);root.append(hero,makeSoundSettings(),...(window.__TIM_GUEST?[]:[makeXPPanel()]),makeRewardsTile(),missionCard('daily'),bonusMissionPanel(true),missionCard('weekly'),missionCard('sunday'));
+ copy.append(button('Choisir une matière →',()=>page('matieres'),'lobo-go'));hero.append(copy);const wolf=E('img','mission-wolf');wolf.src='./assets/loup-accueil.webp';wolf.alt='Le loup jongleur du classeur';hero.append(wolf);root.append(hero,missionCard('daily'),...(window.__TIM_GUEST?[]:[makeXPPanel()]),makeRewardsTile(),makeSoundSettings(),bonusMissionPanel(true),missionCard('weekly'),missionCard('sunday'));
  root.append(E('h2','home-section-title','Que veux-tu travailler ?'));
  const cards=E('div','home-grid');
  for(const o of [{name:'Matières',sub:'Cours classés par matière',icon:'▦',cls:'cours',dest:'matieres'},
