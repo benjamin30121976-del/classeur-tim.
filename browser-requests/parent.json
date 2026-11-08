@@ -3,6 +3,6 @@
   "site": "https://classeur-tim-v16.pages.dev/",
   "scope": "Inspecter le site avec le navigateur Chromium/Playwright et les secrets Parent déjà configurés, sans modifier les données.",
   "launch_on_update": true,
-  "note": "Navigateur gratuit réutilisable pour les contrôles du classeur ; le défi test du 8 novembre est annulé et ses données sont supprimées.",
-  "checkVersion": "inspection-generale-sans-modification"
+  "note": "Inspection Chromebook Chromium/Playwright, lecture seule. Le défi du jour reste suspendu ; aucune validation ni résultat de Tim n’est modifié.",
+  "checkVersion": "audit-enonces-maths-programmes-a-b-2026-11-08"
 }
