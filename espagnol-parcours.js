@@ -20,6 +20,15 @@ const INSTRUCTIONS=[
  ["Verdadero o falso.","Vrai ou faux.","Décide si la phrase est vraie ou fausse, puis vérifie si tu dois justifier."]
 ];
 const ED=window.TIM_SPANISH_EDU||{};
+/* Comptage prudent des activités/exercices IDENTIFIÉS dans les captures ENT,
+   jamais un inventaire exhaustif des devoirs de la professeure.
+   L01 fiche de renseignements ; L02 question d'emploi du temps ;
+   L05 rédaction de lettre ; L06 production horoscope ;
+   L07 trois transformations de grammaire ; L13 trois phrases photocopiées ;
+   L15 feuille Práctica et fiche de tableaux des 10 verbes.
+   Les simulations E01…/R01… créées pour le site ne sont PAS comptées comme ENT. */
+const ENT_ACTIVITIES=Object.freeze({L01:1,L02:1,L05:1,L06:1,L07:3,L13:3,L15:2});
+const TRAINING_SERIES=5,QUESTIONS_PER_SERIES=10;
 const esc=x=>String(x==null?"":x).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 const nrm=x=>String(x||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9]+/g," ").trim();
 const categoryOf=id=>C.findIndex(c=>c.ids.indexOf(id)>=0);
@@ -28,6 +37,18 @@ const header=(title,sub)=>'<header class="spx-hero"><span class="spx-flag" aria-
 const back=txt=>'<button type="button" class="spx-back" data-back="yes">← '+esc(txt)+'</button>';
 function render(root,opts){
  const lessons=opts.lessons||[];let category=0,id="L09",set=0,qIndex=0,selected=-1,validated=false,score=0;
+ const entCourseCount=ids=>ids.reduce((n,ref)=>n+(lessons.some(l=>l.id===ref)?1:0),0);
+ const entActivityCount=ids=>ids.reduce((n,ref)=>n+(ENT_ACTIVITIES[ref]||0),0);
+ const plural=(n,singular,pluralWord)=>n+' '+(n===1?singular:pluralWord);
+ const statLine=(ids,isCategory=false)=>{
+  const cours=entCourseCount(ids),acts=entActivityCount(ids),series=ids.length*TRAINING_SERIES;
+  return '<span class="spx-metrics">'+
+    '<span>'+plural(cours,'fiche de cours ENT','fiches de cours ENT')+'</span>'+
+    '<span>'+plural(acts,'activité/exercice ENT repéré','activités/exercices ENT repérés')+'</span>'+
+    '<span>'+plural(series,'entraînement','entraînements')+' · 10 questions chacun</span>'+
+    '<span>Leçon simplifiée « Je n’ai pas compris »</span>'+
+   '</span>';
+ };
  function draw(content){root.innerHTML='<div class="spx">'+content+'</div>';}
  function bindBack(fn){root.querySelector("[data-back]").onclick=fn;}
  function scroll(){try{root.scrollIntoView({behavior:"smooth",block:"start"});}catch(e){}}
@@ -37,8 +58,8 @@ function render(root,opts){
    '<div class="spx-search">⌕ <input type="search" id="spx-find" autocomplete="off" placeholder="Ex. : je suis, horoscope, lettre, consigne…" aria-label="Rechercher un mot ou une leçon"></div>'+
    '<div id="spx-results" class="spx-results" hidden></div>'+
    '<h3 class="spx-subheading">Qu’est-ce que tu veux apprendre ?</h3>'+
-   '<div class="spx-grid">'+C.map((c,i)=>'<button type="button" class="spx-card" data-category="'+i+'"><span class="spx-icon">'+esc(c.icon)+'</span><strong>'+esc(c.title)+'</strong><p>'+esc(c.text)+'</p><small>'+c.ids.length+' sous-leçon'+(c.ids.length>1?"s":"")+' →</small></button>').join("")+'</div>'+
-   '<p class="spx-note">Les exercices de cette matière servent à apprendre. Les exercices bonus restent séparés à l’accueil général.</p>');
+   '<div class="spx-grid">'+C.map((c,i)=>'<button type="button" class="spx-card" data-category="'+i+'"><span class="spx-icon">'+esc(c.icon)+'</span><strong>'+esc(c.title)+'</strong><p>'+esc(c.text)+'</p><small>'+c.ids.length+' sous-leçon'+(c.ids.length>1?"s":"")+' →</small>'+statLine(c.ids,true)+'</button>').join("")+'</div>'+
+   '<p class="spx-note">« Activités/exercices ENT » = ceux identifiés dans les captures conservées, pas forcément tous les travaux de la professeure. Les cinq entraînements de dix questions par sous-leçon sont des exercices créés pour Tim, à 0 XP et répétables. Les bonus restent à l’accueil général.</p>');
   bindBack(opts.back);
   root.querySelectorAll("[data-category]").forEach(b=>b.onclick=()=>openCategory(+b.dataset.category));
   const inp=root.querySelector("#spx-find"),dest=root.querySelector("#spx-results");
@@ -69,14 +90,28 @@ function render(root,opts){
  function openCategory(i){
   category=i;const c=C[i];
   draw(header(c.title,c.text)+back("Toutes les rubriques")+
+   '<p class="spx-chapter-overview">'+plural(entCourseCount(c.ids),'fiche de cours ENT','fiches de cours ENT')+' · '+plural(entActivityCount(c.ids),'activité/exercice ENT repéré','activités/exercices ENT repérés')+' · '+(c.ids.length*TRAINING_SERIES)+' entraînements de 10 questions</p>'+
    '<h3 class="spx-subheading">Choisis une sous-leçon</h3>'+
-   c.ids.map(ref=>'<button type="button" class="spx-row" data-lesson="'+ref+'"><span class="spx-chip">▤</span><span><strong>'+esc(ED[ref].name)+'</strong><small>'+esc(ED[ref].intro)+'</small></span><span>›</span></button>').join(""));
-  bindBack(home);root.querySelectorAll("[data-lesson]").forEach(b=>b.onclick=()=>openLesson(b.dataset.lesson));scroll();
+   c.ids.map(ref=>'<div class="spx-lesson-item"><button type="button" class="spx-row" data-lesson="'+ref+'"><span class="spx-chip">▤</span><span><strong>'+esc(ED[ref].name)+'</strong><small>'+esc(ED[ref].intro)+'</small>'+statLine([ref])+'</span><span>›</span></button><button type="button" class="spx-easy-shortcut" data-easy="'+ref+'">Je n’ai pas compris ? Voir la leçon plus simple →</button></div>').join("")+
+   '<p class="spx-note">Les chiffres ENT ne comptent que les activités identifiées dans nos captures, pas l’ensemble des devoirs possibles.</p>');
+  bindBack(home);root.querySelectorAll("[data-lesson]").forEach(b=>b.onclick=()=>openLesson(b.dataset.lesson));
+  root.querySelectorAll("[data-easy]").forEach(b=>b.onclick=()=>openLesson(b.dataset.easy,true));scroll();
  }
- function openLesson(ref){
+ function openLesson(ref,showEasy=false){
   id=ref;category=categoryOf(ref);const x=ED[ref];
   const real=lessons.find(l=>l.id===ref);const date=real&&real.date?real.date:"Date non indiquée";
+  const help=real?.help||{};
+  const helpIntro=help.simple||x.intro;
+  const helpSteps=Array.isArray(help.steps)&&help.steps.length?help.steps:[x.tip,"Regarde l’exemple ci-dessous avant de t’entraîner."];
+  const helpExample=help.example||x.example;
+  const easyBlock='<details class="spx-easy-lesson" id="spx-easy-lesson"'+(showEasy?' open':'')+'>'+
+    '<summary>Je n’ai pas compris ? <span>Ouvrir la leçon expliquée plus simplement</span></summary>'+
+    '<div class="spx-easy-content"><h3>On reprend depuis le début</h3><p>'+esc(helpIntro)+'</p>'+
+    '<h4>En trois petites étapes</h4><ol>'+helpSteps.map(step=>'<li>'+esc(step)+'</li>').join("")+'</ol>'+
+    '<div class="spx-example"><strong>Un exemple expliqué :</strong> '+esc(helpExample)+'</div>'+
+    '<p>Tu peux relire cette aide autant que tu veux avant les dix questions.</p></div></details>';
   draw(header(x.name,C[category].title)+back("Retour aux sous-leçons")+
+   '<p class="spx-chapter-overview">'+statLine([ref])+'</p>'+easyBlock+
    '<section class="spx-panel"><span class="spx-label">1 · JE COMPRENDS</span><h3>C’est quoi, exactement ?</h3><p>'+esc(x.intro)+'</p><div class="spx-example">'+esc(x.example)+'</div><p><strong>À retenir :</strong> '+esc(x.tip)+'</p></section>'+
    '<section class="spx-panel"><span class="spx-label">2 · MON PETIT DICTIONNAIRE</span><h3>Les mots expliqués en français</h3><table class="spx-words"><tr><th>Espagnol</th><th>Français</th></tr>'+x.pairs.map(p=>'<tr><td><span lang="es">'+esc(p[0])+'</span> '+listen(p[0])+'</td><td>'+esc(p[1])+'</td></tr>').join("")+'</table></section>'+
    '<section class="spx-panel"><span class="spx-label">4 · JE COMPRENDS LES CONSIGNES</span><h3>Qu’est-ce que la professeure me demande ?</h3><p>Voici des phrases que tu peux rencontrer dans un exercice. La traduction est toujours visible. Les explications t’aident à savoir quoi faire, sans te donner la réponse.</p><div class="spx-guide-list">'+INSTRUCTIONS.map(row=>'<div class="spx-guide"><strong lang="es">'+esc(row[0])+'</strong> '+listen(row[0])+'<div class="spx-guide-fr">En français : '+esc(row[1])+'</div><small>'+esc(row[2])+'</small></div>').join("")+'</div><p class="spx-note">Méthode : 1. Je lis la consigne. 2. Je repère le verbe d’action (« complète », « choisis », « justifie »). 3. Je fais seulement ce qui est demandé.</p></section>'+
@@ -87,6 +122,7 @@ function render(root,opts){
   if(ref==="L05"&&window.TIM_SPANISH_LETTER){const first=root.querySelector(".spx-panel");if(first)first.after(window.TIM_SPANISH_LETTER.createPanel());}
   bindBack(()=>openCategory(category));root.querySelectorAll("[data-set]").forEach(b=>b.onclick=()=>begin(+b.dataset.set));
   root.querySelector("#spx-ent").onclick=()=>opts.original(ref);scroll();
+  if(showEasy){const easy=root.querySelector("#spx-easy-lesson");if(easy)requestAnimationFrame(()=>easy.scrollIntoView({behavior:"smooth",block:"start"}));}
  }
  function questionData(){
   const x=ED[id],p=x.pairs[qIndex],make=(correct,wrong,prompt,word,dir,cloze)=>{
