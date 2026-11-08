@@ -4,6 +4,7 @@ on:
     paths:
       - '_worker.js'
       - '.assetsignore'
+      - '_routes.json'
       - 'boot.js'
       - 'worker/**'
       - 'tools/test/cloudflare-spark-backend.test.mjs'
@@ -32,6 +33,13 @@ jobs:
           node --check functions/xp.mjs
       - name: Tests de sécurité et de notation dans une base fictive
         run: node --test tools/test/cloudflare-spark-backend.test.mjs tools/test/cloudflare-spark-auth.test.mjs
+      - name: Vérifier que seules les API utilisent le quota Functions
+        run: |
+          node - <<'NODE'
+          const r=require('./_routes.json');
+          if(r.version!==1||JSON.stringify(r.include)!=='["/api/*"]'||r.exclude.length)throw Error('Les pages statiques doivent rester hors fonctions');
+          console.log('Pages HTML/JS/CSS servies sans invocation du Worker.');
+          NODE
       - name: Confirmer le branchement conditionnel côté navigateur
         run: |
           node - <<'NODE'
