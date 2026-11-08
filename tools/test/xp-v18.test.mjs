@@ -25,25 +25,15 @@ test('Grand défi du dimanche sur 20 questions, montants et anciens devoirs',()=
  assert.equal(cappedPoints(20,10,0,50,3,'challenge'),20);
  assert.equal(cappedPoints(2,10,0,50,2,'bonus'),1);
 });
-test('Défi inversé dimanche 8 novembre : dix traductions exactes et fermeture à minuit',()=>{
+test('Le défi d’essai du dimanche 8 novembre est définitivement annulé',()=>{
  const course={lessons:[{id:'L01',title:'Se présenter',subject:'Espagnol',publishedAt:'2026-11-01'}],exercises:[]};
- const task=buildMission('DAY_20261108_01',course,SPANISH_COURSE);
- assert.equal(task.title,'Défi inversé — Se présenter');
- assert.equal(task.questions.length,10);
- assert.equal(task.strictAnswers,true);
- assert.ok(task.instructions.includes('Attention, la précision compte !'));
- assert.ok(task.questions.every(q=>q.type==='text'&&q.q.includes('Écris en espagnol')));
- assert.deepEqual(task.questions.map(q=>q.right),[
-  'Me llamo','Mi nombre','Mi apellido','Tengo quince años','¿Cómo te llamas?',
-  '¿Cuántos años tienes?','¿Dónde vives?','Vivo en un pueblo','Soy francés','Mi nacionalidad'
- ]);
- assert.equal(task.questions[0].q,"Écris en espagnol : « Je m'appelle ».");
- assert.equal(isMissionOpen(task,'2026-11-08'),true);
- assert.equal(isMissionOpen(task,'2026-11-09'),false);
- const plan=setupMissions(course,new Date('2026-11-08T22:59:00Z'),SPANISH_COURSE);
- assert.deepEqual(plan.meta.dailyIds,['DAY_20261108_01']);
- const after=setupMissions(course,new Date('2026-11-08T23:00:00Z'),SPANISH_COURSE);
- assert.ok(!after.meta.dailyIds.includes('DAY_20261108_01'));
+ assert.equal(buildMission('DAY_20261108_01',course,SPANISH_COURSE),null);
+ const beforeMidnight=setupMissions(course,new Date('2026-11-08T22:59:00Z'),SPANISH_COURSE);
+ const afterMidnight=setupMissions(course,new Date('2026-11-08T23:00:00Z'),SPANISH_COURSE);
+ assert.deepEqual(beforeMidnight.meta.dailyIds,[]);
+ assert.equal(afterMidnight.meta.dailyIds.length,24);
+ assert.ok(!beforeMidnight.exercises.some(e=>e.id==='DAY_20261108_01'));
+ assert.ok(!afterMidnight.exercises.some(e=>e.id==='DAY_20261108_01'));
 });
 test('Trois défis quotidiens distincts, un seul samedi et dimanche',()=>{
  const content={lessons:[{id:'L01',title:'Espagnol',subject:'Espagnol',publishedAt:'2026-11-01'}],
@@ -69,14 +59,3 @@ test('Trois défis quotidiens distincts, un seul samedi et dimanche',()=>{
  assert.equal(sat.exercises.filter(e=>e.kind==='sunday').length,1);
 });
 
-test("Le défi d'essai est noté avec ponctuation, accents, majuscules et espaces exacts",async()=>{
- const {grade}=await import('../../functions/grading.mjs');
- const task=buildMission('DAY_20261108_01',{lessons:[],exercises:[]},SPANISH_COURSE);
- const secret={questions:task.questions.map(q=>({right:q.right,also:q.also,why:q.why}))};
- const answers=task.questions.map(q=>q.right);
- assert.equal(grade(task,secret,answers).score,10);
- for(const [index,response] of [[0,'me llamo'],[3,'Tengo quince anos'],[4,'Cómo te llamas?'],[4,'¿Cómo  te llamas?'],[4,'¿Cómo te llamas'],[4,'¿Cómo te llamas? ']]){
-  const modified=[...answers];modified[index]=response;
-  assert.equal(grade(task,secret,modified).score,9,response);
- }
-});
