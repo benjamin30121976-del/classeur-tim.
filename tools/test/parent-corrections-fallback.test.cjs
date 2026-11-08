@@ -26,6 +26,10 @@ async function run({publicDocs=[],privateDocs=[],serviceOk=false,readAllowed=tru
   panel,document:{createElement:node},
   window:{__TIM_DATA:{exercises:[{id:'MATH_A',title:'Calculs en mathématiques'},{id:'SVT_B',title:'Cellules en SVT'}]}},
   functionsApi:{},collection:(_db,path)=>path,db:{},
+  cloudCallable:name=>async()=>{
+   if(name==='getParentReport'&&serviceOk)return {data:{attempts:publicDocs.map(x=>({...x,title:x.title||x.id,correctionStatus:x.correctionStatus||'pending-parent'}))}};
+   throw Error('functions/not-found');
+  },
   httpsCallable:(_api,name)=>async()=>{
    if(name==='getParentReport'&&serviceOk)return {data:{attempts:publicDocs.map(x=>({...x,title:x.title||x.id,correctionStatus:x.correctionStatus||'pending-parent'}))}};
    throw Error('functions/not-found');
