@@ -629,8 +629,8 @@ const hash=location.hash.replace('#','');if(document.getElementById(hash)?.class
  v7InitUI();
 
 
-// Réévaluer automatiquement l'affichage à minuit et au déblocage de 18 h.
-// Les dates sont toujours calculées en Europe/Paris ; pas de minuteur d'écriture Firebase.
+// Rafraîchir les exercices et les corrections après une autorisation parentale.
+// Aucun déblocage automatique à une heure programmée.
 let __timLastDay=window.TIM_EXERCISE.day(new Date());
 let __timLastCorrectionAccess='';
 function __timRefreshCalendar(){
@@ -652,4 +652,10 @@ function __timRefreshCalendar(){
  }
 }
 setInterval(__timRefreshCalendar,60000);
-document.addEventListener('visibilitychange',()=>{if(!document.hidden)__timRefreshCalendar();});
+document.addEventListener('visibilitychange',async()=>{
+ if(document.hidden)return;
+ if(window.__TIM_BRIDGE?.refresh&&!window.__TIM_PARENT&&!window.__TIM_GUEST){
+  try{await window.__TIM_BRIDGE.refresh();}catch(e){console.warn('Actualisation des corrections indisponible',e);}
+ }
+ __timRefreshCalendar();
+});
