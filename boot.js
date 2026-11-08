@@ -1,6 +1,6 @@
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js';
 import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,signOut} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
-import {getFirestore,doc,getDoc,setDoc,deleteDoc,collection,getDocs,serverTimestamp,runTransaction} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js';
+import {getFirestore,doc,getDoc,setDoc,deleteDoc,collection,getDocs,query,where,serverTimestamp,runTransaction} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js';
 import {getFunctions,httpsCallable} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-functions.js';
 import {initializeAppCheck,ReCaptchaV3Provider} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-app-check.js';
 import {makeAttachmentBridge} from './attachments.js';
@@ -193,7 +193,8 @@ async function runFirebaseDiagnostic(){
  }
 }
 async function fetchAttempts(content){
- const docs=await getDocs(collection(db,'attempts'));
+ const attemptCollection=collection(db,'attempts');
+ const docs=await getDocs(activeUser?.uid===TIM_UID?query(attemptCollection,where('authorUid','==',TIM_UID)):attemptCollection);
  const map=new Map(content.exercises.map(x=>[x.id,x]));
  const list=[];
  docs.forEach(d=>{
