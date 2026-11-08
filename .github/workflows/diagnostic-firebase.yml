@@ -25,6 +25,10 @@ jobs:
           test -f functions/test/schedule.test.mjs || { echo '::error::Tests calendrier V16 absents'; exit 1; }
       - name: Installer les dépendances Firebase
         run: npm install --no-audit --no-fund --ignore-scripts
+      - name: Installer les dépendances du backend V16
+        run: npm install --prefix functions --no-audit --no-fund --ignore-scripts
+      - name: Vérifier la syntaxe des fonctions serveur
+        run: node --check functions/index.mjs
       - name: Tester la notation et les XP (JUnit)
         run: |
           mkdir -p test-results
