@@ -1,0 +1,100 @@
+name: Navigateur Chromium - inspection visuelle du classeur
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspecter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - name: Installer Chromium Playwright
+        run: |
+          mkdir -p /tmp/tim-browser
+          cd /tmp/tim-browser
+          npm init -y >/dev/null
+          npm install --no-audit --no-fund playwright
+          npx playwright install --with-deps chromium
+      - name: Inspecter le site reel et prendre des captures
+        env:
+          SITE_URL: https://classeur-tim-v16.pages.dev/
+        run: |
+          cat > /tmp/tim-browser/inspect.cjs <<'NODE'
+          const { chromium } = require('playwright');
+          const fs = require('fs');
+          const path = require('path');
+          const dir = process.env.GITHUB_WORKSPACE + '/captures-classeur';
+          fs.mkdirSync(dir,{recursive:true});
+          const report = {site:process.env.SITE_URL,at:new Date().toISOString(),checks:[],consoleErrors:[],pageErrors:[],brokenImages:[],notes:[]};
+          const check=(name,ok,details='')=>{report.checks.push({name,ok,details});console.log((ok?'OK ':'ECHEC ')+name+(details?' : '+details:''));};
+          (async()=>{
+            const browser=await chromium.launch({headless:true});
+            for(const [label,viewport] of [['ordinateur',{width:1365,height:900}],['telephone',{width:390,height:844}]]){
+              const page=await browser.newPage({viewport,deviceScaleFactor:1});
+              page.on('pageerror',e=>report.pageErrors.push(label+': '+e.message));
+              page.on('console',m=>{if(m.type()==='error')report.consoleErrors.push(label+': '+m.text().slice(0,350));});
+              try {
+                const response=await page.goto(process.env.SITE_URL,{waitUntil:'domcontentloaded',timeout:45000});
+                check(label+' : site accessible',!!response && response.status()<400,'HTTP '+response?.status());
+                await page.screenshot({path:path.join(dir,label+'-accueil.png'),fullPage:true});
+                for(const [role,id] of [['Invité','#guest-enter'],['Tim','#tim-enter'],['Parent','#parent-enter']]){
+                  check(label+' : bouton '+role,await page.locator(id).isVisible());
+                }
+                await page.locator('#parent-enter').click();
+                check(label+' : formulaire Parent',await page.locator('#login-form').isVisible());
+                await page.screenshot({path:path.join(dir,label+'-connexion-parent.png'),fullPage:true});
+                await page.locator('#role-back').click();
+                await page.locator('#tim-enter').click();
+                check(label+' : formulaire Tim',await page.locator('#login-form').isVisible());
+                await page.screenshot({path:path.join(dir,label+'-connexion-tim.png'),fullPage:true});
+                await page.locator('#role-back').click();
+                await page.locator('#guest-enter').click();
+                await page.waitForTimeout(2500);
+                check(label+' : espace Invité ouvert',await page.locator('body').evaluate(el=>el.classList.contains('guest-mode')));
+                await page.screenshot({path:path.join(dir,label+'-invite-ouverture.png'),fullPage:true});
+                const intro=page.locator('#intro-screen');
+                if(await intro.isVisible()){
+                  const silent=page.locator('#intro-silent');
+                  if(await silent.isVisible())await silent.click();
+                  await page.waitForTimeout(1500);
+                }
+                await page.screenshot({path:path.join(dir,label+'-invite-apres-intro.png'),fullPage:true});
+                const nav=await page.locator('[data-nav]:visible').all();
+                report.notes.push(label+' : '+nav.length+' boutons de navigation visibles');
+                for(let i=0;i<Math.min(nav.length,7);i++){
+                  const b=nav[i],target=await b.getAttribute('data-nav');
+                  try{
+                    await b.click({timeout:5000});
+                    await page.waitForTimeout(300);
+                    await page.screenshot({path:path.join(dir,label+'-onglet-'+String(target).replace(/[^a-z0-9_-]/gi,'_')+'.png'),fullPage:true});
+                    check(label+' : onglet '+target,true);
+                  }catch(e){check(label+' : onglet '+target,false,e.message.slice(0,150));}
+                }
+                const images=await page.locator('img').evaluateAll(nodes=>nodes.map(n=>({src:n.currentSrc||n.src,ok:!n.complete||n.naturalWidth>0,visible:!!(n.offsetWidth||n.offsetHeight||n.getClientRects().length)})));
+                report.brokenImages.push(...images.filter(i=>i.visible&&!i.ok).map(i=>label+': '+i.src));
+                report.notes.push(label+' : '+images.length+' images HTML trouvees');
+              }catch(e){check(label+' : inspection complete',false,e.message.slice(0,500));await page.screenshot({path:path.join(dir,label+'-erreur.png'),fullPage:true}).catch(()=>{});}
+              await page.close();
+            }
+            await browser.close();
+            fs.writeFileSync(path.join(dir,'rapport.json'),JSON.stringify(report,null,2));
+            fs.writeFileSync(path.join(dir,'rapport.txt'),[
+              'INSPECTION VISUELLE DU CLASSEUR',report.site,report.at,'',
+              ...report.checks.map(c=>(c.ok?'OK':'ECHEC')+' - '+c.name+(c.details?' - '+c.details:'')),
+              '', 'ERREURS JAVASCRIPT',...report.pageErrors,
+              '', 'IMAGES CASSEES',...report.brokenImages,
+              '', 'CONSOLE',...report.consoleErrors,
+              '', 'NOTES',...report.notes
+            ].join('\n'));
+            if(report.checks.some(c=>!c.ok))process.exitCode=1;
+          })().catch(e=>{console.error(e);process.exitCode=1;});
+          NODE
+          cd /tmp/tim-browser
+          node inspect.cjs
+      - name: Conserver les captures et le rapport meme en cas d'erreur
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inspection-visuelle-classeur
+          path: captures-classeur/
+          retention-days: 7
