@@ -94,7 +94,17 @@ test('Public exercises cannot carry answer keys',async()=>{
  const parent=db(parentUid),tim=db(timUid),guest=db(null);
  await assertFails(setDoc(doc(parent,'publicExercises/leak'),{enabled:true,title:'QCM',answers:['secret']}));
  await assertFails(setDoc(doc(parent,'publicExercises/leak2'),{enabled:true,right:2}));
- await assertSucceeds(setDoc(doc(parent,'publicExercises/safe'),{enabled:false,title:'Enoncé'}));
- await assertSucceeds(getDoc(doc(tim,'publicExercises/safe')));
- await assertFails(getDoc(doc(guest,'publicExercises/safe')));
+ await assertFails(setDoc(doc(parent,'publicExercises/safe'),{enabled:false,title:'Enoncé'}));
+ await assertSucceeds(getDoc(doc(tim,'publicExercises/E01')));
+ await assertFails(getDoc(doc(guest,'publicExercises/E01')));
+});
+
+test('Parent ne peut pas injecter un corrigé imbriqué dans les questions publiques',async()=>{
+ const parent=db(parentUid);
+ await assertFails(setDoc(doc(parent,'publicExercises/nested'),{
+  title:'Énoncé',enabled:true,questions:[{q:'Question',options:['a','b'],right:1}]
+ }));
+ await assertFails(setDoc(doc(parent,'publicExercises/nested2'),{
+  title:'Énoncé',enabled:true,metadata:{solutions:['secret']}
+ }));
 });
