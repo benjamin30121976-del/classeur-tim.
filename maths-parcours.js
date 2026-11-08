@@ -154,15 +154,18 @@ async function refreshProgress(){
  }catch(e){grades={status:'error',attempts:grades.attempts||[],message:e.message||'Erreur de lecture des notes'};}
  return grades;
 }
+function mark20(record){return Number.isInteger(record?.score)&&record.total===2?String(record.score*10)+' / 20 ('+record.score+' / 2 bonnes réponses)':String(record?.score??'?')+' / '+String(record?.total??'?');}
 function resultPage(record){
  if(!record)return;
  const id=record.lessonId, x=lesson(id);selected=id;group=groupOfId(id);
- const failures=(record.items||[]).filter(a=>!a.correct);
+ const hasCorrection=Array.isArray(record.items)&&record.items.length===record.total&&record.items.every(a=>a&&typeof a.explanation==='string'&&a.explanation.trim());
+ const failures=hasCorrection?record.items.filter(a=>!a.correct):[];
  draw(header('Résultat : '+cleanTitle(x?.title||id),'Exercice terminé définitivement. La note reste consultable dans le compte Parent.')+
  back('Retour aux sous-leçons')+
- '<section class="spx-panel"><h3>Ma note : '+esc(record.score)+' / '+esc(record.total)+'</h3><p>'+esc(record.submittedAt?'Résultat enregistré · 0 XP':'Résultat validé · 0 XP')+'</p>'+
- (failures.length?'<p><strong>À revoir :</strong> '+failures.length+' question(s). Retourne à la leçon BIS de cette sous-leçon.</p>':'<p>Aucune erreur sur cet exercice.</p>')+'</section>'+
- (record.items||[]).map((a,i)=>'<section class="spx-panel math-correction '+(a.correct?'correct':'incorrect')+'"><h3>Question '+(i+1)+' : '+(a.correct?'Correct':'À revoir')+'</h3><p><strong>'+esc(a.prompt)+'</strong></p><p>Réponse de Tim : '+esc(a.response)+'</p>'+
+ '<section class="spx-panel"><h3>Ma note : '+esc(mark20(record))+'</h3><p>'+esc(record.submittedAt?'Résultat enregistré · 0 XP · une seule tentative':'Résultat validé · 0 XP · une seule tentative')+'</p>'+ 
+ (!hasCorrection?'<p>Les explications détaillées sont momentanément indisponibles. Reviens consulter cette note ; tu ne dois pas refaire l’exercice.</p>':'')+
+ (hasCorrection?(failures.length?'<p><strong>À revoir :</strong> '+failures.length+' question(s). Retourne à la leçon BIS de cette sous-leçon.</p>':'<p>Aucune erreur sur cet exercice.</p>'):'')+'</section>'+ 
+ (hasCorrection?record.items:[]).map((a,i)=>'<section class="spx-panel math-correction '+(a.correct?'correct':'incorrect')+'"><h3>Question '+(i+1)+' : '+(a.correct?'Correct':'À revoir')+'</h3><p><strong>'+esc(a.prompt)+'</strong></p><p>Réponse de Tim : '+esc(a.response)+'</p>'+ 
  (!a.correct?'<p>Réponse attendue : <strong>'+esc(a.expected)+'</strong></p>':'')+
  '<p>'+esc(a.explanation)+'</p></section>').join('')+
  '<section class="spx-panel"><h3>Revoir la sous-leçon</h3>'+btn('data-math-bis',id,'2 · Leçon BIS')+btn('data-math-help',id,'3 · Je n’ai pas compris')+'</section>',()=>category(group));
@@ -248,20 +251,32 @@ function renderParentProgress(container){
    list.map(a=>{
     const course=(window.__TIM_DATA?.lessons||[]).find(l=>l.id===a.lessonId);
     const faults=(a.items||[]).filter(it=>!it.correct);
-    return '<details class="spx-parent-result"><summary>'+esc(cleanTitle(course?.title||a.lessonId))+' — '+esc(a.score)+'/'+esc(a.total)+'</summary>'+
-     (faults.length?'<p><strong>À revoir :</strong> '+esc(faults.map(v=>v.prompt).join(' ; '))+'</p><p>Leçon conseillée : '+esc(cleanTitle(course?.title||a.lessonId))+' (BIS et ENT du même chapitre).</p>':'<p>Toutes les réponses sont correctes.</p>')+
+    return '<details class="spx-parent-result"><summary>'+esc(cleanTitle(course?.title||a.lessonId))+' — '+esc(mark20(a))+'</summary>'+ 
+     (Array.isArray(a.items)&&a.items.length===a.total?(faults.length?'<p><strong>À revoir :</strong> '+esc(faults.map(v=>v.prompt).join(' ; '))+'</p><p>Leçon conseillée : '+esc(cleanTitle(course?.title||a.lessonId))+' (BIS et ENT du même chapitre).</p>':'<p>Toutes les réponses sont correctes.</p>'):'<p>Le détail de cette correction est momentanément indisponible.</p>')+
      (a.items||[]).map(it=>'<p>'+esc(it.prompt)+' — '+(it.correct?'correct':'incorrect')+'<br>Tim : '+esc(it.response)+' ; attendu : '+esc(it.expected)+'<br>'+esc(it.explanation)+'</p>').join('')+
     '</details>';
    }).join('')+
    '<button type="button" class="spx-button" data-math-refresh>Actualiser les notes</button>';
-  const b=dest.querySelector('[data-math-refresh]');b.onclick=async()=>{b.disabled=true;await loadParent();};
+  const b=dest.querySelector('[data-math-refresh]');b.onclick=async()=>{b.disabled=true;await loadParent(true);};
  };
- const loadParent=async()=>{
-  try{const response=await window.__TIM_BRIDGE.mathTrainingProgress();grades={status:'ok',attempts:response.attempts||[]};}
-  catch(e){grades={status:'error',attempts:[],message:e.message};}
-  renderRecords();
+ let loadingParent=false,lastFingerprint='';
+ const loadParent=async(force=false)=>{
+  if(loadingParent)return;
+  loadingParent=true;
+  try{
+   const response=await window.__TIM_BRIDGE.mathTrainingProgress();
+   grades={status:'ok',attempts:response.attempts||[]};
+  }catch(e){grades={status:'error',attempts:[],message:e.message};}
+  const fingerprint=JSON.stringify(grades);
+  if(force||fingerprint!==lastFingerprint){lastFingerprint=fingerprint;renderRecords();}
+  loadingParent=false;
  };
- loadParent();
+ loadParent(true);
+ // Espace Parent actualisé automatiquement, sans toucher à une tentative.
+ const parentRefreshTimer=setInterval(()=>{
+  if(!panel.isConnected){clearInterval(parentRefreshTimer);return;}
+  if(!document.hidden)loadParent(false);
+ },60000);
 }
 window.TIM_MATH_PATH={render,renderParentProgress};
 })();
