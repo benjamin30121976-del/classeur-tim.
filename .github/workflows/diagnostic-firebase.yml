@@ -1,7 +1,5 @@
 name: Tests Firebase isolés (aucune publication)
 on:
-  push:
-    branches: [tests-firebase-sans-publication]
   workflow_dispatch:
 permissions:
   contents: read
