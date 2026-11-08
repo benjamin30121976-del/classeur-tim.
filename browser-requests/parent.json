@@ -3,6 +3,6 @@
   "site": "https://classeur-tim-v16.pages.dev/",
   "scope": "Inspecter le site avec le navigateur Chromium/Playwright et les secrets Parent déjà configurés, sans modifier les données.",
   "launch_on_update": true,
-  "note": "Inspection Chromium/Playwright post-correctif, lecture seule, aucune validation de Tim.",
-  "checkVersion": "audit-maths-a-b-syntaxe-corrigee-2026-11-08"
+  "note": "Contrôle Chromium/Playwright lecture seule : fiche A/B, 23 leçons BIS, navigation et syntaxe. Aucun test validé sur Tim.",
+  "checkVersion": "audit-maths-a-b-bis-8-exercices-corriges"
 }
