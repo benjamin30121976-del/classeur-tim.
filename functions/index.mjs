@@ -17,7 +17,7 @@ async function resolveExercise(id){
  if(isMissionId(id)){
   const doc=await db.doc('content/main').get();
   const main=doc.exists?decodeCourse(doc.data()?.payloadJson?JSON.parse(doc.data().payloadJson):doc.data()):null;
-  const mission=buildMission(id,main);
+  const mission=buildMission(id,main,SPANISH_COURSE);
   if(!mission)throw new HttpsError('not-found','Défi introuvable');
   if(!isMissionOpen(mission))throw new HttpsError('failed-precondition','Défi fermé');
   return {exercise:{...sanitizeCourse(mission),enabled:true},key:{questions:mission.questions.map(q=>({right:q.right,also:q.also,why:q.why}))}};
