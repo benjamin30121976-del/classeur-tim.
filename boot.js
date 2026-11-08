@@ -14,6 +14,41 @@ const status=document.getElementById('access-status');
 const form=document.getElementById('login-form');
 const button=document.getElementById('login-button');
 let auth,db,functionsApi,activeUser,appLoaded=false,unsubscribe=null;
+/* Firebase Spark alternative: signed Firebase Auth token over a same-origin
+   Cloudflare Pages route. The old callable remains a fallback until configured.
+   Never retry an uncertain submission through another provider. */
+let workerReady=null;
+async function cloudflareReady(){
+ if(workerReady!==null)return workerReady;
+ try{
+  const response=await fetch('/api/status',{cache:'no-store'});
+  if(!response.ok)return workerReady=false;
+  const json=await response.json();
+  return workerReady=json.platform==='cloudflare-pages'&&json.available===true;
+ }catch{return workerReady=false;}
+}
+async function protectedCall(name,data={}){
+ if(!await cloudflareReady())return httpsCallable(functionsApi,name)(data);
+ if(!activeUser)throw Error('Compte Firebase non connecté.');
+ const token=await activeUser.getIdToken();
+ const response=await fetch('/api/tim',{
+  method:'POST',
+  headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+  cache:'no-store',body:JSON.stringify({action:name,payload:data})
+ });
+ let result;
+ try{result=await response.json();}catch{throw Error('Réponse sécurisée Cloudflare invalide.');}
+ if(!response.ok){
+  const code=typeof result.error==='string'?result.error:'server-error';
+  const error=new Error('Service de validation : '+code+'.');
+  error.code='functions/'+code;
+  throw error;
+ }
+ if(!result||typeof result!=='object'||!('data'in result))throw Error('Réponse Cloudflare incomplète.');
+ return result;
+}
+const cloudCallable=name=>data=>protectedCall(name,data);
+
 let selectedRole=null;
 const roleChoices=document.querySelector('.role-choices');
 const roleLabel=document.getElementById('selected-role-label');
@@ -193,7 +228,7 @@ async function runFirebaseDiagnostic(){
   if(error.code==='permission-denied')report.unauthorizedAttemptWriteBlocked=true;
   else throw error;
  }
- const response=await httpsCallable(functionsApi,'getParentReport')({});
+ const response=await cloudCallable('getParentReport')({});
  report.backendReport=Array.isArray(response.data?.attempts);
  if(!report.parentContentRead||!report.attemptsRead||!report.unauthorizedAttemptWriteBlocked||!report.backendReport)
   throw Error('Diagnostic incomplet : '+JSON.stringify(report));
@@ -232,7 +267,7 @@ async function fetchAttempts(content){
  });
  if(activeUser?.uid===TIM_UID&&list.some(x=>x.correctionStatus==='released')){
   try{
-   const response=await httpsCallable(functionsApi,'getTimReleasedCorrections')({});
+   const response=await cloudCallable('getTimReleasedCorrections')({});
    const released=new Map((response.data?.corrections||[]).map(x=>[x.id,x]));
    for(const attempt of list){
     if(attempt.correctionStatus!=='released')continue;
@@ -284,7 +319,7 @@ async function startSession(user){
   if(!snapshot.exists()){showImport();return;}
   content=decodeFromFirestore(snapshot.data());
  }else{
-  try{const response=await httpsCallable(functionsApi,'getTimCourseContent')({});content=decodeFromFirestore(response.data.content);serverAdditions=response.data.additions;}
+  try{const response=await cloudCallable('getTimCourseContent')({});content=decodeFromFirestore(response.data.content);serverAdditions=response.data.additions;}
   catch(e){message('Chargement des cours de Tim impossible : '+(e.message||'Firebase'));return;}
  }
  if(!Array.isArray(content.lessons)||!Array.isArray(content.exercises)){message('Le contenu du cours est incomplet.');return;}
@@ -358,7 +393,7 @@ async function startSession(user){
    if(!ex)throw Error('Exercice pas encore publié dans Firebase.');
    // Reprise du service existant pour les devoirs : validation unique
    // et notation sur le serveur, aucune nouvelle fonction à déployer.
-   const response=await httpsCallable(functionsApi,'submitTimExercise')({id,answers});
+   const response=await cloudCallable('submitTimExercise')({id,answers});
    if(!response.data?.submitted||Number(response.data.xp)!==0)
     throw Error('Confirmation de validation sans XP non reçue.');
    await loadSpanishProgress();
@@ -368,7 +403,7 @@ async function startSession(user){
    if(window.__TIM_GUEST||activeUser.uid!==TIM_UID)throw Error('Seul Tim peut valider les exercices.');
    const ex=window.__TIM_DATA.exercises.find(q=>q.id===id);
    if(!ex||!Array.isArray(values)||values.length!==ex.questions.length)throw Error('Exercice ou réponses invalides.');
-   const response=await httpsCallable(functionsApi,'submitTimExercise')({id,answers:values});
+   const response=await cloudCallable('submitTimExercise')({id,answers:values});
    const xp=Number(response.data?.xp||0);
    return {id,date:new Date().toISOString(),title:ex.title,lesson:ex.lesson,xp,correctionLocked:true,correctionStatus:'pending-parent',answers:[],score:null,total:null,needsReview:false};
   },
@@ -395,7 +430,7 @@ async function startSession(user){
    let attempts=[],releaseServiceAvailable=true;
    try{
     // Conserver le circuit serveur et ses boutons quand il est opérationnel.
-    const response=await httpsCallable(functionsApi,'getParentReport')({});
+    const response=await cloudCallable('getParentReport')({});
     if(!Array.isArray(response.data?.attempts))throw Error('Réponse de suivi incomplète');
     attempts=response.data.attempts;
    }catch(serviceError){
@@ -468,7 +503,7 @@ async function startSession(user){
      action.onclick=async()=>{
       action.disabled=true;
       try{
-       await httpsCallable(functionsApi,'setParentCorrectionRelease')({id:item.id,released:!isReleased});
+       await cloudCallable('setParentCorrectionRelease')({id:item.id,released:!isReleased});
        await refreshCorrections();
       }catch(error){
        action.disabled=false;
@@ -556,7 +591,7 @@ try{
  const app=initializeApp(cfg);auth=getAuth(app);db=getFirestore(app);
  const appCheckSiteKey=String(cfg.appCheckSiteKey||'').trim();
  if(appCheckSiteKey){initializeAppCheck(app,{provider:new ReCaptchaV3Provider(appCheckSiteKey),isTokenAutoRefreshEnabled:true});}
- else {console.warn('Firebase App Check: clé reCAPTCHA v3 absente. Les fonctions protégées ne seront pas accessibles.');message('Connexion privée incomplète : clé App Check manquante. Les devoirs et corrections ne fonctionneront pas tant que cette configuration n’est pas ajoutée.');}
+ else {console.info('App Check absent : les fonctions Firebase directes nécessitent sa clé. Le serveur Cloudflare utilise les jetons Firebase signés si ce service est configuré.');}
  functionsApi=getFunctions(app,'europe-west1');
  form.addEventListener('submit',async(e)=>{
   e.preventDefault();button.disabled=true;message('Connexion en cours…');
