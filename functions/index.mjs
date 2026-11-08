@@ -11,7 +11,7 @@ function role(request,which){const uid=which==='tim'?timUid:parentUid;if(!uid||r
 function parisDate(d){const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);const get=t=>p.find(x=>x.type===t).value;return `${get('year')}-${get('month')}-${get('day')}`;}
 async function resolveExercise(id){
  const [publicDoc,keyDoc]=await Promise.all([db.doc('publicExercises/'+id).get(),db.doc('answerKeys/'+id).get()]);
- if(publicDoc.exists&&keyDoc.exists)return {exercise:publicDoc.data(),key:keyDoc.data()};
+ if(publicDoc.exists&&keyDoc.exists){const exercise=publicDoc.data();return {exercise:{...exercise,enabled:exercise.enabled!==false},key:keyDoc.data()};}
  const [source,extra]=await Promise.all([db.doc('content/main').get(),db.doc('exercises/'+id).get()]);
  let exercise;
  if(extra.exists){const v=extra.data();exercise=decodeCourse(v.payloadJson?JSON.parse(v.payloadJson):v);}
