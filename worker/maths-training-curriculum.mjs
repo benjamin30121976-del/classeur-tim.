@@ -11,7 +11,12 @@ const CONTENT={
         "21",
         "−21"
       ],
-      "13 a une plus grande valeur absolue que 8 : le résultat est +5."
+      "13 a une plus grande valeur absolue que 8 : le résultat est +5.",
+      [
+        "13 l'emporte sur 8 en valeur absolue : le résultat est positif.",
+        "21 vient de 8 + 13, mais il faut tenir compte du signe de −8.",
+        "Il faut faire 13 − 8, et le résultat est positif."
+      ]
     ],
     [
       "Calcule (−6) × 4.",
@@ -21,7 +26,12 @@ const CONTENT={
         "−10",
         "10"
       ],
-      "Les signes sont différents : le produit est négatif. 6 × 4 = 24."
+      "Les signes sont différents : le produit est négatif. 6 × 4 = 24.",
+      [
+        "Un négatif multiplié par un positif donne un négatif.",
+        "L'opération demandée est une multiplication, pas une soustraction.",
+        "Le produit vaut 24 en valeur absolue, avec un signe négatif."
+      ]
     ]
   ],
   "MBIS02": [
@@ -33,7 +43,12 @@ const CONTENT={
         "1/2",
         "7/12"
       ],
-      "3/4 = 6/8, puis 6/8 + 1/8 = 7/8."
+      "3/4 = 6/8, puis 6/8 + 1/8 = 7/8.",
+      [
+        "On ne peut pas additionner directement les dénominateurs de deux fractions.",
+        "3/4 correspond à 6/8, auquel il faut ajouter encore 1/8.",
+        "Le dénominateur commun est 8, et non 12."
+      ]
     ],
     [
       "Calcule les 2/5 de 30.",
@@ -43,7 +58,12 @@ const CONTENT={
         "15",
         "60"
       ],
-      "30 × 2 ÷ 5 = 12."
+      "30 × 2 ÷ 5 = 12.",
+      [
+        "6 est seulement un cinquième de 30 ; il faut deux cinquièmes.",
+        "2/5 n'est pas une moitié : 30 ÷ 5 × 2.",
+        "Tu as multiplié par 2 sans diviser par 5."
+      ]
     ]
   ],
   "MBIS03": [
@@ -55,7 +75,12 @@ const CONTENT={
         "−9",
         "9"
       ],
-      "(−3) × (−3) × (−3) = −27."
+      "(−3) × (−3) × (−3) = −27.",
+      [
+        "Une puissance impaire d'un nombre négatif reste négative.",
+        "L'exposant 3 indique trois facteurs, pas une multiplication par 3.",
+        "Il faut multiplier trois facteurs −3, en conservant les signes."
+      ]
     ],
     [
       "Calcule 2⁻³.",
@@ -65,7 +90,12 @@ const CONTENT={
         "8",
         "1/6"
       ],
-      "2⁻³ = 1/(2³) = 1/8."
+      "2⁻³ = 1/(2³) = 1/8.",
+      [
+        "Un exposant négatif ne rend pas automatiquement le résultat négatif.",
+        "Il faut prendre l'inverse de 2³, pas garder 8.",
+        "2³ vaut 8 et non 6 ; l'inverse est 1/8."
+      ]
     ]
   ],
   "MBIS04": [
@@ -77,7 +107,12 @@ const CONTENT={
         "6,3 × 10³",
         "0,63 × 10⁴"
       ],
-      "On écrit un nombre entre 1 et 10 multiplié par une puissance de dix : 6,3 × 10⁴."
+      "On écrit un nombre entre 1 et 10 multiplié par une puissance de dix : 6,3 × 10⁴.",
+      [
+        "63 × 10³ représente bien 63 000, mais 63 n'est pas entre 1 et 10 : ce n'est pas une écriture scientifique.",
+        "6,3 × 10³ donne 6 300, soit dix fois trop petit.",
+        "0,63 × 10⁴ donne 6 300 et son coefficient n'est pas entre 1 et 10."
+      ]
     ],
     [
       "Écris 0,009 en notation scientifique.",
@@ -87,7 +122,12 @@ const CONTENT={
         "9 × 10³",
         "9 × 10⁻²"
       ],
-      "0,009 = 9 millièmes = 9 × 10⁻³."
+      "0,009 = 9 millièmes = 9 × 10⁻³.",
+      [
+        "0,9 × 10⁻³ donne 0,0009, pas 0,009.",
+        "9 × 10³ vaut 9 000, beaucoup trop grand.",
+        "9 × 10⁻² vaut 0,09 : c'est dix fois trop grand."
+      ]
     ]
   ],
   "MBIS05": [
@@ -99,7 +139,12 @@ const CONTENT={
         "BC",
         "Aucun côté"
       ],
-      "L'hypoténuse est toujours opposée à l'angle droit, donc AC."
+      "L'hypoténuse est toujours opposée à l'angle droit, donc AC.",
+      [
+        "AB touche l'angle droit en B, il ne lui est pas opposé.",
+        "BC touche l'angle droit en B, ce n'est pas l'hypoténuse.",
+        "Un triangle rectangle possède toujours une hypoténuse."
+      ]
     ],
     [
       "Les côtés de l'angle droit mesurent 6 et 8. Quelle est l'hypoténuse ?",
@@ -109,7 +154,12 @@ const CONTENT={
         "2",
         "12"
       ],
-      "√(6²+8²) = √100 = 10."
+      "√(6²+8²) = √100 = 10.",
+      [
+        "On ne trouve pas l'hypoténuse en additionnant 6 et 8.",
+        "Soustraire les longueurs ne remplace pas Pythagore.",
+        "Il faut calculer √(6² + 8²) : cela vaut 10, pas 12."
+      ]
     ]
   ],
   "MBIS06": [
@@ -121,7 +171,12 @@ const CONTENT={
         "16",
         "√136"
       ],
-      "√(10²−6²) = √64 = 8."
+      "√(10²−6²) = √64 = 8.",
+      [
+        "Calculer 10 − 6 ne suffit pas : Pythagore utilise des carrés.",
+        "Ajouter les deux côtés ne donne pas la longueur manquante.",
+        "L'hypoténuse est connue : il faut soustraire les carrés, pas les additionner."
+      ]
     ],
     [
       "Côtés de l'angle droit 7 et 24 : quelle est l'hypoténuse ?",
@@ -131,7 +186,12 @@ const CONTENT={
         "17",
         "√527"
       ],
-      "√(7²+24²) = √625 = 25."
+      "√(7²+24²) = √625 = 25.",
+      [
+        "7 + 24 n'est pas l'hypoténuse : additionne leurs carrés.",
+        "17 est une différence de longueurs et non un résultat de Pythagore.",
+        "√527 correspond à 24² − 7², alors qu'il faut additionner ces deux carrés."
+      ]
     ]
   ],
   "MBIS07": [
@@ -143,7 +203,12 @@ const CONTENT={
         "Impossible à vérifier",
         "Seulement si la figure est à l'échelle"
       ],
-      "8²+15² = 64+225 = 289 = 17² : la réciproque s'applique."
+      "8²+15² = 64+225 = 289 = 17² : la réciproque s'applique.",
+      [
+        "8² + 15² vaut exactement 17² : le triangle est donc rectangle.",
+        "Les trois longueurs suffisent pour vérifier la réciproque de Pythagore.",
+        "L'échelle du dessin n'est pas nécessaire : les longueurs permettent la démonstration."
+      ]
     ],
     [
       "Pour les longueurs 5, 12 et 13, quel côté comparer seul aux deux autres ?",
@@ -153,7 +218,12 @@ const CONTENT={
         "12",
         "5 + 12"
       ],
-      "La plus grande longueur, 13, serait l'hypoténuse."
+      "La plus grande longueur, 13, serait l'hypoténuse.",
+      [
+        "5 est plus petit que 13 ; le côté candidat est le plus long.",
+        "12 est plus petit que 13 ; on teste le plus long côté.",
+        "5 + 12 est une somme, et non une longueur d'un côté donné."
+      ]
     ]
   ],
   "MBIS08": [
@@ -165,7 +235,12 @@ const CONTENT={
         "Impossible à décider",
         "Oui, car 6+7>8"
       ],
-      "6²+7² = 85, tandis que 8² = 64 : les carrés ne sont pas égaux."
+      "6²+7² = 85, tandis que 8² = 64 : les carrés ne sont pas égaux.",
+      [
+        "6² + 7² ne vaut pas 8² : le triangle n'est pas rectangle.",
+        "Les trois longueurs suffisent pour appliquer la contraposée.",
+        "6 + 7 > 8 prouve que le triangle existe, pas qu'il est rectangle."
+      ]
     ],
     [
       "Pourquoi comparer le carré du côté le plus long aux deux autres ?",
@@ -175,7 +250,12 @@ const CONTENT={
         "Il faut toujours additionner les longueurs.",
         "Le plus petit côté est l'hypoténuse."
       ],
-      "La contraposée de Pythagore compare le carré de la plus grande longueur à la somme des deux autres carrés."
+      "La contraposée de Pythagore compare le carré de la plus grande longueur à la somme des deux autres carrés.",
+      [
+        "Un triangle rectangle n'a pas toujours trois côtés de même longueur.",
+        "On doit comparer les carrés, pas simplement additionner les longueurs.",
+        "L'hypoténuse est le plus long côté, et non le plus petit."
+      ]
     ]
   ],
   "MBIS09": [
