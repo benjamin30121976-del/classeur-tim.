@@ -13,7 +13,7 @@ function parisDate(d){const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/
 export const submitTimExercise=onCall({region:'europe-west1',enforceAppCheck:true},async request=>{
  role(request,'tim');
  const {id,answers}=request.data||{};
- if(!validId(id)||!Array.isArray(answers))throw new HttpsError('invalid-argument','Exercice invalide');
+ if(!validId(id)||!Array.isArray(answers)||answers.length>100||answers.some(v=>!['string','number','boolean'].includes(typeof v)||String(v).length>2000))throw new HttpsError('invalid-argument','Exercice invalide');
  const exerciseRef=db.doc('publicExercises/'+id),keyRef=db.doc('answerKeys/'+id),attemptRef=db.doc('attempts/'+id),privateRef=db.doc('privateAttempts/'+id),xpRef=db.doc('xpState/tim');
  try{return await db.runTransaction(async tx=>{
   const [exDoc,keyDoc,attemptDoc,privateDoc,xpDoc]=await Promise.all([tx.get(exerciseRef),tx.get(keyRef),tx.get(attemptRef),tx.get(privateRef),tx.get(xpRef)]);
@@ -21,6 +21,7 @@ export const submitTimExercise=onCall({region:'europe-west1',enforceAppCheck:tru
   if(attemptDoc.exists||privateDoc.exists)throw new HttpsError('already-exists','Déjà validé');
   const ex=exDoc.data();
   if(ex.enabled!==true)throw new HttpsError('failed-precondition','Exercice fermé');
+  if(!suggestedCorrectionAt(ex,date))throw new HttpsError('failed-precondition','Calendrier de cette matière indisponible');
   const result=grade(ex,keyDoc.data(),answers);
   const now=new Date(),date=parisDate(now),state=xpDoc.exists?xpDoc.data():{};
   const monday=new Date(date+'T12:00:00Z');monday.setUTCDate(monday.getUTCDate()-(monday.getUTCDay()+6)%7);
