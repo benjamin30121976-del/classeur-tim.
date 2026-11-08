@@ -10,7 +10,7 @@ export default {
    return new Response('Not found',{status:404});
   }
   if(/\/(?:worker|functions|tools|outils|\.github|browser-requests)(?:\/|$)/.test(plain)||
-     /\/(?:firestore\.rules|firebase\.json|package(?:-lock)?\.json|readme\.md|clou[d]flare_spark_mise_en_service\.md|\.gitignore|\.assetsignore)(?:$|\/)/.test(plain)){
+     /\/(?:firestore\.rules|firebase\.json|package(?:-lock)?\.json|readme\.md|clou[d]flare_spark_mise_en_service\.md|_worker\.js|\.gitignore|\.assetsignore)(?:$|\/)/.test(plain)){
    return new Response('Not found',{status:404,headers:{'Cache-Control':'no-store'}});
   }
   return env.ASSETS.fetch(request);
