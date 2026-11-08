@@ -1,0 +1,27 @@
+name: Verifier la confidentialité des notes Parent / Tim
+on:
+  pull_request:
+    paths:
+      - 'firestore.rules'
+      - 'tools/test/access-notes-parent.test.mjs'
+      - '.github/workflows/verifier-acces-notes.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  regles:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Installer l'émulateur Firestore et les outils de tests
+        run: npm install --no-audit --no-fund --ignore-scripts
+      - name: Tester les notes privées sans aucun accès à la base réelle
+        run: npx firebase emulators:exec --project tim-notes-droits-isoles --only firestore 'node --test tools/test/access-notes-parent.test.mjs'
