@@ -4,7 +4,7 @@ import {getFirestore,doc,getDoc,setDoc,deleteDoc,collection,getDocs,query,where,
 import {getFunctions,httpsCallable} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-functions.js';
 import {initializeAppCheck,ReCaptchaV3Provider} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-app-check.js';
 import {makeAttachmentBridge} from './attachments.js';
-import {setupMissions} from './missions-v18.mjs';
+import {setupMissions,isMissionId} from './missions-v18.mjs';
 
 // Only the two existing Firebase Authentication users are authorized.
 // Security does NOT rely on these frontend constants: Firestore Rules enforce them.
@@ -252,12 +252,12 @@ async function fetchAttempts(content){
   }catch(error){console.warn('Notes détaillées Parent indisponibles :',error.code||error.message);}
  }
  docs.forEach(d=>{
-  const record=d.data(),ex=map.get(d.id);if(!ex)return;
+  const record=d.data(),ex=map.get(d.id);if(!ex&&!isMissionId(d.id))return;
   const secret=isParent?grades.get(d.id):null;
   const released=record.correctionStatus==='released';
   list.push({
    id:d.id,date:record.submittedAt?.toDate?.().toISOString()||new Date().toISOString(),
-   title:ex.title,lesson:ex.lesson,xp:Number(record.xp||0),
+   title:ex?.title||secret?.title||(d.id.startsWith('DAY_')?'Petit défi du '+d.id.slice(4,12):d.id.startsWith('SUNDAY_')?'Grand défi du dimanche':'Grand défi du samedi'),lesson:ex?.lesson||'',xp:Number(record.xp||0),policyVersion:Number(record.policyVersion||0),
    correctionStatus:released?'released':'pending-parent',
    correctionLocked:isParent?false:!released,
    answers:isParent&&Array.isArray(secret?.answers)?secret.answers:[],
