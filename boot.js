@@ -294,16 +294,24 @@ async function startSession(user){
  };
  if(isParent){
   const panel=document.createElement('section');panel.id='parent-corrections';panel.style.cssText='margin:16px auto;padding:16px;max-width:850px;border:1px solid #6788b2;border-radius:16px;background:#14253e;color:white';
-  panel.innerHTML='<h2>Corrections en attente</h2><p id="pending-corrections-status">Chargement…</p><div id="pending-corrections-list"></div>';
+  panel.innerHTML='<h2>Corrections des devoirs — contrôle parental</h2><p id="pending-corrections-status">Chargement…</p><div id="pending-corrections-list"></div>';
   document.getElementById('account-strip').after(panel);
   const refreshCorrections=async()=>{
    try{
     const response=await httpsCallable(functionsApi,'getParentReport')({});
     const attempts=response.data.attempts||[];
     const pending=attempts.filter(a=>a.correctionStatus==='pending-parent');
+    const released=attempts.filter(a=>a.correctionStatus==='released');
     document.getElementById('pending-corrections-status').textContent=pending.length+' exercice(s) en attente de correction';
     const list=document.getElementById('pending-corrections-list');list.replaceChildren();
     if(!pending.length){const empty=document.createElement('p');empty.textContent='Aucun devoir en attente. Les corrections déjà autorisées restent accessibles à Tim.';list.append(empty);}
+    for(const item of released){
+     const line=document.createElement('div');line.style.cssText='padding:10px 0;border-top:1px solid #456';
+     const title=document.createElement('span');title.textContent=item.title+' — correction autorisée ';
+     const lock=document.createElement('button');lock.type='button';lock.textContent='Reverrouiller';
+     lock.onclick=async()=>{lock.disabled=true;try{await httpsCallable(functionsApi,'setParentCorrectionRelease')({id:item.id,released:false});await refreshCorrections();}catch(e){lock.disabled=false;alert('Verrouillage impossible : '+(e.message||'Erreur Firebase'));}};
+     line.append(title,lock);list.append(line);
+    }
     for(const item of pending){
      const line=document.createElement('div');line.style.cssText='padding:10px 0;border-top:1px solid #456';
      const title=document.createElement('span');title.textContent=item.title+' ';
