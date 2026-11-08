@@ -6,8 +6,19 @@ go.addEventListener('click',()=>{
  if(window.__TIM_GUEST||document.body.classList.contains('ready'))return;
  const source=window.TIM_GUEST_DATA;
  if(!source||!Array.isArray(source.lessons)||!source.lessons.length){document.getElementById('access-status').textContent='Le catalogue public est indisponible.';return;}
+ // Public presentation data must not include correction keys, even in memory.
+ const strip=(value)=>{
+  if(Array.isArray(value))return value.map(strip);
+  if(!value||typeof value!=='object')return value;
+  const result={};
+  for(const [key,item] of Object.entries(value)){
+   if(['right','also','why','expected','explanation','correct','answer','answers','solution','solutions','correction','corrections','answerKey'].includes(key))continue;
+   result[key]=strip(item);
+  }
+  return result;
+ };
  window.__TIM_GUEST=true;window.__TIM_PARENT=false;
- window.__TIM_DATA=window.TIM_APPLY_SPANISH_NOV05?.(source)||source;window.__CLOUD_ATTEMPTS=[];
+ window.__TIM_DATA=strip(window.TIM_APPLY_SPANISH_NOV05?.(source)||source);window.__CLOUD_ATTEMPTS=[];
  window.__TIM_CHALLENGE_SETUP?.(window.__TIM_DATA);
  window.__TIM_BRIDGE={submit:async()=>{throw Error('Accès invité : aucune validation autorisée.');},refresh:async()=>[],notifyAlert:()=>{}};
  document.getElementById('access').hidden=true;document.body.classList.add('ready','guest-mode');
