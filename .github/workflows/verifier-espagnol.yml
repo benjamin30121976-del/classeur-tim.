@@ -5,6 +5,11 @@ on:
       - 'espagnol-parcours.js'
       - 'espagnol-pedagogie-data.js'
       - 'espagnol-parcours.css'
+      - 'espagnol-training-engine.js'
+      - 'espagnol-training-ui.js'
+      - 'functions/spanish-training-*.mjs'
+      - 'functions/test/spanish-training.test.mjs'
+      - 'boot.js'
       - 'app.js'
       - 'index.html'
       - 'tools/test/espagnol-parcours.smoke.cjs'
@@ -23,6 +28,14 @@ jobs:
           mkdir -p /tmp/tim-spanish
           npm install --prefix /tmp/tim-spanish --no-audit --no-fund playwright
           /tmp/tim-spanish/node_modules/.bin/playwright install --with-deps chromium
+      - name: Vérifier le moteur de notation des 150 exercices
+        run: node --test functions/test/spanish-training.test.mjs
+      - name: Vérifier le code Firebase sans déploiement
+        run: |
+          node --check functions/index.mjs
+          node --check boot.js
+          node --check espagnol-training-engine.js
+          node --check espagnol-training-ui.js
       - name: Tester le site en local (sans toucher aux donnees de Tim)
         env:
           NODE_PATH: /tmp/tim-spanish/node_modules
