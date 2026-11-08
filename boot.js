@@ -1,6 +1,7 @@
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js';
 import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,signOut} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
 import {getFirestore,doc,getDoc,setDoc,deleteDoc,collection,getDocs,serverTimestamp,runTransaction} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js';
+import {getFunctions,httpsCallable} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-functions.js';
 import {makeAttachmentBridge} from './attachments.js';
 
 // Only the two existing Firebase Authentication users are authorized.
@@ -11,7 +12,7 @@ const access=document.getElementById('access');
 const status=document.getElementById('access-status');
 const form=document.getElementById('login-form');
 const button=document.getElementById('login-button');
-let auth,db,activeUser,appLoaded=false,unsubscribe=null;
+let auth,db,functionsApi,activeUser,appLoaded=false,unsubscribe=null;
 let selectedRole=null;
 const roleChoices=document.querySelector('.role-choices');
 const roleLabel=document.getElementById('selected-role-label');
@@ -271,6 +272,28 @@ async function startSession(user){
   notifyAlert,
   logout:async()=>signOut(auth)
  };
+ if(isParent){
+  const panel=document.createElement('section');panel.id='parent-corrections';panel.style.cssText='margin:16px auto;padding:16px;max-width:850px;border:1px solid #6788b2;border-radius:16px;background:#14253e;color:white';
+  panel.innerHTML='<h2>Corrections en attente</h2><p id="pending-corrections-status">Chargement…</p><div id="pending-corrections-list"></div>';
+  document.getElementById('account-strip').after(panel);
+  const refreshCorrections=async()=>{
+   try{
+    const response=await httpsCallable(functionsApi,'getParentReport')({});
+    const attempts=response.data.attempts||[];
+    const pending=attempts.filter(a=>a.correctionStatus==='pending-parent');
+    document.getElementById('pending-corrections-status').textContent=pending.length+' exercice(s) en attente de correction';
+    const list=document.getElementById('pending-corrections-list');list.replaceChildren();
+    for(const item of pending){
+     const line=document.createElement('div');line.style.cssText='padding:10px 0;border-top:1px solid #456';
+     const title=document.createElement('span');title.textContent=item.title+' ';
+     const release=document.createElement('button');release.type='button';release.textContent='Débloquer la correction';
+     release.onclick=async()=>{release.disabled=true;try{await httpsCallable(functionsApi,'setParentCorrectionRelease')({id:item.id,released:true});await refreshCorrections();}catch(e){release.disabled=false;alert('Déblocage impossible : '+(e.message||'Erreur Firebase'));}};
+     line.append(title,release);list.append(line);
+    }
+   }catch(e){document.getElementById('pending-corrections-status').textContent='Suivi indisponible : fonctions Firebase non accessibles.';}
+  };
+  refreshCorrections();
+ }
  document.getElementById('login-form').hidden=false;
  access.hidden=true;document.body.classList.add('ready');
  document.getElementById('account-name').textContent=isParent?'Espace parent — compte connecté':'Espace Tim — compte connecté';
@@ -323,7 +346,7 @@ try{
   throw {setupWaiting:true};
  }
  installShareLink(cfg);
- const app=initializeApp(cfg);auth=getAuth(app);db=getFirestore(app);
+ const app=initializeApp(cfg);auth=getAuth(app);db=getFirestore(app);functionsApi=getFunctions(app,'europe-west1');
  form.addEventListener('submit',async(e)=>{
   e.preventDefault();button.disabled=true;message('Connexion en cours…');
   try{if(!selectedRole)throw new Error('Choisir un espace');const credential=await signInWithEmailAndPassword(auth,document.getElementById('login-email').value.trim(),document.getElementById('login-password').value);if(credential.user.uid!==(selectedRole==='tim'?TIM_UID:PARENT_UID)){await signOut(auth);throw new Error('Mauvais espace');}document.getElementById('login-password').value='';}
