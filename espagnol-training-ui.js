@@ -141,12 +141,20 @@ function mount(root,{lesson,onBack}){
      const local=storeLocal({...scored,mode:task.mode,series:task.series,lessonId:task.lesson,cloudSaved:true},values);
      clearDraft(id);drawReview(local);
     }catch(error){
-     // Ne pas afficher de note fictive ni marquer comme terminé sans confirmation distante.
-     check.innerHTML='<p class="spx-training-warning">La validation n’a pas été confirmée : '+esc(error.message||'Erreur de connexion')+'. Les réponses restent sauvegardées en brouillon sur cet appareil.</p><button class="spx-button subtle" type="button" id="spx-training-reload">Vérifier si l’exercice a été enregistré</button>';
-     check.querySelector('#spx-training-reload').onclick=async()=>{
-      try{await window.__TIM_BRIDGE.trainingProgress();const record=found(id);if(record){clearDraft(id);drawReview(record);}else check.querySelector('.spx-training-warning').textContent='Aucune validation enregistrée. Tu peux réessayer.';}
-      catch(e){check.querySelector('.spx-training-warning').textContent='Impossible de vérifier la sauvegarde pour le moment.';}
-     };
+     // Vérifier d'abord si le serveur a bien enregistré la tentative malgré
+     // une réponse réseau perdue ; ne jamais permettre une deuxième tentative.
+     try{await window.__TIM_BRIDGE?.trainingProgress?.();}catch(e){}
+     const cloud=(progress().attempts||[]).find(a=>a.id===id);
+     if(cloud){clearDraft(id);drawReview(cloud);return;}
+     // Sans confirmation Firebase, garder une unique copie locale explicite
+     // plutôt que de laisser le travail effectué par Tim disparaître.
+     try{
+      const evaluated=ENGINE.evaluateSpanishTask(task,values);
+      const local=storeLocal({...evaluated,mode:task.mode,series:task.series,lessonId:task.lesson},values);
+      clearDraft(id);drawReview(local);
+     }catch(err){
+      check.innerHTML='<p class="spx-training-warning">Enregistrement indisponible. Les réponses restent en brouillon sur cet appareil : '+esc(err.message||error.message||'Erreur')+'.</p>';
+     }
     }
    };
   };
