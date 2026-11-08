@@ -178,7 +178,9 @@ async function viewTraining(id){
  if(completed){resultPage(completed);return;}
  draw(header('Évaluation : '+cleanTitle(x.title),'Une seule tentative. Correction et note dès la validation ; aucun XP.')+
  back('Retour aux sous-leçons')+
+ '<section class="spx-panel"><h3>Avant de commencer</h3><p>Deux questions, 10 points par bonne réponse. Lis toute la consigne avant de choisir. Tu peux revoir la méthode sans utiliser ta tentative.</p>'+btn('data-math-bis',id,'Revoir la leçon BIS')+btn('data-math-help',id,'Je n’ai pas compris')+'</section>'+
  '<section class="spx-panel" id="math-quiz"><p>Chargement sécurisé de l’exercice…</p></section>',()=>category(group));
+ wire();
  if(window.__TIM_PARENT||window.__TIM_GUEST){const p=root.querySelector('#math-quiz');p.innerHTML='<p>Seul le compte Tim peut répondre à une évaluation. Le compte Parent consulte les notes et les corrections.</p>';return;}
  const holder=root.querySelector('#math-quiz');
  try{
