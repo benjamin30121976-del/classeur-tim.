@@ -275,7 +275,6 @@ async function startSession(user){
  window.__TIM_BRIDGE={
   submit:async(id,values)=>{
    if(window.__TIM_GUEST||activeUser.uid!==TIM_UID)throw Error('Seul Tim peut valider les exercices.');
-   if(!window.TIM_XP?.canSubmit(window.__TIM_DATA.exercises.find(q=>q.id===id),new Date()))throw Error('Ce défi n’est plus disponible pour cette date.');
    const ex=window.__TIM_DATA.exercises.find(q=>q.id===id);
    if(!ex||!Array.isArray(values)||values.length!==ex.questions.length)throw Error('Exercice ou réponses invalides.');
    const response=await httpsCallable(functionsApi,'submitTimExercise')({id,answers:values});
