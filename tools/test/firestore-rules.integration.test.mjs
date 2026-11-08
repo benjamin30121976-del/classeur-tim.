@@ -88,3 +88,12 @@ test('Public lessons cannot contain answer-key fields',async()=>{
  await assertFails(setDoc(doc(parent,'publicLessons/unsafe2'),{title:'Secret',solutions:['secret']}));
  await assertSucceeds(setDoc(doc(parent,'publicLessons/safe'),{title:'Cours public',body:'Leçon'}));
 });
+
+test('Public exercises cannot carry answer keys',async()=>{
+ const parent=db(parentUid),tim=db(timUid),guest=db(null);
+ await assertFails(setDoc(doc(parent,'publicExercises/leak'),{enabled:true,title:'QCM',answers:['secret']}));
+ await assertFails(setDoc(doc(parent,'publicExercises/leak2'),{enabled:true,right:2}));
+ await assertSucceeds(setDoc(doc(parent,'publicExercises/safe'),{enabled:false,title:'Enoncé'}));
+ await assertSucceeds(getDoc(doc(tim,'publicExercises/safe')));
+ await assertFails(getDoc(doc(guest,'publicExercises/safe')));
+});
