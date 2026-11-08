@@ -9,7 +9,7 @@ const draftKey=id=>"tim_spanish_unique_training_draft_v1_"+id;
 const draft=id=>{try{const d=JSON.parse(localStorage.getItem(draftKey(id))||"null");return Array.isArray(d)&&d.length===10?d.map(v=>String(v??"")):null;}catch(e){return null;}};
 const saveDraft=(id,answers)=>{try{localStorage.setItem(draftKey(id),JSON.stringify(answers));}catch(e){}};
 const clearDraft=id=>{try{localStorage.removeItem(draftKey(id));}catch(e){}};
-const progress=()=>window.__TIM_SPANISH_PROGRESS||{status:'loading',attempts:[]};
+const progress=()=>window.__TIM_GUEST?{status:'guest',message:'Mode invité : les exercices sont consultables uniquement avec le compte Tim.',attempts:[]}:window.__TIM_SPANISH_PROGRESS||{status:'loading',attempts:[]};
 const found=id=>(progress().attempts||[]).find(a=>a.id===id);
 const isTim=()=>!window.__TIM_GUEST&&!window.__TIM_PARENT;
 function listIds(lesson){return ["Q","W"].flatMap(mode=>[1,2,3,4,5].map(n=>"SP"+mode+"_"+lesson+"_0"+n));}
