@@ -502,7 +502,7 @@ async function startSession(user){
    const schoolAttempts=attempts.filter(a=>!spanishTraining(a.id));
    const pending=schoolAttempts.filter(a=>a.correctionStatus!=='released');
    const released=schoolAttempts.filter(a=>a.correctionStatus==='released');
-   status.textContent=pending.length+' devoir(s) en attente de correction\n'+attempts.length+' exercice(s) validé(s) en ligne';
+   status.textContent=pending.length+' devoir'+(pending.length>1?'s':'')+' en attente de correction\n'+attempts.length+' exercice'+(attempts.length>1?'s':'')+' validé'+(attempts.length>1?'s':'')+' en ligne';
    status.style.whiteSpace='pre-line';
    if(!releaseServiceAvailable){
     const info=document.createElement('p');
