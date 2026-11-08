@@ -3,6 +3,6 @@
   "site": "https://classeur-tim-v16.pages.dev/",
   "scope": "Vérifier en lecture seule les 23 évaluations de maths, leurs 46 questions, la fiche A/B, l'espace Parent ; lancer les tests de sécurité sans soumettre de réponse au vrai compte Tim.",
   "launch_on_update": true,
-  "note": "TinyFish hors service (crédits épuisés). Chromium/Playwright via GitHub Actions. Aucune validation de l'élève.",
-  "checkVersion": "audit-maths-23-questions-corrections-verrouillage-parent-2026-11-08"
+  "note": "Chromium + Playwright, sans TinyFish, lecture seule. Vérifier questions claires, fiche A/B, accès notes Parent ; tests automatisés de non-répétition des tentatives.",
+  "checkVersion": "final-audit-maths-23-exercices-184-corrections-2026-11-08"
 }
