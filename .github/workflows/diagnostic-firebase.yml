@@ -1,0 +1,89 @@
+name: Tests Firebase isolés (aucune publication)
+on:
+  push:
+    branches: [tests-firebase-sans-publication]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  firestore-security:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Vérifier que le vrai backend V16 est présent
+        run: |
+          test -f functions/index.mjs || { echo '::error::Backend V16 absent : tests isolés insuffisants'; exit 1; }
+          test -f functions/grading.mjs || { echo '::error::Moteur de notation absent'; exit 1; }
+          test -f functions/xp.mjs || { echo '::error::Moteur XP absent'; exit 1; }
+      - name: Installer les dépendances Firebase
+        run: npm install --no-audit --no-fund --ignore-scripts
+      - name: Installer les dépendances du backend V16
+        run: npm install --prefix functions --no-audit --no-fund --ignore-scripts
+      - name: Vérifier la syntaxe du backend et des interfaces
+        run: |
+          node --check functions/spanish-nov05-private.mjs
+          node --check functions/index.mjs
+          node --check boot.js
+          node --check app.js
+          node --check guest-access.js
+      - name: Vérifier l'absence de corrigés dans les fichiers publics
+        run: |
+          node --check guest-data.js
+          node --check espagnol-05-novembre.js
+          node --input-type=module -e 'import fs from "node:fs"; const re=/"(?:right|also|why|answerKey|expected|solution|correction)"\s*:/g; for (const f of ["guest-data.js","espagnol-05-novembre.js"]) { const matches=[...fs.readFileSync(f,"utf8").matchAll(re)]; if(matches.length) { console.error(`${f}: ${matches.length} champs de corrigé détectés`); process.exitCode=1; } else console.log(`${f}: aucun champ de corrigé`); }'
+      - name: Vérifier les corrigés espagnols réservés au serveur
+        run: |
+          node --input-type=module -e 'import {spanishNov05Exercises as e} from "./functions/spanish-nov05-private.mjs"; import fs from "node:fs"; const s=fs.readFileSync("espagnol-05-novembre.js","utf8"); for(const ex of e){if(!s.includes(ex.id)||!ex.questions?.length||ex.questions.some(q=>q.right===undefined))throw Error("Corrigé espagnol manquant : "+ex.id);} console.log(e.length+" exercices espagnols corrigibles côté serveur");'
+      - name: Vérifier les trois profils et le diagnostic parental
+        run: |
+          node --input-type=module <<'NODE'
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          const read=f=>fs.readFileSync(f,'utf8');
+          const guest=read('guest-access.js'),boot=read('boot.js'),app=read('app.js'),backend=read('functions/index.mjs'),rules=read('firestore.rules');
+          const html=read('index.html');
+          for(const id of ['guest-enter','tim-enter','parent-enter'])assert.match(html,new RegExp('id="'+id+'"'));
+          assert.match(html,/src="\.\/guest-access\.js"/);
+          assert.match(html,/src="\.\/boot\.js"/);
+          assert.match(guest,/__TIM_GUEST=true/);
+          assert.match(guest,/window\.__TIM_DATA=strip\(window\.__TIM_DATA\)/);
+          assert.match(guest,/aucune validation autorisée/);
+          assert.match(boot,/httpsCallable\(functionsApi,'submitTimExercise'\)/);
+          assert.match(boot,/httpsCallable\(functionsApi,'getParentReport'\)/);
+          assert.match(boot,/httpsCallable\(functionsApi,'setParentCorrectionRelease'\)/);
+          assert.match(boot,/unauthorizedAttemptWriteBlocked/);
+          assert.match(app,/out\.parentContentRead&&out\.attemptsRead&&out\.unauthorizedAttemptWriteBlocked&&out\.backendReport/);
+          assert.doesNotMatch(boot,/collection\(db,'test_attempts'\)/);
+          assert.match(backend,/enforceAppCheck:true/);
+          assert.match(rules,/match \/privateAttempts\/\{id\}/);
+          console.log('Trois profils et diagnostic parent : contrôles de structure réussis');
+          NODE
+      - name: Tester la notation et les XP (JUnit)
+        run: |
+          mkdir -p test-results
+          node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=test-results/notation-xp.xml functions/test/grading.test.mjs functions/test/xp.test.mjs functions/test/spanish-nov05.test.mjs
+      - name: Tester les règles sur Firestore Emulator (JUnit)
+        run: |
+          npx firebase emulators:exec --project tim-access-rules-local-test --only firestore "node --test --test-reporter=spec --test-reporter-destination=stdout --test-reporter=junit --test-reporter-destination=test-results/firestore.xml tools/test/firestore-rules.integration.test.mjs"
+      - name: Publier les rapports de test comme artefacts privés
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: rapports-tests-firebase
+          path: test-results/*.xml
+          if-no-files-found: warn
+          retention-days: 7
+      - name: Récapitulatif
+        if: always()
+        run: |
+          echo '### Tests Firebase - branche isolée, aucune publication' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Les rapports JUnit sont joints à cette exécution. Le statut vert signifie que toutes les étapes obligatoires ont réussi.' >> "$GITHUB_STEP_SUMMARY"
+          echo 'Attention : cette branche contient encore un banc de test isolé, pas le déploiement complet V16.' >> "$GITHUB_STEP_SUMMARY"

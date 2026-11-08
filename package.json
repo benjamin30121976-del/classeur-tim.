@@ -1,0 +1,13 @@
+{
+  "name": "tim-firebase-security-check",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:rules": "firebase emulators:exec --project tim-access-rules-local-test --only firestore 'node --test tools/test/firestore-rules.integration.test.mjs'"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^4.0.1",
+    "firebase": "^11.0.0",
+    "firebase-tools": "^14.0.0"
+  }
+}

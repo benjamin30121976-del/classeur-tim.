@@ -1,6 +1,8 @@
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js';
 import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,signOut} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js';
-import {getFirestore,doc,getDoc,setDoc,deleteDoc,collection,getDocs,serverTimestamp,runTransaction} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js';
+import {getFirestore,doc,getDoc,setDoc,deleteDoc,collection,getDocs,query,where,serverTimestamp,runTransaction} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js';
+import {getFunctions,httpsCallable} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-functions.js';
+import {initializeAppCheck,ReCaptchaV3Provider} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-app-check.js';
 import {makeAttachmentBridge} from './attachments.js';
 
 // Only the two existing Firebase Authentication users are authorized.
@@ -11,7 +13,25 @@ const access=document.getElementById('access');
 const status=document.getElementById('access-status');
 const form=document.getElementById('login-form');
 const button=document.getElementById('login-button');
-let auth,db,activeUser,appLoaded=false,unsubscribe=null;
+let auth,db,functionsApi,activeUser,appLoaded=false,unsubscribe=null;
+let selectedRole=null;
+const roleChoices=document.querySelector('.role-choices');
+const roleLabel=document.getElementById('selected-role-label');
+function chooseRole(role){
+ selectedRole=role;
+ roleChoices.hidden=true;form.hidden=false;
+ roleLabel.textContent=role==='tim'?'Connexion de Tim':'Connexion du parent';
+ document.getElementById('login-email').focus();
+ if(auth?.currentUser){
+  const expected=role==='tim'?TIM_UID:PARENT_UID;
+  if(auth.currentUser.uid===expected){startSession(auth.currentUser);}
+  else {signOut(auth).catch(()=>message('Impossible de changer de compte.'));}
+ }
+}
+document.getElementById('tim-enter').addEventListener('click',()=>chooseRole('tim'));
+document.getElementById('parent-enter').addEventListener('click',()=>chooseRole('parent'));
+document.getElementById('role-back').addEventListener('click',()=>{selectedRole=null;form.hidden=true;roleChoices.hidden=false;});
+
 const message=(msg,good=false)=>{status.textContent=msg;status.classList.toggle('good',good);};
 // Firestore Standard does not accept an array directly inside another array.
 // Wrap only those inner arrays as a map; restore them after reading the document.
@@ -153,41 +173,56 @@ async function notifyAlert(id,saved){
  const url=await readAlertWebhook();
  if(!url)return;
  // Le webhook ne contient que des identifiants de résultat, pas les réponses privées.
- const payload=JSON.stringify({event:'exercise_validated',exerciseId:id,title:saved.title,score:saved.score,total:saved.total,submittedAt:saved.date});
+ const payload=JSON.stringify({event:'exercise_validated',exerciseId:id,title:saved.title,xp:saved.xp,correctionStatus:'pending-parent',submittedAt:saved.date});
  try {if(navigator.sendBeacon && navigator.sendBeacon(url,new Blob([payload],{type:'text/plain'})))return;}
  catch(e){}
  try{await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:payload,keepalive:true});}catch(e){console.warn('Notification Make non envoyée',e);}
 }
 async function runFirebaseDiagnostic(){
  if(activeUser?.uid!==PARENT_UID)throw Error('Réservé au parent.');
- const key='test_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
- const ref=doc(db,'test_attempts',key), data={authorUid:PARENT_UID,answers:['tengo','incorrect'],submittedAt:serverTimestamp(),kind:'diagnostic-sans-note'};
- let created=false, read=false, locked=false, erased=false;
+ // Diagnostic non destructif, aligné sur les règles réelles de Firestore.
+ const report={parentContentRead:false,attemptsRead:false,unauthorizedAttemptWriteBlocked:false,backendReport:false};
+ const source=await getDoc(doc(db,'content','main'));
+ report.parentContentRead=source.exists();
+ await getDocs(query(collection(db,'attempts'),where('authorUid','==',TIM_UID)));
+ report.attemptsRead=true;
  try{
-  await setDoc(ref,data);created=true;
-  const snapshot=await getDoc(ref);read=snapshot.exists()&&snapshot.data().answers[0]==='tengo';
-  try{await setDoc(ref,{...data,kind:'update-interdite'});}catch(_){locked=true;}
-  return {created,read,locked,erased:true};
- }finally{
-  if(created){await deleteDoc(ref);erased=true;}
+  await setDoc(doc(db,'attempts','diagnostic_interdit'),{authorUid:PARENT_UID,xp:999});
+  throw Error('Sécurité défaillante : écriture directe des résultats autorisée.');
+ }catch(error){
+  if(error.code==='permission-denied')report.unauthorizedAttemptWriteBlocked=true;
+  else throw error;
  }
+ const response=await httpsCallable(functionsApi,'getParentReport')({});
+ report.backendReport=Array.isArray(response.data?.attempts);
+ if(!report.parentContentRead||!report.attemptsRead||!report.unauthorizedAttemptWriteBlocked||!report.backendReport)
+  throw Error('Diagnostic incomplet : '+JSON.stringify(report));
+ return report;
 }
+
 async function fetchAttempts(content){
- const docs=await getDocs(collection(db,'attempts'));
+ const attemptCollection=collection(db,'attempts');
+ const docs=await getDocs(activeUser?.uid===TIM_UID?query(attemptCollection,where('authorUid','==',TIM_UID)):attemptCollection);
  const map=new Map(content.exercises.map(x=>[x.id,x]));
- // Reconstituer également les anciennes missions uniques (jours et semaines passés).
- const list=[];docs.forEach(d=>{const a=d.data();let ex=map.get(d.id),values=a.answers;
-  if(/^(DAY_20\d{6}|WEEK_20\d{2}W\d{2}|SUNDAY_20\d{6})$/.test(d.id)&&Array.isArray(values)){
-   // Les réponses transportent les références exactes des questions : le contrôle ne change pas si de nouveaux cours sont ajoutés.
-   try{const decoded=values.map(v=>JSON.parse(v));if(decoded.every(v=>v&&typeof v.ref==='string'&&typeof v.v==='string')){
-    const frozen=window.__TIM_CHALLENGE_FROM_REFS?.(d.id,content,decoded.map(v=>v.ref));
-    if(frozen){ex=frozen;const at=content.exercises.findIndex(x=>x.id===d.id);if(at>=0)content.exercises[at]=frozen;else content.exercises.push(frozen);map.set(d.id,frozen);values=decoded.map(v=>v.v);}
-   }}catch(e){}
-   if(!ex){ex=window.__TIM_CHALLENGE_ENSURE?.(content,d.id);if(ex)map.set(d.id,ex);}
+ const list=[];
+ docs.forEach(d=>{
+  const a=d.data(),ex=map.get(d.id);
+  if(!ex)return;
+  // Never reconstruct the correct answers in the browser before parent approval.
+  list.push({id:d.id,date:a.submittedAt?.toDate?.().toISOString()||new Date().toISOString(),title:ex.title,lesson:ex.lesson,xp:Number(a.xp||0),correctionStatus:a.correctionStatus==='released'?'released':'pending-parent',correctionLocked:a.correctionStatus!=='released',answers:[],score:null,total:null,needsReview:false});
+ });
+ if(activeUser?.uid===TIM_UID&&list.some(x=>x.correctionStatus==='released')){
+  const response=await httpsCallable(functionsApi,'getTimReleasedCorrections')({});
+  const released=new Map((response.data?.corrections||[]).map(x=>[x.id,x]));
+  for(const attempt of list){const correction=released.get(attempt.id);if(!correction){attempt.correctionLocked=true;attempt.correctionStatus='pending-parent';continue;}
+   attempt.answers=Array.isArray(correction.answers)?correction.answers:[];
+   attempt.score=correction.score;attempt.total=correction.total;
+   attempt.correctionLocked=false;
   }
-  if(ex&&Array.isArray(values)&&values.length===ex.questions.length)list.push(result(ex,values,a.submittedAt,a.policyVersion));});
+ }
  list.sort((a,b)=>a.date.localeCompare(b.date));window.__CLOUD_ATTEMPTS=list;return list;
 }
+
 function stopApp(){if(window.__TIM_GUEST)return;document.body.classList.remove('ready');access.hidden=false;appLoaded=false;window.__CLOUD_ATTEMPTS=[];
   for(const id of ['content-import','content-import-button','import-logout'])document.getElementById(id)?.remove();
   access.querySelector('h1').textContent="Accède à tes missions";
@@ -219,29 +254,41 @@ async function startSession(user){
  if(!(isParent||user.uid===TIM_UID)){await signOut(auth);message('Cet utilisateur n’est pas autorisé à accéder au classeur.');return;}
  if(appLoaded){window.location.reload();return;}
  message('Ouverture des cours privés…',true);
- let snapshot;try{snapshot=await getDoc(doc(db,'content','main'));}catch(e){message('Les règles Firestore bloquent encore la lecture des cours. Configure les règles correspondantes avant de continuer.');return;}
- if(!snapshot.exists()){if(isParent)showImport();else message('Les cours ne sont pas encore chargés. Le parent doit les importer.');return;}
- let content=decodeFromFirestore(snapshot.data());if(!Array.isArray(content.lessons)||!Array.isArray(content.exercises)){message('Le contenu du cours est incomplet.');return;}
+ let content,serverAdditions=null;
+ if(isParent){
+  let snapshot;try{snapshot=await getDoc(doc(db,'content','main'));}catch(e){message('Lecture des cours parent impossible : '+(e.message||'Firestore'));return;}
+  if(!snapshot.exists()){showImport();return;}
+  content=decodeFromFirestore(snapshot.data());
+ }else{
+  try{const response=await httpsCallable(functionsApi,'getTimCourseContent')({});content=decodeFromFirestore(response.data.content);serverAdditions=response.data.additions;}
+  catch(e){message('Chargement des cours de Tim impossible : '+(e.message||'Firebase'));return;}
+ }
+ if(!Array.isArray(content.lessons)||!Array.isArray(content.exercises)){message('Le contenu du cours est incomplet.');return;}
  // V16 Cloudflare : 23 leçons BIS déjà disponibles, sans import manuel ni écrasement Firebase.
  const builtInBis=window.TIM_MATHS_BIS_PACK?.lessons||[];
  const knownLessonIds=new Set(content.lessons.map(l=>l.id));
  content={...content,lessons:[...content.lessons,...builtInBis.filter(l=>!knownLessonIds.has(l.id))]};
- try{content=await loadCourseAdditions(content);}catch(e){console.warn('Extension de cours indisponible avant mise à jour des règles Firebase :',e);}
+ if(isParent){try{content=await loadCourseAdditions(content);}catch(e){console.warn('Extensions indisponibles :',e);}}
+ else if(serverAdditions){const l=new Map(content.lessons.map(x=>[x.id,x]));const e=new Map(content.exercises.map(x=>[x.id,x]));for(const item of serverAdditions.lessons||[])if(item?.id&&Array.isArray(item.blocks))l.set(item.id,item);for(const item of serverAdditions.exercises||[])if(item?.id&&Array.isArray(item.questions))e.set(item.id,item);content={...content,lessons:[...l.values()],exercises:[...e.values()]};}
  content=window.TIM_APPLY_SPANISH_NOV05?.(content)||content;
  if(window.__TIM_CHALLENGE_SETUP) content=window.__TIM_CHALLENGE_SETUP(content);
+ // Tim never receives answer fields through the application state.
+ // Server-side storage/rules must also be migrated before production release.
+ if(!isParent){
+  const hiddenFields=new Set(['right','also','why','expected','answer','answers','answerKey','answerKeys','solution','solutions','correction','corrections','explanation','rubric']);
+  content={...content,exercises:content.exercises.map(ex=>({...ex,questions:(ex.questions||[]).map(q=>Object.fromEntries(Object.entries(q).filter(([key])=>!hiddenFields.has(key))))}))};
+ }
  window.__TIM_DATA=content;window.__TIM_PARENT=isParent;
  window.__CLOUD_ATTEMPTS=[];
  try{await fetchAttempts(content);}catch(e){message('Impossible de lire les résultats. Les règles Firestore sont à vérifier.');return;}
  window.__TIM_BRIDGE={
   submit:async(id,values)=>{
    if(window.__TIM_GUEST||activeUser.uid!==TIM_UID)throw Error('Seul Tim peut valider les exercices.');
-   if(!window.TIM_XP?.canSubmit(window.__TIM_DATA.exercises.find(q=>q.id===id),new Date()))throw Error('Ce défi n’est plus disponible pour cette date.');
    const ex=window.__TIM_DATA.exercises.find(q=>q.id===id);
    if(!ex||!Array.isArray(values)||values.length!==ex.questions.length)throw Error('Exercice ou réponses invalides.');
-   // Firestore security rules prevent overwrite: one document per exercise id, create only.
-   const stored=['daily','weekly','sunday'].includes(ex.kind)?values.map((v,i)=>JSON.stringify({ref:ex.questions[i].sourceId,v:String(v)})):values;
-   await setDoc(doc(db,'attempts',id),{exerciseId:id,authorUid:TIM_UID,answers:stored,submittedAt:serverTimestamp(),policyVersion:12});
-   return result(ex,values,new Date(),12);
+   const response=await httpsCallable(functionsApi,'submitTimExercise')({id,answers:values});
+   const xp=Number(response.data?.xp||0);
+   return {id,date:new Date().toISOString(),title:ex.title,lesson:ex.lesson,xp,correctionLocked:true,correctionStatus:'pending-parent',answers:[],score:null,total:null,needsReview:false};
   },
   refresh:async()=>fetchAttempts(window.__TIM_DATA),
   publish:publishCoursePack,
@@ -253,6 +300,37 @@ async function startSession(user){
   notifyAlert,
   logout:async()=>signOut(auth)
  };
+ if(isParent){
+  const panel=document.createElement('section');panel.id='parent-corrections';panel.style.cssText='margin:16px auto;padding:16px;max-width:850px;border:1px solid #6788b2;border-radius:16px;background:#14253e;color:white';
+  panel.innerHTML='<h2>Corrections des devoirs — contrôle parental</h2><p id="pending-corrections-status">Chargement…</p><div id="pending-corrections-list"></div>';
+  document.getElementById('account-strip').after(panel);
+  const refreshCorrections=async()=>{
+   try{
+    const response=await httpsCallable(functionsApi,'getParentReport')({});
+    const attempts=response.data.attempts||[];
+    const pending=attempts.filter(a=>a.correctionStatus==='pending-parent');
+    const released=attempts.filter(a=>a.correctionStatus==='released');
+    document.getElementById('pending-corrections-status').textContent=pending.length+' exercice(s) en attente de correction';
+    const list=document.getElementById('pending-corrections-list');list.replaceChildren();
+    if(!pending.length){const empty=document.createElement('p');empty.textContent='Aucun devoir en attente. Les corrections déjà autorisées restent accessibles à Tim.';list.append(empty);}
+    for(const item of released){
+     const line=document.createElement('div');line.style.cssText='padding:10px 0;border-top:1px solid #456';
+     const title=document.createElement('span');title.textContent=item.title+' — correction autorisée ';
+     const lock=document.createElement('button');lock.type='button';lock.textContent='Reverrouiller';
+     lock.onclick=async()=>{lock.disabled=true;try{await httpsCallable(functionsApi,'setParentCorrectionRelease')({id:item.id,released:false});await refreshCorrections();}catch(e){lock.disabled=false;alert('Verrouillage impossible : '+(e.message||'Erreur Firebase'));}};
+     line.append(title,lock);list.append(line);
+    }
+    for(const item of pending){
+     const line=document.createElement('div');line.style.cssText='padding:10px 0;border-top:1px solid #456';
+     const title=document.createElement('span');title.textContent=item.title+' ';
+     const release=document.createElement('button');release.type='button';release.textContent='Débloquer la correction';
+     release.onclick=async()=>{release.disabled=true;try{await httpsCallable(functionsApi,'setParentCorrectionRelease')({id:item.id,released:true});await refreshCorrections();}catch(e){release.disabled=false;alert('Déblocage impossible : '+(e.message||'Erreur Firebase'));}};
+     line.append(title,release);list.append(line);
+    }
+   }catch(e){document.getElementById('pending-corrections-status').textContent='Suivi indisponible : fonctions Firebase non accessibles.';}
+  };
+  refreshCorrections();
+ }
  document.getElementById('login-form').hidden=false;
  access.hidden=true;document.body.classList.add('ready');
  document.getElementById('account-name').textContent=isParent?'Espace parent — compte connecté':'Espace Tim — compte connecté';
@@ -266,8 +344,9 @@ async function startSession(user){
 // Netlify Drop: Firebase Web config (public client identifiers, never passwords).
 const CONFIG_STORAGE_KEY='mi-espanol-firebase-web-config';
 function parseFirebaseConfig(s){
-  let c;try{c=JSON.parse(s);}catch(_){c={};for(const m of s.matchAll(/(apiKey|authDomain|projectId|appId|messagingSenderId|storageBucket|measurementId)\s*:\s*["']([^"']+)["']/g))c[m[1]]=m[2];}
+  let c;try{c=JSON.parse(s);}catch(_){c={};for(const m of s.matchAll(/(apiKey|authDomain|projectId|appId|messagingSenderId|storageBucket|measurementId|appCheckSiteKey)\s*:\s*["']([^"']+)["']/g))c[m[1]]=m[2];}
   if(!c || c.projectId!=='classeur-ba3e7' || !c.apiKey || !c.authDomain || !c.appId) throw Error('Configuration incomplète ou projet différent de classeur-ba3e7.');
+  if(!String(c.appCheckSiteKey||'').trim()) throw Error('Clé reCAPTCHA v3 App Check manquante : elle est indispensable pour envoyer les devoirs et débloquer les corrections.');
   return c;
 }
 function shareAddress(c){return location.origin+location.pathname+'#fb='+encodeURIComponent(JSON.stringify(c));}
@@ -299,18 +378,32 @@ function loadConfiguredFirebase(){
 }
 try{
  const cfg=loadConfiguredFirebase();
- if(!cfg) throw {setupWaiting:true};
+ if(!cfg){
+  document.getElementById('tim-enter').addEventListener('click',()=>message('Configuration Firebase nécessaire pour la connexion de Tim.'));
+  document.getElementById('parent-enter').addEventListener('click',()=>message('Configuration Firebase nécessaire pour la connexion Parent.'));
+  throw {setupWaiting:true};
+ }
  installShareLink(cfg);
  const app=initializeApp(cfg);auth=getAuth(app);db=getFirestore(app);
+ const appCheckSiteKey=String(cfg.appCheckSiteKey||'').trim();
+ if(appCheckSiteKey){initializeAppCheck(app,{provider:new ReCaptchaV3Provider(appCheckSiteKey),isTokenAutoRefreshEnabled:true});}
+ else {console.warn('Firebase App Check: clé reCAPTCHA v3 absente. Les fonctions protégées ne seront pas accessibles.');message('Connexion privée incomplète : clé App Check manquante. Les devoirs et corrections ne fonctionneront pas tant que cette configuration n’est pas ajoutée.');}
+ functionsApi=getFunctions(app,'europe-west1');
  form.addEventListener('submit',async(e)=>{
   e.preventDefault();button.disabled=true;message('Connexion en cours…');
-  try{await signInWithEmailAndPassword(auth,document.getElementById('login-email').value.trim(),document.getElementById('login-password').value);document.getElementById('login-password').value='';}
+  try{if(!selectedRole)throw new Error('Choisir un espace');const credential=await signInWithEmailAndPassword(auth,document.getElementById('login-email').value.trim(),document.getElementById('login-password').value);if(credential.user.uid!==(selectedRole==='tim'?TIM_UID:PARENT_UID)){await signOut(auth);throw new Error('Mauvais espace');}document.getElementById('login-password').value='';}
   catch(e){message('Connexion refusée : vérifie ton adresse et ton mot de passe.');}finally{button.disabled=false;}
  });
  document.getElementById('logout-button').onclick=()=>signOut(auth);
  onAuthStateChanged(auth,async(user)=>{
   if(window.__TIM_GUEST)return;
-  if(!user){if(appLoaded){window.location.reload();return;}stopApp();document.getElementById('login-form').hidden=false;message('Identifie-toi pour accéder au classeur.',true);return;}
+  if(!user){if(appLoaded){window.location.reload();return;}stopApp();document.getElementById('login-form').hidden=!selectedRole;roleChoices.hidden=Boolean(selectedRole);message('Choisis Invité, Tim ou Parent.',true);return;}
+  if(!selectedRole){
+   // Ne pas ouvrir automatiquement un espace privé sans choix explicite.
+   roleChoices.hidden=false;form.hidden=true;message('Choisis Invité, Tim ou Parent.',true);return;
+  }
+  const expected=selectedRole==='tim'?TIM_UID:PARENT_UID;
+  if(user.uid!==expected){await signOut(auth);message('Ce compte ne correspond pas à l’espace choisi.');return;}
   await startSession(user);
  });
 }catch(err){if(!err.setupWaiting){stopApp();message('Impossible d’ouvrir Firebase : '+(err.message||'Erreur de configuration'));}}

@@ -1,0 +1,26 @@
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  function parent() { return request.auth != null && request.auth.uid == 'BPEuNAhHVyX8ewQ2I54s56m11vj1'; }
+  function tim() { return request.auth != null && request.auth.uid == 'uqZI3Up97YWzKvWhssWQidn4TJO2'; }
+  function family() { return parent() || tim(); }
+  match /content/{id} { allow read, write: if parent(); }
+  match /exercises/{id} { allow read, write: if parent(); }
+  match /lessons/{id} { allow read, write: if parent(); }
+  match /publicLessons/{id} { allow read: if true; allow write: if parent() && !request.resource.data.keys().hasAny(['answers','answerKeys','corrections','expected','solution','solutions']); }
+  match /publicExercises/{id} { allow read: if family(); allow write: if false; // Import par serveur de confiance uniquement.
+  }
+  match /answerKeys/{id} { allow read, write: if parent(); }
+  match /releasedCorrections/{id} {
+   allow read: if parent(); // Tim reçoit uniquement les corrections filtrées par la fonction serveur.
+   allow write: if false; // Only trusted server function may approve release.
+  }
+  match /attempts/{id} {
+   allow get, list: if parent() || (tim() && resource.data.authorUid == request.auth.uid);
+   allow write: if false;
+  }
+  match /privateAttempts/{id} { allow read: if parent(); allow write: if false; }
+  match /settings/{id} { allow read, write: if parent(); }
+  match /{document=**} { allow read, write: if false; }
+ }
+}

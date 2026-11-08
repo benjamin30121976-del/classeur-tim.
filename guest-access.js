@@ -9,6 +9,10 @@ go.addEventListener('click',()=>{
  window.__TIM_GUEST=true;window.__TIM_PARENT=false;
  window.__TIM_DATA=window.TIM_APPLY_SPANISH_NOV05?.(source)||source;window.__CLOUD_ATTEMPTS=[];
  window.__TIM_CHALLENGE_SETUP?.(window.__TIM_DATA);
+ // Defense in depth: optional exercise packs must never expose answer keys to guests.
+ const hidden=new Set(['right','also','why','expected','answer','answers','answerKey','answerKeys','solution','solutions','correction','corrections','explanation','rubric']);
+ const strip=value=>Array.isArray(value)?value.map(strip):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).filter(([key])=>!hidden.has(key)).map(([key,item])=>[key,strip(item)])):value;
+ window.__TIM_DATA=strip(window.__TIM_DATA);
  window.__TIM_BRIDGE={submit:async()=>{throw Error('Accès invité : aucune validation autorisée.');},refresh:async()=>[],notifyAlert:()=>{}};
  document.getElementById('access').hidden=true;document.body.classList.add('ready','guest-mode');
  document.getElementById('account-name').textContent='Mode invité · Lecture seule';
