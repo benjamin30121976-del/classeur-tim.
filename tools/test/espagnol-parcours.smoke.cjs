@@ -48,6 +48,11 @@ const out=path.join(process.cwd(),'test-espagnol-results');fs.mkdirSync(out,{rec
      if(!(await subject.locator('.spx-simplified-page').isVisible()))throw Error(id+': simplified lesson not opened');
      if(await subject.locator('.spx-words .spx-listen').count()!==10)throw Error(id+': translated spoken vocabulary incomplete');
      if(await subject.locator('.spx-simple-steps li').count()<2)throw Error(id+': simplified explanation not complete');
+     if(await subject.locator('.spx-understand-guide li').count()<3)throw Error(id+': guided steps missing');
+     if(await subject.locator('.spx-microtask').count()!==3)throw Error(id+': three free situations expected');
+     if(['L09','L10','L13','L15'].includes(id)&&await subject.locator('.spx-verb').count()===0)throw Error(id+': conjugation tables missing');
+     await subject.locator('.spx-microtask .spx-micro-answer summary').first().click();
+     if(!(await subject.locator('.spx-microtask .spx-micro-answer').first().innerText()).includes('Exemple de réponse'))throw Error(id+': free practice correction hidden');
      await subject.locator('.spx-back').click();
      await subject.locator('[data-help="'+id+'"]').click();
      if(!(await subject.locator('.spx-personal-help').isVisible()))throw Error(id+': separate help not opened');
@@ -95,11 +100,14 @@ const out=path.join(process.cwd(),'test-espagnol-results');fs.mkdirSync(out,{rec
    await subject.locator('[data-training="L09"]').click();
    await subject.locator('[data-training-id="SPQ_L09_01"]').click();
    if(await subject.locator('.spx-training-question').count()!==10)throw Error('10 multiple-choice questions required');
+   if(await subject.locator('.spx-training-audio [data-say-speed="slow"]').count()!==10)throw Error('Normal/slow audio missing for Spanish source questions');
    for(let i=0;i<10;i++)await subject.locator('.spx-training-question').nth(i).locator('input[type="radio"]').first().check();
    await subject.locator('#spx-training-submit').click();
    await subject.locator('#spx-training-confirm').click();
    if(!(await subject.locator('.spx-training-score').isVisible()))throw Error('Score not displayed after permanent validation');
    if(await subject.locator('.spx-training-correction').count()!==10)throw Error('Ten reviewed answers missing');
+   if(!(await subject.locator('#spx-review-lesson').count())||!(await subject.locator('#spx-review-help').count()))throw Error('Targeted help links after errors missing');
+   if(!await subject.locator('.spx-error-tip').count())throw Error('Error explanation absent');
    if(await subject.locator('#spx-training-submit').count())throw Error('Terminated task still submit-able');
    await subject.locator('#spx-training-return').click();
    if(!(await subject.locator('[data-training-id="SPQ_L09_01"]').innerText()).includes('Terminé'))throw Error('Persisted score not displayed');
@@ -115,6 +123,14 @@ const out=path.join(process.cwd(),'test-espagnol-results');fs.mkdirSync(out,{rec
    if(!(await subject.locator('.spx-training-score').innerText()).includes('10 / 10'))throw Error('Written answers wrongly corrected');
    await subject.locator('#spx-training-return').click();
    if(!(await subject.locator('.spx-training-status').innerText()).includes('2 / 10'))throw Error('One-time progress not displayed');
+   await page.evaluate(()=>{
+    const box=document.createElement('div');box.id='test-parent-spanish';document.body.append(box);
+    window.__TIM_PARENT=true;
+    window.TIM_SPANISH_TRAINING_UI.renderParentProgress(box);
+   });
+   if(!(await page.locator('#test-parent-spanish .spx-parent-diagnostic').isVisible()))throw Error('Parent diagnosis absent');
+   if(!(await page.locator('#test-parent-spanish').innerText()).includes('Notions à revoir'))throw Error('Parent lacks prioritized difficulties');
+   await page.evaluate(()=>{document.querySelector('#test-parent-spanish')?.remove();window.__TIM_PARENT=false;});
    await subject.locator('.spx-back').click();
    await subject.locator('[data-ent-exercises="L13"]').click();
    if(!(await subject.locator('.spx-ent-translations').isVisible()))throw Error('ENT exercise extracts not displayed');
