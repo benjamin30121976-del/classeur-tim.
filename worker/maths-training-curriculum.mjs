@@ -765,6 +765,6 @@ export function mathPublicTask(id){
 export function gradeMathTask(id,answers){
  const t=mathTask(id);
  if(!t||!Array.isArray(answers)||answers.length!==t.questions.length||answers.some(x=>!Number.isInteger(x)||x<0||x>3))throw Error('invalid-answers');
- const items=t.questions.map((q,i)=>{const correct=answers[i]===q.correctIndex;const feedback=correct?'':q.feedbackByIndex[answers[i]]||'Cette réponse ne correspond pas à la méthode.';return {prompt:q.prompt,response:q.choices[answers[i]],expected:q.expected,correct,explanation:correct?q.explanation:feedback+' '+q.explanation,lessonId:t.lessonId};});
+ const items=t.questions.map((q,i)=>{const correct=answers[i]===q.correctIndex;const feedback=correct?'':q.feedbackByIndex[answers[i]]||'Cette réponse ne correspond pas à la méthode.';const explanation=correct?q.explanation:(feedback.includes(q.explanation)?feedback:feedback+' '+q.explanation);return {prompt:q.prompt,response:q.choices[answers[i]],expected:q.expected,correct,explanation,lessonId:t.lessonId};});
  return {id,lessonId:t.lessonId,score:items.filter(x=>x.correct).length,total:items.length,items,xp:0};
 }
