@@ -589,65 +589,9 @@ function makeRewardsTile(){const b=E('button','reward-open');b.type='button';
   dialog.setAttribute('tabindex','-1');if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');dialog.scrollTop=0;dialog.focus({preventScroll:true});
  });return b;}
 document.getElementById('rewards-close')?.addEventListener('click',()=>{const d=document.getElementById('rewards-dialog');if(d.close)d.close();else d.removeAttribute('open');});
-function dailyMissionsCard(){
- const meta=window.__TIM_CHALLENGES||{},ids=meta.dailyIds||[];
- const isUpcoming=ids.length===0,featuredId=ids[0]||window.__TIM_NEXT_DAILY;
- const featured=DATA.exercises.find(ex=>ex.id===featuredId);
- const done=featured&&attemptFor(featured.id);
- const c=E('section','daily-card game-challenge');c.id='challenge-section';
- const head=E('div','challenge-top');
- head.append(E('strong','','🎯 DÉFI DU JOUR À L’HONNEUR'),E('span','challenge-xp-tag','JUSQU’À +3 XP'));
- c.append(head);
- const body=E('div','challenge-main'),copy=E('div','challenge-main-copy');
- if(featured){
-  copy.append(E('h3','',featured.title));
-  copy.append(E('p','challenge-detail',featured.description||'Un défi de 10 questions sur les leçons déjà étudiées.'));
-  copy.append(E('p','challenge-meta',isUpcoming?'Prochain défi : disponible lundi.':done?'Défi déjà validé. Tu peux revoir la correction.':'10 questions · Un seul essai · Correction immédiate'));
- }else{
-  copy.append(E('p','challenge-detail',isUpcoming?'Prochain défi du jour dès lundi.':'Le défi du jour est en préparation.'));
- }
- body.append(copy);
- const wolfWrap=E('div','challenge-wolf-scene'),img=E('img','challenge-wolf challenge-wolf-daily');
- img.src='./assets/loup-daily'+(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'-statique.webp':'-anime.webp');
- img.alt='Loup joueur faisant un clin d’œil';img.loading='lazy';img.width=126;img.height=100;
- wolfWrap.append(img);body.append(wolfWrap);c.append(body);
- const actions=E('div','challenge-card-actions');
- if(!featured){actions.append(badge('En préparation'));}
- else if(isUpcoming){
-  actions.append(badge('Disponible lundi'));
-  if(window.__TIM_PARENT)actions.append(button('Prévisualiser le défi du lundi',()=>openExercise(featured.id),'mission-launch'));
- }
- else if(done){
-  actions.append(button('✓ Voir ma validation et les réponses',()=>openExercise(featured.id),'small-cta'));
- }
- else if(window.__TIM_GUEST){actions.append(badge('Lecture seule · invité'));}
- else actions.append(button(window.__TIM_PARENT?'Prévisualiser le défi':'LANCER LE DÉFI',()=>openExercise(featured.id),'mission-launch'));
- c.append(actions);
- // Seul le défi principal apparaît au départ. Les autres restent facultatifs.
- if(ids.length>1){
-  const more=E('details','challenge-more'),summary=E('summary','','Voir les autres petits défis du jour');
-  const list=E('div','challenge-card-actions');
-  let next=1;
-  function appendMore(){
-   const until=Math.min(ids.length,next+3);
-   for(let k=next;k<until;k++){
-    const ex=DATA.exercises.find(item=>item.id===ids[k]);if(!ex)continue;
-    const old=attemptFor(ex.id);
-    list.append(button((old?'✓ ':'')+'Défi '+(k+1)+' · '+ex.questions.length+' questions',
-      ()=>openExercise(ex.id),old?'small-cta':'mission-launch'));
-   }
-   next=until;
-   moreButton.hidden=next>=ids.length;
-  }
-  const moreButton=button('Afficher 3 autres défis',appendMore,'small-cta');
-  more.append(summary,list,moreButton);
-  more.addEventListener('toggle',()=>{if(more.open&&next===1)appendMore();});
-  c.append(more);
- }
- return c;
-}
+// Le défi quotidien et son panneau ont été supprimés.
 function missionCard(kind){
- if(kind==='daily')return dailyMissionsCard();
+ if(kind==='daily')return null;
  const meta=window.__TIM_CHALLENGES||{},id=kind==='weekly'?meta.weekly:meta.sunday;
  const ex=DATA.exercises.find(x=>x.id===id),done=ex&&attemptFor(ex.id),sunday=kind==='sunday';
  const c=E('section',sunday?'sunday-card game-challenge':'weekly-card game-challenge');
@@ -683,7 +627,7 @@ function renderHome(){
  const root=clear(document.getElementById('home-content'));refreshXPHeader();
  const hero=E('section','mission-hero');
  const copy=E('div','mission-copy');copy.append(E('div','shout','CLASSEUR · 3e'),E('h1','','CHOISIS TA MISSION'),E('p','','Cours, défis et progression. À toi de jouer.'));
- copy.append(button('Choisir une matière →',()=>page('matieres'),'lobo-go'));hero.append(copy);const wolf=E('img','mission-wolf');wolf.src='./assets/loup-accueil.webp';wolf.alt='Le loup jongleur du classeur';hero.append(wolf);// Defi quotidien suspendu jusqu'a verification pedagogique des enonces et de la correction.
+ copy.append(button('Choisir une matière →',()=>page('matieres'),'lobo-go'));hero.append(copy);const wolf=E('img','mission-wolf');wolf.src='./assets/loup-accueil.webp';wolf.alt='Le loup jongleur du classeur';hero.append(wolf);// Défi du jour supprimé : seules les autres rubriques restent actives.
  root.append(hero,...(window.__TIM_GUEST?[]:[makeXPPanel()]),makeRewardsTile(),makeSoundSettings(),bonusMissionPanel(true),missionCard('weekly'),missionCard('sunday'));
  root.append(E('h2','home-section-title','Que veux-tu travailler ?'));
  const cards=E('div','home-grid');
