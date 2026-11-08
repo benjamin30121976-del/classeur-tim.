@@ -3,6 +3,6 @@
   "site": "https://classeur-tim-v16.pages.dev/",
   "scope": "Vérifier en lecture seule les 23 évaluations de maths, leurs 46 questions, la fiche A/B, l'espace Parent ; lancer les tests de sécurité sans soumettre de réponse au vrai compte Tim.",
   "launch_on_update": true,
-  "note": "Chromium + Playwright, sans TinyFish, lecture seule. Vérifier questions claires, fiche A/B, accès notes Parent ; tests automatisés de non-répétition des tentatives.",
-  "checkVersion": "final-audit-maths-23-exercices-184-corrections-2026-11-08"
+  "note": "Contrôle de la dernière banque mathématique, sans soumission de Tim. Tests Node : 23 leçons, 184 scénarios de notation, verrouillage, espace Parent. Chromium : navigation mobile et PC et vérification des 23 QCM disponibles.",
+  "checkVersion": "maths-audit-final-46-questions-138-explications-sans-validation"
 }
