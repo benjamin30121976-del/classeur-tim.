@@ -49,6 +49,26 @@ async function collectPrivateTrial(page,label){
  });
  saveEncryptedPrivateReport(result);
 }
+async function eraseCancelledTrial(page,label){
+ if(label!=='ordinateur'||privateAudit.mode!=='annuler-defi-20261108')return;
+ const report=await page.evaluate(async()=>{
+  if(window.__TIM_PARENT!==true)throw Error('Compte Parent non authentifié');
+  if(!window.__TIM_BRIDGE?.resetTrial20261108)throw Error('Service de retrait absent de cette version');
+  const first=await window.__TIM_BRIDGE.resetTrial20261108();
+  const verification=await window.__TIM_BRIDGE.resetTrial20261108();
+  return {id:'DAY_20261108_01',first,verification,
+   exerciseNotInCatalogue:!(window.__TIM_DATA?.exercises||[]).some(x=>x.id==='DAY_20261108_01'),
+   exerciseNotInHistory:!(window.__CLOUD_ATTEMPTS||[]).some(x=>x.id==='DAY_20261108_01')};
+ });
+ // Le rapport archivé n'expose ni note, ni réponse, ni identifiants secrets.
+ fs.writeFileSync(path.join(output,'verification-suppression-defi.json'),JSON.stringify(report,null,2));
+ const gone=report.verification?.removed===false&&
+  Object.values(report.verification?.deleted||{}).every(x=>x===false)&&
+  report.exerciseNotInCatalogue&&report.exerciseNotInHistory;
+ check('Defi annulé et copie supprimée côté Firebase',gone, gone?'Tentative, copie et correction absentes au second contrôle':'Vérification de suppression incomplète');
+ if(!gone){process.exitCode=1;throw Error('Suppression du défi non confirmée');}
+ console.log('Retrait Parent/Tim confirmé et vérifié, sans publication des données privées.');
+}
 async function picture(page,filename){
   // Ne jamais archiver de formulaire contenant le mot de passe.
   if(!await page.locator('body.ready').count())return;
@@ -146,6 +166,7 @@ async function inspect(browser,label,viewport){
       return !!el && el.textContent.trim()!=='Chargement…';
     },null,{timeout:12000}).catch(()=>{});
     device.correctionsState=await page.locator('#pending-corrections-status').textContent().catch(()=>'absent');
+    await eraseCancelledTrial(page,label);
     // Examen privé du résultat du défi : rapport hybride chiffré, jamais publié en clair.
     try{await collectPrivateTrial(page,label);}
     catch(e){console.log('Examen privé du défi : impossible de produire le rapport chiffré.');}
@@ -161,7 +182,7 @@ async function inspect(browser,label,viewport){
       check(label+' ouverture lecon privee',await page.locator('#lesson-detail.active h2').isVisible());
       await picture(page,label+'-lecon-privee');
     }
-    // Aucun bouton de publication, correction, enregistrement ni modification n'est activé.
+    // Aucune publication ni modification, sauf l'annulation ciblée demandée par le Parent quand le mode correspondant est explicitement actif.
   }catch(e){check(label+' inspection interrompue',false,e.message.slice(0,180));}
   finally{await context.close();}
 }
