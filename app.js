@@ -463,7 +463,7 @@ function xpInfo(done=attempts()){
   let total=0,peak=0;const week=window.TIM_XP.monday(parisDay(new Date()));let weekly=0;
   for(const a of ordered){total=Math.max(0,total+Number(a.xp||0));peak=Math.max(peak,total);if(parisDay(a.date)&&window.TIM_XP.monday(parisDay(a.date))===week)weekly+=Number(a.xp||0);}
   const level=Math.floor(peak/100)+1;
-  return {total,perfect:done.filter(a=>a.correctionStatus==='released'&&a.total>0&&a.score===a.total).length,peak,level,inLevel:Math.max(0,Math.min(100,total-(level-1)*100)),done:done.length,week:weekly,rawWeek:weekly,reward:null,legacy:0,weeklyPass:false};
+  return {total,perfect:done.filter(a=>a.correctionStatus==='released'&&a.total>0&&a.score===a.total).length,peak,level,inLevel:Math.max(0,Math.min(100,total-(level-1)*100)),done:done.length,week:weekly,rawWeek:weekly,reward:window.TIM_XP.reward(Math.max(0,weekly),false),legacy:0,weeklyPass:false};
  }
  const daily=new Map();let legacy=0,perfect=0;
  for(const a of done){if(a.total>0&&a.score===a.total&&(a.correctionStatus==='released'&&Array.isArray(a.answers)&&a.answers.length>0))perfect++;
