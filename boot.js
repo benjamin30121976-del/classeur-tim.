@@ -223,7 +223,7 @@ async function fetchAttempts(content){
  list.sort((a,b)=>a.date.localeCompare(b.date));window.__CLOUD_ATTEMPTS=list;return list;
 }
 
-function stopApp(){if(window.__TIM_GUEST)return;document.body.classList.remove('ready');access.hidden=false;appLoaded=false;window.__CLOUD_ATTEMPTS=[];
+function stopApp(){if(window.__TIM_GUEST)return;document.body.classList.remove('ready');access.hidden=false;appLoaded=false;window.__CLOUD_ATTEMPTS=[];window.__TIM_SPANISH_PROGRESS={status:'loading',attempts:[]};
   for(const id of ['content-import','content-import-button','import-logout'])document.getElementById(id)?.remove();
   access.querySelector('h1').textContent="Accède à tes missions";
   access.querySelector('p').textContent='Connexion réservée à Tim et à son parent.';
@@ -279,9 +279,29 @@ async function startSession(user){
   content={...content,exercises:content.exercises.map(ex=>({...ex,questions:(ex.questions||[]).map(q=>Object.fromEntries(Object.entries(q).filter(([key])=>!hiddenFields.has(key))))}))};
  }
  window.__TIM_DATA=content;window.__TIM_PARENT=isParent;
- window.__CLOUD_ATTEMPTS=[];
+ window.__CLOUD_ATTEMPTS=[];window.__TIM_SPANISH_PROGRESS={status:'loading',attempts:[]};
  try{await fetchAttempts(content);}catch(e){message('Impossible de lire les résultats. Les règles Firestore sont à vérifier.');return;}
+ window.__TIM_SPANISH_PROGRESS={status:'loading',attempts:[]};
+ const loadSpanishProgress=async()=>{
+  try{
+   const response=await httpsCallable(functionsApi,'getSpanishTrainingProgress')({});
+   const attempts=Array.isArray(response.data?.attempts)?response.data.attempts:[];
+   window.__TIM_SPANISH_PROGRESS={status:'ok',attempts};
+  }catch(e){
+   window.__TIM_SPANISH_PROGRESS={status:'unavailable',attempts:[],message:e.code==='functions/not-found'?'Le nouveau suivi des exercices n’est pas encore activé dans Firebase.':'La sauvegarde des exercices est momentanément indisponible.'};
+  }
+  document.dispatchEvent(new Event('tim-spanish-training-progress'));
+  return window.__TIM_SPANISH_PROGRESS;
+ };
  window.__TIM_BRIDGE={
+  trainingProgress:loadSpanishProgress,
+  trainingSubmit:async(id,answers)=>{
+   if(window.__TIM_GUEST||activeUser?.uid!==TIM_UID)throw Error('Seul Tim peut valider un entraînement.');
+   const response=await httpsCallable(functionsApi,'submitSpanishTraining')({id,answers});
+   // Le serveur valide une seule fois et conserve la correction, sans XP.
+   await loadSpanishProgress();
+   return response.data;
+  },
   submit:async(id,values)=>{
    if(window.__TIM_GUEST||activeUser.uid!==TIM_UID)throw Error('Seul Tim peut valider les exercices.');
    const ex=window.__TIM_DATA.exercises.find(q=>q.id===id);
@@ -300,6 +320,8 @@ async function startSession(user){
   notifyAlert,
   logout:async()=>signOut(auth)
  };
+ // Le suivi espagnol charge sans bloquer l'ouverture de la session.
+ loadSpanishProgress().catch(()=>{});
  if(isParent){
   const panel=document.createElement('section');panel.id='parent-corrections';panel.style.cssText='margin:16px auto;padding:16px;max-width:850px;border:1px solid #6788b2;border-radius:16px;background:#14253e;color:white';
   panel.innerHTML='<h2>Corrections des devoirs — contrôle parental</h2><p id="pending-corrections-status">Chargement…</p><div id="pending-corrections-list"></div>';
