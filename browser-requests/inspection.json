@@ -1,14 +1,14 @@
 {
   "site": "https://classeur-tim-v16.pages.dev/",
-  "mode": "tour-complet",
+  "mode": "parent-login",
   "devices": [
     "desktop",
     "mobile"
   ],
-  "maxLessons": 35,
-  "maxExercises": 45,
-  "screenshotAllLessons": true,
-  "screenshotAllExercises": true,
+  "maxLessons": 0,
+  "maxExercises": 0,
+  "screenshotAllLessons": false,
+  "screenshotAllExercises": false,
   "actions": [],
-  "note": "Inspection automatique du site en mode Invite uniquement; ne pas utiliser de comptes personnels."
+  "note": "Diagnostic interface de connexion Parent : aucun identifiant ni mot de passe envoyé à Firebase. Aucun contenu privé enregistré."
 }
