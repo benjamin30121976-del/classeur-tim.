@@ -547,7 +547,7 @@ async function startSession(user){
       window.__TIM_DATA?.lessons?.find(l=>l.id===ex?.lesson);
     const subject=mathMatch?'Mathématiques':match?'Espagnol':(ex?.subject||'Exercice');
     const lessonTitle=lesson?.name||lesson?.title||'';
-    const exerciseTitle=match?(match[1]==='Q'?'QCM ':'Écriture ')+Number(match[3]):item.title;
+    const exerciseTitle=match?(match[1]==='Q'?'QCM ':'Écriture ')+Number(match[3]):mathMatch?'Évaluation de la sous-leçon · '+mathMatch[1]:(item.title||'Exercice');
     const heading=document.createElement('strong');heading.textContent=subject+(lessonTitle?' · '+lessonTitle:'');
     heading.style.cssText='display:block;font-size:17px;color:#eef5ff';
     const summary=document.createElement('p');
