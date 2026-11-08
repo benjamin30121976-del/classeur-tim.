@@ -180,18 +180,26 @@ async function notifyAlert(id,saved){
 }
 async function runFirebaseDiagnostic(){
  if(activeUser?.uid!==PARENT_UID)throw Error('Réservé au parent.');
- const key='test_'+Date.now()+'_'+Math.random().toString(36).slice(2,8);
- const ref=doc(db,'test_attempts',key), data={authorUid:PARENT_UID,answers:['tengo','incorrect'],submittedAt:serverTimestamp(),kind:'diagnostic-sans-note'};
- let created=false, read=false, locked=false, erased=false;
+ // Diagnostic non destructif, aligné sur les règles réelles de Firestore.
+ const report={parentContentRead:false,attemptsRead:false,unauthorizedAttemptWriteBlocked:false,backendReport:false};
+ const source=await getDoc(doc(db,'content','main'));
+ report.parentContentRead=source.exists();
+ await getDocs(query(collection(db,'attempts'),where('authorUid','==',TIM_UID)));
+ report.attemptsRead=true;
  try{
-  await setDoc(ref,data);created=true;
-  const snapshot=await getDoc(ref);read=snapshot.exists()&&snapshot.data().answers[0]==='tengo';
-  try{await setDoc(ref,{...data,kind:'update-interdite'});}catch(_){locked=true;}
-  return {created,read,locked,erased:true};
- }finally{
-  if(created){await deleteDoc(ref);erased=true;}
+  await setDoc(doc(db,'attempts','diagnostic_interdit'),{authorUid:PARENT_UID,xp:999});
+  throw Error('Sécurité défaillante : écriture directe des résultats autorisée.');
+ }catch(error){
+  if(error.code==='permission-denied')report.unauthorizedAttemptWriteBlocked=true;
+  else throw error;
  }
+ const response=await httpsCallable(functionsApi,'getParentReport')({});
+ report.backendReport=Array.isArray(response.data?.attempts);
+ if(!report.parentContentRead||!report.attemptsRead||!report.unauthorizedAttemptWriteBlocked||!report.backendReport)
+  throw Error('Diagnostic incomplet : '+JSON.stringify(report));
+ return report;
 }
+
 async function fetchAttempts(content){
  const attemptCollection=collection(db,'attempts');
  const docs=await getDocs(activeUser?.uid===TIM_UID?query(attemptCollection,where('authorUid','==',TIM_UID)):attemptCollection);
