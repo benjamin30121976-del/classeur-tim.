@@ -84,3 +84,18 @@
 .tim-letter-upload summary{cursor:pointer;color:#833246;font-weight:850;font-size:14px}
 .tim-letter-upload input[type=file]{width:100%;max-width:100%;display:block;background:#fff;color:#25314b;font-size:13px;margin:12px 0;padding:9px;border:1px solid #d9dce5;border-radius:9px}
 .tim-letter-upload .spx-button:disabled{opacity:.4;cursor:default}
+
+/* Atelier de lecture de la lettre manuscrite, visible uniquement dans Espagnol L05. */
+.tim-letter-workshop{margin-top:18px;border-top:1px solid #eadac6;padding-top:15px}
+.tim-letter-workshop h3{color:#8e3345;margin:2px 0 9px;font-size:18px}
+.tim-letter-workshop>p{font-size:13px;line-height:1.55;color:#536278}
+.tim-letter-lesson{background:#fffdf7;border:1px solid #ecddc6;border-radius:12px;margin:10px 0;padding:10px 12px;color:#273b55}
+.tim-letter-lesson summary{font-weight:850;font-size:14px;color:#842e44;cursor:pointer;padding:4px 0}
+.tim-letter-lesson .tim-letter-es{font-size:14px;color:#83334a;font-weight:750;line-height:1.5}
+.tim-letter-lesson .tim-letter-fr{font-size:13px;color:#2f4660;line-height:1.55}
+.tim-letter-lesson .tim-letter-why{border-left:3px solid #e5bd3d;padding:8px 10px;border-radius:0 8px 8px 0;background:#fff5dc;font-size:13px;color:#48566b;line-height:1.5}
+.tim-letter-method,.tim-letter-handwriting{padding:13px 14px;border:1px solid #ebd7d1;border-radius:14px;background:#fffaf4;margin-top:13px}
+.tim-letter-handwriting{background:#fffdf4;border-color:#efdaa5}
+.tim-letter-method h4,.tim-letter-handwriting h4{margin:0 0 11px;color:#823046;font-size:15px}
+.tim-letter-method p,.tim-letter-handwriting p{margin:7px 0;color:#435266;font-size:13px;line-height:1.6}
+.tim-letter-disclaimer{font-size:12px!important;color:#6f7d8d!important}
