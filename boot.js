@@ -310,7 +310,7 @@ try{
  document.getElementById('logout-button').onclick=()=>signOut(auth);
  onAuthStateChanged(auth,async(user)=>{
   if(window.__TIM_GUEST)return;
-  if(!user){if(appLoaded){window.location.reload();return;}stopApp();document.getElementById('login-form').hidden=false;message('Identifie-toi pour accéder au classeur.',true);return;}
+  if(!user){if(appLoaded){window.location.reload();return;}stopApp();message('Choisis Parent ou Tim pour te connecter, ou visite le classeur en invité.',true);return;}
   await startSession(user);
  });
 }catch(err){if(!err.setupWaiting){stopApp();message('Impossible d’ouvrir Firebase : '+(err.message||'Erreur de configuration'));}}
