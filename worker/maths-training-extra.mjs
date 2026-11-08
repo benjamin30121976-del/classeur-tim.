@@ -159,8 +159,8 @@ function fractions(i){
 function powers(i){
  const a=3+i;
  return i%2===0?
- Q('Calcule (−'+a+')².',a*a,[-a*a,-2*a,2*a],'Le carré d’un nombre négatif est positif : (−'+a+') × (−'+a+') = '+a*a+'.'):
- Q('Calcule '+a+'⁻².','1/'+a*a,[a*a,-a*a,'1/'+(a*2)],'L’exposant −2 signifie l’inverse du carré : 1/('+a+'²) = 1/'+a*a+'.');
+ Q('Calcule le carré de −'+a+', c’est-à-dire (−'+a+')².',a*a,[-a*a,-2*a,2*a],'Le carré d’un nombre négatif est positif : (−'+a+') × (−'+a+') = '+a*a+'.'):
+ Q('Calcule '+a+'⁻² en appliquant la règle des exposants négatifs.','1/'+a*a,[a*a,-a*a,'1/'+(a*2)],'L’exposant −2 signifie l’inverse du carré : 1/('+a+'²) = 1/'+a*a+'.');
 }
 function scientific(i){
  const n=2+i,p=2+(i%3),fmt=x=>n+' × 10'+sup(x);
