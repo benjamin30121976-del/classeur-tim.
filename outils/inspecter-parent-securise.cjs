@@ -52,12 +52,14 @@ async function inspect(browser,label,viewport){
     const stats=await page.evaluate(()=>({
       lessons:window.__TIM_DATA?.lessons?.length||0,
       exercises:window.__TIM_DATA?.exercises?.length||0,
+      dailyChallenges:(window.__TIM_DATA?.exercises||[]).filter(x=>/^DAY_20\d{6}(?:_\d{2})?$/.test(String(x.id||''))).length,
       subjects:new Set((window.__TIM_DATA?.lessons||[]).map(x=>x.subject||'Espagnol')).size,
       parentNav:[...document.querySelectorAll('[data-nav="parent"]')].some(el=>!el.hidden)
     }));
     device.lessonCount=stats.lessons;device.exerciseCount=stats.exercises;device.subjectsCount=stats.subjects;
     check(label+' menu Parent visible',stats.parentNav);
     check(label+' lecons chargees',stats.lessons>0,'Nombre : '+stats.lessons);
+    check(label+' défi du jour supprimé du classeur',stats.dailyChallenges===0,'Défis quotidiens visibles : '+stats.dailyChallenges);
     const subjects=await page.evaluate(()=>{
       const lessons=window.__TIM_DATA?.lessons||[],exercises=window.__TIM_DATA?.exercises||[];
       return [...new Set([...lessons.map(x=>x.subject||'Espagnol'),...exercises.map(x=>x.subject||'Espagnol')])].map(name=>({name,lessons:lessons.filter(x=>(x.subject||'Espagnol')===name).length,exercises:exercises.filter(x=>(x.subject||'Espagnol')===name).length}));
