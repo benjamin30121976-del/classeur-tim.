@@ -173,7 +173,7 @@ async function notifyAlert(id,saved){
  const url=await readAlertWebhook();
  if(!url)return;
  // Le webhook ne contient que des identifiants de résultat, pas les réponses privées.
- const payload=JSON.stringify({event:'exercise_validated',exerciseId:id,title:saved.title,score:saved.score,total:saved.total,submittedAt:saved.date});
+ const payload=JSON.stringify({event:'exercise_validated',exerciseId:id,title:saved.title,xp:saved.xp,correctionStatus:'pending-parent',submittedAt:saved.date});
  try {if(navigator.sendBeacon && navigator.sendBeacon(url,new Blob([payload],{type:'text/plain'})))return;}
  catch(e){}
  try{await fetch(url,{method:'POST',mode:'no-cors',headers:{'Content-Type':'text/plain'},body:payload,keepalive:true});}catch(e){console.warn('Notification Make non envoyée',e);}
