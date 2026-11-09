@@ -1,5 +1,5 @@
 name: Audit Firestore production - lecture seule
-# Audit de la présence de corrigés dans les extensions de cours
+# Vérification après la publication Firebase du 9 novembre 2026 à 16 h 06, aucun changement en production
 on:
   push:
     branches: [audit-firestore-readonly-20261109]
