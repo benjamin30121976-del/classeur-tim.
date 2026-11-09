@@ -1,0 +1,23 @@
+name: Comparer acces public au SSO ENT sur runners GitHub
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ent-network-probe.txt
+permissions:
+  contents: read
+jobs:
+  tester:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Verifier les serveurs publics sans identifiants
+        run: python outils/diagnostic_ent_reseau.py
