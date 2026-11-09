@@ -249,8 +249,29 @@ def safe_auth_error_code(exc: Exception) -> str:
 if __name__ == "__main__":
     try:
         if "--preflight" in sys.argv:
-            school_lookup()
+            school = school_lookup()
             print("PREFLIGHT_OK: etablissement et API Skolengo trouves")
+            # Diagnose public OIDC metadata without requesting user credentials.
+            import requests
+            from urllib.parse import urlparse
+            url = school.oidc_wellknown_url
+            print("OIDC_METADATA_HOTE:", urlparse(url).hostname)
+            try:
+                resp = requests.get(url, timeout=20, allow_redirects=True)
+                print("OIDC_METADATA_HTTP:", resp.status_code)
+                print("OIDC_METADATA_FINAL_HOTE:", urlparse(resp.url).hostname)
+                ct = resp.headers.get("Content-Type", "").split(";")[0].lower().strip()
+                print("OIDC_METADATA_FORMAT:", ct or "absent")
+                if resp.ok:
+                    try:
+                        doc = resp.json()
+                        print("OIDC_METADATA_ENDPOINTS_VALIDES:",
+                              bool(doc.get("authorization_endpoint") and doc.get("token_endpoint")))
+                    except ValueError:
+                        print("OIDC_METADATA_JSON_INVALIDE")
+            except requests.RequestException as exc:
+                print("OIDC_METADATA_ERREUR_RESEAU:", type(exc).__name__)
+
         else:
             collect()
     except Exception as exc:
