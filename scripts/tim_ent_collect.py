@@ -288,6 +288,27 @@ if __name__ == "__main__":
                 except requests.RequestException as exc:
                     print("TEST_HTTP", label, "ECHEC", type(exc).__name__,
                           str(exc).replace("\\n", " ")[:180])
+                if label == "sso-occitanie":
+                    import subprocess
+                    for agent_name, headers in [
+                        ("chrome", {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36", "Accept": "application/json"}),
+                        ("skolengo", {"User-Agent": "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36 SkoApp/HomeAssistant", "Accept": "application/json"}),
+                    ]:
+                        try:
+                            r = requests.get(url, headers=headers, timeout=10, allow_redirects=False, stream=True)
+                            print("TEST_UA", agent_name, "HTTP", r.status_code)
+                            r.close()
+                        except requests.RequestException as ex:
+                            print("TEST_UA", agent_name, "ERREUR", type(ex).__name__)
+                    for version in ("--http1.1", "--http2"):
+                        proc = subprocess.run(
+                            ["curl", version, "-L", "--max-time", "10",
+                             "-sS", "-o", "/dev/null", "-w", "%{http_code}", url],
+                            capture_output=True, text=True, timeout=15,
+                        )
+                        print("TEST_CURL", version, "EXIT", proc.returncode,
+                              "HTTP", proc.stdout.strip()[:6],
+                              "ERREUR", proc.stderr.splitlines()[0][:110] if proc.stderr else "aucune")
 
         else:
             collect()
