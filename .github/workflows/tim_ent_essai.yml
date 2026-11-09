@@ -34,6 +34,12 @@ jobs:
           BASE=https://raw.githubusercontent.com/infernalK/ha-skolengo/e9c9a84c0787991daa50a91c545386a75a38c631/custom_components/skolengo
           curl -fsSL "$BASE/api.py" -o skolengo/api.py
           curl -fsSL "$BASE/const.py" -o skolengo/const.py
+      - name: Diagnostic navigateur Chromium du SSO public
+        continue-on-error: true
+        run: |
+          npm install --prefix /tmp/ent-playwright --no-audit --no-fund playwright
+          /tmp/ent-playwright/node_modules/.bin/playwright install chromium
+          NODE_PATH=/tmp/ent-playwright/node_modules node outils/diagnostic-sso-browser.cjs
       - name: Verifier le portail public et l'API
         run: python scripts/tim_ent_collect.py --preflight
       - name: Recuperer les cours, devoirs et pieces jointes
