@@ -1,1 +1,2 @@
 Comparaison reseau ENT entre runners GitHub - diagnostic public 1
+Diagnostic Windows sans checkout, seconde comparaison.
