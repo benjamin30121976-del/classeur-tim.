@@ -22,3 +22,5 @@ jobs:
           node-version: '22'
       - name: Auditer les permissions reelles sans modifier Firestore
         run: node outils/audit-firestore-securite.cjs
+      - name: Verifier lecture seule et separations des roles sur Cloudflare
+        run: node outils/audit-cloudflare-securite-lecture-seule.cjs
