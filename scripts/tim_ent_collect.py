@@ -250,66 +250,25 @@ if __name__ == "__main__":
     try:
         if "--preflight" in sys.argv:
             school = school_lookup()
-            print("PREFLIGHT_OK: etablissement et API Skolengo trouves")
-            # Diagnostic reseau public uniquement. Ne jamais journaliser cookies, url a jeton,
-            # ni contenus de reponse de connexion.
-            import socket
+            print("PREFLIGHT_OK: college trouve dans l'API Skolengo")
+            # Verification publique, sans utiliser les secrets EduConnect.
             import requests
-            from urllib.parse import urlparse
-            targets = [
-                ("sso-occitanie", school.oidc_wellknown_url),
-                ("portail-occitanie", "https://www.mon-ent-occitanie.fr/"),
-                ("educonnect", "https://educonnect.education.gouv.fr/"),
-                ("skolengo", "https://api.skolengo.com/"),
-                ("sso-autre-ent", "https://sso.monbureaunumerique.fr/oidc/.well-known"),
-            ]
-            for label, url in targets:
-                host = urlparse(url).hostname
-                try:
-                    infos = socket.getaddrinfo(host, 443, type=socket.SOCK_STREAM)
-                    families = sorted({"IPv6" if item[0] == socket.AF_INET6 else "IPv4" for item in infos})
-                    print("TEST_DNS", label, "OK", ",".join(families))
-                except socket.gaierror as exc:
-                    print("TEST_DNS", label, "ECHEC", exc.errno)
-                    continue
-                try:
-                    import ssl
-                    with socket.create_connection((host, 443), timeout=5) as conn:
-                        print("TEST_TCP", label, "OK")
-                        with ssl.create_default_context().wrap_socket(conn, server_hostname=host) as tls:
-                            print("TEST_TLS", label, "OK", tls.version())
-                except (OSError, ssl.SSLError) as exc:
-                    print("TEST_TCP_TLS", label, "ECHEC",
-                          type(exc).__name__, getattr(exc, "errno", "sans-code"))
-                try:
-                    resp = requests.get(url, timeout=10, allow_redirects=False, stream=True)
-                    print("TEST_HTTP", label, resp.status_code)
-                    resp.close()
-                except requests.RequestException as exc:
-                    print("TEST_HTTP", label, "ECHEC", type(exc).__name__,
-                          str(exc).replace("\\n", " ")[:180])
-                if label == "sso-occitanie":
-                    import subprocess
-                    for agent_name, headers in [
-                        ("chrome", {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36", "Accept": "application/json"}),
-                        ("skolengo", {"User-Agent": "Mozilla/5.0 (Linux; Android 13) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Mobile Safari/537.36 SkoApp/HomeAssistant", "Accept": "application/json"}),
-                    ]:
-                        try:
-                            r = requests.get(url, headers=headers, timeout=10, allow_redirects=False, stream=True)
-                            print("TEST_UA", agent_name, "HTTP", r.status_code)
-                            r.close()
-                        except requests.RequestException as ex:
-                            print("TEST_UA", agent_name, "ERREUR", type(ex).__name__)
-                    for version in ("--http1.1", "--http2"):
-                        proc = subprocess.run(
-                            ["curl", version, "-L", "--max-time", "10",
-                             "-sS", "-o", "/dev/null", "-w", "%{http_code}", url],
-                            capture_output=True, text=True, timeout=15,
-                        )
-                        print("TEST_CURL", version, "EXIT", proc.returncode,
-                              "HTTP", proc.stdout.strip()[:6],
-                              "ERREUR", proc.stderr.splitlines()[0][:110] if proc.stderr else "aucune")
-
+            try:
+                resp = requests.get(school.oidc_wellknown_url, timeout=12, allow_redirects=False)
+                print("PREFLIGHT_SSO_HTTP:", resp.status_code)
+                if resp.status_code != 200:
+                    sys.exit(2)
+                metadata = resp.json()
+                if not metadata.get("authorization_endpoint") or not metadata.get("token_endpoint"):
+                    print("PREFLIGHT_SSO_CONFIGURATION_INCOMPLETE")
+                    sys.exit(2)
+                print("PREFLIGHT_SSO_ACCESSIBLE: oui")
+            except requests.RequestException:
+                print("PREFLIGHT_SSO_INACCESSIBLE_DEPUIS_GITHUB")
+                sys.exit(2)
+            except ValueError:
+                print("PREFLIGHT_SSO_DOCUMENT_NON_JSON")
+                sys.exit(2)
         else:
             collect()
     except Exception as exc:
