@@ -17,6 +17,8 @@ jobs:
   collecte:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      PYTHONPATH: ${{ github.workspace }}
     steps:
       - name: Recuperer les scripts
         uses: actions/checkout@v4
