@@ -32,10 +32,10 @@ jobs:
             process.exit(2);
           }
           const base='https://firestore.googleapis.com/v1/projects/classeur-ba3e7/databases/(default)/documents';
-          const checks=['privateAttempts','attempts','answerKeys','settings','publicLessons'];
+          const checks=['privateAttempts','attempts','answerKeys','settings','content','exercises','lessons','attachments','attachment_chunks','publicExercises','releasedCorrections','publicLessons'];
           async function probe(coll, token, mode) {
             const path=mode==='list'?base+'/'+coll+'?pageSize=1&key='+encodeURIComponent(key):
-                         base+'/'+coll+'/__audit_lecture_seule_inexistant__?key='+encodeURIComponent(key);
+                         base+'/'+coll+'/audit-lecture-seule-inexistant-20261109?key='+encodeURIComponent(key);
             const headers=token?{Authorization:'Bearer '+token}:{};
             try {
               const res=await fetch(path,{method:'GET',headers,signal:AbortSignal.timeout(14000)});
@@ -49,7 +49,7 @@ jobs:
             for(const coll of checks){
               guest[coll]=await probe(coll,null,'list');
               console.log('SANS CONNEXION '+coll+' list:',JSON.stringify(guest[coll]));
-              if(coll==='privateAttempts'||coll==='answerKeys'||coll==='attempts'){
+              if(['privateAttempts','answerKeys','attempts','settings','publicLessons'].includes(coll)){
                 const one=await probe(coll,null,'get');
                 console.log('SANS CONNEXION '+coll+' get:',JSON.stringify(one));
               }
@@ -63,11 +63,11 @@ jobs:
               process.exitCode=1;return;
             }
             console.log('CONNEXION PARENT REUSSIE (identifiants masques)');
-            for(const coll of ['privateAttempts','attempts','answerKeys','settings']){
+            for(const coll of ['privateAttempts','attempts','answerKeys','settings','content','publicLessons']){
               const res=await probe(coll,auth.idToken,'list');
               console.log('PARENT '+coll+' list:',JSON.stringify(res));
             }
-            const protectedNames=['privateAttempts','attempts','answerKeys','settings'];
+            const protectedNames=['privateAttempts','attempts','answerKeys','settings','content','exercises','lessons','attachments','attachment_chunks','publicExercises','releasedCorrections'];
             const exposed=protectedNames.some(k=>guest[k]?.http===200);
             console.log(exposed?'ALERTE : collection privee accessible sans connexion':'AUCUNE COLLECTION PRIVEE LISIBLE SANS CONNEXION (list)');
             if(exposed)process.exitCode=1;
