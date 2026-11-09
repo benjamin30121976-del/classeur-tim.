@@ -60,6 +60,27 @@ async function inspect(browser,label,viewport){
     check(label+' menu Parent visible',stats.parentNav);
     check(label+' lecons chargees',stats.lessons>0,'Nombre : '+stats.lessons);
     check(label+' défi du jour supprimé du classeur',stats.dailyChallenges===0,'Défis quotidiens visibles : '+stats.dailyChallenges);
+    if(label==='ordinateur'){
+      try{
+        const a=await page.evaluate(async()=>{
+          const ent=(window.__TIM_DATA?.lessons||[]).filter(l=>l.subject==='Mathématiques' && /^M26S\d{4}$/.test(l.id||''));
+          const bridge=window.__TIM_BRIDGE?.attachments;
+          if(!bridge?.list)return {total:ent.length,available:false,error:'Module des pièces jointes non disponible'};
+          const rows=await Promise.all(ent.map(async l=>{
+            try{const files=await bridge.list('lesson',l.id);return {id:l.id,title:l.title,blocks:(l.blocks||[]).length,attachments:files.length,missing:false};}
+            catch(e){return {id:l.id,title:l.title,blocks:(l.blocks||[]).length,attachments:null,missing:String(e?.message||e).slice(0,90)};}
+          }));
+          return {total:ent.length,available:true,rows};
+        });
+        const attached=(a.rows||[]).filter(x=>x.attachments>0);
+        const unattached=(a.rows||[]).filter(x=>x.attachments===0);
+        const failed=(a.rows||[]).filter(x=>x.missing);
+        check('Inventaire des 17 cours ENT mathématiques',a.total===17,'Cours présents : '+a.total);
+        data.notes.push('Pièces jointes mathématiques (audit lecture seule) : '+attached.length+' cours ENT avec fichiers associés, '+unattached.length+' sans pièce jointe, '+failed.length+' erreurs de lecture. '+(a.available?'':'Module indisponible.'));
+        data.notes.push('Cours ENT sans fichier directement associé : '+unattached.map(x=>x.id).join(', '));
+        console.log('AUDIT PIECES JOINTES MATHS : '+JSON.stringify({total:a.total,withAttachment:attached.length,withoutAttachment:unattached.length,failed:failed.length,rows:a.rows}));
+      }catch(e){data.notes.push('Audit pièces jointes mathématiques non terminé : '+String(e?.message||e).slice(0,170));}
+    }
     const subjects=await page.evaluate(()=>{
       const lessons=window.__TIM_DATA?.lessons||[],exercises=window.__TIM_DATA?.exercises||[];
       return [...new Set([...lessons.map(x=>x.subject||'Espagnol'),...exercises.map(x=>x.subject||'Espagnol')])].map(name=>({name,lessons:lessons.filter(x=>(x.subject||'Espagnol')===name).length,exercises:exercises.filter(x=>(x.subject||'Espagnol')===name).length}));
