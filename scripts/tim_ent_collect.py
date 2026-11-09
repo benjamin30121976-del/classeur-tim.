@@ -251,26 +251,35 @@ if __name__ == "__main__":
         if "--preflight" in sys.argv:
             school = school_lookup()
             print("PREFLIGHT_OK: etablissement et API Skolengo trouves")
-            # Diagnose public OIDC metadata without requesting user credentials.
+            # Diagnostic reseau public uniquement. Ne jamais journaliser cookies, url a jeton,
+            # ni contenus de reponse de connexion.
+            import socket
             import requests
             from urllib.parse import urlparse
-            url = school.oidc_wellknown_url
-            print("OIDC_METADATA_HOTE:", urlparse(url).hostname)
-            try:
-                resp = requests.get(url, timeout=20, allow_redirects=True)
-                print("OIDC_METADATA_HTTP:", resp.status_code)
-                print("OIDC_METADATA_FINAL_HOTE:", urlparse(resp.url).hostname)
-                ct = resp.headers.get("Content-Type", "").split(";")[0].lower().strip()
-                print("OIDC_METADATA_FORMAT:", ct or "absent")
-                if resp.ok:
-                    try:
-                        doc = resp.json()
-                        print("OIDC_METADATA_ENDPOINTS_VALIDES:",
-                              bool(doc.get("authorization_endpoint") and doc.get("token_endpoint")))
-                    except ValueError:
-                        print("OIDC_METADATA_JSON_INVALIDE")
-            except requests.RequestException as exc:
-                print("OIDC_METADATA_ERREUR_RESEAU:", type(exc).__name__)
+            targets = [
+                ("sso-occitanie", school.oidc_wellknown_url),
+                ("portail-occitanie", "https://www.mon-ent-occitanie.fr/"),
+                ("educonnect", "https://educonnect.education.gouv.fr/"),
+                ("skolengo", "https://api.skolengo.com/"),
+                ("sso-autre-ent", "https://sso.monbureaunumerique.fr/oidc/.well-known"),
+            ]
+            for label, url in targets:
+                host = urlparse(url).hostname
+                try:
+                    infos = socket.getaddrinfo(host, 443, type=socket.SOCK_STREAM)
+                    families = sorted({"IPv6" if item[0] == socket.AF_INET6 else "IPv4" for item in infos})
+                    print("TEST_DNS", label, "OK", ",".join(families))
+                except socket.gaierror as exc:
+                    print("TEST_DNS", label, "ECHEC", exc.errno)
+                    continue
+                try:
+                    resp = requests.get(url, timeout=10, allow_redirects=False, stream=True)
+                    print("TEST_HTTP", label, resp.status_code)
+                    resp.close()
+                except requests.RequestException as exc:
+                    cause = getattr(exc, "__cause__", None)
+                    print("TEST_HTTP", label, "ECHEC", type(exc).__name__,
+                          "CAUSE", type(cause).__name__ if cause else "inconnue")
 
         else:
             collect()
