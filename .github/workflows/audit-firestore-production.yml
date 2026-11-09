@@ -1,4 +1,5 @@
 name: Audit Firestore production - lecture seule
+# Audit de la présence de corrigés dans les extensions de cours
 on:
   push:
     branches: [audit-firestore-readonly-20261109]
