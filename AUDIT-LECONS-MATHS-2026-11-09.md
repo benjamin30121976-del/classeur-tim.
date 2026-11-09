@@ -55,3 +55,8 @@ Les captures documentent aussi les cours de septembre et octobre dont les PDF co
 4. Ne pas mélanger les sujets originaux de Mme Pialet avec les leçons pédagogiques BIS et leurs évaluations.
 
 **Conclusion : les leçons BIS sont structurellement complètes. Les 17 séances ENT connues sont référencées, mais les originaux ne sont reliés que dans 1 fiche sur 17 ; l'actualisation au-delà du 6 novembre reste à confirmer.**
+
+## Vérification de la chronologie sur le site
+- Contrôle avec le compte Parent en lecture seule, ordinateur **et téléphone** : les **17 fiches ENT** apparaissent dans la chronologie, aucun doublon ni séance manquante dans cette liste.
+- GitHub Actions : https://github.com/benjamin30121976-del/classeur-tim./actions/runs/42538472920 (**0 anomalie**).
+- L'absence de 16 pièces jointes sur 17 dans les fiches originales reste un problème distinct, à corriger en important les fichiers déjà archivés depuis la bibliothèque ; la chronologie ne remplace pas ces pièces jointes.
