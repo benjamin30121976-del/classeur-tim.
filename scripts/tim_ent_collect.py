@@ -273,13 +273,21 @@ if __name__ == "__main__":
                     print("TEST_DNS", label, "ECHEC", exc.errno)
                     continue
                 try:
+                    import ssl
+                    with socket.create_connection((host, 443), timeout=5) as conn:
+                        print("TEST_TCP", label, "OK")
+                        with ssl.create_default_context().wrap_socket(conn, server_hostname=host) as tls:
+                            print("TEST_TLS", label, "OK", tls.version())
+                except (OSError, ssl.SSLError) as exc:
+                    print("TEST_TCP_TLS", label, "ECHEC",
+                          type(exc).__name__, getattr(exc, "errno", "sans-code"))
+                try:
                     resp = requests.get(url, timeout=10, allow_redirects=False, stream=True)
                     print("TEST_HTTP", label, resp.status_code)
                     resp.close()
                 except requests.RequestException as exc:
-                    cause = getattr(exc, "__cause__", None)
                     print("TEST_HTTP", label, "ECHEC", type(exc).__name__,
-                          "CAUSE", type(cause).__name__ if cause else "inconnue")
+                          str(exc).replace("\\n", " ")[:180])
 
         else:
             collect()
