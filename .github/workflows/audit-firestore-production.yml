@@ -20,7 +20,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Auditer les permissions reelles sans modifier Firestore
+      - name: Auditer les permissions reelles et verifier absence de divulgation des corriges sans modifier Firestore
         run: node outils/audit-firestore-securite.cjs
       - name: Verifier lecture seule et separations des roles sur Cloudflare
         run: node outils/audit-cloudflare-securite-lecture-seule.cjs
