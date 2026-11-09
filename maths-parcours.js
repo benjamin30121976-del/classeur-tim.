@@ -53,6 +53,7 @@ function sectionBtns(id){
 }
 function wire(){
  root.querySelectorAll('[data-math-group]').forEach(b=>b.onclick=()=>category(GROUPS[Number(b.dataset.mathGroup)]));
+ root.querySelectorAll('[data-math-all-ent]').forEach(b=>b.onclick=()=>viewEntChronology());
  root.querySelectorAll('[data-math-ent]').forEach(b=>b.onclick=()=>viewEnt(b.dataset.mathEnt));
  root.querySelectorAll('[data-math-bis]').forEach(b=>b.onclick=()=>viewBis(b.dataset.mathBis));
  root.querySelectorAll('[data-math-help]').forEach(b=>b.onclick=()=>viewHelp(b.dataset.mathHelp));
@@ -66,11 +67,22 @@ function home(){
  selected=null;group=null;
  draw(header('Mes leçons de mathématiques','Choisis un chapitre, puis une sous-leçon. Les cours du professeur restent séparés des explications.')+
  back('Toutes les matières')+
+ '<section class="spx-panel"><h3>Les cours officiels du professeur</h3><p>Consulter les '+ent.length+' fiches ENT classées par date. Les documents du professeur restent séparés des explications BIS et des exercices notés.</p><button type="button" class="spx-quick-link" data-math-all-ent>Voir tous les cours ENT dans l’ordre chronologique</button></section>'+
  '<h3 class="spx-subheading">Qu’est-ce que tu veux apprendre ?</h3><div class="spx-grid">'+
  GROUPS.map((g,i)=>{
  const bs=bis.filter(x=>groupOfId(x.id)===g);
  return '<button type="button" class="spx-card" data-math-group="'+i+'"><span class="spx-icon">∑</span><strong>'+esc(g.name)+'</strong><p>'+bs.length+' sous-leçon(s) · '+entFor(g).length+' cours ENT</p><small>Ouvrir les sous-leçons</small></button>';
  }).join('')+'</div><p class="spx-note">Leçons ENT originales, leçons BIS, explications et exercices distincts. Chaque évaluation est validée une seule fois ; aucun XP.</p>', options.back);
+ wire();
+}
+function viewEntChronology(){
+ selected=null;group=null;
+ const lessons=ent.slice().sort((a,b)=>String(a.id).localeCompare(String(b.id),'fr'));
+ draw(header('Cours ENT de mathématiques · Chronologie','Les cours originaux de Mme Pialet, sans ajout ni remplacement du contenu officiel.')+
+ back('Retour aux chapitres')+
+ '<section class="spx-panel"><h3>'+lessons.length+' séances ENT conservées</h3><p>Du 14 septembre au 6 novembre 2026 selon les captures reçues. La consigne du devoir du 9 novembre est conservée dans le suivi scolaire ; elle ne constitue pas à elle seule une nouvelle leçon.</p>'+
+ (lessons.length?lessons.map((x,i)=>'<button class="spx-row" type="button" data-math-open-original="'+esc(x.id)+'"><span class="spx-chip">'+(i+1)+'</span><span><strong>'+esc(x.title)+'</strong><small>'+esc(x.date||x.summary||'Cours ENT')+'</small></span></button>').join(''):'<p>Aucun cours ENT retrouvé.</p>')+
+ '</section>',home);
  wire();
 }
 function category(g){
