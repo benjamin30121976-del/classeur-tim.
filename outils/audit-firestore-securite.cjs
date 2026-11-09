@@ -84,6 +84,37 @@ async function main(){
     console.log('CONTENU PRINCIPAL : document charge, nombre exercices',exerciseCount??'inconnu');
     console.log('CHAMPS POUVANT CONTENIR DES REPONSES CORRECTES',JSON.stringify(hits));
     console.log('AUDIT REMARQUE : seules les PRESENCES de champs sont affichees, jamais leur valeur');
+  for (const collectionName of ['lessons','exercises']) {
+    const r=await query(collectionName,parent.token);
+    const documents=r.json?.documents||[];
+    let withPayload=0, withAnswers=0, total=documents.length;
+    for(const document of documents) {
+      const fields=document.fields||{};
+      const json=fields.payloadJson?.stringValue;
+      if(typeof json==='string') {
+        withPayload++;
+        try{
+          const data=JSON.parse(json);
+          let found=0;
+          const walk=x=>{
+            if(Array.isArray(x)){x.forEach(walk);return;}
+            if(x&&typeof x==='object'){
+              for(const [k,v] of Object.entries(x)){
+                if(['right','also','why','answer','answerKey','expected','correction','solution'].includes(k))found++;
+                walk(v);
+              }
+            }
+          };
+          walk(data);
+          if(found>0)withAnswers++;
+        }catch(e){console.log('COLLECTION '+collectionName+' payload non analysable');}
+      } else {
+        if(['questions','right','answerKey','solution'].some(k=>Object.hasOwn(fields,k)))withAnswers++;
+      }
+    }
+    console.log('COLLECTION_RESUME '+collectionName+' documents_consultes='+total+' payload_json='+withPayload+' avec_champs_corrige='+withAnswers);
+  }
+
   }
  }
  for(const who of [{name:'Invité',token:null},{name:'Parent',token:parent?.token},{name:'Tim',token:student?.token}]){
