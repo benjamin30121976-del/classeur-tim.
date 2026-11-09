@@ -1,8 +1,8 @@
 {
   "mode": "lecture-seule-parent",
   "site": "https://classeur-tim-v16.pages.dev/",
-  "scope": "Contrôler avec le compte Parent sans soumission : 23 évaluations mathématiques de 10 questions, notes et corrections, et zéro défi du jour dans le classeur actif, sur mobile et ordinateur.",
+  "scope": "Inspection en lecture seule des 17 cours ENT de mathématiques et des pièces jointes effectivement associées dans le classeur interactif, sans téléchargement ni soumission; vérifier les 23 BIS et l'affichage des sous-leçons.",
   "launch_on_update": true,
-  "note": "Tests automatisés de notation/sécurité et contrôle Chromium lecture seule. Rapport détaillé, aucune tentative de Tim consommée.",
-  "checkVersion": "controle-final-maths-corrections-230-et-suppression-defi-2026-11-09"
+  "note": "Conserver les originaux ENT et les notes; ne modifier aucune pièce jointe et ne pas utiliser TinyFish.",
+  "checkVersion": "audit-lecons-ent-pieces-jointes-maths-2026-11-09"
 }
