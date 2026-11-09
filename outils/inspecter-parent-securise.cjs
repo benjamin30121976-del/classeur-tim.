@@ -152,6 +152,10 @@ async function inspect(browser,label,viewport){
     try{
       await page.locator('[data-nav="matieres"]:visible').first().click({timeout:9000});
       await page.locator('#matieres-content .matter-card').filter({hasText:'Mathématiques'}).first().click({timeout:9000});
+      await page.locator('[data-math-all-ent]').first().click({timeout:9000});
+      const chronologyCount=await page.locator('[data-math-open-original]').count();
+      check(label+' chronologie complète des 17 cours ENT',chronologyCount===17,'Fiches ENT classées et accessibles : '+chronologyCount);
+      await page.locator('[data-math-back]').first().click({timeout:9000});
       await page.locator('.math-path .spx-card').filter({hasText:'Calcul littéral'}).first().click({timeout:9000});
       await page.locator('[data-math-programs="MBIS13"]').first().click({timeout:9000});
       const headings=await page.locator('.math-path section.spx-panel h3').allTextContents();
