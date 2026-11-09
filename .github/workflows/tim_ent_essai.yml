@@ -1,39 +1,56 @@
-name: Essai lecture ENT Tim
+name: Collecte privee ENT Tim sur demande
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - ent-request.txt
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: collecte-ent-tim
+  cancel-in-progress: false
 
 jobs:
   collecte:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
-      - name: Installer le client Skolengo (version figee)
+      - name: Recuperer les scripts
+        uses: actions/checkout@v4
+      - name: Installer Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Installer le client Skolengo et le chiffrement
         run: |
-          python -m pip install --disable-pip-version-check requests beautifulsoup4
+          python -m pip install --disable-pip-version-check requests beautifulsoup4 cryptography
           mkdir -p skolengo
           touch skolengo/__init__.py
           BASE=https://raw.githubusercontent.com/infernalK/ha-skolengo/e9c9a84c0787991daa50a91c545386a75a38c631/custom_components/skolengo
           curl -fsSL "$BASE/api.py" -o skolengo/api.py
           curl -fsSL "$BASE/const.py" -o skolengo/const.py
-      - name: Recuperer les devoirs les cours et les fichiers
+      - name: Verifier le portail public et l'API
+        run: python scripts/tim_ent_collect.py --preflight
+      - name: Recuperer les cours, devoirs et pieces jointes
         env:
           ENT_USERNAME: ${{ secrets.ENT_USERNAME }}
           ENT_PASSWORD: ${{ secrets.ENT_PASSWORD }}
           ENT_BIRTHDATE: ${{ secrets.ENT_BIRTHDATE }}
+          TIM_ENT_OUTPUT: ${{ runner.temp }}/ent-tim-plaintext
         run: python scripts/tim_ent_collect.py
-      - name: Enregistrer les resultats
+      - name: Chiffrer les resultats avant tout transfert
+        env:
+          TIM_ENT_OUTPUT: ${{ runner.temp }}/ent-tim-plaintext
         run: |
-          git config user.name "tim-ent-bot"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add ENT/tim
-          if git diff --cached --quiet; then
-            echo "Pas de modification."
-          else
-            git commit -m "Essai collecte ENT"
-            git push
-          fi
+          python scripts/tim_ent_crypto.py encrypt "$TIM_ENT_OUTPUT" "$RUNNER_TEMP/tim-ent-documents.chiffre" cles/tim-ent-public-key.pem
+          rm -rf "$TIM_ENT_OUTPUT"
+      - name: Conserver uniquement l'archive chiffree pour lecture dans ChatGPT
+        uses: actions/upload-artifact@v4
+        with:
+          name: tim-ent-documents-chiffres
+          path: ${{ runner.temp }}/tim-ent-documents.chiffre
+          retention-days: 30
+          if-no-files-found: error
