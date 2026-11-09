@@ -1,0 +1,27 @@
+name: Sonde Cloudflare ENT sur branche de test
+on:
+  push:
+    branches: [ent-sso-probe-20261109]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Tester preview Cloudflare sans identifiants
+        shell: bash
+        run: |
+          URL="https://ent-sso-probe-20261109.classeur-tim-v16.pages.dev/api/ent-connectivity-probe"
+          for i in $(seq 1 9); do
+            code=$(curl -sS --max-time 12 -o /tmp/ent-cloudflare.json -w '%{http_code}' "$URL") || true
+            echo "CLOUDFLARE_PREVIEW_HTTP=$code"
+            if [ "$code" = "200" ]; then
+              cat /tmp/ent-cloudflare.json
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "Preview Cloudflare injoignable ou non deployee."
+          exit 1
