@@ -1,8 +1,8 @@
 {
   "mode": "lecture-seule-parent",
   "site": "https://classeur-tim-v16.pages.dev/",
-  "scope": "Inspection en lecture seule des 17 cours ENT de mathématiques et des pièces jointes effectivement associées dans le classeur interactif, sans téléchargement ni soumission; vérifier les 23 BIS et l'affichage des sous-leçons.",
+  "scope": "Vérifier que les 17 cours ENT sont visibles dans la nouvelle chronologie intégrale des mathématiques, que les 23 BIS existent et documenter les pièces jointes, sans aucune soumission",
   "launch_on_update": true,
   "note": "Conserver les originaux ENT et les notes; ne modifier aucune pièce jointe et ne pas utiliser TinyFish.",
-  "checkVersion": "audit-lecons-ent-pieces-jointes-maths-2026-11-09"
+  "checkVersion": "chronologie-17-lecons-ent-et-inventaire-pj-2026-11-09"
 }
