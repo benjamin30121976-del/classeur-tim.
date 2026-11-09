@@ -15,7 +15,7 @@ from datetime import date, timedelta
 from pathlib import Path
 from urllib.parse import urlparse
 
-from skolengo.api import SkolengoClient, SkolengoBirthdateRequired, jsonapi_deserialize
+from skolengo.api import SkolengoClient, SkolengoBirthdateRequired, SkolengoAuthError, SkolengoLoginRefused, jsonapi_deserialize
 
 
 OUT = Path(os.getenv("TIM_ENT_OUTPUT", "ent-private-output"))
@@ -218,6 +218,34 @@ def collect() -> None:
           "devoirs,", downloaded, "fichiers,", len(errors), "anomalies")
 
 
+def safe_auth_error_code(exc: Exception) -> str:
+    """Diagnostic ferme, sans URL, jeton ni identifiant dans les logs publics."""
+    if isinstance(exc, SkolengoBirthdateRequired):
+        return "EDUCONNECT_VERIFICATION_NAISSANCE"
+    if isinstance(exc, SkolengoLoginRefused):
+        return "EDUCONNECT_REFUS_CONNEXION_OU_PARCOURS_NON_PRIS_EN_CHARGE"
+    msg = str(exc).casefold()
+    if "could not obtain an authorization code" in msg or "authorization code after resuming" in msg:
+        return "SSO_CODE_AUTORISATION_ABSENT"
+    if "login form not found" in msg or "impossible de trouver le formulaire" in msg:
+        return "SSO_FORMULAIRE_CONNEXION_INTRouvABLE"
+    if "unrecognized login form" in msg or "impossible d'identifier les champs" in msg:
+        return "SSO_CHAMPS_FORMULAIRE_INCONNUS"
+    if "invalid credentials or unsupported login flow" in msg:
+        return "EDUCONNECT_IDENTIFIANTS_OU_PARCOURS_INCOMPATIBLE"
+    if "token exchange failed" in msg:
+        return "SSO_ECHANGE_JETON_ECHOUE"
+    if "discovery document" in msg:
+        return "SSO_DOCUMENT_CONFIGURATION_INDISPONIBLE"
+    if "authorization endpoint" in msg:
+        return "SSO_ENDPOINT_INJOIGNABLE"
+    if "redirect" in msg:
+        return "SSO_REDIRECTION_INCOMPLETE"
+    if "form submission failed" in msg:
+        return "SSO_SOUMISSION_FORMULAIRE_ECHOUEE"
+    return "SSO_AUTRE_ERREUR_AUTHENTIFICATION"
+
+
 if __name__ == "__main__":
     try:
         if "--preflight" in sys.argv:
@@ -232,6 +260,9 @@ if __name__ == "__main__":
             "Secrets" in str(exc) or "ENT_BIRTHDATE" in str(exc)
         ):
             print("ECHEC_CONFIGURATION_ENT:", str(exc), file=sys.stderr)
+        elif isinstance(exc, SkolengoAuthError):
+            print("ECHEC_AUTH_ENT: code", safe_auth_error_code(exc),
+                  "(aucune donnee sensible publiee)", file=sys.stderr)
         else:
             print("ECHEC_COLLECTE_ENT: categorie", type(exc).__name__,
                   "(details masques pour proteger les donnees scolaires)", file=sys.stderr)
