@@ -16,8 +16,29 @@ jobs:
     timeout-minutes: 8
     steps:
       - uses: actions/checkout@v4
+        if: runner.os != 'Windows'
       - uses: actions/setup-python@v5
+        if: runner.os != 'Windows'
         with:
           python-version: '3.12'
       - name: Verifier les serveurs publics sans identifiants
+        if: runner.os != 'Windows'
         run: python outils/diagnostic_ent_reseau.py
+      - name: Diagnostic reseau natif Windows sans checkout
+        if: runner.os == 'Windows'
+        shell: pwsh
+        working-directory: ${{ runner.temp }}
+        run: |
+          $targets = @{
+            'sso-occitanie' = 'https://sso.mon-ent-occitanie.fr/oidc/.well-known'
+            'cas-occitanie' = 'https://cas.mon-ent-occitanie.fr/'
+            'educonnect' = 'https://educonnect.education.gouv.fr/'
+          }
+          foreach ($key in $targets.Keys) {
+            try {
+              $resp = Invoke-WebRequest -Uri $targets[$key] -MaximumRedirection 0 -TimeoutSec 12 -SkipHttpErrorCheck
+              Write-Output "ENT_PROBE $key HTTP $($resp.StatusCode)"
+            } catch {
+              Write-Output "ENT_PROBE $key ERROR $($_.Exception.GetType().Name)"
+            }
+          }
