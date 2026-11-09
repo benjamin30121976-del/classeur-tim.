@@ -67,6 +67,25 @@ async function main(){
  const parent=await authenticate('Parent',process.env.TIM_PARENT_EMAIL,process.env.TIM_PARENT_PASSWORD);
  const student=await authenticate('Tim',process.env.TIM_STUDENT_EMAIL,process.env.TIM_STUDENT_PASSWORD);
  const paths=['content/main','settings/alerts','privateAttempts/audit-document-inexistant-20261109','answerKeys/audit-document-inexistant-20261109','lessons/audit-document-inexistant-20261109','publicLessons/audit-document-inexistant-20261109'];
+ if(parent?.token){
+  const main=await get('content/main',parent.token);
+  if(main.status===200){
+    const fields=main.json?.fields||{};
+    const hits={right:0,also:0,why:0,expected:0,answer:0,answers:0,solution:0,correction:0};
+    const walk=(value)=>{
+      if(!value||typeof value!=='object')return;
+      for(const [key,child] of Object.entries(value)){
+        if(Object.prototype.hasOwnProperty.call(hits,key))hits[key]++;
+        walk(child);
+      }
+    };
+    walk(fields);
+    const exerciseCount=fields.exercises?.arrayValue?.values?.length;
+    console.log('CONTENU PRINCIPAL : document charge, nombre exercices',exerciseCount??'inconnu');
+    console.log('CHAMPS POUVANT CONTENIR DES REPONSES CORRECTES',JSON.stringify(hits));
+    console.log('AUDIT REMARQUE : seules les PRESENCES de champs sont affichees, jamais leur valeur');
+  }
+ }
  for(const who of [{name:'Invité',token:null},{name:'Parent',token:parent?.token},{name:'Tim',token:student?.token}]){
   if(who.name!=='Invité'&&!who.token)continue;
   for(const path of paths)log(who.name,path,'get',await get(path,who.token));
