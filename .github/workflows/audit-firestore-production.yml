@@ -1,0 +1,76 @@
+name: Audit Firestore production - lecture seule
+on:
+  push:
+    branches: [audit-firestore-readonly-20261109]
+    paths: ['.github/workflows/audit-firestore-production.yml']
+permissions:
+  contents: read
+jobs:
+  verifier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+      TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verifier regles de production sans aucune ecriture
+        shell: bash
+        run: |
+          node <<'NODE'
+          'use strict';
+          const fs = require('node:fs');
+          const boot = fs.readFileSync('boot.js','utf8');
+          const key = boot.match(/const DEFAULT_FIREBASE_CONFIG\s*=\s*\{[\s\S]*?apiKey\s*:\s*['"]([^'"]+)['"]/)?.[1];
+          const email = process.env.TIM_PARENT_EMAIL;
+          const password = process.env.TIM_PARENT_PASSWORD;
+          if (!key || !email || !password) {
+            console.log('CONTROLE IMPOSSIBLE : configuration manquante');
+            process.exit(2);
+          }
+          const base='https://firestore.googleapis.com/v1/projects/classeur-ba3e7/databases/(default)/documents';
+          const checks=['privateAttempts','attempts','answerKeys','settings','publicLessons'];
+          async function probe(coll, token, mode) {
+            const path=mode==='list'?base+'/'+coll+'?pageSize=1&key='+encodeURIComponent(key):
+                         base+'/'+coll+'/__audit_lecture_seule_inexistant__?key='+encodeURIComponent(key);
+            const headers=token?{Authorization:'Bearer '+token}:{};
+            try {
+              const res=await fetch(path,{method:'GET',headers,signal:AbortSignal.timeout(14000)});
+              const body=await res.json().catch(()=>({}));
+              return {http:res.status,code:body?.error?.status||'OK'};
+            } catch(e){return {http:0,code:'NETWORK_ERROR'};}
+          }
+          async function main(){
+            console.log('AUDIT PUBLIC — Firestore reel, aucun document ne sera modifie.');
+            const guest={};
+            for(const coll of checks){
+              guest[coll]=await probe(coll,null,'list');
+              console.log('SANS CONNEXION '+coll+' list:',JSON.stringify(guest[coll]));
+              if(coll==='privateAttempts'||coll==='answerKeys'||coll==='attempts'){
+                const one=await probe(coll,null,'get');
+                console.log('SANS CONNEXION '+coll+' get:',JSON.stringify(one));
+              }
+            }
+            const signin=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key='+encodeURIComponent(key),{
+              method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,password,returnSecureToken:true}),signal:AbortSignal.timeout(14000)
+            });
+            const auth=await signin.json().catch(()=>({}));
+            if(signin.status!==200||!auth.idToken){
+              console.log('CONNEXION PARENT REFUSEE — HTTP',signin.status,'code',auth?.error?.message?.split(' ')[0]||'UNKNOWN');
+              process.exitCode=1;return;
+            }
+            console.log('CONNEXION PARENT REUSSIE (identifiants masques)');
+            for(const coll of ['privateAttempts','attempts','answerKeys','settings']){
+              const res=await probe(coll,auth.idToken,'list');
+              console.log('PARENT '+coll+' list:',JSON.stringify(res));
+            }
+            const protectedNames=['privateAttempts','attempts','answerKeys','settings'];
+            const exposed=protectedNames.some(k=>guest[k]?.http===200);
+            console.log(exposed?'ALERTE : collection privee accessible sans connexion':'AUCUNE COLLECTION PRIVEE LISIBLE SANS CONNEXION (list)');
+            if(exposed)process.exitCode=1;
+          }
+          main().catch(e=>{console.log('ERREUR TECHNIQUE',e.name);process.exitCode=1;});
+          NODE
