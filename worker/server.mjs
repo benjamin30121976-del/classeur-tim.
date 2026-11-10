@@ -9,6 +9,7 @@ import {buildMission,isMissionId,isMissionOpen} from '../functions/missions-v18.
 import {SPANISH_COURSE} from '../functions/spanish-training-curriculum.mjs';
 import {mathId,mathTask,mathPublicTask,gradeMathTask} from './maths-training-curriculum.mjs';
 import {spanishEntTrainingId,spanishEntTask,spanishEntPublicTask,gradeSpanishEntTask} from './spanish-ent-training.mjs';
+import {spanishLessonXp} from './spanish-lesson-xp.mjs';
 
 const PRIVATE_FIELDS=new Set(['right','also','why','expected','answer','answers','answerKey','answerKeys','solution','solutions','correction','corrections','explanation','rubric']);
 function sanitize(value){
@@ -229,15 +230,38 @@ async function submitSpanishEntTraining(db,uid,payload){
     translationsUsed.some(v=>typeof v!=='boolean')||
     answers.some(v=>!((typeof v==='string'&&v.trim().length>0&&v.length<=200)||(Number.isInteger(v)&&v>=0&&v<=3))))
    throw new ApiFault(400,'invalid-answers');
- let result;
- try{result=gradeSpanishEntTask(id,answers,translationsUsed);}catch{throw new ApiFault(400,'invalid-answers');}
+ let result,xp;
+ try{
+  result=gradeSpanishEntTask(id,answers,translationsUsed);
+  xp=spanishLessonXp(result.score,result.total);
+ }catch{throw new ApiFault(400,'invalid-answers');}
+ // L'enregistrement du résultat et des XP se fait dans la même transaction.
+ // Une tentative déjà enregistrée n'accorde jamais d'XP une seconde fois.
  const transaction=await db.transaction();
- const old=await db.get('spanishEntTrainingAttempts/'+id,transaction);
+ const [old,xpRecord]=await Promise.all([
+  db.get('spanishEntTrainingAttempts/'+id,transaction),
+  db.get('xpState/tim',transaction)
+ ]);
  if(old)throw new ApiFault(409,'already-exists');
- await db.commit([createWrite('spanishEntTrainingAttempts/'+id,{
-  ...result,authorUid:uid,subject:'Espagnol',answers,translationsUsed,version:3
- },NOW)],transaction);
- return {...result,submitted:true,submittedAt:new Date().toISOString()};
+ const today=parisDate(new Date()),week=mondayOf(today),state=xpRecord||{};
+ const current=state.date===today?state:{earned:0,lost:0,bonus:0};
+ const weekEarned=state.week===week?Number(state.weekEarned||0):0;
+ const weekXp=state.week===week?Number(state.weekXp??state.weekEarned??0):0;
+ const nextXP={
+  date:today,week,
+  earned:Number(current.earned||0)+xp,
+  lost:Number(current.lost||0),
+  bonus:Number(current.bonus||0),
+  weekEarned:weekEarned+xp,
+  weekXp:Math.max(0,weekXp+xp),policyVersion:18
+ };
+ await db.commit([
+  createWrite('spanishEntTrainingAttempts/'+id,{
+   ...result,xp,authorUid:uid,subject:'Espagnol',answers,translationsUsed,version:4
+  },NOW),
+  upsertWrite('xpState/tim',nextXP,[{fieldPath:'updatedAt',setToServerValue:'REQUEST_TIME'}])
+ ],transaction);
+ return {...result,xp,submitted:true,submittedAt:new Date().toISOString()};
 }
 async function getSpanishEntTrainingProgress(db,uid,payload){
  allowedFamily(uid);
@@ -245,12 +269,12 @@ async function getSpanishEntTrainingProgress(db,uid,payload){
  if(id!==undefined && id!==null){
   if(!spanishEntTrainingId(id))throw new ApiFault(400,'invalid-exercise');
   const saved=await db.get('spanishEntTrainingAttempts/'+id);
-  return {attempt:saved?.authorUid===TIM_UID?{...saved,id,xp:0}:null};
+  return {attempt:saved?.authorUid===TIM_UID?{...saved,id,xp:Number(saved.xp||0)}:null};
  }
  const docs=await db.list('spanishEntTrainingAttempts',100);
  return {attempts:docs.filter(r=>spanishEntTrainingId(r.id)&&r.data?.authorUid===TIM_UID)
    .map(r=>({id:r.id,lessonId:r.data.lessonId,series:r.data.series,
-    score:r.data.score,total:r.data.total,translationHelpCount:r.data.translationHelpCount||0,errorCounts:r.data.errorCounts||{},submittedAt:r.data.submittedAt||'',xp:0}))
+    score:r.data.score,total:r.data.total,translationHelpCount:r.data.translationHelpCount||0,errorCounts:r.data.errorCounts||{},submittedAt:r.data.submittedAt||'',xp:Number(r.data.xp||0)}))
    .sort((a,b)=>String(b.submittedAt).localeCompare(String(a.submittedAt)))};
 }
 
