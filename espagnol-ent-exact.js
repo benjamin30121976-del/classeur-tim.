@@ -79,7 +79,18 @@ async function validateTranslations(pack,translations){
   const originalHash=await hashOriginal(homeworkOriginal(doc));
   if(originalHash!==entry.sha256)problem('La traduction ne correspond pas au devoir ENT '+id+'.');
  }
- return {lessons:lessonIds.size,homework:homeIds.size};
+ if(translations.attachments!==undefined){
+   const knownPdfIds=new Set(pack.index.map(x=>String(x.id)));
+   if(!translations.attachments||Object.keys(translations.attachments).length!==knownPdfIds.size)
+    problem('Les traductions des PDF sont incomplètes.');
+   for(const [id,entry] of Object.entries(translations.attachments)){
+    if(!knownPdfIds.has(id)||typeof entry?.fr!=='string'||!entry.fr.trim()||
+      typeof entry?.label_fr!=='string'||!entry.label_fr.trim()||
+      !/^[a-f0-9]{64}$/.test(String(entry.sha256||'')))
+     problem('Traduction de la fiche PDF invalide : '+id);
+   }
+ }
+ return {lessons:lessonIds.size,homework:homeIds.size,pdfs:translations.attachments?Object.keys(translations.attachments).length:0};
 }
 function appendFrench(root,entries,id){
  const item=entries?.[String(id)];
@@ -154,12 +165,13 @@ async function readTwoZips(courseFile,attachmentFile){
  }
  return {pack,binary,counts};
 }
-function appendFileLinks(root,refs,metas){
+function appendFileLinks(root,refs,metas,translations){
  for(const info of refs){
   const name=getHrefFile(info);
   const meta=metas.find(x=>x.fileName===name);
   const row=$('div','ent-es-file');
-  row.style.cssText='display:flex;gap:10px;align-items:center;margin:6px 0';
+  row.style.cssText='display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:6px 0';
+
   const originalName=String(info.nom_ENT||name);
   const nameBox=$('span','','Fiche PDF ENT · '+originalName);
   nameBox.style.cssText='flex:1;min-width:0;overflow-wrap:anywhere';
@@ -177,6 +189,15 @@ function appendFileLinks(root,refs,metas){
    });row.append(b);
   }else row.append($('small','','PDF non présent dans Firebase'));
   root.append(row);
+  const translation=translations?.attachments?.[String(info.id)];
+  if(translation?.fr){
+    const detail=$('details','ent-es-pdf-fr');
+    detail.style.cssText='margin:0 0 14px 8px;padding:8px 10px;border-left:3px solid #80cbb4;background:#16352f;border-radius:5px';
+    detail.append($('summary','','Lire en français : '+translation.label_fr));
+    txt(detail,translation.fr);
+    detail.append($('small','','Aide française pour comprendre la fiche ; l’exercice original reste en espagnol et ses réponses ne sont pas fournies.'));
+    root.append(detail);
+  }
  }
 }
 async function render(root,opts={}){
@@ -218,7 +239,7 @@ async function render(root,opts={}){
      if(file.files[0].size>100000)problem('Fichier de traduction trop volumineux.');
      const payload=JSON.parse(await file.files[0].text());
      const result=await validateTranslations(pack,payload);
-     feedback.textContent='Correspondance ENT vérifiée : '+result.lessons+' séances et '+result.homework+' devoirs. Enregistrement privé dans Firebase…';
+     feedback.textContent='Correspondance ENT vérifiée : '+result.lessons+' séances, '+result.homework+' devoirs et '+result.pdfs+' fiches traduites. Enregistrement privé dans Firebase…';
      await bridge.saveSpanishTranslations(payload);
      feedback.textContent='Traductions enregistrées pour Parent et Tim. Actualisation…';
      window.location.reload();
@@ -239,7 +260,7 @@ async function render(root,opts={}){
    block.append($('small','',' Référence ENT '+h.data.id));
    txt(block,asText([attrs.title,attrs.html,...(h.included||[]).filter(i=>i.type==='pedagogicContent').map(i=>i.attributes?.html)].filter(Boolean).join('\n')));
    appendFrench(block,translations?.homework,h.data.id);
-   appendFileLinks(block,pack.index.filter(i=>(i.rattache_a||[]).some(x=>x.type==='travail_associe'&&x.id===h.data.id)),metas);
+   appendFileLinks(block,pack.index.filter(i=>(i.rattache_a||[]).some(x=>x.type==='travail_associe'&&x.id===h.data.id)),metas,translations);
    assignments.append(block);
   }
   root.append(assignments);
@@ -264,7 +285,7 @@ async function render(root,opts={}){
    ));
    if(lessonFiles.length){
     panel.append($('h4','','Fiches PDF originales liées aux devoirs de cette séance ('+lessonFiles.length+')'));
-    appendFileLinks(panel,lessonFiles,metas);
+    appendFileLinks(panel,lessonFiles,metas,translations);
    }
    const time=l.data.attributes||{};
    panel.append($('small','',String(time.startDateTime||'')+' — '+String(time.endDateTime||'')));
@@ -278,13 +299,13 @@ async function render(root,opts={}){
     if(h){panel.append($('h4','','Devoir associé — '+frenchPreview(translations?.homework?.[hid]?.fr,120)));const attrs=h.data.attributes||{};
       txt(panel,asText([attrs.title,attrs.html].filter(Boolean).join('\n')));
       appendFrench(panel,translations?.homework,hid);
-      appendFileLinks(panel,pack.index.filter(i=>(i.rattache_a||[]).some(x=>x.type==='travail_associe'&&x.id===hid)),metas);
+      appendFileLinks(panel,pack.index.filter(i=>(i.rattache_a||[]).some(x=>x.type==='travail_associe'&&x.id===hid)),metas,translations);
     }
    }
    root.append(panel);
   }
   const all=$('details');all.append($('summary','','Les '+pack.index.length+' fiches originales (inventaire complet)'));
-  appendFileLinks(all,pack.index,metas);root.append(all);
+  appendFileLinks(all,pack.index,metas,translations);root.append(all);
  }
  if(!isParent)return;
  const uploader=$('section');uploader.style.cssText='margin:18px 0;padding:14px;border:1px solid #6a879f;border-radius:12px';
