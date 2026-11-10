@@ -553,7 +553,7 @@ async function startSession(user){
       answers.some(v=>!((Number.isInteger(v)&&v>=0&&v<=3)||(typeof v==='string'&&v.trim().length>0&&v.length<=200))))
       throw Error('Réponses incomplètes.');
    const r=await cloudCallable('submitSpanishEntTraining')({id,answers,translationsUsed});
-   if(!r.data?.submitted||!Number.isInteger(r.data.score)||r.data.xp!==0||
+   if(!r.data?.submitted||!Number.isFinite(r.data.score)||r.data.score<0||r.data.score>10||r.data.xp!==0||
       !Array.isArray(r.data.items)||r.data.items.length!==10||
       !Number.isInteger(r.data.translationHelpCount))
       throw Error('La validation n’a pas été confirmée.');
