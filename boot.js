@@ -544,15 +544,19 @@ async function startSession(user){
    if(!r.data?.task||r.data.task.questions?.length!==10)throw Error('Les dix questions sont indisponibles.');
    return r.data;
   },
-  spanishEntTrainingSubmit:async(id,answers)=>{
+  spanishEntTrainingSubmit:async(id,answers,translationsUsed)=>{
    if(activeUser?.uid!==TIM_UID)throw Error('Seul Tim peut valider.');
    if(!/^ESE_L(?:0[1-9]|1[0-3])_0[1-3]$/.test(String(id||''))||
       !Array.isArray(answers)||answers.length!==10||
-      answers.some(v=>!Number.isInteger(v)||v<0||v>3))throw Error('Réponses incomplètes.');
-   const r=await cloudCallable('submitSpanishEntTraining')({id,answers});
+      !Array.isArray(translationsUsed)||translationsUsed.length!==10||
+      translationsUsed.some(v=>typeof v!=='boolean')||
+      answers.some(v=>!((Number.isInteger(v)&&v>=0&&v<=3)||(typeof v==='string'&&v.trim().length>0&&v.length<=200))))
+      throw Error('Réponses incomplètes.');
+   const r=await cloudCallable('submitSpanishEntTraining')({id,answers,translationsUsed});
    if(!r.data?.submitted||!Number.isInteger(r.data.score)||r.data.xp!==0||
-      !Array.isArray(r.data.items)||r.data.items.length!==10)
-    throw Error('La validation n’a pas été confirmée.');
+      !Array.isArray(r.data.items)||r.data.items.length!==10||
+      !Number.isInteger(r.data.translationHelpCount))
+      throw Error('La validation n’a pas été confirmée.');
    return r.data;
   },
   spanishEntTrainingProgress:async(id)=>{
