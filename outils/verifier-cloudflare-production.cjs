@@ -47,11 +47,16 @@ async function getStatus(){
       const response=await fetch('/api/tim',{method:'POST',headers:{'Authorization':'Bearer '+token,'Content-Type':'application/json'},body:JSON.stringify({action,payload:{}})});
       let data;
       try{data=await response.json();}catch{data={};}
-      return {status:response.status,code:data.error||'',count:Array.isArray(data?.data?.attempts)?data.data.attempts.length:null};
+      const attempts=Array.isArray(data?.data?.attempts)?data.data.attempts:null;
+      return {status:response.status,code:data.error||'',count:attempts?.length??null,
+        onlyExercise:action==='getParentReport'&&attempts?.length===1?{
+          id:String(attempts[0].id||''),title:String(attempts[0].title||''),status:attempts[0].correctionStatus||''
+        }:null};
     }
     return {report:await call('getParentReport'),forbidden:await call('getTimCourseContent')};
   });
   console.log('Contrôle Parent : HTTP '+checks.report.status+', notes présentes : '+checks.report.count+', erreur : '+(checks.report.code||'aucune'));
+  if(checks.report.onlyExercise)console.log('IDENTIFICATION EXERCICE UNIQUE (sans note ni reponses) : '+JSON.stringify(checks.report.onlyExercise));
   if(checks.report.status!==200||!Number.isInteger(checks.report.count))throw Error('Lecture Parent via Cloudflare échouée (HTTP '+checks.report.status+', code '+checks.report.code+').');
   if(checks.forbidden.status!==403)throw Error('Protection du cours Tim incorrecte pour Parent : HTTP '+checks.forbidden.status);
   console.log('OK : compte Parent lit les notes et ne peut pas consulter les fonctions réservées à Tim.');
