@@ -62,13 +62,42 @@ async function getStatus(){
    await timPage.locator('#login-email').fill(process.env.TIM_STUDENT_EMAIL);
    await timPage.locator('#login-password').fill(process.env.TIM_STUDENT_PASSWORD);
    await timPage.locator('#login-button').click();
-   await timPage.waitForFunction(()=>document.body.classList.contains('ready')&&window.__TIM_PARENT===false,{timeout:50000});
-   const count=await timPage.evaluate(()=>({
-     spanish:window.__TIM_DATA?.exercises?.filter(e=>/^SP[QW]_L(?:0[1-9]|1[0-5])_0[1-5]$/.test(e.id)).length||0,
-     canSubmit:Boolean(window.__TIM_BRIDGE?.trainingSubmit)
-   }));
-   if(count.spanish!==150||!count.canSubmit)throw Error('Compte Tim : chargement incomplet du cours ('+count.spanish+' exercices espagnols).');
-   console.log('OK : compte Tim chargé, 150 exercices espagnols accessibles, aucune validation envoyée.');
+   await timPage.waitForFunction(()=>document.body.classList.contains('ready')&&window.__TIM_PARENT===false&&!window.__TIM_GUEST,null,{timeout:50000});
+   console.log('OK : connexion reelle au compte Tim reussie sur ecran de telephone.');
+   await timPage.locator('[data-nav="matieres"]:visible').first().click();
+   await timPage.locator('#matieres-content button.matter-espanol').first().click();
+   await timPage.locator('#matieres-content details.tim-es-lesson').first().waitFor({timeout:20000});
+   const view=await timPage.evaluate(async()=>{
+     const bridge=window.__TIM_BRIDGE;
+     const cardCount=document.querySelectorAll('#matieres-content details.tim-es-lesson').length;
+     const tasks={complete:0,invalid:0,blocked:0};
+     for(let li=1;li<=13;li++)for(let i=1;i<=3;i++){
+       const id='ESE_L'+String(li).padStart(2,'0')+'_0'+i;
+       try{
+         const response=await bridge.spanishEntTrainingTask(id);
+         const q=response?.task?.questions||[];
+         if(q.length===10&&q.every(item=>typeof item.instructionEs==='string'&&!('right' in item)&&!('expected' in item)&&!('answer' in item)))tasks.complete++;
+         else tasks.invalid++;
+       }catch{tasks.blocked++;}
+     }
+     let progress='inaccessible';
+     try{const response=await bridge.spanishEntTrainingProgress();progress=Array.isArray(response?.attempts)?'accessible':'format-invalide';}catch{}
+     let pdf={available:0,readable:0};
+     try{
+       const list=await bridge.attachments.list('lesson','ENTESP_2026');
+       pdf.available=list.filter(x=>/\\.pdf$/i.test(x.fileName||'')).length;
+       for(const item of list.filter(x=>/\\.pdf$/i.test(x.fileName||''))){
+         try{const blob=await bridge.attachments.read(item);if(blob.size>0&&(await blob.slice(0,5).text())==='%PDF-')pdf.readable++;}catch{}
+       }
+     }catch{}
+     return {cardCount,tasks,progress,pdf};
+   });
+   console.log('AUDIT COMPTE TIM (lecture seule) : '+JSON.stringify(view));
+   if(view.cardCount!==13)throw Error('Tim : nombre de lecons espagnoles incorrect : '+view.cardCount);
+   if(view.tasks.complete!==39||view.tasks.invalid||view.tasks.blocked)throw Error('Tim : exercice non charge ou avec mauvaise structure (39 attendus).');
+   if(view.progress!=='accessible')throw Error('Tim : historique des tentatives indisponible.');
+   if(view.pdf.available!==9||view.pdf.readable!==9)throw Error('Tim : au moins un des 9 PDF originaux est inaccessible.');
+   console.log('OK : Tim peut consulter 13 lecons, 39 exercices corrigibles, ses resultats et les 9 PDF ENT. Aucune reponse soumise.');
   }else{
    console.log('Compte Tim : contrôle non effectué (identifiants de test non disponibles dans GitHub).');
   }
