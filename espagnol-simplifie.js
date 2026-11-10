@@ -75,42 +75,53 @@ function drawCorrection(slot,report,lessonNumber,ensureLesson){
  wrapper.append(title);
  p(wrapper,'Ce résultat mesure la compréhension de la leçon. Ce n’est pas une note scolaire. XP gagnés : '+Number(report.xp||0).toLocaleString('fr-FR')+' XP.','font-size:15px;font-weight:750;color:#263d89;line-height:1.6');
  if(Number.isInteger(report.translationHelpCount))p(wrapper,'Traduction française consultée pour '+report.translationHelpCount+' question(s) sur 10. Aucune pénalité.','font-weight:850;color:#263d89;font-size:15px');
- const incorrect=items.filter(x=>x.correct===false);
- const partial=items.filter(x=>x.points===0.5);
- const full=items.filter(x=>x.correct===true);
- const summary=el('p',incorrect.length?
-   full.length+' réponse(s) correctes, '+partial.length+' partiellement correctes et '+(incorrect.length-partial.length)+' incorrectes. Les corrections sont expliquées ci-dessous.':
-   'Toutes les réponses sont correctes.');
+ const points=item=>Number.isFinite(item.points)?item.points:(item.correct?1:0);
+ const errors=items.map((item,i)=>({item,i})).filter(x=>points(x.item)<1);
+ const perfect=score===10&&items.length===10&&errors.length===0;
+ const summary=el('p',perfect?'10/10 : toutes les réponses sont correctes. Aucune correction nécessaire.':
+  (10-errors.length)+' réponse(s) correctes et '+errors.length+' à revoir. Les corrections sont expliquées ci-dessous.');
  summary.style.cssText='font-weight:850;color:#263a83;font-size:16px;line-height:1.5';
  wrapper.append(summary);
- const weak=Object.entries(report.errorCounts||{}).filter(([name,count])=>name!=='réussi'&&Number(count)>0);
- if(weak.length)p(wrapper,'À retravailler : '+weak.map(([name,count])=>name+' ('+count+' question'+(count>1?'s':'')+')').join(' ; ')+'.','font-size:15px;font-weight:800;color:#314975;line-height:1.55');
- items.forEach((item,i)=>{
-  const points=Number.isFinite(item.points)?item.points:(item.correct?1:0);
-  const card=css(el('section'),ST.panel+';border-left:4px solid '+(points===1?'#26836a':points===0.5?'#b98a31':'#bd6244')+';margin:11px 0');
-  const heading=el('strong',(i+1)+'. '+item.prompt);
-  heading.style.cssText='display:block;font-size:15px;color:#25344e;line-height:1.5;margin-bottom:8px';
-  const status=el('strong',String(points).replace('.',',')+'/1 — '+(points===1?'Réponse correcte':points===0.5?'Réponse partiellement correcte':'Réponse incorrecte'));
-  status.style.cssText='color:'+(points===1?'#246d54':points===0.5?'#845b1b':'#a5472d')+';display:block;margin:8px 0';
-  card.append(heading,status);
-  p(card,'Ta réponse : '+String(item.response??'Non renseignée'),'font-size:15px;color:#333e58;margin:6px 0');
-  if(!item.correct)p(card,'Réponse attendue : '+item.expected,'font-size:15px;font-weight:850;color:#263a83;margin:6px 0');
-  if(points<1&&item.category)p(card,'Type d’erreur : '+item.category,'font-size:13px;color:#8c4c28;font-weight:800;margin:8px 0');
-  if(item.feedback)p(card,item.feedback,'font-size:14px;font-weight:700;color:#364f72;line-height:1.6;margin:9px 0');
-  if(item.explanation){
-   const rule=el('strong',points===1?'Pourquoi c’est correct :':'La règle à retenir :');
-   rule.style.cssText='display:block;color:#263d7a;margin-top:8px;font-size:14px';
-   card.append(rule);
-   p(card,item.explanation,'font-size:14px;color:#495975;line-height:1.6;margin:5px 0 9px');
+ // L'exercice reste consultable à tout moment sans fournir d'explication superflue.
+ if(items.length){
+  const review=el('details');review.className='tim-es-exercise-review';
+  const heading=el('summary','Revoir mon exercice — questions et réponses');heading.style.cssText='cursor:pointer;font-weight:800;color:#263d89;padding:12px 0';
+  review.append(heading);
+  items.forEach((item,i)=>{
+   const card=css(el('section'),ST.panel+';margin:8px 0;padding:10px');
+   p(card,'Question '+(i+1)+' : '+String(item.prompt||''),'font-weight:800;color:#263a83;margin:5px 0');
+   p(card,'Ma réponse : '+String(item.response??'Non renseignée'),'font-size:15px;color:#333e58;margin:5px 0');
+   review.append(card);
+  });
+  wrapper.append(review);
+ }
+ if(!perfect){
+  const weak=Object.entries(report.errorCounts||{}).filter(([name,count])=>name!=='réussi'&&Number(count)>0);
+  if(weak.length)p(wrapper,'À retravailler : '+weak.map(([name,count])=>name+' ('+count+' question'+(count>1?'s':'')+')').join(' ; ')+'.','font-size:15px;font-weight:800;color:#314975;line-height:1.55');
+  for(const {item,i} of errors){
+   const n=points(item);
+   const card=css(el('section'),ST.panel+';border-left:4px solid '+(n===0.5?'#b98a31':'#bd6244')+';margin:11px 0');
+   const heading=el('strong',(i+1)+'. '+item.prompt);
+   heading.style.cssText='display:block;font-size:15px;color:#25344e;line-height:1.5;margin-bottom:8px';
+   const status=el('strong',String(n).replace('.',',')+'/1 — '+(n===0.5?'Réponse partiellement correcte':'Réponse incorrecte'));
+   status.style.cssText='color:'+(n===0.5?'#845b1b':'#a5472d')+';display:block;margin:8px 0';
+   card.append(heading,status);
+   p(card,'Ta réponse : '+String(item.response??'Non renseignée'),'font-size:15px;color:#333e58;margin:6px 0');
+   p(card,'Réponse attendue : '+item.expected,'font-size:15px;font-weight:850;color:#263a83;margin:6px 0');
+   if(item.category)p(card,'Type d’erreur : '+item.category,'font-size:13px;color:#8c4c28;font-weight:800;margin:8px 0');
+   if(item.feedback)p(card,item.feedback,'font-size:14px;font-weight:700;color:#364f72;line-height:1.6;margin:9px 0');
+   if(item.explanation){
+    const rule=el('strong','La règle à retenir :');
+    rule.style.cssText='display:block;color:#263d7a;margin-top:8px;font-size:14px';
+    card.append(rule);
+    p(card,item.explanation,'font-size:14px;color:#495975;line-height:1.6;margin:5px 0 9px');
+   }
+   wrapper.append(card);
   }
-  if(typeof item.translationUsed==='boolean')p(card,item.translationUsed?'Consigne traduite en français pendant l’exercice.':'Consigne lue sans traduction française.','font-size:13px;color:#53647e;margin:8px 0');
-  wrapper.append(card);
- });
- const back=button('Revoir la leçon pour comprendre mes erreurs');
- back.addEventListener('click',()=>{
-  ensureLesson();
- });
- wrapper.append(back);
+  const back=button('Revoir la leçon pour comprendre mes erreurs');
+  back.addEventListener('click',()=>ensureLesson());
+  wrapper.append(back);
+ }
  slot.append(wrapper);
 }
 function renderQuestions(slot,task,lessonNumber,after,ensureLesson){
@@ -287,7 +298,7 @@ async function render(root,opts={},helpers={}){
    summaryOf(attempts,resultSlot);
    root.querySelectorAll('[data-es-training-id]').forEach(b=>{
     const done=attempts.find(a=>a.id===b.getAttribute('data-es-training-id'));
-    b.textContent=done?'✓ '+b.getAttribute('data-es-title')+' — '+done.score+'/10 · +'+Number(done.xp||0).toLocaleString('fr-FR')+' XP · Voir la correction':b.getAttribute('data-es-title')+' · À faire';
+    b.textContent=done?'✓ '+b.getAttribute('data-es-title')+' — '+done.score+'/10 · +'+Number(done.xp||0).toLocaleString('fr-FR')+' XP · Revoir le résultat':b.getAttribute('data-es-title')+' · À faire';
    });
   }catch(e){
    loaded=false;progressStatus.textContent='Résultats indisponibles : '+(e.message||e)+'. Les exercices ne pourront pas être validés tant que le suivi sécurisé est inaccessible.';
