@@ -31,8 +31,13 @@ function generate(meta){
  const {lesson,series}=meta;
  const q=[];
  if(series===3&&lesson.conjugations?.length){
-  const combos=[];
-  for(let pass=0;pass<4;pass++)for(let p=0;p<6;p++)combos.push({v:lesson.conjugations[(p+pass)%lesson.conjugations.length],p});
+  const combos=[],seen=new Set();
+  for(let i=0;i<10;i++){
+   const v=lesson.conjugations[i%lesson.conjugations.length];
+   let p=(i+Math.floor(i/lesson.conjugations.length)*2)%6;
+   while(seen.has(v+':'+p))p=(p+1)%6;
+   seen.add(v+':'+p);combos.push({v,p});
+  }
   for(let i=0;i<10;i++){
    const {v,p}=combos[i],verb=VERBS[v],answer=verb.forms[p];
    const o=options(answer,verb.forms,i+9);
