@@ -1,0 +1,29 @@
+name: Nettoyer les 28 exercices courts sans toucher aux résultats
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'outils/nettoyer-28-exercices.cjs'
+      - '.github/workflows/nettoyage-exercices-courts.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  nettoyage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+      TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
+      NETTOYAGE_MODE: inspect
+    steps:
+      - uses: actions/checkout@v4
+      - name: Installer Chromium
+        run: |
+          mkdir -p /tmp/tim-nettoyage
+          npm install --prefix /tmp/tim-nettoyage --no-audit --no-fund playwright
+          /tmp/tim-nettoyage/node_modules/.bin/playwright install --with-deps chromium
+      - name: Examiner ou supprimer strictement le lot E01 à E28
+        env:
+          NODE_PATH: /tmp/tim-nettoyage/node_modules
+        run: node outils/nettoyer-28-exercices.cjs
