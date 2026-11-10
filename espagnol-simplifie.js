@@ -18,7 +18,7 @@ const LESSONS=[
  ['10099~6400506','4 novembre','Réviser la conjugaison'],
  ['10099~6400487','5 novembre','Dix verbes au présent']
 ];
-const titles=['Je comprends les mots','Je comprends les phrases','Je sais utiliser'];
+const titles=['Je comprends les mots','Je complète les phrases','J’écris seul'];
 const ST={
  card:'border:1px solid #c6d1e8;border-radius:14px;margin:12px 0;background:#f7f9ff;color:#273448;overflow:hidden',
  summary:'display:block;cursor:pointer;font-weight:850;line-height:1.55;padding:17px 14px;color:#263a83;font-size:17px;overflow-wrap:anywhere',
@@ -65,6 +65,7 @@ function drawCorrection(slot,report,lessonNumber,ensureLesson){
  const title=css(el('h4','Résultat de l’exercice — '+score+' / 10 réponses correctes'),ST.title);
  wrapper.append(title);
  p(wrapper,'Ce résultat mesure la compréhension de la leçon. Ce n’est pas une note scolaire. Aucune récompense XP n’est associée à cet exercice.');
+ if(Number.isInteger(report.translationHelpCount))p(wrapper,'Traduction française consultée pour '+report.translationHelpCount+' question(s) sur 10. Aucune pénalité.','font-weight:850;color:#263d89;font-size:15px');
  const incorrect=items.filter(x=>x.correct===false);
  const summary=el('p',incorrect.length?
    incorrect.length+' réponse(s) à revoir. Les explications figurent sous chaque question.':
@@ -81,6 +82,7 @@ function drawCorrection(slot,report,lessonNumber,ensureLesson){
   p(card,'Ta réponse : '+String(item.response??'Non renseignée'),'font-size:15px;color:#333e58;margin:6px 0');
   if(!item.correct)p(card,'Réponse attendue : '+item.expected,'font-size:15px;font-weight:850;color:#263a83;margin:6px 0');
   p(card,item.explanation||'Relis la partie correspondante de la leçon.','font-size:14px;color:#495975;line-height:1.6;margin:9px 0');
+  if(typeof item.translationUsed==='boolean')p(card,item.translationUsed?'Consigne traduite en français pendant l’exercice.':'Consigne lue sans traduction française.','font-size:13px;color:#53647e;margin:8px 0');
   wrapper.append(card);
  });
  const back=button('Revoir la leçon pour comprendre mes erreurs');
@@ -94,39 +96,71 @@ function renderQuestions(slot,task,lessonNumber,after,ensureLesson){
  slot.replaceChildren();
  const wrapper=css(el('section'),ST.panel);
  const head=css(el('h4',task.title),ST.title);wrapper.append(head);
- p(wrapper,'10 questions. Une seule validation définitive. Après l’envoi, tu verras tout de suite ton résultat et la correction expliquée.');
+ p(wrapper,'Les consignes sont en espagnol. Tu peux écouter chaque consigne ou afficher sa traduction française. Cette aide ne retire aucun point. Une seule validation par exercice.');
  if(!isTim()){
-  p(wrapper,'Seul Tim peut répondre et valider. Le Parent peut consulter les résultats après validation.','font-weight:750;color:#6b4c2a');
+  p(wrapper,'Seul Tim peut répondre. Le Parent peut relire les questions, les réponses et les corrections.','font-weight:750;color:#6b4c2a');
  }
- const choices=[];
+ const readers=[],translationsUsed=Array(10).fill(false);
  for(const [i,q] of task.questions.entries()){
   const field=css(el('fieldset'),ST.panel+';padding:13px 12px;margin:14px 0');
   const legend=css(el('legend','Question '+(i+1)+' / 10'),'font-weight:900;color:#263d8c;padding:0 6px');
   field.append(legend);
-  const prompt=el('p',q.prompt);
-  prompt.style.cssText='line-height:1.55;font-size:16px;font-weight:750;color:#27334d;margin:8px 0 11px';
-  field.append(prompt);
-  if(q.sourceEs)field.append(say(q.sourceEs));
-  const radios=[];
-  q.choices.forEach((choice,k)=>{
-   const label=css(el('label'),'display:flex;gap:11px;align-items:flex-start;cursor:pointer;background:#f4f7fc;border:1px solid #d9e1ef;border-radius:10px;margin:7px 0;padding:11px;color:#25354b;font-size:15px;line-height:1.55');
-   const radio=el('input');radio.type='radio';radio.name=task.id+'_q'+i;radio.value=String(k);radio.disabled=!isTim();
-   radio.style.cssText='flex:0 0 20px;display:block!important;position:static!important;opacity:1!important;visibility:visible!important;width:20px;height:20px;margin:2px 0;accent-color:#28458e;appearance:auto!important;pointer-events:auto!important';
-   label.append(radio,el('span',choice));field.append(label);radios.push(radio);
+  const instruction=el('p',q.instructionEs||'Consigne indisponible');
+  instruction.setAttribute('lang','es');
+  instruction.style.cssText='line-height:1.55;font-size:16px;font-weight:850;color:#27334d;margin:8px 0 12px';
+  field.append(instruction);
+  const controls=css(el('div'),'display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin:6px 0 13px');
+  controls.append(say(q.instructionEs));
+  const translate=button('Traduire en français');
+  translate.style.cssText=ST.button+';background:#e7edfa!important;color:#243b79!important;border:1px solid #9cadd1!important;font-size:13px;min-height:36px;padding:7px 11px';
+  const french=css(el('p',q.instructionFr||'Traduction indisponible'),'font-size:14px;line-height:1.55;color:#27384f;background:#edf4ff;padding:10px;border-radius:9px;margin:7px 0');
+  french.hidden=true;french.style.display='none';
+  translate.setAttribute('aria-expanded','false');
+  translate.addEventListener('click',()=>{
+   french.hidden=!french.hidden;
+   french.style.display=french.hidden?'none':'block';
+   translate.setAttribute('aria-expanded',String(!french.hidden));
+   translate.textContent=french.hidden?'Traduire en français':'Masquer la traduction';
+   if(!french.hidden)translationsUsed[i]=true;
   });
-  wrapper.append(field);choices.push(radios);
+  controls.append(translate);field.append(controls,french);
+  if(q.stem){
+   const phrase=css(el('p',q.stem),'font-size:18px;font-weight:800;line-height:1.5;white-space:pre-wrap;color:#253b85;margin:13px 0');
+   phrase.setAttribute('lang','es');field.append(phrase);
+  }
+  if(q.kind==='qcm'&&Array.isArray(q.choices)&&q.choices.length===4){
+   const radios=[];
+   q.choices.forEach((choice,k)=>{
+    const label=css(el('label'),'display:flex;gap:11px;align-items:flex-start;cursor:pointer;background:#f4f7fc;border:1px solid #d9e1ef;border-radius:10px;margin:7px 0;padding:11px;color:#25354b;font-size:15px;line-height:1.55');
+    const radio=el('input');radio.type='radio';radio.name=task.id+'_q'+i;radio.value=String(k);radio.disabled=!isTim();
+    radio.style.cssText='flex:0 0 20px;display:block!important;position:static!important;opacity:1!important;visibility:visible!important;width:20px;height:20px;margin:2px 0;accent-color:#28458e;appearance:auto!important;pointer-events:auto!important';
+    label.append(radio,el('span',choice));field.append(label);radios.push(radio);
+   });
+   readers.push(()=>radios.findIndex(r=>r.checked));
+  }else if(q.kind==='gap'||q.kind==='write'){
+   const label=css(el('label',q.kind==='gap'?'Écris le mot manquant :':'Écris ta réponse en espagnol :'),'font-weight:750;color:#354766;display:block;margin:10px 0 8px;font-size:14px');
+   const answer=el('input');answer.type='text';answer.maxLength=200;
+   answer.disabled=!isTim();answer.autocomplete='off';answer.setAttribute('autocapitalize','none');
+   answer.spellcheck=false;answer.placeholder=q.kind==='gap'?'Mot à compléter':'Réponse sans propositions';
+   answer.style.cssText='display:block!important;visibility:visible!important;opacity:1!important;box-sizing:border-box;width:100%;min-height:45px;padding:11px 12px;background:white!important;color:#20344c!important;border:1px solid #8498b8!important;border-radius:10px;font-size:16px;line-height:1.45';
+   field.append(label,answer);readers.push(()=>answer.value.trim());
+  }else{
+   p(field,'Cette question est momentanément indisponible.','font-weight:750;color:#a94334');
+   readers.push(()=>null);
+  }
+  wrapper.append(field);
  }
  if(isTim()){
-  const notice=p(wrapper,'Tu dois répondre aux dix questions avant de valider. Une fois validé, cet exercice ne pourra plus être recommencé.','font-weight:750;color:#384a65');
+  p(wrapper,'Réponds aux 10 questions avant de valider. La correction apparaît immédiatement après l’envoi ; tu pourras la relire, mais pas refaire l’exercice.','font-weight:750;color:#384a65');
   const confirmButton=button('Valider mes 10 réponses — une seule fois');
   const feedback=p(wrapper,'','font-weight:750;color:#9a4b36;margin:12px 0');
   confirmButton.onclick=async()=>{
-   const answers=choices.map(row=>row.findIndex(r=>r.checked));
-   if(answers.some(a=>a<0)){feedback.textContent='Réponds aux dix questions avant de valider.';return;}
+   const answers=readers.map(read=>read());
+   if(answers.some(a=>a===null||a===-1||a==='')){feedback.textContent='Réponds aux dix questions avant de valider.';return;}
    if(!window.confirm('Confirmer la validation définitive de cet exercice ?'))return;
    confirmButton.disabled=true;confirmButton.textContent='Enregistrement sécurisé…';feedback.textContent='';
    try{
-    const report=await window.__TIM_BRIDGE.spanishEntTrainingSubmit(task.id,answers);
+    const report=await window.__TIM_BRIDGE.spanishEntTrainingSubmit(task.id,answers,translationsUsed);
     drawCorrection(slot,report,lessonNumber,ensureLesson);
     await after();
    }catch(e){
@@ -137,17 +171,17 @@ function renderQuestions(slot,task,lessonNumber,after,ensureLesson){
       if(saved.attempt){drawCorrection(slot,saved.attempt,lessonNumber,ensureLesson);await after();return;}
      }catch(_){}
     }
-    // En cas de requête incertaine, on vérifie l'enregistrement ; jamais
-    // de deuxième tentative aveugle après une erreur réseau.
+    // Ne pas réessayer une soumission incertaine : une validation pourrait
+    // être enregistrée même si le réseau a perdu sa réponse.
     try{
      const saved=await window.__TIM_BRIDGE.spanishEntTrainingProgress(task.id);
      if(saved.attempt){drawCorrection(slot,saved.attempt,lessonNumber,ensureLesson);await after();return;}
     }catch(_){}
-    feedback.textContent='Enregistrement non confirmé : '+(e?.message||'service indisponible')+'. Actualise le classeur pour vérifier ton résultat. Ne valide pas de nouveau sans contrôle.';
+    feedback.textContent='Validation non confirmée : '+(e?.message||'connexion indisponible')+'. Actualise le site pour vérifier le résultat avant toute nouvelle tentative.';
     confirmButton.textContent='Validation à vérifier';
    }
   };
-  wrapper.append(notice,confirmButton,feedback);
+  wrapper.append(confirmButton,feedback);
  }
  slot.append(wrapper);
 }
@@ -161,6 +195,8 @@ function summaryOf(attempts,where){
   const good=attempts.reduce((s,a)=>s+(Number(a.score)||0),0);
   const total=attempts.reduce((s,a)=>s+(Number(a.total)||10),0);
   p(result,'Bilan après '+complete+' exercices : '+good+' réponses correctes sur '+total+'.','font-weight:850;font-size:16px;color:#263d89');
+  const helped=attempts.filter(a=>Number.isInteger(a.translationHelpCount));
+  if(helped.length)p(result,'Aide pour comprendre les consignes : '+helped.reduce((n,a)=>n+a.translationHelpCount,0)+' question(s) traduite(s) sur '+(helped.length*10)+' questions réalisées.','font-size:15px;color:#34445f;line-height:1.55');
   const weak=attempts.filter(a=>Number(a.score)<7);
   if(weak.length){
    const label=el('strong','À revoir en priorité :');
