@@ -1,8 +1,8 @@
 {
   "mode": "lecture-seule-parent",
   "site": "https://classeur-tim-v16.pages.dev/",
-  "scope": "Vérifier que les 17 cours ENT sont visibles dans la nouvelle chronologie intégrale des mathématiques, que les 23 BIS existent et documenter les pièces jointes, sans aucune soumission",
+  "scope": "Audit lecture seule espagnol : 13 lecons, 39 exercices via serveur, ouverture des neuf PDF originaux dans Firebase, affichage mobile et ordinateur. Ne soumettre aucun exercice.",
   "launch_on_update": true,
-  "note": "Conserver les originaux ENT et les notes; ne modifier aucune pièce jointe et ne pas utiliser TinyFish.",
-  "checkVersion": "chronologie-17-lecons-ent-et-inventaire-pj-2026-11-09"
+  "note": "Tester avec Chromium Playwright via GitHub Actions sans TinyFish. Aucune modification aux donnees de Tim, aucune validation ni envoi de reponses.",
+  "checkVersion": "audit-espagnol-documents-exercices-mobile-20261110"
 }
