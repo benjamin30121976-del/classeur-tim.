@@ -175,3 +175,156 @@ export function gradeSpanishEntTask(id,answers,translationsUsed){
   translationHelpCount:translationsUsed.filter(Boolean).length,errorCounts,items};
 }
 export const SPANISH_ENT_LESSONS=Object.keys(BANK);
+
+
+/* Défis espagnols : réemploi EXACT des 39 exercices ENT d'entraînement.
+ * Les réponses restent exclusivement sur le serveur. Trois missions par jour,
+ * deux QCM et huit réponses écrites par mission ; rotation automatique.
+ * La version commence le 11/11/2026 pour préserver les tentatives antérieures.
+ */
+const SPANISH_DAILY_START='20261111';
+const SPANISH_DAILY_FORMAT=/^DAY_(20\d{6})_(0[1-3])$/;
+const SPANISH_DAILY_KINDS=['qcm','qcm','gap','gap','gap','write','write','write','conj','conj'];
+const SPANISH_DAILY_COUNTS={qcm:6,gap:9,write:9,conj:6};
+let spanishDailyBank=null;
+
+function spanishDailyQuestionBank(){
+ if(spanishDailyBank)return spanishDailyBank;
+ const groups={qcm:[],gap:[],write:[],conj:[]};
+ const byId=new Map();
+ for(let lesson=1;lesson<=13;lesson++){
+  const lessonId='L'+String(lesson).padStart(2,'0');
+  for(let series=1;series<=3;series++){
+   const task=spanishEntTask('ESE_'+lessonId+'_0'+series);
+   if(!task||task.questions.length!==10)throw Error('Banque espagnole incomplète');
+   task.questions.forEach((question,index)=>{
+    const kind=question.kind==='write'&&question.verb?'conj':question.kind;
+    if(!groups[kind])throw Error('Type espagnol inconnu');
+    const entry={
+     sourceId:task.id+':'+index,
+     lessonId,lessonNumber:lesson,
+     lessonTitle:BANK[lessonId].title,
+     questionIndex:index,kind,question
+    };
+    groups[kind].push(entry);byId.set(entry.sourceId,entry);
+   });
+  }
+ }
+ // L'ordre associe les 13 leçons en alternance, pas 10 questions d'une seule.
+ for(const entries of Object.values(groups)){
+  entries.sort((a,b)=>a.questionIndex-b.questionIndex||a.lessonNumber-b.lessonNumber);
+ }
+ if(Object.entries(SPANISH_DAILY_COUNTS).some(([kind,count])=>groups[kind].length<count))
+  throw Error('Pas assez de questions espagnoles');
+ spanishDailyBank={groups,byId};
+ return spanishDailyBank;
+}
+
+export const isSpanishDailyMissionId=id=>{
+ const m=SPANISH_DAILY_FORMAT.exec(String(id||''));
+ return Boolean(m&&m[1]>=SPANISH_DAILY_START);
+};
+export function spanishDailyMissionIds(date){
+ const clean=String(date||'').replace(/-/g,'');
+ const jsDate=new Date(clean.slice(0,4)+'-'+clean.slice(4,6)+'-'+clean.slice(6,8)+'T12:00:00Z');
+ if(!/^20\d{6}$/.test(clean)||Number.isNaN(jsDate.getTime())||
+    jsDate.toISOString().slice(0,10).replace(/-/g,'')!==clean||
+    clean<SPANISH_DAILY_START||[0,6].includes(jsDate.getUTCDay()))return [];
+ return [1,2,3].map(n=>'DAY_'+clean+'_0'+n);
+}
+function spanishDailyOrdinal(stamp){
+ const start=Date.UTC(2026,10,11);
+ const target=Date.UTC(Number(stamp.slice(0,4)),Number(stamp.slice(4,6))-1,Number(stamp.slice(6,8)));
+ const diff=Math.floor((target-start)/86400000);
+ return Math.floor(diff/7)*5+[0,1,2,2,2,3,4][diff%7];
+}
+function rotateSpanishQuestions(list,perDay,ordinal){
+ const first=(ordinal*perDay)%list.length;
+ return Array.from({length:perDay},(_,i)=>list[(first+i)%list.length]);
+}
+function spanishDailySelection(stamp){
+ const bank=spanishDailyQuestionBank(),ordinal=spanishDailyOrdinal(stamp);
+ return Object.fromEntries(Object.entries(SPANISH_DAILY_COUNTS).map(([kind,count])=>
+  [kind,rotateSpanishQuestions(bank.groups[kind],count,ordinal)]));
+}
+function spanishDailyPublicQuestion(entry){
+ const q=entry.question,head='Espagnol · Leçon '+entry.lessonNumber+' — ';
+ const base={
+  sourceId:entry.sourceId,
+  skill:'Espagnol : '+(entry.kind==='conj'?'conjugaison':entry.kind==='gap'?'phrases à compléter':entry.kind==='write'?'traduction écrite':'compréhension'),
+  lessonName:entry.lessonTitle
+ };
+ if(entry.kind==='qcm'){
+  return {...base,type:'mc',
+   q:head+'Que signifie en français « '+q.sourceEs+' » ?',
+   options:q.choices.slice(),right:q.right,why:q.explanation};
+ }
+ if(entry.kind==='gap'){
+  return {...base,type:'text',
+   q:head+'Complète en espagnol : « '+q.stem+' » (en français : '+q.sourceFr+').',
+   right:q.right,why:q.explanation};
+ }
+ if(entry.kind==='conj'){
+  return {...base,type:'text',
+   q:head+'Conjugue au présent : '+q.stem,
+   right:q.right,why:q.explanation};
+ }
+ return {...base,type:'text',
+  q:head+'Traduis en espagnol : « '+q.sourceFr+' ».',
+  right:q.right,why:q.explanation};
+}
+export function buildSpanishDailyMission(id){
+ if(!isSpanishDailyMissionId(id))return null;
+ const m=SPANISH_DAILY_FORMAT.exec(id),stamp=m[1],num=Number(m[2]);
+ if(!spanishDailyMissionIds(stamp).includes(id))return null;
+ const lists=spanishDailySelection(stamp);
+ // Les trois missions partagent les sélections du jour, sans question commune.
+ const used={qcm:0,gap:0,write:0,conj:0};
+ const chosenByMission=[[],[],[]];
+ for(let mission=0;mission<3;mission++){
+  for(const kind of SPANISH_DAILY_KINDS){
+   chosenByMission[mission].push(lists[kind][used[kind]++]);
+  }
+ }
+ const chosen=chosenByMission[num-1];
+ return {
+  id,title:'Défi du jour · Mission '+num+' / 3',
+  description:'10 questions de révision d’espagnol : 2 QCM, 3 phrases à compléter, 3 traductions et 2 conjugaisons.',
+  level:'Mission quotidienne',subject:'Défis',
+  lesson:chosen[0].lessonId,kind:'daily',category:'challenge',
+  period:stamp.slice(0,4)+'-'+stamp.slice(4,6)+'-'+stamp.slice(6,8),
+  questionBank:'spanish-ent-v1',
+  realLessons:[...new Set(chosen.map(x=>x.lessonTitle))],
+  questions:chosen.map(spanishDailyPublicQuestion)
+ };
+}
+export function gradeSpanishDailyMission(mission,responses){
+ if(!mission||!isSpanishDailyMissionId(mission.id)||!Array.isArray(responses)||
+    mission.questions?.length!==10||responses.length!==10)throw Error('Réponses invalides');
+ const bank=spanishDailyQuestionBank();
+ const answers=mission.questions.map((item,i)=>{
+  const source=bank.byId.get(item.sourceId);
+  if(!source)throw Error('Question espagnole introuvable');
+  const q=source.question,value=responses[i];
+  if(q.kind==='qcm'&&(!Number.isInteger(Number(value))||!String(value).trim()||Number(value)<0||Number(value)>3))
+   throw Error('Choix espagnol invalide');
+  if(q.kind!=='qcm'&&(typeof value!=='string'||!value.trim()||value.length>200))
+   throw Error('Réponse écrite espagnole invalide');
+  const candidate=q.kind==='qcm'?Number(value):value.trim();
+  const possibilities=q.kind==='qcm'?[q.right]:answerVariants(q,VERBS);
+  const mark=possibilities.map(expected=>({...evaluateAnswer(candidate,expected,q.kind),expected}))
+   .sort((a,b)=>b.points-a.points)[0];
+  const feedback=explainSpanishResponse(q,candidate,mark,VERBS,BANK[source.lessonId]);
+  return {
+   question:item.q,
+   response:String(value),
+   correct:mark.points===1,
+   points:mark.points,
+   expected:q.kind==='qcm'?q.choices[q.right]:q.right,
+   skill:item.skill,
+   explanation:(feedback.feedback||'')+' '+(feedback.rule||q.explanation||'')
+  };
+ });
+ return {score:answers.reduce((sum,item)=>sum+item.points,0),total:10,
+  needsReview:false,answers};
+}
