@@ -219,6 +219,99 @@ function appendFileLinks(root,refs,metas,translations){
 /* Leçon BIS L01 : aide pédagogique en français, distincte du cours ENT original.
    Première séance du 16/09/2026, réf. ENT 10099~6400501.
    Aucun exercice ajouté, aucune donnée privée enregistrée. */
+
+/* Prononciation de L01 : boutons reliés au lecteur espagnol existant.
+   Aucun enregistrement, aucune API payante, aucun changement aux exercices. */
+function enhanceBisL01Audio(body){
+ const makeButton=(spoken,label='Écouter')=>{
+  const b=$('button','ent-es-bis-listen',label);
+  b.type='button';b.setAttribute('data-say-es',spoken);
+  b.setAttribute('aria-label','Écouter en espagnol : '+spoken);
+  b.style.cssText='display:inline-flex;align-items:center;justify-content:center;min-height:38px;margin:4px 5px;padding:8px 11px;border:1px solid #2e448f!important;border-radius:9px;background:#2e448f!important;color:white!important;font-size:13px;font-weight:800;white-space:nowrap;cursor:pointer;opacity:1!important;text-shadow:none!important';
+  return b;
+ };
+ // Écouter séparément chaque question, chaque réponse, puis la présentation.
+ body.querySelectorAll('.ent-es-bis-example').forEach(row=>{
+  const spanish=row.querySelector('strong')?.textContent?.trim();
+  if(!spanish)return;
+  const parts=spanish.includes(' — ')?spanish.split(' — '):[spanish];
+  const actions=$('div','ent-es-bis-audio-actions');
+  actions.style.cssText='display:flex;flex-wrap:wrap;align-items:center;margin:7px 0';
+  parts.forEach((p,i)=>actions.append(makeButton(p,parts.length===2?(i?'Écouter la réponse':'Écouter la question'):'Écouter la phrase')));
+  row.append(actions);
+ });
+ // Leçon §2 : deux expressions distinctes par ligne (avant les =).
+ const lists=[...body.querySelectorAll('ul')];
+ if(lists[0]){
+  lists[0].querySelectorAll('li').forEach(li=>{
+   String(li.textContent||'').split(';').map(s=>s.trim().split(' = ')[0].trim()).filter(Boolean).forEach(s=>li.append(makeButton(s)));
+  });
+ }
+ // Leçon §4 : les 18 formes de llamarse, ser et ir sont écoutables séparément.
+ if(lists[1]){
+  lists[1].querySelectorAll('li').forEach(li=>{
+   const parts=String(li.textContent||'').split(':');
+   if(parts.length<2)return;
+   const forms=parts.slice(1).join(':').replace(/\.$/,'').split(' / ').map(s=>s.trim()).filter(Boolean);
+   forms.forEach(s=>li.append(makeButton(s)));
+  });
+ }
+ const groups=[
+  ['La fiche de renseignements',[
+   ['ficha','fiche'],['de','de / du selon le contexte'],['datos','renseignements / données'],
+   ['mi','mon / ma'],['nombre','nom / prénom sur la fiche'],['apellido','nom de famille'],
+   ['edad','âge'],['fecha','date'],['nacimiento','naissance'],
+   ['dirección','adresse'],['lugar','lieu'],['nacionalidad','nationalité'],
+   ['mis','mes'],['gustos','goûts']]],
+  ['Questions et réponses',[
+   ['cómo','comment'],['te','te / toi'],['llamas','tu t’appelles'],
+   ['cuántos','combien de'],['años','ans'],['tienes','tu as'],
+   ['tengo','j’ai'],['quince','quinze'],['dónde','où'],
+   ['vives','tu habites'],['vivo','j’habite'],['en','en / à'],
+   ['Francia','France'],['qué','que / quoi / quel'],['eres','tu es'],
+   ['soy','je suis'],['francés','français'],['francesa','française'],
+   ['me','me / moi'],['llamo','je m’appelle'],['gusta','plaît / aime avec me'],
+   ['el','le'],['fútbol','football']]],
+  ['Les pronoms personnels',[
+   ['yo','je'],['tú','tu'],['él','il'],['ella','elle'],
+   ['nosotros','nous (masculin ou mixte)'],['nosotras','nous (féminin)'],
+   ['vosotros','vous (masculin ou mixte)'],['vosotras','vous (féminin)'],
+   ['ellos','ils'],['ellas','elles'],['se','se'],
+   ['nos','nous'],['os','vous, pronom réfléchi']]],
+  ['Les verbes et leurs formes',[
+   ['llamarse','s’appeler'],['ser','être'],['ir','aller'],['tener','avoir'],
+   ['llama','s’appelle'],['llamamos','nous appelons'],['llamáis','vous appelez'],
+   ['llaman','s’appellent'],['es','est'],['somos','sommes'],
+   ['sois','êtes'],['son','sont'],['voy','je vais'],['vas','tu vas'],
+   ['va','il va'],['vamos','nous allons'],['vais','vous allez'],['van','ils vont']]],
+  ['Les mots de la présentation complète',[
+   ['hola','bonjour / salut'],['al','au (a + el)'],['colegio','collège'],
+   ['Alex','prénom du personnage fictif']]]
+ ];
+ const all=new Set();
+ const box=$('details','ent-es-bis-lexicon');
+ box.style.cssText='border:1px solid #bec5ea;border-radius:12px;margin:17px 0;padding:12px;background:#fff;color:#23314b';
+ for(const [,entries] of groups)for(const [es] of entries)all.add(es.toLocaleLowerCase('es'));
+ const title=$('summary','','Tous les mots de la leçon : '+all.size+' mots à écouter un par un');
+ title.style.cssText='font-weight:900;font-size:17px;color:#263a97;cursor:pointer;padding:8px 0';
+ box.append(title);
+ for(const [group,entries] of groups){
+  const h=$('h5','',group);h.style.cssText='font-size:16px;margin:20px 0 8px;color:#263a97';box.append(h);
+  for(const [es,fr] of entries){
+   const row=$('div','ent-es-bis-vocab-row');
+   row.style.cssText='display:flex;flex-wrap:wrap;gap:8px;align-items:center;border-bottom:1px solid #e7eaf0;padding:6px 0';
+   const label=$('span');label.style.cssText='flex:1 1 160px';
+   const word=$('strong','',es);word.style.cssText='color:#253996';
+   label.append(word,document.createTextNode(' — '+fr));
+   row.append(label,makeButton(es));box.append(row);
+  }
+ }
+ const subtitle=$('h4','','7. Le dictionnaire de cette leçon, mot par mot');
+ subtitle.style.cssText='margin:24px 0 8px;font-size:18px;color:#1c307c';
+ const instruction=$('p','','Appuie sur « Tous les mots » pour afficher le répertoire. Chaque mot espagnol a sa traduction française et son propre bouton « Écouter ». Les phrases et conjugaisons ci-dessus sont également écoutables.');
+ instruction.style.cssText='margin:6px 0 12px';
+ body.append(subtitle,instruction,box);
+}
 function appendBisL01(panel){
  const bis=$('details','ent-es-bis-l01');
  bis.style.cssText='margin:14px 0;padding:12px 14px;border:2px solid #a7a1eb;border-radius:13px;background:#f5f3ff;color:#232b46';
@@ -276,6 +369,7 @@ function appendBisL01(panel){
   'Comprendre que « me llamo » veut dire « je m’appelle », que « soy » exprime une identité et que « voy » signifie « je vais ».'
  ]);
  paragraph('Pour réviser : lis les exemples avec leur traduction, cache la partie française, puis refais la présentation à voix haute sans regarder la fiche.');
+ enhanceBisL01Audio(body);
  bis.append(body);panel.append(bis);
 }
 
