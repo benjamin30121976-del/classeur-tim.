@@ -295,10 +295,24 @@ async function saveSpanishTranslations(translations){
  const original=old.metadata?.spanishEnt;
  if(!original)throw Error('Il faut d’abord installer les cours ENT dans la matière espagnole.');
  const counts=await ent.validateTranslations(original,translations);
+ // Vérifier que les traductions de fiches correspondent à des PDF effectivement présents,
+ // en comparant les empreintes enregistrées ; sans lecture ni publication de leurs octets.
+ if(translations.attachments){
+   const files=await makeAttachmentBridge(db,()=>activeUser,PARENT_UID,TIM_UID).list('lesson',ent.TAG);
+   for(const item of original.index){
+    const translated=translations.attachments[String(item.id)];
+    const filename=String(item.nom_dans_archive||'').split('/').pop();
+    const matching=files.find(m=>m.fileName===filename);
+    if(matching&&matching.sha256!==translated.sha256)
+     throw Error('La fiche '+item.nom_ENT+' ne correspond pas au PDF original attendu.');
+   }
+ }
  const compact={
   schema:translations.schema,language:'fr',
   notice:'Traduction pédagogique non officielle ; les textes et PDF ENT restent inchangés.',
   courses:translations.courses,homework:translations.homework,
+  ...(translations.attachments?{attachments:translations.attachments}:
+    (original.translations?.attachments?{attachments:original.translations.attachments}:{})),
   validatedAt:new Date().toISOString()
  };
  const next={...old,metadata:{...old.metadata,spanishEnt:{...original,translations:compact}}};
@@ -310,7 +324,8 @@ async function saveSpanishTranslations(translations){
  if(!check.exists())throw Error('Vérification de la sauvegarde impossible.');
  const saved=decodeFromFirestore(check.data()).metadata?.spanishEnt?.translations;
  if(saved?.language!=='fr'||Object.keys(saved.courses||{}).length!==counts.lessons||
-    Object.keys(saved.homework||{}).length!==counts.homework)
+    Object.keys(saved.homework||{}).length!==counts.homework||
+    (counts.pdfs>0&&Object.keys(saved.attachments||{}).length!==counts.pdfs))
   throw Error('La sauvegarde n’a pas pu être confirmée.');
  return counts;
 }
