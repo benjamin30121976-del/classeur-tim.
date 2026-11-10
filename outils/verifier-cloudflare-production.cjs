@@ -55,6 +55,33 @@ async function getStatus(){
   if(checks.report.status!==200||!Number.isInteger(checks.report.count))throw Error('Lecture Parent via Cloudflare échouée (HTTP '+checks.report.status+', code '+checks.report.code+').');
   if(checks.forbidden.status!==403)throw Error('Protection du cours Tim incorrecte pour Parent : HTTP '+checks.forbidden.status);
   console.log('OK : compte Parent lit les notes et ne peut pas consulter les fonctions réservées à Tim.');
+
+  // Audit transversal Parent : catalogue, progression et évaluations accessibles.
+  const parentView=await page.evaluate(async()=>{
+    const data=window.__TIM_DATA||{},bridge=window.__TIM_BRIDGE||{},lessons=data.lessons||[],exercises=data.exercises||[];
+    const bySubject=(name)=>lessons.filter(x=>x.subject===name);
+    const out={spanishLessons:bySubject('Espagnol').length,mathENT:bySubject('Mathématiques').filter(x=>/^M26S/.test(x.id||'')).length,
+      mathBIS:bySubject('Mathématiques').filter(x=>/^MBIS/.test(x.id||'')).length,
+      liveDaily:exercises.filter(e=>e.kind==='daily').length,
+      saturday:exercises.filter(e=>e.kind==='weekly').length,
+      sunday:exercises.filter(e=>e.kind==='sunday').length,
+      failedMath:0,completeMath:0,spanishProgress:false,mathProgress:false};
+    for(let i=1;i<=23;i++){
+      try{const r=await bridge.mathTrainingTask('MT'+String(i).padStart(2,'0'));
+        const q=r?.task?.questions||[];
+        if(q.length===10&&q.every(x=>typeof x.prompt==='string'&&x.choices?.length===4&&!('correctIndex' in x)))out.completeMath++;
+        else out.failedMath++;
+      }catch{out.failedMath++;}
+    }
+    try{out.spanishProgress=Array.isArray((await bridge.spanishEntTrainingProgress())?.attempts);}catch{}
+    try{out.mathProgress=Array.isArray((await bridge.mathTrainingProgress())?.attempts);}catch{}
+    return out;
+  });
+  console.log('AUDIT PARENT GENERAL (lecture seule) : '+JSON.stringify(parentView));
+  if(parentView.mathENT!==17||parentView.mathBIS!==23||parentView.completeMath!==23||parentView.failedMath||!parentView.spanishProgress||!parentView.mathProgress)
+    throw Error('Parent : inventaire ou evaluations maths incomplets.');
+  console.log('OK : Parent peut consulter maths 17 cours ENT, 23 BIS, 23 tests de 10 questions, et les suivis maths/espagnol.');
+
   if(process.env.TIM_STUDENT_EMAIL&&process.env.TIM_STUDENT_PASSWORD){
    const timPage=await browser.newPage({viewport:{width:390,height:844},locale:'fr-FR'});
    await timPage.goto(URL,{waitUntil:'domcontentloaded',timeout:45000});
@@ -108,9 +135,59 @@ async function getStatus(){
    if(view.progress!=='accessible')throw Error('Tim : historique des tentatives indisponible.');
    if(view.pdf.available!==9||view.pdf.readable!==9)throw Error('Tim : au moins un des 9 PDF originaux est inaccessible.');
    console.log('OK : Tim peut consulter 13 lecons, 39 exercices corrigibles, ses resultats et les 9 PDF ENT. Aucune reponse soumise.');
+
+   const timExtra=await timPage.evaluate(async()=>{
+     const bridge=window.__TIM_BRIDGE||{};
+     let maths=0,failed=0,progress=false;
+     for(let i=1;i<=23;i++){
+       try{
+         const r=await bridge.mathTrainingTask('MT'+String(i).padStart(2,'0'));
+         if(r?.task?.questions?.length===10&&r.task.questions.every(q=>q.choices?.length===4&&!('correctIndex' in q)))maths++;
+         else failed++;
+       }catch{failed++;}
+     }
+     try{progress=Array.isArray((await bridge.mathTrainingProgress())?.attempts);}catch{}
+     const el=document.documentElement;
+     return {maths,failed,progress,overflow:el.scrollWidth-el.clientWidth,canSubmit:typeof bridge.spanishEntTrainingSubmit==='function'};
+   });
+   console.log('AUDIT TIM MATHS ET MOBILE (lecture seule) : '+JSON.stringify(timExtra));
+   if(timExtra.maths!==23||timExtra.failed||!timExtra.progress||timExtra.overflow>12||!timExtra.canSubmit)
+     throw Error('Tim : maths, progression, interface ou bouton de validation indisponible.');
+   console.log('OK : 23 tests maths consultables, suivi disponible, format mobile conforme. Aucune soumission.');
+
   }else{
    console.log('Compte Tim : contrôle non effectué (identifiants de test non disponibles dans GitHub).');
   }
+
+  // Contrôle visiteur sur la vraie page, sans authentification.
+  const guestPage=await browser.newPage({viewport:{width:390,height:844},locale:'fr-FR'});
+  const guestResponse=await guestPage.goto(URL,{waitUntil:'domcontentloaded',timeout:45000});
+  if(!guestResponse?.ok())throw Error('Accueil Visiteur indisponible.');
+  await guestPage.locator('#guest-enter').click({timeout:10000});
+  await guestPage.locator('body.guest-mode').waitFor({timeout:20000});
+  await guestPage.waitForFunction(()=>typeof window.openLesson==='function'&&!!document.querySelector('#home.page.active'),null,{timeout:22000});
+  const guestIntro=guestPage.locator('#intro-screen');
+  if(await guestIntro.isVisible()){
+    await guestPage.locator('#intro-silent').evaluate(el=>el.click());
+    await guestIntro.waitFor({state:'hidden',timeout:15000});
+  }
+  await guestPage.locator('[data-nav="matieres"]').first().evaluate(el=>el.click());
+  await guestPage.locator('#matieres-content button.matter-espanol').first().waitFor({timeout:15000});
+  await guestPage.locator('#matieres-content button.matter-espanol').first().evaluate(el=>el.click());
+  await guestPage.locator('#matieres-content details.tim-es-lesson').first().waitFor({timeout:15000});
+  const guestView=await guestPage.evaluate(()=>({
+    guest:window.__TIM_GUEST===true,
+    parent:window.__TIM_PARENT===true,
+    cards:document.querySelectorAll('#matieres-content details.tim-es-lesson').length,
+    overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth,
+    privateResultWarning:(document.getElementById('matieres-content')?.innerText||'').includes('Résultats indisponibles')
+  }));
+  console.log('AUDIT VISITEUR MOBILE (lecture seule) : '+JSON.stringify(guestView));
+  if(!guestView.guest||guestView.parent||guestView.cards!==13||guestView.overflow>12)
+    throw Error('Visiteur : accès, interface ou 13 leçons espagnoles incorrects.');
+  if(guestView.privateResultWarning)console.log('AMELIORATION : message technique resultats indisponibles dans espace Visiteur.');
+  console.log('OK : Visiteur navigue dans les lecons sans identification ni accès aux notes privées.');
+
  }finally{await browser.close();}
  console.log('CONFIRMATION : accès Cloudflare/Firebase en lecture seule opérationnel. Aucune note ni exercice modifié.');
 })().catch(e=>{console.error('ECHEC DIAGNOSTIC : '+String(e.message||e).slice(0,240));process.exit(1);});
