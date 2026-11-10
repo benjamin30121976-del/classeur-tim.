@@ -1,7 +1,7 @@
 /* Missions 2026 : génération déterministe côté client et côté serveur.
  * Ce module ne contient aucune réponse ; les réponses privées viennent de Firestore.
  */
-export const DAILY_MISSION_COUNT=24;
+export const DAILY_MISSION_COUNT=3;
 export const parisDay=date=>{
  const parts=new Intl.DateTimeFormat('fr-CA',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(date));
  const p=Object.fromEntries(parts.filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
@@ -44,6 +44,27 @@ function pool(content,on){
  }
  return found;
 }
+function curriculumPool(curriculum){
+ if(!curriculum||typeof curriculum!=='object')return [];
+ const entries=Object.entries(curriculum).filter(([id,lesson])=>/^L(?:0[1-9]|1[0-3])$/.test(id)&&Array.isArray(lesson.pairs));
+ const out=[];
+ for(const [id,lesson] of entries){
+  const pairs=lesson.pairs.filter(p=>Array.isArray(p)&&p.length===2&&typeof p[0]==='string'&&typeof p[1]==='string');
+  const french=[...new Set(pairs.map(p=>p[1]))];
+  if(french.length<4)continue;
+  for(let i=0;i<pairs.length;i++){
+   const [es,fr]=pairs[i],wrong=french.filter(x=>x!==fr);
+   const ordered=wrong.slice().sort((a,b)=>hash(id+'|'+i+'|'+a)-hash(id+'|'+i+'|'+b));
+   const rotation=hash(id+'|'+i)%4;
+   const choices=[fr,...ordered.slice(0,3)];
+   const options=choices.slice(rotation).concat(choices.slice(0,rotation));
+   out.push({id:'curriculum-'+id+'-'+i,stamp:'',lesson:{id,title:lesson.name,subject:'Espagnol'},
+    q:{type:'mc',q:'¿Qué significa en francés « '+es+' »?',options,right:(4-rotation)%4,
+     why:'« '+es+' » signifie « '+fr+' ». Repère cette expression dans la leçon.',skill:'Espagnol : vocabulaire'}});
+  }
+ }
+ return out;
+}
 const sorted=(items,seed)=>items.slice().sort((a,b)=>hash(seed+'|'+a.id)-hash(seed+'|'+b.id)||a.id.localeCompare(b.id));
 function select(items,amount,seed,offset=0){
  if(items.length<amount)return [];
@@ -59,7 +80,15 @@ export function buildMission(id,content,curriculum=null){
  const dm=id.match(/^DAY_(20\d{2})(\d{2})(\d{2})_(\d{2})$/);
  const wm=id.match(/^WEEK_(20\d{2})W(\d{2})$/);
  const sm=id.match(/^SUNDAY_(20\d{2})(\d{2})(\d{2})$/);
- if(dm){return null;}
+ if(dm){
+  const on=dm[1]+'-'+dm[2]+'-'+dm[3],number=Number(dm[4]);
+  if(!validDate(on)||[0,6].includes(dateUTC(on).getUTCDay())||number<1||number>DAILY_MISSION_COUNT)return null;
+  // Le même référentiel est disponible dans le navigateur et au serveur.
+  // Ne pas mélanger avec les devoirs privés pour éviter tout décalage des réponses.
+  const available=curriculumPool(curriculum);
+  chosen=select(available,DAILY_MISSION_COUNT*10,'DAY_'+on,(number-1)*10).slice(0,10);
+  kind='daily';period=on;label='Défi du jour · Mission '+number+' / '+DAILY_MISSION_COUNT;
+ }
  if(wm){
   const year=Number(wm[1]),num=Number(wm[2]),jan4=new Date(Date.UTC(year,0,4,12));
   jan4.setUTCDate(jan4.getUTCDate()-((jan4.getUTCDay()+6)%7)+(num-1)*7);
@@ -93,9 +122,9 @@ export function isMissionOpen(ex,today=parisDay(new Date())){
 }
 export function setupMissions(content,now=new Date(),curriculum=null){
  const today=parisDay(now),dow=dateUTC(today).getUTCDay();
- const dailyIds=[]; // Défi du jour supprimé ; conserver les traces historiques sans nouvelles missions.
+ const dailyIds=dow>=1&&dow<=5?Array.from({length:DAILY_MISSION_COUNT},(_,i)=>'DAY_'+today.replace(/-/g,'')+'_'+String(i+1).padStart(2,'0')):[];
  const saturday=addDays(monday(today),5),sunday=addDays(monday(today),6);
  const weekly=weekId(today),sundayId='SUNDAY_'+sunday.replace(/-/g,'');
- const ids=[weekly,sundayId],exercises=ids.map(id=>buildMission(id,content,curriculum)).filter(Boolean);
+ const ids=[...dailyIds,weekly,sundayId],exercises=ids.map(id=>buildMission(id,content,curriculum)).filter(Boolean);
  return {meta:{today,weekStart:monday(today),weekEnd:sunday, daily:dailyIds[0]||null,dailyIds,weekly,sunday:sundayId,saturdayDate:saturday,sundayDate:sunday},exercises};
 }
