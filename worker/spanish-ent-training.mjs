@@ -42,9 +42,40 @@ function blank(es){
  if(!chosen)return null;
  return {stem:es.slice(0,chosen.at)+'______'+es.slice(chosen.at+chosen.word.length),answer:chosen.word};
 }
-function norm(value){
- return String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
-   .replace(/[’']/g,"").replace(/[¿?¡!.,;:()«»"-]/g,' ').replace(/\s+/g,' ').trim().toLowerCase();
+/* Barème pédagogique :
+   1 point : exact (casse/espaces indifférents).
+   0,5 : texte correct mais accent de voyelle ou ponctuation ¿? incorrects.
+   0 : erreur de vocabulaire, conjugaison, ordre des mots, ou confusion n/ñ.
+   Le grave et l'aigu sur la même voyelle sont acceptés à titre pédagogique. */
+function basicText(value){
+ return String(value??'').normalize('NFC').toLocaleLowerCase('es')
+   .replace(/[à]/g,'á').replace(/[è]/g,'é').replace(/[ì]/g,'í')
+   .replace(/[ò]/g,'ó').replace(/[ù]/g,'ú')
+   .replace(/\s+/g,' ').trim().replace(/\s+([?!])/g,'$1')
+   .replace(/([¿¡])\s+/g,'$1')
+   .replace(/[.,;:«»"()]/g,'').trim();
+}
+function withoutQuestionMarks(s){return s.replace(/[¿?¡!]/g,'').replace(/\s+/g,' ').trim();}
+function withoutVowelAccents(s){
+ return s.normalize('NFD').replace(/([aeiou])[\u0300\u0301\u0302\u0308]/g,'$1').normalize('NFC');
+}
+function evaluateAnswer(answer,expected,kind){
+ if(kind==='qcm')return {points:answer===expected?1:0,feedback:answer===expected?'Bonne réponse.':'La réponse choisie ne correspond pas au cours.'};
+ const actual=basicText(answer),wanted=basicText(expected);
+ if(actual===wanted)return {points:1,feedback:'Bonne réponse : orthographe et ponctuation correctes.'};
+ const actualWords=withoutQuestionMarks(actual),wantedWords=withoutQuestionMarks(wanted);
+ const onlyPunctuation=actualWords===wantedWords;
+ const baseEquivalent=withoutVowelAccents(actualWords)===withoutVowelAccents(wantedWords);
+ if(baseEquivalent){
+  const accentIssue=actualWords!==wantedWords;
+  const punctuationIssue=actual!==wanted;
+  const details=[];
+  if(accentIssue)details.push('Vérifie les accents : ils doivent être placés sur les bonnes voyelles.');
+  if(punctuationIssue&&!onlyPunctuation)details.push('Vérifie la ponctuation espagnole, notamment ¿ au début et ? à la fin d’une question.');
+  if(onlyPunctuation&&punctuationIssue)details.push('Vérifie les signes de ponctuation : une question espagnole commence par ¿ et se termine par ?.');
+  return {points:0.5,feedback:'Réponse comprise, mais une erreur de forme reste à corriger. '+details.join(' ')};
+ }
+ return {points:0,feedback:'Le mot, la conjugaison ou l’ordre des mots ne correspond pas à la réponse attendue. Attention : ñ et n sont deux lettres différentes.'};
 }
 function generate(meta){
  const {lesson,series}=meta;
@@ -118,12 +149,14 @@ export function gradeSpanishEntTask(id,answers,translationsUsed){
     (typeof x!=='string'||x.trim().length<1||x.length>200)))
   throw Error('Réponse écrite invalide');
  const items=t.questions.map((q,i)=>{
-  const correct=q.kind==='qcm'?q.right===answers[i]:norm(answers[i])===norm(q.right);
+  const mark=evaluateAnswer(answers[i],q.right,q.kind);
   return {prompt:q.instructionEs+(q.stem?' '+q.stem:''),response:q.kind==='qcm'?q.choices[answers[i]]:answers[i],
-   expected:q.kind==='qcm'?q.choices[q.right]:q.right,correct,explanation:q.explanation,translationUsed:translationsUsed[i]};
+   expected:q.kind==='qcm'?q.choices[q.right]:q.right,correct:mark.points===1,
+   points:mark.points,feedback:mark.feedback,
+   explanation:q.explanation,translationUsed:translationsUsed[i]};
  });
  return {id,lessonId:t.lessonId,series:t.series,title:t.title,
-  score:items.filter(x=>x.correct).length,total:10,xp:0,
+  score:items.reduce((n,x)=>n+x.points,0),total:10,xp:0,
   translationHelpCount:translationsUsed.filter(Boolean).length,items};
 }
 export const SPANISH_ENT_LESSONS=Object.keys(BANK);
