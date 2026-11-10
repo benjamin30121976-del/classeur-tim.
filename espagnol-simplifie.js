@@ -274,6 +274,12 @@ async function render(root,opts={},helpers={}){
  let attempts=[],loaded=false;
  const progressStatus=p(root,'Chargement du suivi des exercices…','font-size:13px;color:#96aad1');
  const refresh=async()=>{
+  if(window.__TIM_GUEST){
+   loaded=false;
+   progressStatus.textContent='Mode Visiteur : les résultats personnels sont réservés aux comptes Tim et Parent.';
+   resultSlot.replaceChildren();
+   return;
+  }
   try{
    const saved=await bridge.spanishEntTrainingProgress();
    attempts=saved.attempts||[];loaded=true;
