@@ -473,10 +473,11 @@ async function startSession(user){
  const missionInput=window.TIM_SPANISH_ENT_EXACT?{...missionSource,exercises:missionSource.exercises.filter(e=>!String(e.subject||'').toLowerCase().includes('espagnol'))}:missionSource;
  const missionPlan=setupMissions(missionInput,new Date(),window.TIM_SPANISH_EDU);
  window.__TIM_CHALLENGES=missionPlan.meta;
- // Le défi du jour est supprimé : aucune génération ni prévisualisation.
- window.__TIM_NEXT_DAILY=null;
- const existingMissionIds=new Set(content.exercises.map(x=>x.id));
+ // Trois défis du jour (10 questions chacun), repris dans les missions
+ // du lundi au vendredi. On conserve les tentatives historiques.
+ window.__TIM_NEXT_DAILY=missionPlan.meta.daily;
  const retainedExercises=content.exercises.filter(x=>!/^DAY_20\d{6}(?:_\d{2})?$/.test(String(x.id||'')));
+ const existingMissionIds=new Set(retainedExercises.map(x=>x.id));
  content={...content,exercises:[...retainedExercises,...missionPlan.exercises.filter(x=>!existingMissionIds.has(x.id))]};
  // Dans la matière espagnole, seuls les documents ENT exacts sont désormais visibles.
  // Les anciennes notes restent archivées dans Firestore pour le parent.
