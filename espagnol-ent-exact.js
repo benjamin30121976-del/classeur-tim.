@@ -291,6 +291,22 @@ async function render(root,opts={}){
    line2.style.cssText='font-size:.84em;opacity:.8;white-space:normal;overflow-wrap:anywhere;margin-top:4px';
    heading.append(line1,line2);panel.append(heading);
    panel.append($('small','','Intitulé ENT : '+String(l.data.attributes?.title||'Espagnol LV2')+' · Réf. '+id));
+
+   const coursePanel=$('details','ent-es-course');
+   coursePanel.style.cssText='margin:14px 0;padding:10px 12px;border:1px solid #82b6c9;border-radius:10px;background:#173450';
+   const courseSummary=$('summary','','Ouvrir la leçon ENT — espagnol et traduction française');
+   courseSummary.style.cssText='cursor:pointer;font-weight:800;color:#ffffff;font-size:18px;padding:12px 4px;line-height:1.4';
+   coursePanel.append(courseSummary);
+   const time=l.data.attributes||{};
+   coursePanel.append($('small','','Séance '+String(time.startDateTime||date)+' — '+String(time.endDateTime||'')));
+   coursePanel.append($('h4','','Cours original ENT (espagnol)'));
+   txt(coursePanel,asText(lessonHtml(l)));
+   appendFrench(coursePanel,translations?.courses,id);
+   const original=$('details');
+   original.append($('summary','','Voir le texte HTML brut tel que récupéré de l’ENT'));
+   txt(original,lessonHtml(l));
+   coursePanel.append(original);
+   panel.append(coursePanel);
    const associatedHomeworkIds=lessonHomeworkIds(l);
    const lessonFiles=pack.index.filter(i=>(i.rattache_a||[]).some(x=>
      (x.type==='cours'&&x.id===id)||
@@ -302,14 +318,14 @@ async function render(root,opts={}){
    if(associatedHomework.length || lessonFiles.length){
     const exerciseArea=$('section','ent-es-assignment-area');
     exerciseArea.style.cssText='padding:10px;margin:14px 0;border:1px solid #5c88b9;border-radius:12px;background:#102b40';
-    exerciseArea.append($('h4','','Exercices et devoirs de l’ENT'));
-    exerciseArea.append($('p','','Appuie sur « Voir l’exercice » pour lire la consigne originale et sa traduction. Si une fiche PDF est prévue par la professeure, son bouton est également affiché.'));
+    exerciseArea.append($('h4','','Exercices et devoirs originaux de l’ENT'));
+    exerciseArea.append($('p','','Appuie sur « Ouvrir l’exercice ENT » pour lire la consigne originale et sa traduction. Si une fiche PDF est prévue par la professeure, son bouton est également affiché.'));
     for(const h of associatedHomework){
      const hid=String(h.data.id),attrs=h.data.attributes||{};
      const pdfs=pack.index.filter(i=>(i.rattache_a||[]).some(x=>x.type==='travail_associe'&&x.id===hid));
      const ex=$('details','ent-es-exercise');
      ex.style.cssText='margin:10px 0;padding:10px 12px;border:1px solid #82b6c9;border-radius:10px;background:#173450';
-     const summary=$('summary','','Voir l’exercice / le devoir ENT'+(pdfs.length?' — '+pdfs.length+' fiche'+(pdfs.length>1?'s':'')+' PDF':' — consigne écrite'));
+     const summary=$('summary','','Ouvrir l’exercice ENT'+(pdfs.length?' — '+pdfs.length+' fiche'+(pdfs.length>1?'s':'')+' PDF':' — consigne écrite'));
      summary.style.cssText='cursor:pointer;font-weight:800;color:#ffffff;font-size:17px;padding:10px 4px;line-height:1.4';
      ex.append(summary);
      ex.append($('h5','','Consigne originale ENT'));
@@ -336,15 +352,6 @@ async function render(root,opts={}){
    }else{
     panel.append($('p','','Aucun exercice ou document PDF associé à cette séance dans la collecte ENT.'));
    }
-   const time=l.data.attributes||{};
-   panel.append($('small','',String(time.startDateTime||'')+' — '+String(time.endDateTime||'')));
-   panel.append($('h4','','Cours ENT — texte original, non cliquable'));
-   panel.append($('small','','Pour ouvrir un exercice ou sa fiche, utilise le volet « Voir l’exercice / le devoir ENT » situé au-dessus.'));
-
-   txt(panel,asText(lessonHtml(l)));
-   appendFrench(panel,translations?.courses,id);
-   const original=$('details');original.append($('summary','','Voir le texte HTML brut, identique à la source ENT'));
-   txt(original,lessonHtml(l));panel.append(original);
    root.append(panel);
   }
   const all=$('details');all.append($('summary','','Les '+pack.index.length+' fiches originales (inventaire complet)'));
