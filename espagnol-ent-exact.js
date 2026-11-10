@@ -410,7 +410,7 @@ function appendBisL01(panel){
  bis.append(body);panel.append(bis);
 }
 
-async function render(root,opts={}){
+async function renderArchive(root,opts={}){
  root.replaceChildren();
  if(typeof opts.back==='function'){
   const back=$('button','btn','← Toutes les matières');back.onclick=opts.back;root.append(back);
@@ -614,5 +614,31 @@ async function render(root,opts={}){
  });
  uploader.append(act,status);root.append(uploader);
 }
+/* Présentation élève : seule la leçon réorganisée + 3 exercices.
+   Parent : mêmes leçons et résultats, plus archive ENT originale intacte
+   (incluant les dates vides, devoirs et PDF) accessible en un clic. */
+async function render(root,opts={}){
+ const app=window.TIM_SPANISH_SIMPLIFIED;
+ if(!app)return renderArchive(root,opts);
+ await app.render(root,opts,{appendL01:appendBisL01});
+ if(window.__TIM_PARENT&&!window.__TIM_GUEST){
+  const archive=$('details','ent-es-archive-parent');
+  archive.style.cssText='border:1px solid #7a8ca8;border-radius:13px;padding:13px 14px;margin:24px 0;background:#20324d;color:#f3f7ff';
+  const summary=$('summary','','Archives Parent — cours, devoirs, PDF et séances d’origine');
+  summary.style.cssText='cursor:pointer;font-size:17px;font-weight:850;line-height:1.5;padding:10px 3px;color:#fff';
+  archive.append(summary);
+  const inner=$('div');archive.append(inner);
+  let loaded=false,loading=false;
+  archive.addEventListener('toggle',async()=>{
+   if(!archive.open||loaded||loading)return;
+   loading=true;inner.textContent='Chargement des archives originales…';
+   try{await renderArchive(inner,{});loaded=true;}
+   catch(error){inner.textContent='Archives indisponibles : '+(error.message||error);}
+   finally{loading=false;}
+  });
+  root.append(archive);
+ }
+}
+
 window.TIM_SPANISH_ENT_EXACT={render,parse:readTwoZips,validate,validateTranslations,TAG};
 })();
