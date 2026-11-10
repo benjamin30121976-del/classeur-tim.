@@ -43,7 +43,14 @@ function asText(raw){
  const html=s.replace(/<\s*br\s*\/?>/gi,'\n').replace(/<\s*\/(?:p|div|li|tr|h[1-6])\s*>/gi,'\n');
  const dom=new DOMParser().parseFromString(html,'text/html');
  dom.querySelectorAll('script,style,iframe,object,embed').forEach(x=>x.remove());
- return (dom.body.textContent||'').replace(/\n{3,}/g,'\n\n').trim();
+ // Les données Skolengo contiennent parfois des lignes vides garnies d'espaces.
+ // Les réduire pour un affichage lisible sans changer les mots ni le contenu ENT.
+ return (dom.body.textContent||'')
+   .replace(/\r\n?/g,'\n')
+   .replace(/\u00a0/g,' ')
+   .split('\n').map(line=>line.trim()).join('\n')
+   .replace(/\n(?:[ \t]*\n)+/g,'\n\n')
+   .trim();
 }
 // Les traductions sont chargees depuis Firebase prive, jamais depuis GitHub public.
 function homeworkOriginal(doc){
