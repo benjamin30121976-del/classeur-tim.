@@ -472,13 +472,34 @@ async function startSession(user){
  content=window.TIM_APPLY_SPANISH_NOV05?.(content)||content;
  const missionInput=window.TIM_SPANISH_ENT_EXACT?{...missionSource,exercises:missionSource.exercises.filter(e=>!String(e.subject||'').toLowerCase().includes('espagnol'))}:missionSource;
  const missionPlan=setupMissions(missionInput,new Date(),window.TIM_SPANISH_EDU);
- window.__TIM_CHALLENGES=missionPlan.meta;
- // Trois défis du jour (10 questions chacun), repris dans les missions
- // du lundi au vendredi. On conserve les tentatives historiques.
+ // Les défis du jour prennent les 390 questions privées des 39 exercices
+ // d'espagnol : le serveur fournit seulement énoncés et choix, jamais les réponses.
+ // Les anciennes tentatives restent inchangées. Si l'API est indisponible,
+ // les défis classiques continuent de fonctionner sans bloquer les leçons.
+ let mixedDaily=null;
+ if(missionPlan.meta.dailyIds.length && missionPlan.meta.today>='2026-11-11'){
+  try{
+   const result=await cloudCallable('getSpanishDailyMissions')({});
+   const data=result?.data||{};
+   if(data.day!==missionPlan.meta.today||
+      !Array.isArray(data.dailyIds)||data.dailyIds.length!==3||
+      !Array.isArray(data.exercises)||data.exercises.length!==3||
+      data.dailyIds.some((id,i)=>id!==missionPlan.meta.dailyIds[i])||
+      data.exercises.some((ex,i)=>ex.id!==data.dailyIds[i]||ex.kind!=='daily'||
+       ex.questionBank!=='spanish-ent-v1'||ex.questions?.length!==10||
+       ex.questions.filter(q=>q.type==='mc').length!==2||
+       ex.questions.filter(q=>q.type==='text').length!==8||
+       ex.questions.some(q=>Object.prototype.hasOwnProperty.call(q,'right'))))
+    throw Error('Les nouveaux défis ne sont pas complets.');
+   mixedDaily=data.exercises;
+  }catch(error){console.warn('Défis espagnols variés indisponibles ; défis classiques conservés :',error.message||error);}
+ }
+ window.__TIM_CHALLENGES={...missionPlan.meta,dailyBankStatus:mixedDaily?'mixed':'classic'};
  window.__TIM_NEXT_DAILY=missionPlan.meta.daily;
  const retainedExercises=content.exercises.filter(x=>!/^DAY_20\d{6}(?:_\d{2})?$/.test(String(x.id||'')));
  const existingMissionIds=new Set(retainedExercises.map(x=>x.id));
- content={...content,exercises:[...retainedExercises,...missionPlan.exercises.filter(x=>!existingMissionIds.has(x.id))]};
+ const planned=missionPlan.exercises.filter(ex=>!mixedDaily||ex.kind!=='daily');
+ content={...content,exercises:[...retainedExercises,...planned.filter(x=>!existingMissionIds.has(x.id)),...(mixedDaily||[])]};
  // Dans la matière espagnole, seuls les documents ENT exacts sont désormais visibles.
  // Les anciennes notes restent archivées dans Firestore pour le parent.
  if(window.TIM_SPANISH_ENT_EXACT){
