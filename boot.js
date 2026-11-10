@@ -599,6 +599,12 @@ async function startSession(user){
    return r.data;
   },
   trainingProgress:loadSpanishProgress,
+  parentReport:async()=>{
+   if(activeUser?.uid!==PARENT_UID)throw Error('Réservé au compte Parent.');
+   const r=await cloudCallable('getParentReport')({});
+   if(!Array.isArray(r.data?.attempts))throw Error('Archives Parent indisponibles.');
+   return r.data;
+  },
   mathTrainingTask:async(id)=>{
    if(!/^MT(?:0[1-9]|1[0-9]|2[0-3])$/.test(id))throw Error('Exercice de mathématiques invalide.');
    const r=await cloudCallable('getMathTrainingTask')({id});
