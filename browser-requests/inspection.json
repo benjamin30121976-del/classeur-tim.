@@ -1,6 +1,6 @@
 {
   "site": "https://classeur-tim-v16.pages.dev/",
-  "mode": "parent-login",
+  "mode": "guest",
   "devices": [
     "desktop",
     "mobile"
@@ -9,6 +9,27 @@
   "maxExercises": 0,
   "screenshotAllLessons": false,
   "screenshotAllExercises": false,
-  "actions": [],
-  "note": "Diagnostic interface de connexion Parent : aucun identifiant ni mot de passe envoyé à Firebase. Aucun contenu privé enregistré."
+  "actions": [
+    {
+      "type": "nav",
+      "page": "matieres",
+      "name": "matieres"
+    },
+    {
+      "type": "click",
+      "selector": "#matieres-content button.matter-espanol",
+      "name": "espagnol"
+    },
+    {
+      "type": "click",
+      "selector": "#matieres-content details.tim-es-lesson:first-of-type > summary",
+      "name": "lecon-espagnol"
+    },
+    {
+      "type": "click",
+      "selector": "#matieres-content details.tim-es-lesson:first-of-type button",
+      "name": "contenu-lecon"
+    }
+  ],
+  "note": "Controle Chromium gratuit mode Invite sur mobile/desktop de l'interface Espagnol. Aucun exercice valide, aucune connexion, aucun contenu modifie."
 }
