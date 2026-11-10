@@ -104,6 +104,21 @@ async function getStatus(){
     throw Error('Parent : inventaire ou evaluations maths incomplets.');
   console.log('OK : Parent peut consulter maths 17 cours ENT, 23 BIS, 23 tests de 10 questions, et les suivis maths/espagnol.');
 
+  // Tableau Parent : une seule liste, y compris le QCM historique de Tim.
+  await page.waitForFunction(()=>typeof window.TIM_PARENT_UNIFIED?.render==='function',null,{timeout:16000});
+  await page.evaluate(()=>{const el=document.querySelector('[data-nav="parent"]');if(el)el.click()});
+  await page.locator('#parent-content .tim-parent-unified').waitFor({timeout:12000});
+  await page.waitForFunction(()=>document.querySelector('#parent-content .tim-parent-unified .results-list')?.textContent?.includes('QCM 1'),null,{timeout:22000});
+  const unified=await page.evaluate(()=>({
+    visible:!!document.querySelector('#parent-content .tim-parent-unified'),
+    historical:document.querySelector('#parent-content .tim-parent-unified .results-list')?.textContent?.includes('QCM 1'),
+    total:document.querySelector('#parent-content .tim-parent-unified .results-list')?.querySelectorAll('article').length||0,
+    export:!![...document.querySelectorAll('#parent-content .tim-parent-unified button')].find(b=>b.textContent?.includes('Exporter le bilan complet'))
+  }));
+  console.log('AUDIT TABLEAU PARENT UNIFIE : '+JSON.stringify(unified));
+  if(!unified.visible||!unified.historical||!unified.export||unified.total<1)throw Error('Dashboard Parent centralisé incomplet');
+  console.log('OK : le compte Parent retrouve le QCM historique, le filtre et l’export dans le tableau centralisé.');
+
   if(process.env.TIM_STUDENT_EMAIL&&process.env.TIM_STUDENT_PASSWORD){
    const timPage=await browser.newPage({viewport:{width:390,height:844},locale:'fr-FR'});
    await timPage.goto(URL,{waitUntil:'domcontentloaded',timeout:45000});
