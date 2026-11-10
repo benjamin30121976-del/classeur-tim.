@@ -205,6 +205,7 @@ async function saveSpanishEnt(pack,binaries,progress=()=>{}){
  // Tester les permissions AVANT toute modification.
  let old=await attach.list('lesson',ent.TAG);
  const added=[];
+ let stage='contrôle des droits Firebase';
  try{
   for(let i=0;i<binaries.length;i++){
    const b=binaries[i];
@@ -212,6 +213,7 @@ async function saveSpanishEnt(pack,binaries,progress=()=>{}){
    const hash=Array.from(new Uint8Array(digest),v=>v.toString(16).padStart(2,'0')).join('');
    const oldMatch=old.find(x=>x.fileName===b.filename&&x.sha256===hash);
    if(oldMatch){progress('PDF déjà présent et identique : '+(i+1)+'/'+binaries.length);continue;}
+   stage='enregistrement PDF '+(i+1)+'/'+binaries.length+' dans attachment_chunks / attachments';
    progress('Stockage sécurisé du PDF '+(i+1)+'/'+binaries.length+'…');
    const id=await attach.upload('lesson',ent.TAG,b.blob,b.filename);
    old=await attach.list('lesson',ent.TAG);
@@ -225,6 +227,7 @@ async function saveSpanishEnt(pack,binaries,progress=()=>{}){
    const hash=Array.from(new Uint8Array(digest),v=>v.toString(16).padStart(2,'0')).join('');
    if(!old.some(x=>x.fileName===b.filename&&x.sha256===hash))throw Error('PDF manquant après copie : '+b.filename);
   }
+  stage='sauvegarde puis mise à jour des cours dans content/main';
   progress('9 fichiers vérifiés : mise à jour privée du classeur espagnol…');
   const mainRef=doc(db,'content','main'),snap=await getDoc(mainRef);
   if(!snap.exists())throw Error('Classeur Firebase principal introuvable.');
@@ -259,7 +262,10 @@ async function saveSpanishEnt(pack,binaries,progress=()=>{}){
   // de CET essai, si la publication principale n'a pas été confirmée.
   // Aucune suppression automatique : les éventuels fichiers sans rattachement
   // seront conservés dans l'espace privé pour éviter toute perte.
-  throw error;
+  if(/permission|autorisation|access denied/i.test(String(error?.message||''))){
+   throw new Error('Accès refusé pendant '+stage+'. Il faut publier les règles Firebase des pièces jointes.');
+  }
+  throw new Error(stage+' : '+String(error?.message||error));
  }
 }
 
