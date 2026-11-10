@@ -592,19 +592,19 @@ function xpInfo(done=attempts()){
   done:base.done+unique.size};
 }
 function makeXPPanel(){const st=xpInfo(),p=E('div','xp-panel');
- p.innerHTML='<div class="xp-panel-head"><strong>⭐ Niveau '+st.level+'</strong><span>'+st.total+' XP au total</span></div><div class="xp-track" role="progressbar" aria-label="Progression vers le prochain niveau" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+st.inLevel+'"><div class="xp-track-fill" style="width:'+st.inLevel+'%"></div></div><div class="xp-small">'+st.inLevel+' / 100 XP pour le prochain niveau.</div>';
+ p.innerHTML='<div class="xp-panel-head"><strong>⭐ Niveau '+st.level+'</strong><span>'+st.total.toLocaleString('fr-FR')+' XP au total</span></div><div class="xp-track" role="progressbar" aria-label="Progression vers le prochain niveau" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+st.inLevel+'"><div class="xp-track-fill" style="width:'+st.inLevel+'%"></div></div><div class="xp-small">'+st.inLevel.toLocaleString('fr-FR')+' / 100 XP pour le prochain niveau.</div>';
  const badges=E('div','trophies'),entries=[['🏅 Premier quiz',st.done>=1],['🎯 5 quiz',st.done>=5],['🏆 Sans faute',st.perfect>=1],['⭐ 100 XP',st.peak>=100],['🔥 500 XP',st.peak>=500]];
  entries.forEach(([t,ok])=>badges.append(E('span','trophy'+(ok?'':' locked'),(ok?'🔓 ':'🔒 ')+t)));p.append(badges);
  const week=Math.max(0,st.week),head=E('div','xp-panel-head');
- head.style.marginTop='18px';head.append(E('strong','','Cette semaine · '+week+' / 75 XP'),E('span','',st.reward+' €'));
+ head.style.marginTop='18px';head.append(E('strong','','Cette semaine · '+week.toLocaleString('fr-FR')+' / 75 XP'),E('span','',st.reward+' €'));
  const track=E('div','xp-track');track.setAttribute('role','progressbar');track.setAttribute('aria-label','XP de la semaine pour la récompense');
  track.setAttribute('aria-valuemin','0');track.setAttribute('aria-valuemax','75');track.setAttribute('aria-valuenow',String(Math.min(75,week)));
  const fill=E('div','xp-track-fill');fill.style.width=Math.min(100,100*week/75)+'%';track.append(fill);
  const next=week<19?19:week<38?38:week<75?75:null;
- p.append(head,track,E('div','xp-small',next===null?'Objectif atteint : 10 € à valider par le parent.':('Encore '+(next-week)+' XP pour '+(next===19?'2 €':next===38?'5 €':'10 €')+'. Les XP de la semaine repartent à zéro chaque lundi.')));
+ p.append(head,track,E('div','xp-small',next===null?'Objectif atteint : 10 € à valider par le parent.':('Encore '+(next-week).toLocaleString('fr-FR')+' XP pour '+(next===19?'2 €':next===38?'5 €':'10 €')+'. Les XP de la semaine repartent à zéro chaque lundi.')));
  return p;
 }
-function refreshXPHeader(){const el=document.getElementById('xp-header');if(!el||window.__TIM_GUEST)return;const s=xpInfo();el.innerHTML='<span>⭐ '+s.total+' XP</span><small>Niveau '+s.level+'</small>';}
+function refreshXPHeader(){const el=document.getElementById('xp-header');if(!el||window.__TIM_GUEST)return;const s=xpInfo();el.innerHTML='<span>⭐ '+s.total.toLocaleString('fr-FR')+' XP</span><small>Niveau '+s.level+'</small>';}
 document.addEventListener('tim-spanish-ent-xp-progress',()=>refreshXPHeader());
 function makeRewardsTile(){const b=E('button','reward-open');b.type='button';
  const text=E('span');text.append(E('strong','','🎁 MES RÉCOMPENSES'),E('small','','Comment fonctionnent les XP, les défis et les gains ?'));
@@ -613,8 +613,8 @@ function makeRewardsTile(){const b=E('button','reward-open');b.type='button';
   body.append(E('p','','Les XP des défis sont comptés du lundi au dimanche. Le compteur hebdomadaire revient à zéro le lundi. La récompense est à valider et à verser par le parent ; les montants ne se cumulent pas.'));
   const table=E('table'),heads=E('tr');for(const t of ['XP de la semaine','Récompense'])heads.append(E('th','',t));table.append(heads);
   for(const [score,amount] of [[19,'2 €'],[38,'5 €'],[75,'10 €']]){const row=E('tr');row.append(E('td','',score+' XP'),E('td','',amount));table.append(row);}body.append(table);
-  const p=E('ul');for(const t of ['Défi du samedi (20 questions) : 17–20 = +10 XP ; 15–16 = +7 XP ; 12–14 = +4 XP ; 10–11 = +1 XP ; 8–9 = 0 XP ; 0–7 = −1 XP.','Défi du dimanche (20 questions sur la rentrée) : mêmes paliers que samedi, doublés pour atteindre 20 XP maximum.','Devoirs scolaires et entraînements notés : 0 XP. Exercice bonus libre : maximum +3 XP par jour.','Une seule validation par défi du week-end. Les résultats et les XP déjà acquis restent enregistrés.','À chaque lundi, seul le compteur hebdomadaire repart à zéro : les notes, copies, trophées et XP de niveau restent enregistrés.','Les récompenses ne sont pas versées automatiquement ; le parent valide le montant.'])p.append(E('li','',t));body.append(p);
-  if(!window.__TIM_GUEST){const st=xpInfo();body.append(E('p','','Cette semaine : '+st.week+' XP. Récompense actuelle : '+st.reward+' €.'));}
+  const p=E('ul');for(const t of ['Défi du samedi (20 questions) : 17–20 = +10 XP ; 15–16 = +7 XP ; 12–14 = +4 XP ; 10–11 = +1 XP ; 8–9 = 0 XP ; 0–7 = −1 XP.','Défi du dimanche (20 questions sur la rentrée) : mêmes paliers que samedi, doublés pour atteindre 20 XP maximum.','Devoirs scolaires et autres entraînements : 0 XP. Exercices des leçons d’espagnol : 7 à 10/10 = +1 XP ; 5 à moins de 7/10 = +0,5 XP ; moins de 5/10 = 0 XP. Exercice bonus libre : maximum +3 XP par jour.','Une seule validation par défi du week-end. Les résultats et les XP déjà acquis restent enregistrés.','À chaque lundi, seul le compteur hebdomadaire repart à zéro : les notes, copies, trophées et XP de niveau restent enregistrés.','Les récompenses ne sont pas versées automatiquement ; le parent valide le montant.'])p.append(E('li','',t));body.append(p);
+  if(!window.__TIM_GUEST){const st=xpInfo();body.append(E('p','','Cette semaine : '+st.week.toLocaleString('fr-FR')+' XP. Récompense actuelle : '+st.reward+' €.'));}
   dialog.setAttribute('tabindex','-1');if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');dialog.scrollTop=0;dialog.focus({preventScroll:true});
  });return b;}
 document.getElementById('rewards-close')?.addEventListener('click',()=>{const d=document.getElementById('rewards-dialog');if(d.close)d.close();else d.removeAttribute('open');});
