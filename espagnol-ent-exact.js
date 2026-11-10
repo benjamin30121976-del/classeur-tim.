@@ -171,6 +171,32 @@ async function render(root,opts={}){
  const label1=$('label','','Cours et devoirs ENT : ');label1.append(f1);
  const label2=$('label','','Fiches PDF ENT : ');label2.append(f2);
  for(const label of [label1,label2]){label.style.cssText='display:block;margin:9px 0';uploader.append(label);}
+ const inspect=$('button','btn','Vérifier les PDF espagnols déjà présents dans Firebase');inspect.type='button';
+ const inspection=$('p','','');
+ inspect.addEventListener('click',async()=>{
+  inspect.disabled=true;inspection.textContent='Recherche des anciennes pièces jointes espagnoles…';
+  try{
+   const all=[],targets=[TAG,...Array.from({length:15},(_,i)=>'L'+String(i+1).padStart(2,'0'))];
+   for(const id of targets){
+    const rows=await bridge.attachments.list('lesson',id);
+    for(const r of rows)if(!all.some(v=>v.id===r.id))all.push({...r,oldTarget:id});
+   }
+   if(f1.files[0]&&f2.files[0]){
+    const loaded=await readTwoZips(f1.files[0],f2.files[0]);
+    let exact=0;
+    for(const b of loaded.binary){
+     const digest=await crypto.subtle.digest('SHA-256',await b.blob.arrayBuffer());
+     const hash=Array.from(new Uint8Array(digest),v=>v.toString(16).padStart(2,'0')).join('');
+     if(all.some(r=>r.sha256===hash&&r.size===b.blob.size))exact++;
+    }
+    inspection.textContent='Contrôle par empreinte SHA-256 : '+exact+'/'+loaded.binary.length+' PDF ENT identiques déjà stockés. '+all.length+' ancienne(s) pièce(s) jointes espagnoles trouvées dans les emplacements vérifiés.';
+   }else{
+    inspection.textContent=all.length+' PDF ou pièces jointes dans les emplacements espagnols vérifiés. Pour confirmer lesquels correspondent exactement aux neuf PDF ENT, sélectionne les deux ZIP et relance ce contrôle.';
+   }
+  }catch(e){inspection.textContent='Vérification Firebase impossible : '+e.message;}
+  finally{inspect.disabled=false;}
+ });
+ uploader.append(inspect,inspection);
  const status=$('p','','Aucune modification tant que les deux fichiers ne sont pas validés.');
  const act=$('button','btn','Vérifier et installer uniquement l’ENT espagnol');act.type='button';
  act.addEventListener('click',async()=>{
