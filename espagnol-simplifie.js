@@ -341,6 +341,7 @@ async function render(root,opts={},helpers={}){
    rows.append(b);
   }
   inner.append(rows,work);card.append(inner);root.append(card);
+  if(opts.openLessonId===entId){card.open=true;openLesson();}
  });
  refresh();
 }
