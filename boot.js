@@ -192,6 +192,73 @@ async function saveEditableLesson(lesson){
  return lesson.id;
 }
 
+// Import ENT ESPAGNOL : source conservée dans content/main (Firebase privé).
+// Ne modifie aucune autre matière ni les résultats de Tim.
+async function saveSpanishEnt(pack,binaries,progress=()=>{}){
+ if(activeUser?.uid!==PARENT_UID)throw Error('Import réservé au compte Parent.');
+ const ent=window.TIM_SPANISH_ENT_EXACT;
+ if(!ent||!Array.isArray(binaries))throw Error('Lecteur ENT indisponible.');
+ const counts=ent.validate(pack);
+ if(!pack.report||pack.report.matiere!=='ESPAGNOL LV2')throw Error('Origine ESPAGNOL LV2 non confirmée.');
+ if(binaries.length!==counts.pdfs||binaries.some(b=>!pack.index.some(i=>String(i.id)===b.id)))throw Error('PDF originaux incomplets.');
+ const attach=makeAttachmentBridge(db,()=>activeUser,PARENT_UID,TIM_UID);
+ // Tester les permissions AVANT toute modification.
+ let old=await attach.list('lesson',ent.TAG);
+ const added=[];
+ try{
+  for(let i=0;i<binaries.length;i++){
+   const b=binaries[i];
+   const digest=await crypto.subtle.digest('SHA-256',await b.blob.arrayBuffer());
+   const hash=Array.from(new Uint8Array(digest),v=>v.toString(16).padStart(2,'0')).join('');
+   const oldMatch=old.find(x=>x.fileName===b.filename&&x.sha256===hash);
+   if(oldMatch){progress('PDF déjà présent et identique : '+(i+1)+'/'+binaries.length);continue;}
+   progress('Stockage sécurisé du PDF '+(i+1)+'/'+binaries.length+'…');
+   const id=await attach.upload('lesson',ent.TAG,b.blob,b.filename);
+   old=await attach.list('lesson',ent.TAG);
+   const meta=old.find(x=>x.id===id);
+   if(!meta||meta.sha256!==hash)throw Error('Contrôle du PDF échoué : '+b.filename);
+   added.push(meta);
+  }
+  // Vérifier tous les fichiers AVANT de remplacer le cours dans Firebase.
+  for(const b of binaries){
+   const digest=await crypto.subtle.digest('SHA-256',await b.blob.arrayBuffer());
+   const hash=Array.from(new Uint8Array(digest),v=>v.toString(16).padStart(2,'0')).join('');
+   if(!old.some(x=>x.fileName===b.filename&&x.sha256===hash))throw Error('PDF manquant après copie : '+b.filename);
+  }
+  progress('9 fichiers vérifiés : mise à jour privée du classeur espagnol…');
+  const mainRef=doc(db,'content','main'),snap=await getDoc(mainRef);
+  if(!snap.exists())throw Error('Classeur Firebase principal introuvable.');
+  const previous=decodeFromFirestore(snap.data());
+  if(!Array.isArray(previous.lessons)||!Array.isArray(previous.exercises))throw Error('Structure Firebase inattendue.');
+  const spanish=x=>String(x?.subject||'').toLowerCase().includes('espagnol');
+  const next={
+   ...previous,
+   lessons:previous.lessons.filter(x=>!spanish(x)),
+   exercises:previous.exercises.filter(x=>!spanish(x)),
+   timeline:Array.isArray(previous.timeline)?previous.timeline.filter(x=>!Array.isArray(x)||!/espagnol/i.test(String(x[3]||''))):previous.timeline,
+   spanishEnt:{
+    lessons:pack.lessons,homework:pack.homework,dates:pack.dates,index:pack.index,
+    collectedAt:pack.report.date_collecte||new Date().toISOString(),
+    source:'ENT Skolengo — données originales Termux',version:1
+   }
+  };
+  const bytes=new TextEncoder().encode(JSON.stringify(next)).length;
+  if(bytes>850000)throw Error('Classeur trop volumineux pour Firebase ('+bytes+' octets). Aucune leçon modifiée.');
+  await setDoc(mainRef,encodeForFirestore(next));
+  const confirmed=decodeFromFirestore((await getDoc(mainRef)).data());
+  if(!confirmed?.spanishEnt||confirmed.spanishEnt.lessons.length!==counts.lessons||confirmed.spanishEnt.index.length!==counts.pdfs)
+   throw Error('Vérification après enregistrement impossible. Vérifier le contenu Parent.');
+  progress('Import ENT terminé : '+counts.lessons+' cours, '+counts.homework+' devoirs, '+counts.pdfs+' PDF.');
+  return true;
+ }catch(error){
+  // Ne jamais retirer des fichiers antérieurs : uniquement les nouveaux fichiers
+  // de CET essai, si la publication principale n'a pas été confirmée.
+  // Aucune suppression automatique : les éventuels fichiers sans rattachement
+  // seront conservés dans l'espace privé pour éviter toute perte.
+  throw error;
+ }
+}
+
 // Aucune installation automatique de cours hors ENT.
 
 async function saveAlertWebhook(url){
@@ -332,13 +399,20 @@ async function startSession(user){
  if(isParent){try{content=await loadCourseAdditions(content);}catch(e){console.warn('Extensions indisponibles :',e);}}
  else if(serverAdditions){const l=new Map(content.lessons.map(x=>[x.id,x]));const e=new Map(content.exercises.map(x=>[x.id,x]));const versions=(serverAdditions.lessons||[]).filter(item=>item?.id&&Array.isArray(item.blocks));for(const item of versions.filter(x=>!x.replacesId))l.set(item.id,item);for(const item of versions.filter(x=>x.replacesId).sort((a,b)=>String(a.savedAt||'').localeCompare(String(b.savedAt||'')))){if(/^[A-Za-z][A-Za-z0-9_-]{1,35}$/.test(item.replacesId))l.set(item.replacesId,{...item,id:item.replacesId,revisionId:item.id});}for(const item of serverAdditions.exercises||[])if(item?.id&&Array.isArray(item.questions))e.set(item.id,item);content={...content,lessons:[...l.values()],exercises:[...e.values()]};}
  content=window.TIM_APPLY_SPANISH_NOV05?.(content)||content;
- const missionPlan=setupMissions(missionSource,new Date(),window.TIM_SPANISH_EDU);
+ const missionInput=window.TIM_SPANISH_ENT_EXACT?{...missionSource,exercises:missionSource.exercises.filter(e=>!String(e.subject||'').toLowerCase().includes('espagnol'))}:missionSource;
+ const missionPlan=setupMissions(missionInput,new Date(),window.TIM_SPANISH_EDU);
  window.__TIM_CHALLENGES=missionPlan.meta;
  // Le défi du jour est supprimé : aucune génération ni prévisualisation.
  window.__TIM_NEXT_DAILY=null;
  const existingMissionIds=new Set(content.exercises.map(x=>x.id));
  const retainedExercises=content.exercises.filter(x=>!/^DAY_20\d{6}(?:_\d{2})?$/.test(String(x.id||'')));
  content={...content,exercises:[...retainedExercises,...missionPlan.exercises.filter(x=>!existingMissionIds.has(x.id))]};
+ // Dans la matière espagnole, seuls les documents ENT exacts sont désormais visibles.
+ // Les anciennes notes restent archivées dans Firestore pour le parent.
+ if(window.TIM_SPANISH_ENT_EXACT){
+   const notSpanish=x=>!String(x?.subject||'').toLowerCase().includes('espagnol');
+   content={...content,lessons:content.lessons.filter(notSpanish),exercises:content.exercises.filter(notSpanish)};
+ }
  // Tim never receives answer fields through the application state.
  // Server-side storage/rules must also be migrated before production release.
  if(!isParent){
@@ -441,6 +515,7 @@ async function startSession(user){
   publish:publishCoursePack,
   saveLesson:saveEditableLesson,
   attachments:makeAttachmentBridge(db,()=>activeUser,PARENT_UID,TIM_UID),
+  saveSpanishEnt,
   diagnose:runFirebaseDiagnostic,
   saveAlertWebhook,
   readAlertWebhook,
