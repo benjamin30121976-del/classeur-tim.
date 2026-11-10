@@ -1,4 +1,5 @@
 /* Guides « Exercice BIS » pour les 13 devoirs espagnols de l'ENT 2026.
+   Les cases de suivi sont interactives et mémorisées localement.
    Les consignes ENT/PDF restent la source officielle et sont inchangées.
    Ces guides expliquent la méthode mais ne remplacent pas les exercices,
    ne donnent aucune correction de copie et ne créent aucune note ou XP.
@@ -45,7 +46,40 @@ function render(container,id){
  h(body,'Attention');
  addBullets(body,data.tips);
  h(body,'Je vérifie avant de terminer');
- const ul=styled(node('ul'),css.list);for(const text of data.check){const li=styled(node('li'),'margin:9px 0;line-height:1.5');li.append(node('span','□ '+text));ul.append(li);}body.append(ul);
+ // Les cases sont de vrais contrôles accessibles et non des carrés Unicode.
+ // Avancement local uniquement : ni réponse notée, ni résultat ENT.
+ const role=window.__TIM_PARENT?'parent':window.__TIM_GUEST?'invité':'tim';
+ const key='tim_es_ent_bis_checklist_v2_'+role+'_'+String(id);
+ let restored=[];
+ try{
+  const saved=JSON.parse(window.localStorage.getItem(key)||'[]');
+  if(Array.isArray(saved)&&saved.length===data.check.length)restored=saved.map(Boolean);
+ }catch(e){}
+ const ul=styled(node('ul'),'list-style:none;margin:10px 0 12px;padding:0');
+ const boxes=[];
+ const counter=styled(node('p'),'margin:9px 0;font-weight:800;color:#283e87;line-height:1.5');
+ const update=()=>{
+  const values=boxes.map(box=>box.checked);
+  const count=values.filter(Boolean).length;
+  counter.textContent=count+' / '+boxes.length+' étapes vérifiées'+(count===boxes.length?' — tout est coché':'');
+  try{window.localStorage.setItem(key,JSON.stringify(values));}
+  catch(e){counter.textContent+=' — sauvegarde indisponible sur cet appareil';}
+ };
+ data.check.forEach((text,i)=>{
+  const li=styled(node('li'),'list-style:none;margin:9px 0');
+  const label=styled(node('label'),'display:flex;align-items:flex-start;gap:12px;background:white;border:1px solid #d9def0;border-radius:10px;padding:12px 10px;cursor:pointer;font-size:15px;line-height:1.5;color:#243044');
+  const input=node('input');
+  input.type='checkbox';input.checked=!!restored[i];
+  input.setAttribute('aria-label','Étape '+(i+1)+' : '+text);
+  input.style.cssText='appearance:auto!important;display:block!important;position:static!important;opacity:1!important;visibility:visible!important;flex:0 0 22px;width:22px;height:22px;margin:1px 0 0;accent-color:#2b4390;cursor:pointer;pointer-events:auto!important';
+  const textSpan=styled(node('span',text),'flex:1 1 auto;min-width:0');
+  label.append(input,textSpan);li.append(label);ul.append(li);boxes.push(input);
+  input.addEventListener('change',update);
+ });
+ body.append(styled(node('p','Coche une case quand tu as réellement effectué l’étape. Ce suivi n’est pas une réponse à l’exercice et ne donne ni note ni XP.'),'margin:8px 0;color:#485b77;font-size:14px;line-height:1.5'),ul,counter);
+ const initial=boxes.map(box=>box.checked).filter(Boolean).length;
+ counter.textContent=initial+' / '+boxes.length+' étapes vérifiées'+(initial===boxes.length?' — tout est coché':'');
+
  body.append(styled(node('p','Pour répondre aux vraies questions, garde l’exercice ENT et son PDF ouverts juste au-dessus. Les exemples BIS sont des modèles inventés, pas un corrigé de la photocopie.'),'font-size:14px;color:#485a77;line-height:1.55;margin-top:15px'));
  details.append(body);container.append(details);return true;
 }
