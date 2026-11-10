@@ -30,13 +30,17 @@ function options(correct,pool,seed){
 
 const STOPWORDS=new Set(['de','del','el','la','los','las','un','una','unos','unas','en','con','por','para','que','me','te','se','mi','tu','su','y','o','a','al','es']);
 function tokens(value){return Array.from(String(value).matchAll(/[a-záéíóúüñ]+/gi),m=>({word:m[0],at:m.index}));}
+const VERB_FORMS=new Set(Object.values(VERBS).flatMap(v=>v.forms).map(x=>String(x).toLocaleLowerCase('es')));
+const COMMON_VERBS=new Set(['gusta','gustan','vivo','vive','naci','nací','tengo','tiene','quiero','prefiero','hablo']);
 function blank(es){
  const words=tokens(es);
  if(!words.length)return null;
- const selected=[...words].reverse().find(t=>t.word.length>=3&&!STOPWORDS.has(t.word.toLocaleLowerCase('es')))||
-    [...words].reverse().find(t=>t.word.length>=2);
- if(!selected)return null;
- return {stem:es.slice(0,selected.at)+'______'+es.slice(selected.at+selected.word.length),answer:selected.word};
+ const chosen=words.find(t=>VERB_FORMS.has(t.word.toLocaleLowerCase('es'))||COMMON_VERBS.has(t.word.toLocaleLowerCase('es')))||
+   words.find(t=>t.word.length>=3&&!STOPWORDS.has(t.word.toLocaleLowerCase('es'))&&t.word[0]===t.word[0].toLowerCase())||
+   words.find(t=>t.word.length>=3&&!STOPWORDS.has(t.word.toLocaleLowerCase('es')))||
+   words[words.length-1];
+ if(!chosen)return null;
+ return {stem:es.slice(0,chosen.at)+'______'+es.slice(chosen.at+chosen.word.length),answer:chosen.word};
 }
 function norm(value){
  return String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
