@@ -223,16 +223,19 @@ async function getSpanishEntTrainingTask(db,uid,payload){
 }
 async function submitSpanishEntTraining(db,uid,payload){
  permitted(uid,'tim');
- const id=payload?.id,answers=payload?.answers;
+ const id=payload?.id,answers=payload?.answers,translationsUsed=payload?.translationsUsed;
  if(!spanishEntTrainingId(id)||!Array.isArray(answers)||answers.length!==10||
-   answers.some(v=>!Number.isInteger(v)||v<0||v>3))throw new ApiFault(400,'invalid-answers');
+    !Array.isArray(translationsUsed)||translationsUsed.length!==10||
+    translationsUsed.some(v=>typeof v!=='boolean')||
+    answers.some(v=>!((typeof v==='string'&&v.trim().length>0&&v.length<=200)||(Number.isInteger(v)&&v>=0&&v<=3))))
+   throw new ApiFault(400,'invalid-answers');
  let result;
- try{result=gradeSpanishEntTask(id,answers);}catch{throw new ApiFault(400,'invalid-answers');}
+ try{result=gradeSpanishEntTask(id,answers,translationsUsed);}catch{throw new ApiFault(400,'invalid-answers');}
  const transaction=await db.transaction();
  const old=await db.get('spanishEntTrainingAttempts/'+id,transaction);
  if(old)throw new ApiFault(409,'already-exists');
  await db.commit([createWrite('spanishEntTrainingAttempts/'+id,{
-  ...result,authorUid:uid,subject:'Espagnol',answers,version:1
+  ...result,authorUid:uid,subject:'Espagnol',answers,translationsUsed,version:2
  },NOW)],transaction);
  return {...result,submitted:true,submittedAt:new Date().toISOString()};
 }
@@ -247,7 +250,7 @@ async function getSpanishEntTrainingProgress(db,uid,payload){
  const docs=await db.list('spanishEntTrainingAttempts',100);
  return {attempts:docs.filter(r=>spanishEntTrainingId(r.id)&&r.data?.authorUid===TIM_UID)
    .map(r=>({id:r.id,lessonId:r.data.lessonId,series:r.data.series,
-    score:r.data.score,total:r.data.total,submittedAt:r.data.submittedAt||'',xp:0}))
+    score:r.data.score,total:r.data.total,translationHelpCount:r.data.translationHelpCount||0,submittedAt:r.data.submittedAt||'',xp:0}))
    .sort((a,b)=>String(b.submittedAt).localeCompare(String(a.submittedAt)))};
 }
 
