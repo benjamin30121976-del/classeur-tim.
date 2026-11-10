@@ -40,9 +40,12 @@
  background:linear-gradient(90deg,#21c7efb8,#7fe9ffc9);
  box-shadow:0 0 13px 6px #27c9fa88,inset 0 1px 4px #e9ffff;
  border-radius:100px;transition:transform .5s ease}
-.xp-art-meter{position:absolute;z-index:3;top:5%;left:2.5%;border-radius:7px;
- background:#08192edb;border:1px solid #e6b96c;color:#fff9e4;
- padding:6px 10px;font-size:clamp(10px,1.8vw,16px);font-weight:900;text-shadow:0 1px #071326;}
+/* Le compteur reste entre la tête du loup (à gauche) et la lune (à droite).
+   Ne jamais masquer le visage ni l'astre dans l'illustration originale. */
+.xp-art-meter{position:absolute;z-index:3;top:5%;left:auto;right:22%;border-radius:7px;
+ background:#08192ee8;border:1px solid #e6b96c;color:#fff9e4;
+ padding:6px 10px;font-size:clamp(10px,1.8vw,16px);font-weight:900;text-shadow:0 1px #071326;
+ white-space:nowrap;max-width:56%;box-sizing:border-box;}
 .xp-reward-tiers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:11px 0}
 .xp-reward-tier{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:9px 12px;
  border-radius:11px;background:#152e4a;border:1px solid #456e94;color:#cae7f7;font-size:14px}
@@ -62,7 +65,7 @@
  .daily-xp-rule strong{font-size:12px}
  .xp-showcase{padding:12px 9px 14px}
  .xp-showcase-top{gap:5px}
- .xp-art-meter{left:1.5%;top:2%;padding:3px 6px;font-size:10px;border-radius:5px}
+ .xp-art-meter{left:auto;right:24%;top:3%;padding:3px 7px;font-size:clamp(9px,2.5vw,12px);border-radius:5px}
  .xp-reward-tier{padding:8px 6px;font-size:12px;flex-direction:column;gap:2px}
  .xp-art-fill{box-shadow:0 0 6px 2px #27c9fa88}
 }
