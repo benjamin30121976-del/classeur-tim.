@@ -20,6 +20,23 @@ async function getStatus(){
  }
  if(!activated)throw Error('Le serveur Cloudflare ne signale pas encore son activation. Vérifier le dernier déploiement.');
  console.log('OK : API Cloudflare en production, secret détecté.');
+
+ const perfectDisplay=[
+  ['espagnol-simplifie.js','Aucune correction nécessaire'],
+  ['app.js','aucune correction nécessaire'],
+  ['maths-parcours.js','Aucune correction nécessaire'],
+  ['espagnol-training-ui.js','Aucune correction nécessaire']
+ ];
+ for(const [file,phrase] of perfectDisplay){
+  let matched=false;
+  for(let pass=0;pass<12;pass++){
+   const r=await fetch(URL+'/'+file+'?verification=perfect-20261110',{cache:'no-store'});
+   if(r.ok()&&(await r.text()).includes(phrase)){matched=true;break;}
+   await pause(5000);
+  }
+  if(!matched)throw Error('Version publiée non confirmée pour '+file);
+ }
+ console.log('OK : les quatre interfaces de résultat sans correction pour une note parfaite sont publiées sur Cloudflare.');
  const guest=await fetch(URL+'/api/tim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'getParentReport',payload:{}})});
  if(guest.status!==401)throw Error('Accès anonyme inattendu '+guest.status);
  console.log('OK : l’API refuse les connexions anonymes.');
