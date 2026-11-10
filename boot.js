@@ -421,7 +421,7 @@ async function fetchAttempts(content){
  list.sort((a,b)=>a.date.localeCompare(b.date));window.__CLOUD_ATTEMPTS=list;return list;
 }
 
-function stopApp(){if(window.__TIM_GUEST)return;document.body.classList.remove('ready');access.hidden=false;appLoaded=false;window.__CLOUD_ATTEMPTS=[];window.__TIM_SPANISH_PROGRESS={status:'loading',attempts:[]};
+function stopApp(){if(window.__TIM_GUEST)return;document.body.classList.remove('ready');access.hidden=false;appLoaded=false;window.__CLOUD_ATTEMPTS=[];window.__TIM_SPANISH_ENT_XP=[];window.__TIM_SPANISH_PROGRESS={status:'loading',attempts:[]};
   for(const id of ['content-import','content-import-button','import-logout'])document.getElementById(id)?.remove();
   access.querySelector('h1').textContent="Accède à tes missions";
   access.querySelector('p').textContent='Connexion réservée à Tim et à son parent.';
@@ -553,7 +553,8 @@ async function startSession(user){
       answers.some(v=>!((Number.isInteger(v)&&v>=0&&v<=3)||(typeof v==='string'&&v.trim().length>0&&v.length<=200))))
       throw Error('Réponses incomplètes.');
    const r=await cloudCallable('submitSpanishEntTraining')({id,answers,translationsUsed});
-   if(!r.data?.submitted||!Number.isFinite(r.data.score)||r.data.score<0||r.data.score>10||r.data.xp!==0||
+   if(!r.data?.submitted||!Number.isFinite(r.data.score)||r.data.score<0||r.data.score>10||
+      ![0,0.5,1].includes(r.data.xp)||
       !Array.isArray(r.data.items)||r.data.items.length!==10||
       !Number.isInteger(r.data.translationHelpCount))
       throw Error('La validation n’a pas été confirmée.');
@@ -564,7 +565,15 @@ async function startSession(user){
    const r=await cloudCallable('getSpanishEntTrainingProgress')(id?{id}:{});
    if(id){
     if(!('attempt'in (r.data||{})))throw Error('Copie indisponible.');
-   }else if(!Array.isArray(r.data?.attempts))throw Error('Suivi des exercices indisponible.');
+   }else{
+    if(!Array.isArray(r.data?.attempts))throw Error('Suivi des exercices indisponible.');
+    // Les XP des entraînements ENT sont comptés séparément des anciens
+    // devoirs, sans jamais modifier leurs tentatives ou leur barème.
+    window.__TIM_SPANISH_ENT_XP=r.data.attempts.map(item=>({
+     id:item.id,xp:Number(item.xp||0),submittedAt:item.submittedAt||''
+    }));
+    document.dispatchEvent(new Event('tim-spanish-ent-xp-progress'));
+   }
    return r.data;
   },
   trainingProgress:loadSpanishProgress,
@@ -623,6 +632,12 @@ async function startSession(user){
   notifyAlert,
   logout:async()=>signOut(auth)
  };
+ // Les XP des exercices ENT doivent apparaître dès la connexion, même
+ // si Tim n'a pas encore ouvert la matière Espagnol.
+ window.__TIM_SPANISH_ENT_XP=[];
+ window.__TIM_BRIDGE.spanishEntTrainingProgress().catch(error=>{
+  console.warn('XP des exercices espagnols indisponibles :',error.code||error.message);
+ });
  // Le suivi espagnol charge sans bloquer l'ouverture de la session.
  loadSpanishProgress().catch(()=>{});
  if(isParent){
