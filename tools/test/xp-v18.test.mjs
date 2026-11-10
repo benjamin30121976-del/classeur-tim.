@@ -60,3 +60,17 @@ test('Trois défis quotidiens distincts, un seul samedi et dimanche',()=>{
  assert.equal(sat.exercises.filter(e=>e.kind==='sunday').length,1);
 });
 
+
+test('Samedi et dimanche restent disponibles sans les 28 anciens exercices',()=>{
+ const empty={lessons:[],exercises:[]};
+ const saturday=setupMissions(empty,new Date('2026-11-14T12:00:00Z'),SPANISH_COURSE);
+ const sunday=setupMissions(empty,new Date('2026-11-15T12:00:00Z'),SPANISH_COURSE);
+ const weekly=saturday.exercises.find(e=>e.kind==='weekly');
+ const sundayMission=sunday.exercises.find(e=>e.kind==='sunday');
+ assert.ok(weekly,'Défi de samedi absent sans exercices anciens');
+ assert.ok(sundayMission,'Défi de dimanche absent sans exercices anciens');
+ assert.equal(weekly.questions.length,20);
+ assert.equal(sundayMission.questions.length,20);
+ assert.equal(new Set(weekly.questions.map(q=>q.sourceId)).size,20);
+ assert.equal(new Set(sundayMission.questions.map(q=>q.sourceId)).size,20);
+});
