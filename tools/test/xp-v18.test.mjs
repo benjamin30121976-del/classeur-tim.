@@ -31,7 +31,7 @@ test('Le défi d’essai du dimanche 8 novembre est définitivement annulé',()=
  const beforeMidnight=setupMissions(course,new Date('2026-11-08T22:59:00Z'),SPANISH_COURSE);
  const afterMidnight=setupMissions(course,new Date('2026-11-08T23:00:00Z'),SPANISH_COURSE);
  assert.deepEqual(beforeMidnight.meta.dailyIds,[]);
- assert.equal(afterMidnight.meta.dailyIds.length,24);
+ assert.equal(afterMidnight.meta.dailyIds.length,3);
  assert.ok(!beforeMidnight.exercises.some(e=>e.id==='DAY_20261108_01'));
  assert.ok(!afterMidnight.exercises.some(e=>e.id==='DAY_20261108_01'));
 });
@@ -42,10 +42,11 @@ test('Trois défis quotidiens distincts, un seul samedi et dimanche',()=>{
  const first=setupMissions(content,new Date('2026-11-09T12:00:00Z'),SPANISH_COURSE);
  const again=setupMissions(content,new Date('2026-11-09T12:00:00Z'),SPANISH_COURSE);
  assert.deepEqual(first,again);
- assert.equal(first.meta.dailyIds.length,24);
+ assert.equal(first.meta.dailyIds.length,3);
  assert.equal(first.exercises.filter(e=>e.kind==='weekly').length,1);
  assert.equal(first.exercises.filter(e=>e.kind==='sunday').length,1);
- assert.equal(first.exercises.filter(e=>e.kind==='daily').length,24);
+ assert.equal(first.exercises.filter(e=>e.kind==='daily').length,3);
+ assert.equal(new Set(first.exercises.filter(e=>e.kind==='daily').flatMap(e=>e.questions.map(q=>q.sourceId))).size,30);
  const nextTwo=first.exercises.filter(e=>e.kind==='daily').slice(1,3);
  assert.equal(new Set(nextTwo.flatMap(e=>e.questions.map(q=>q.sourceId))).size,20);
  assert.equal(nextTwo[0].questions.length,10);
