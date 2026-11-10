@@ -97,12 +97,16 @@ export function buildMission(id,content,curriculum=null){
   const current=available.filter(x=>x.stamp&&x.stamp>=start&&x.stamp<=end);
   const older=available.filter(x=>!current.includes(x));
   chosen=[...sorted(current,id),...sorted(older,id)].slice(0,20);
+  // Les anciens exercices E01-E18/R01-R10 ont été retirés : les défis
+  // restent complets grâce au vocabulaire des 13 leçons actuelles.
+  if(chosen.length<20)chosen=select(curriculumPool(curriculum),20,id);
   kind='weekly';period=start;label='Grand défi du samedi · Semaine et révisions';
  }else if(sm){
   const on=sm[1]+'-'+sm[2]+'-'+sm[3];
   if(!validDate(on)||dateUTC(on).getUTCDay()!==0)return null;
   const start=(Number(on.slice(5,7))>=9?on.slice(0,4):String(Number(on.slice(0,4))-1))+'-09-01';
   chosen=select(pool(content,on).filter(x=>!x.stamp||x.stamp>=start),20,id);
+  if(chosen.length<20)chosen=select(curriculumPool(curriculum),20,id);
   kind='sunday';period=on;label='Grand défi du dimanche · Depuis la rentrée';
  }
  if(chosen.length!==(kind==='daily'?10:20))return null;
