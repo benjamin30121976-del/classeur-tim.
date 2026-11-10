@@ -9,6 +9,20 @@ function datesSorted(pack){return Object.entries(pack.dates||{}).sort((a,b)=>Str
 function escFiles(name){return String(name||'').split('/').pop();}
 function getHrefFile(info){return escFiles(info.nom_dans_archive||'');}
 function lessonHtml(doc){return (doc.included||[]).filter(i=>i.type==='lessonContent').map(i=>String(i.attributes?.html||'')).filter(Boolean).join('\n');}
+function courseTitle(doc){
+ const official=asText(lessonHtml(doc)).replace(/\s+/g,' ').trim();
+ const withoutDate=official.replace(/^(?:lunes|martes|mi[eé]rcoles|jueves|viernes)\s+\d{1,2}\s*\/\s*\d{1,2}\s*:\s*/i,'').trim();
+ if(!withoutDate)return 'Aucun contenu de cours publié par l’ENT';
+ return withoutDate.slice(0,110)+(withoutDate.length>110?'…':'');
+}
+function deadline(value){
+ const original=String(value||'');
+ if(!original)return 'Échéance non précisée';
+ const parsed=new Date(original);
+ if(Number.isNaN(parsed.getTime()))return original;
+ return new Intl.DateTimeFormat('fr-FR',{timeZone:'Europe/Paris',day:'2-digit',month:'long',year:'numeric',hour:'2-digit',minute:'2-digit'}).format(parsed)+' (heure française)';
+}
+
 function lessonHomeworkIds(doc){
  const rel=doc.data?.relationships||{},ids=new Set();
  for(const k of ['toDoForTheLesson','toDoAfterTheLesson']){
@@ -133,7 +147,8 @@ async function render(root,opts={}){
   for(const h of pack.homework){
    const attrs=h.data.attributes||{};
    const block=$('section');block.style.cssText='padding:10px;margin:10px 0;border:1px solid #485d78;border-radius:10px';
-   block.append($('strong','','Devoir ENT '+h.data.id+' — '+String(attrs.dueDateTime||attrs.dueDate||'Échéance non publiée')));
+   block.append($('strong','','Devoir ENT '+h.data.id+' — pour le '+deadline(attrs.dueDateTime||attrs.dueDate)));
+   block.append($('small','',' Référence ENT '+h.data.id));
    txt(block,asText([attrs.title,attrs.html,...(h.included||[]).filter(i=>i.type==='pedagogicContent').map(i=>i.attributes?.html)].filter(Boolean).join('\n')));
    appendFileLinks(block,pack.index.filter(i=>(i.rattache_a||[]).some(x=>x.type==='travail_associe'&&x.id===h.data.id)),metas);
    assignments.append(block);
@@ -143,7 +158,8 @@ async function render(root,opts={}){
   for(const [id,date] of datesSorted(pack)){
    const l=lessonsById.get(id);if(!l)continue;
    const panel=$('details');panel.style.cssText='padding:10px;margin:10px 0;border:1px solid #4e6280;border-radius:12px';
-   panel.append($('summary','',date+' — '+String(l.data.attributes?.title||'Espagnol LV2')));
+   panel.append($('summary','',date+' — '+courseTitle(l)));
+   panel.append($('small','','Intitulé ENT : '+String(l.data.attributes?.title||'Espagnol LV2')+' · Réf. '+id));
    const time=l.data.attributes||{};
    panel.append($('small','',String(time.startDateTime||'')+' — '+String(time.endDateTime||'')));
    panel.append($('h4','','Activité de séance — texte original ENT'));
@@ -208,7 +224,15 @@ async function render(root,opts={}){
    await bridge.saveSpanishEnt(loaded.pack,loaded.binary,(msg)=>{status.textContent=msg;});
    status.textContent='Import terminé. Actualisation du classeur…';
    window.location.reload();
-  }catch(e){status.textContent='IMPORT INTERROMPU : '+e.message;}
+  }catch(e){
+   status.textContent='IMPORT INTERROMPU : '+e.message;
+   if(/permission|autorisation|accès refusé/i.test(e.message)){
+    const a=$('a','','Ouvrir les règles Firebase du classeur');
+    a.href='https://console.firebase.google.com/project/classeur-ba3e7/firestore/rules';
+    a.target='_blank';a.rel='noopener noreferrer';
+    status.append(document.createTextNode(' — '));status.append(a);
+   }
+  }
   finally{act.disabled=false;}
  });
  uploader.append(act,status);root.append(uploader);
