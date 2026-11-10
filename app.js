@@ -537,7 +537,7 @@ function xpBar(a){const ex=exerciseBy(a.id);return window.TIM_XP.contribution(a,
 function xpBarV9(a){return window.TIM_XP.contributionV9(a,exerciseBy(a.id));}
 function xpBarV10(a){return window.TIM_XP.contributionV10(a,exerciseBy(a.id));}
 function xpBarV5(a){if(a.needsReview||!a.total)return 0;const p=Math.max(0,Math.min(1,a.score/a.total));let v=p===1?10:p>=.8?6:p>=.6?2:p>=.4?-2:-5;if((a.id.startsWith('DAY_')||a.id.startsWith('WEEK_')||a.id.startsWith('SUNDAY_'))&&p>=.8)v+=5;return v;}
-function xpInfo(done=attempts()){
+function coreXpInfo(done=attempts()){
  if(done.every(a=>typeof a.xp==='number')){
   const ordered=[...done].sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
   let total=0,peak=0;const week=window.TIM_XP.monday(parisDay(new Date()));let weekly=0;
@@ -563,6 +563,34 @@ function xpInfo(done=attempts()){
  const level=Math.floor(peak/100)+1;
  return {total,perfect,peak,level,inLevel:Math.max(0,Math.min(100,total-(level-1)*100)),done:done.length,week:thisWeek,rawWeek:weeks.get(current)||0,reward,legacy,weeklyPass};
 }
+/* Les XP d'entraînement Espagnol sont enregistrés dans une collection dédiée.
+   Leur ajout à l'affichage ne recalcule pas ni ne remplace les XP historiques. */
+function xpInfo(done=attempts()){
+ const base=coreXpInfo(done);
+ const spanish=Array.isArray(window.__TIM_SPANISH_ENT_XP)?window.__TIM_SPANISH_ENT_XP:[];
+ const unique=new Map();
+ for(const a of spanish){
+  if(!/^ESE_L(?:0[1-9]|1[0-3])_0[1-3]$/.test(String(a.id||'')))continue;
+  if(![0,0.5,1].includes(a.xp))continue;
+  unique.set(a.id,a);
+ }
+ let spanishTotal=0,spanishWeek=0;
+ const current=window.TIM_XP.monday(parisDay(new Date()));
+ for(const a of unique.values()){
+  const date=parisDay(a.submittedAt);
+  // Seules les tentatives effectivement datées et enregistrées sont
+  // incluses au total comme dans le compteur du service Cloudflare.
+  if(!date)continue;
+  spanishTotal+=a.xp;
+  if(window.TIM_XP.monday(date)===current)spanishWeek+=a.xp;
+ }
+ const total=base.total+spanishTotal,week=base.week+spanishWeek;
+ const peak=Math.max(base.peak,total),level=Math.floor(peak/100)+1;
+ return {...base,total,week,rawWeek:base.rawWeek+spanishWeek,
+  reward:window.TIM_XP.reward(Math.max(0,week)),peak,level,
+  inLevel:Math.max(0,Math.min(100,total-(level-1)*100)),
+  done:base.done+unique.size};
+}
 function makeXPPanel(){const st=xpInfo(),p=E('div','xp-panel');
  p.innerHTML='<div class="xp-panel-head"><strong>⭐ Niveau '+st.level+'</strong><span>'+st.total+' XP au total</span></div><div class="xp-track" role="progressbar" aria-label="Progression vers le prochain niveau" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+st.inLevel+'"><div class="xp-track-fill" style="width:'+st.inLevel+'%"></div></div><div class="xp-small">'+st.inLevel+' / 100 XP pour le prochain niveau.</div>';
  const badges=E('div','trophies'),entries=[['🏅 Premier quiz',st.done>=1],['🎯 5 quiz',st.done>=5],['🏆 Sans faute',st.perfect>=1],['⭐ 100 XP',st.peak>=100],['🔥 500 XP',st.peak>=500]];
@@ -577,6 +605,7 @@ function makeXPPanel(){const st=xpInfo(),p=E('div','xp-panel');
  return p;
 }
 function refreshXPHeader(){const el=document.getElementById('xp-header');if(!el||window.__TIM_GUEST)return;const s=xpInfo();el.innerHTML='<span>⭐ '+s.total+' XP</span><small>Niveau '+s.level+'</small>';}
+document.addEventListener('tim-spanish-ent-xp-progress',()=>refreshXPHeader());
 function makeRewardsTile(){const b=E('button','reward-open');b.type='button';
  const text=E('span');text.append(E('strong','','🎁 MES RÉCOMPENSES'),E('small','','Comment fonctionnent les XP, les défis et les gains ?'));
  b.append(text,E('span','','›'));b.addEventListener('click',()=>{
