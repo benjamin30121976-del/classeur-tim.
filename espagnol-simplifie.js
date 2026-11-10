@@ -30,10 +30,11 @@ const ST={
 };
 const el=(tag,text,cls)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=text;if(cls)n.className=cls;return n;};
 const css=(node,style)=>{node.style.cssText=style;return node;};
-const say=(es)=>{
- const button=css(el('button','▶ Écouter'),ST.button+';min-height:36px;padding:6px 11px;font-size:13px');
- button.type='button';button.setAttribute('data-say-es',es);
- button.setAttribute('aria-label','Écouter en espagnol : '+es);return button;
+const say=(text,language='es',label)=>{
+ const french=language==='fr';
+ const button=css(el('button',label||(french?'▶ Écouter en français':'▶ Écouter en espagnol')),ST.button+';min-height:36px;padding:6px 11px;font-size:13px');
+ button.type='button';button.setAttribute(french?'data-say-fr':'data-say-es',text);
+ button.setAttribute('aria-label',(french?'Écouter en français : ':'Écouter en espagnol : ')+text);return button;
 };
 const button=(label)=>{const b=css(el('button',label),ST.button);b.type='button';return b;};
 const p=(parent,text,style)=>{const n=el('p',text);n.style.cssText=style||ST.muted;parent.append(n);return n;};
@@ -123,10 +124,13 @@ function renderQuestions(slot,task,lessonNumber,after,ensureLesson){
   instruction.style.cssText='line-height:1.55;font-size:16px;font-weight:850;color:#27334d;margin:8px 0 12px';
   field.append(instruction);
   const controls=css(el('div'),'display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin:6px 0 13px');
-  controls.append(say(q.instructionEs));
+  controls.append(say(q.speechEs||q.instructionEs,'es','▶ Écouter la consigne espagnole'));
   const translate=button('Traduire en français');
   translate.style.cssText=ST.button+';background:#e7edfa!important;color:#243b79!important;border:1px solid #9cadd1!important;font-size:13px;min-height:36px;padding:7px 11px';
-  const french=css(el('p',q.instructionFr||'Traduction indisponible'),'font-size:14px;line-height:1.55;color:#27384f;background:#edf4ff;padding:10px;border-radius:9px;margin:7px 0');
+  const french=css(el('div'),'font-size:14px;line-height:1.55;color:#27384f;background:#edf4ff;padding:10px;border-radius:9px;margin:7px 0');
+  const frenchText=el('p',q.instructionFr||'Traduction indisponible');
+  frenchText.setAttribute('lang','fr');frenchText.style.cssText='margin:0 0 9px;line-height:1.55';
+  french.append(frenchText,say(q.speechFr||q.instructionFr,'fr','▶ Écouter la traduction française'));
   french.hidden=true;french.style.display='none';
   translate.setAttribute('aria-expanded','false');
   translate.addEventListener('click',()=>{
@@ -137,6 +141,18 @@ function renderQuestions(slot,task,lessonNumber,after,ensureLesson){
    if(!french.hidden)translationsUsed[i]=true;
   });
   controls.append(translate);field.append(controls,french);
+  if(q.sourceEs){
+   const expression=css(el('p'),'font-size:17px;font-weight:800;line-height:1.55;color:#273b85;margin:9px 0 6px');
+   expression.textContent='Expresión: '+q.sourceEs;
+   expression.setAttribute('lang','es');
+   field.append(expression,say(q.sourceEs,'es','▶ Écouter l’expression espagnole'));
+  }
+  if(q.sourceFr){
+   const source=css(el('p'),q.kind==='gap'?'Sens recherché en français : '+q.sourceFr:'Expression à traduire en espagnol : '+q.sourceFr);
+   source.style.cssText='font-size:15px;line-height:1.55;color:#283a53;background:#eff4ff;padding:10px;border-radius:9px;margin:10px 0';
+   source.setAttribute('lang','fr');
+   field.append(source,say(q.sourceFr,'fr','▶ Écouter la phrase française'));
+  }
   if(q.stem){
    const phrase=css(el('p',q.stem),'font-size:18px;font-weight:800;line-height:1.5;white-space:pre-wrap;color:#253b85;margin:13px 0');
    phrase.setAttribute('lang','es');field.append(phrase);
