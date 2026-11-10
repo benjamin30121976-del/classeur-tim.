@@ -64,15 +64,13 @@ function evaluateAnswer(answer,expected,kind){
  const actual=basicText(answer),wanted=basicText(expected);
  if(actual===wanted)return {points:1,feedback:'Bonne réponse : orthographe et ponctuation correctes.'};
  const actualWords=withoutQuestionMarks(actual),wantedWords=withoutQuestionMarks(wanted);
- const onlyPunctuation=actualWords===wantedWords;
  const baseEquivalent=withoutVowelAccents(actualWords)===withoutVowelAccents(wantedWords);
  if(baseEquivalent){
   const accentIssue=actualWords!==wantedWords;
-  const punctuationIssue=actual!==wanted;
+  const punctuationIssue=withoutVowelAccents(actual)!==withoutVowelAccents(wanted);
   const details=[];
   if(accentIssue)details.push('Vérifie les accents : ils doivent être placés sur les bonnes voyelles.');
-  if(punctuationIssue&&!onlyPunctuation)details.push('Vérifie la ponctuation espagnole, notamment ¿ au début et ? à la fin d’une question.');
-  if(onlyPunctuation&&punctuationIssue)details.push('Vérifie les signes de ponctuation : une question espagnole commence par ¿ et se termine par ?.');
+  if(punctuationIssue)details.push('Vérifie les signes de ponctuation : une question espagnole commence par ¿ et se termine par ?.');
   return {points:0.5,feedback:'Réponse comprise, mais une erreur de forme reste à corriger. '+details.join(' ')};
  }
  return {points:0,feedback:'Le mot, la conjugaison ou l’ordre des mots ne correspond pas à la réponse attendue. Attention : ñ et n sont deux lettres différentes.'};
