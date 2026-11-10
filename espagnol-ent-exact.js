@@ -177,7 +177,8 @@ function appendFileLinks(root,refs,metas,translations){
   nameBox.style.cssText='flex:1;min-width:0;overflow-wrap:anywhere';
   row.append(nameBox);
   if(meta){
-   const b=$('button','','Voir le PDF');b.type='button';
+   const b=$('button','ent-es-pdf-open','Voir le PDF');b.type='button';
+   b.style.cssText='background:#173d75!important;color:#ffffff!important;border:2px solid #a7d2ff!important;border-radius:10px!important;font-weight:800!important;font-size:16px!important;line-height:1.3!important;padding:12px 18px!important;min-height:48px!important;min-width:138px!important;white-space:normal!important;text-shadow:none!important;opacity:1!important;cursor:pointer!important;';
    b.addEventListener('click',async()=>{
     const pdfWindow=window.open('about:blank','_blank');
     b.disabled=true;b.textContent='Ouverture…';
