@@ -58,29 +58,41 @@ function inlineLesson(holder,entId,renderL01){
  bis.style.margin='0';bis.style.border='none';bis.style.background='#f7f9ff';
  holder.append(bis);
 }
+function spellingWarning(parent){
+ const note=css(el('aside'),'background:#fff4df;color:#613f17;border:1px solid #d8aa53;border-left:5px solid #a76a1b;border-radius:11px;padding:12px 14px;margin:13px 0;line-height:1.55;font-size:15px');
+ note.setAttribute('role','note');
+ note.append(css(el('strong','Attention à l’orthographe et à la ponctuation espagnoles'),'display:block;margin-bottom:5px;font-weight:850'));
+ note.append(el('p','Attention : relis tes réponses avant de valider ! Vérifie les accents (á, é, í, ó, ú), la lettre ñ, la conjugaison et l’ordre des mots. Pour une question en espagnol, place « ¿ » au début et « ? » à la fin. Les majuscules ne sont pas pénalisées.'));
+ note.lastElementChild.style.margin='0';
+ parent.append(note);
+}
 function drawCorrection(slot,report,lessonNumber,ensureLesson){
  slot.replaceChildren();
  const score=Number(report.score),items=Array.isArray(report.items)?report.items:[];
  const wrapper=css(el('section',undefined,'tim-es-training-result'),ST.panel);
- const title=css(el('h4','Résultat de l’exercice — '+score+' / 10 réponses correctes'),ST.title);
+ const title=css(el('h4','Résultat de l’exercice — '+String(score).replace('.',',')+' / 10 points'),ST.title);
  wrapper.append(title);
  p(wrapper,'Ce résultat mesure la compréhension de la leçon. Ce n’est pas une note scolaire. Aucune récompense XP n’est associée à cet exercice.');
  if(Number.isInteger(report.translationHelpCount))p(wrapper,'Traduction française consultée pour '+report.translationHelpCount+' question(s) sur 10. Aucune pénalité.','font-weight:850;color:#263d89;font-size:15px');
  const incorrect=items.filter(x=>x.correct===false);
+ const partial=items.filter(x=>x.points===0.5);
+ const full=items.filter(x=>x.correct===true);
  const summary=el('p',incorrect.length?
-   incorrect.length+' réponse(s) à revoir. Les explications figurent sous chaque question.':
+   full.length+' réponse(s) correctes, '+partial.length+' partiellement correctes et '+(incorrect.length-partial.length)+' incorrectes. Les corrections sont expliquées ci-dessous.':
    'Toutes les réponses sont correctes.');
  summary.style.cssText='font-weight:850;color:#263a83;font-size:16px;line-height:1.5';
  wrapper.append(summary);
  items.forEach((item,i)=>{
-  const card=css(el('section'),ST.panel+';border-left:4px solid '+(item.correct?'#26836a':'#bd6244')+';margin:11px 0');
+  const points=Number.isFinite(item.points)?item.points:(item.correct?1:0);
+  const card=css(el('section'),ST.panel+';border-left:4px solid '+(points===1?'#26836a':points===0.5?'#b98a31':'#bd6244')+';margin:11px 0');
   const heading=el('strong',(i+1)+'. '+item.prompt);
   heading.style.cssText='display:block;font-size:15px;color:#25344e;line-height:1.5;margin-bottom:8px';
-  const status=el('strong',item.correct?'Réponse correcte':'Réponse incorrecte');
-  status.style.cssText='color:'+(item.correct?'#246d54':'#a5472d')+';display:block;margin:8px 0';
+  const status=el('strong',String(points).replace('.',',')+'/1 — '+(points===1?'Réponse correcte':points===0.5?'Réponse partiellement correcte':'Réponse incorrecte'));
+  status.style.cssText='color:'+(points===1?'#246d54':points===0.5?'#845b1b':'#a5472d')+';display:block;margin:8px 0';
   card.append(heading,status);
   p(card,'Ta réponse : '+String(item.response??'Non renseignée'),'font-size:15px;color:#333e58;margin:6px 0');
   if(!item.correct)p(card,'Réponse attendue : '+item.expected,'font-size:15px;font-weight:850;color:#263a83;margin:6px 0');
+  if(item.feedback)p(card,item.feedback,'font-size:14px;font-weight:700;color:#364f72;line-height:1.6;margin:9px 0');
   p(card,item.explanation||'Relis la partie correspondante de la leçon.','font-size:14px;color:#495975;line-height:1.6;margin:9px 0');
   if(typeof item.translationUsed==='boolean')p(card,item.translationUsed?'Consigne traduite en français pendant l’exercice.':'Consigne lue sans traduction française.','font-size:13px;color:#53647e;margin:8px 0');
   wrapper.append(card);
@@ -97,6 +109,7 @@ function renderQuestions(slot,task,lessonNumber,after,ensureLesson){
  const wrapper=css(el('section'),ST.panel);
  const head=css(el('h4',task.title),ST.title);wrapper.append(head);
  p(wrapper,'Les consignes sont en espagnol. Tu peux écouter chaque consigne ou afficher sa traduction française. Cette aide ne retire aucun point. Une seule validation par exercice.');
+ spellingWarning(wrapper);
  if(!isTim()){
   p(wrapper,'Seul Tim peut répondre. Le Parent peut relire les questions, les réponses et les corrections.','font-weight:750;color:#6b4c2a');
  }
@@ -152,12 +165,13 @@ function renderQuestions(slot,task,lessonNumber,after,ensureLesson){
  }
  if(isTim()){
   p(wrapper,'Réponds aux 10 questions avant de valider. La correction apparaît immédiatement après l’envoi ; tu pourras la relire, mais pas refaire l’exercice.','font-weight:750;color:#384a65');
+  spellingWarning(wrapper);
   const confirmButton=button('Valider mes 10 réponses — une seule fois');
   const feedback=p(wrapper,'','font-weight:750;color:#9a4b36;margin:12px 0');
   confirmButton.onclick=async()=>{
    const answers=readers.map(read=>read());
    if(answers.some(a=>a===null||a===-1||a==='')){feedback.textContent='Réponds aux dix questions avant de valider.';return;}
-   if(!window.confirm('Confirmer la validation définitive de cet exercice ?'))return;
+   if(!window.confirm('Avant de valider, as-tu vérifié les accents, la lettre ñ, la conjugaison et les signes « ¿ » et « ? » ?\\nUne fois validé, cet exercice ne pourra plus être recommencé.'))return;
    confirmButton.disabled=true;confirmButton.textContent='Enregistrement sécurisé…';feedback.textContent='';
    try{
     const report=await window.__TIM_BRIDGE.spanishEntTrainingSubmit(task.id,answers,translationsUsed);
