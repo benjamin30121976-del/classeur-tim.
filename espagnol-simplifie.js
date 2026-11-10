@@ -83,6 +83,8 @@ function drawCorrection(slot,report,lessonNumber,ensureLesson){
    'Toutes les réponses sont correctes.');
  summary.style.cssText='font-weight:850;color:#263a83;font-size:16px;line-height:1.5';
  wrapper.append(summary);
+ const weak=Object.entries(report.errorCounts||{}).filter(([name,count])=>name!=='réussi'&&Number(count)>0);
+ if(weak.length)p(wrapper,'À retravailler : '+weak.map(([name,count])=>name+' ('+count+' question'+(count>1?'s':'')+')').join(' ; ')+'.','font-size:15px;font-weight:800;color:#314975;line-height:1.55');
  items.forEach((item,i)=>{
   const points=Number.isFinite(item.points)?item.points:(item.correct?1:0);
   const card=css(el('section'),ST.panel+';border-left:4px solid '+(points===1?'#26836a':points===0.5?'#b98a31':'#bd6244')+';margin:11px 0');
@@ -93,14 +95,20 @@ function drawCorrection(slot,report,lessonNumber,ensureLesson){
   card.append(heading,status);
   p(card,'Ta réponse : '+String(item.response??'Non renseignée'),'font-size:15px;color:#333e58;margin:6px 0');
   if(!item.correct)p(card,'Réponse attendue : '+item.expected,'font-size:15px;font-weight:850;color:#263a83;margin:6px 0');
+  if(points<1&&item.category)p(card,'Type d’erreur : '+item.category,'font-size:13px;color:#8c4c28;font-weight:800;margin:8px 0');
   if(item.feedback)p(card,item.feedback,'font-size:14px;font-weight:700;color:#364f72;line-height:1.6;margin:9px 0');
-  p(card,item.explanation||'Relis la partie correspondante de la leçon.','font-size:14px;color:#495975;line-height:1.6;margin:9px 0');
+  if(item.explanation){
+   const rule=el('strong',points===1?'Pourquoi c’est correct :':'La règle à retenir :');
+   rule.style.cssText='display:block;color:#263d7a;margin-top:8px;font-size:14px';
+   card.append(rule);
+   p(card,item.explanation,'font-size:14px;color:#495975;line-height:1.6;margin:5px 0 9px');
+  }
   if(typeof item.translationUsed==='boolean')p(card,item.translationUsed?'Consigne traduite en français pendant l’exercice.':'Consigne lue sans traduction française.','font-size:13px;color:#53647e;margin:8px 0');
   wrapper.append(card);
  });
  const back=button('Revoir la leçon pour comprendre mes erreurs');
  back.addEventListener('click',()=>{
-  ensureLesson();wrapper.scrollIntoView?.({behavior:'smooth',block:'start'});
+  ensureLesson();
  });
  wrapper.append(back);
  slot.append(wrapper);
@@ -225,6 +233,15 @@ function summaryOf(attempts,where){
   const good=attempts.reduce((s,a)=>s+(Number(a.score)||0),0);
   const total=attempts.reduce((s,a)=>s+(Number(a.total)||10),0);
   p(result,'Bilan après '+complete+' exercices : '+good+' réponses correctes sur '+total+'.','font-weight:850;font-size:16px;color:#263d89');
+  const difficulties=new Map();
+  for(const attempt of attempts)for(const [name,count] of Object.entries(attempt.errorCounts||{})){
+   if(name!=='réussi'&&Number.isFinite(Number(count))&&Number(count)>0)
+    difficulties.set(name,(difficulties.get(name)||0)+Number(count));
+  }
+  if(difficulties.size){
+   const ordered=[...difficulties.entries()].sort((a,b)=>b[1]-a[1]);
+   p(result,'Difficultés observées : '+ordered.map(([name,count])=>name+' ('+count+')').join(' ; ')+'.','font-weight:750;font-size:14px;color:#435776');
+  }
   const helped=attempts.filter(a=>Number.isInteger(a.translationHelpCount));
   if(helped.length)p(result,'Aide pour comprendre les consignes : '+helped.reduce((n,a)=>n+a.translationHelpCount,0)+' question(s) traduite(s) sur '+(helped.length*10)+' questions réalisées.','font-size:15px;color:#34445f;line-height:1.55');
   const weak=attempts.filter(a=>Number(a.score)<7);
