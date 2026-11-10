@@ -281,7 +281,14 @@ function renderExerciseIndex(){
 }
 function answerValue(input){if(input.type==='radio'){const chosen=document.querySelector('input[name="'+input.name+'"]:checked');return chosen?chosen.value:'';}return input.value;}
 function freeOrTextAnswer(question,answer){if(question.type==='free')return null;const correct=question.type==='mc'?String(question.right)===String(answer):[question.right,...(question.also||[])].some(x=>norm(x)===norm(answer));return correct;}
-function openExercise(id){const ex=exerciseBy(id);if(!ex)return;const existing=attemptFor(id),completedChallenge=Boolean(existing&&['daily','weekly','sunday'].includes(ex.kind));window.__TIM_OPEN_EXERCISE_ID=id;page('exercices');document.getElementById('exercise-index').classList.add('hide');const root=clear(document.getElementById('exercise-detail'));root.classList.add('active');root.append(button('← Retour aux exercices',()=>{root.classList.remove('active');document.getElementById('exercise-index').classList.remove('hide');renderExerciseIndex();scrollTop();},'plain back'));root.append(badge(ex.level),E('h2','',ex.title),E('p','intro',exerciseDescription(ex)),E('p','small','Leçon associée : '+(lessonBy(ex.lesson)?.title||'Voir les cours de la matière')));root.append(button('Voir la leçon correspondante',()=>openLesson(ex.lesson),'plain'));
+function openExercise(id){const ex=exerciseBy(id);if(!ex)return;const existing=attemptFor(id),completedChallenge=Boolean(existing&&['daily','weekly','sunday'].includes(ex.kind));window.__TIM_OPEN_EXERCISE_ID=id;page('exercices');document.getElementById('exercise-index').classList.add('hide');const root=clear(document.getElementById('exercise-detail'));root.classList.add('active');root.append(button('← Retour aux exercices',()=>{root.classList.remove('active');document.getElementById('exercise-index').classList.remove('hide');renderExerciseIndex();scrollTop();},'plain back'));root.append(badge(ex.level),E('h2','',ex.title),E('p','intro',exerciseDescription(ex)));
+if(ex.kind==='daily'&&ex.questionBank==='spanish-ent-v1'){
+ root.append(E('p','small','Révision de plusieurs leçons d’espagnol : vocabulaire, phrases, traduction et conjugaison.'));
+ root.append(button('Revoir les leçons d’espagnol',()=>{page('matieres');renderMatiere('Espagnol');},'plain'));
+}else{
+ root.append(E('p','small','Leçon associée : '+(lessonBy(ex.lesson)?.title||'Voir les cours de la matière')));
+ root.append(button('Voir la leçon correspondante',()=>openLesson(ex.lesson),'plain'));
+}
 if(ex.instructions&&!completedChallenge){const instructions=E('div','note info',ex.instructions);instructions.style.cssText='white-space:pre-line;font-size:16px;line-height:1.65;margin:12px 0;padding:16px;border:2px solid #e9b84a;border-radius:14px';root.append(instructions);}
 if(!completedChallenge)root.append(makeAttachmentPanel('exercise',ex.id));if(!window.__TIM_GUEST&&!ex.kind&&!attemptFor(ex.id)){
  const mode=window.TIM_EXERCISE.mode(ex);
@@ -386,15 +393,23 @@ function renderFeedback(ex,t,root){
   const q=ex.questions[i]||{},p=E('div','feedback');
   const given=q.type==='mc'?(q.options?.[Number(a.response)]??a.response):a.response;
   p.append(E('strong','',(i+1)+'. '+safe(a.question||q.q||'Question')),E('p','','Ta réponse : '+safe(given)));
-  if(a.correct!==null)p.append(E('p',a.correct?'correct':'wrong',a.correct?'Bonne réponse.':'Réponse à revoir.'));
+  if(a.correct!==null)p.append(E('p',a.correct?'correct':'wrong',a.correct?'Bonne réponse.':a.points===0.5?'Réponse presque correcte : 0,5/1 (accent ou ponctuation).':'Réponse à revoir.'));
   if(a.correct===false){
    p.append(E('p','correct','Réponse attendue : '+safe(a.expected)));
    const explanation=safe(a.explanation).trim()||'Compare les mots, leur ordre et les terminaisons avec la réponse attendue. Relis la leçon pour comprendre la règle.';
    p.append(E('p','subtle','Explication : '+explanation));
-   const source=safe(q.sourceId).split(':')[0];
-   const lessonId=DATA.exercises.find(item=>item.id===source)?.lesson||ex.lesson;
-   const lesson=lessonBy(lessonId);
-   if(lesson)p.append(button('Revoir la leçon : '+lesson.title,()=>openLesson(lesson.id),'plain'));
+   const spanishSource=ex.questionBank==='spanish-ent-v1'?
+    /^ESE_L(0[1-9]|1[0-3])_0[1-3]:\d+$/.exec(String(q.sourceId||'')):null;
+   if(spanishSource){
+    const num=Number(spanishSource[1]),lesson=window.TIM_SPANISH_SIMPLIFIED?.lessons?.[num-1];
+    if(lesson)p.append(button('Revoir la leçon '+num+' : '+lesson.name,
+      ()=>{page('matieres');renderMatiere('Espagnol',lesson.id);},'plain'));
+   }else{
+    const source=safe(q.sourceId).split(':')[0];
+    const lessonId=DATA.exercises.find(item=>item.id===source)?.lesson||ex.lesson;
+    const lesson=lessonBy(lessonId);
+    if(lesson)p.append(button('Revoir la leçon : '+lesson.title,()=>openLesson(lesson.id),'plain'));
+   }
   }else if(a.explanation)p.append(E('p','subtle','Explication : '+a.explanation));
   box.append(p);
  }
@@ -657,7 +672,12 @@ function dailyMissionPanel(){
  const content=E('div','daily-loup-content');
  content.append(E('p','daily-loup-eyebrow','MISSION · DU LUNDI AU VENDREDI'));
  content.append(E('h2','','DÉFI DU JOUR'));
- content.append(E('p','daily-loup-summary','3 défis possibles par jour · 10 questions chacun · une seule validation par défi.'));
+ const mixed=meta.dailyBankStatus==='mixed';
+ content.append(E('p','daily-loup-summary',mixed?
+  '3 défis par jour · 10 questions chacun · 2 QCM et 8 réponses écrites · une seule validation par défi.':
+  '3 défis possibles par jour · 10 questions chacun · une seule validation par défi.'));
+ if(!mixed&&meta.today>='2026-11-11'&&ids.length)content.append(
+  E('p','daily-loup-unavailable','Les nouveaux défis à réponses écrites sont momentanément indisponibles ; les défis classiques restent accessibles.'));
  const scores=E('div','daily-xp-scale');
  for(const [grade,award] of [['9–10/10','+3 XP'],['7–8/10','+2 XP'],['5–6/10','+1 XP'],['2–4/10','0 XP'],['0–1/10','−1 XP']]){
   const row=E('div','daily-xp-rule'+(award.startsWith('−')?' daily-xp-loss':''));
@@ -752,11 +772,11 @@ function renderMatieres(){
  }root.append(wrap);
  if(SCHOOL_SUBJECTS.some(s=>!DATA.lessons.some(l=>(l.subject||'Espagnol')===s)))root.append(E('div','note','Les autres matières ne seront remplies qu’à partir des documents réels de Tim (ENT, cahiers et devoirs). Aucun cours ne sera inventé.'));
 }
-function renderMatiere(name){
+function renderMatiere(name,openLessonId=null){
  setMatieresSelectionHeader(false);
  const root=clear(document.getElementById('matieres-content'));
  if(name==='Espagnol'&&window.TIM_SPANISH_ENT_EXACT){
-  window.TIM_SPANISH_ENT_EXACT.render(root,{back:renderMatieres}).catch(e=>root.append(E('p','notice','Espagnol indisponible : '+e.message)));
+  window.TIM_SPANISH_ENT_EXACT.render(root,{back:renderMatieres,openLessonId}).catch(e=>root.append(E('p','notice','Espagnol indisponible : '+e.message)));
   return;
  }
  if(name==='Espagnol'&&window.TIM_SPANISH_PATH&&window.TIM_SPANISH_EDU){
