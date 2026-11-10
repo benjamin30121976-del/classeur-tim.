@@ -118,6 +118,23 @@ async function getStatus(){
   console.log('AUDIT TABLEAU PARENT UNIFIE : '+JSON.stringify(unified));
   if(!unified.visible||!unified.historical||!unified.export||unified.total<1)throw Error('Dashboard Parent centralisé incomplet');
   console.log('OK : le compte Parent retrouve le QCM historique, le filtre et l’export dans le tableau centralisé.');
+  // Vérifier qu'une copie conservée est relisible avec ses dix réponses.
+  const qcm=page.locator('#parent-content .tim-parent-unified article').filter({hasText:'QCM 1'}).first();
+  await qcm.locator('summary').first().evaluate(el=>el.click());
+  await page.waitForFunction(()=>document.querySelector('#parent-content .tim-parent-unified article details[open]')?.querySelectorAll('.separated').length===10,null,{timeout:18000});
+  const saved=await page.evaluate(async()=>{
+    const {getApp}=await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js');
+    const {getFirestore,doc,getDoc}=await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js');
+    const db=getFirestore(getApp()),main=await getDoc(doc(db,'content','main'));
+    const expected=new Set([...Array.from({length:18},(_,i)=>'E'+String(i+1).padStart(2,'0')),...Array.from({length:10},(_,i)=>'R'+String(i+1).padStart(2,'0'))]);
+    return {oldCount:(main.data()?.exercises||[]).filter(e=>expected.has(e.id)).length,
+      storedQcm:(await getDoc(doc(db,'privateAttempts','SPQ_L01_01'))).exists(),
+      readQuestions:document.querySelector('#parent-content .tim-parent-unified article details[open]')?.querySelectorAll('.separated').length||0};
+  });
+  console.log('AUDIT APRÈS NETTOYAGE : '+JSON.stringify(saved));
+  if(saved.oldCount!==0||!saved.storedQcm||saved.readQuestions!==10)
+   throw Error('Suppression anciens exercices ou copie QCM détaillée non confirmée');
+
 
   if(process.env.TIM_STUDENT_EMAIL&&process.env.TIM_STUDENT_PASSWORD){
    const timPage=await browser.newPage({viewport:{width:390,height:844},locale:'fr-FR'});
