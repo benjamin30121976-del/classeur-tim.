@@ -38,6 +38,53 @@ function asText(raw){
  dom.querySelectorAll('script,style,iframe,object,embed').forEach(x=>x.remove());
  return (dom.body.textContent||'').replace(/\n{3,}/g,'\n\n').trim();
 }
+// Les traductions sont chargees depuis Firebase prive, jamais depuis GitHub public.
+function homeworkOriginal(doc){
+ const attrs=doc.data?.attributes||{};
+ return [attrs.title,attrs.html,...(doc.included||[]).filter(i=>i.type==='pedagogicContent').map(i=>i.attributes?.html)].filter(Boolean).map(String).join('\n');
+}
+async function hashOriginal(source){
+ const buf=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(String(source||'')));
+ return Array.from(new Uint8Array(buf),b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function validateTranslations(pack,translations){
+ validate(pack);
+ if(!translations||translations.schema!=='tim-spanish-ent-translations-v1'||translations.language!=='fr')problem('Ce fichier ne correspond pas au modèle de traduction française ENT.');
+ const lessonIds=new Set(pack.lessons.map(x=>String(x.data.id)));
+ const homeIds=new Set(pack.homework.map(x=>String(x.data.id)));
+ if(!translations.courses||!translations.homework||
+   Object.keys(translations.courses).length!==lessonIds.size||
+   Object.keys(translations.homework).length!==homeIds.size)
+  problem('Traductions incomplètes : toutes les leçons et tous les devoirs doivent être présents.');
+ for(const doc of pack.lessons){
+  const id=String(doc.data.id),entry=translations.courses[id];
+  if(!entry||typeof entry.fr!=='string'||!entry.fr.trim()||entry.fr.length>10000||
+     !/^[a-f0-9]{64}$/.test(String(entry.sha256||'')))
+   problem('Traduction de cours invalide : '+id);
+  const originalHash=await hashOriginal(lessonHtml(doc));
+  if(originalHash!==entry.sha256)problem('La traduction ne correspond pas au cours ENT '+id+'. Vérifier que le fichier concerne la bonne collecte.');
+ }
+ for(const doc of pack.homework){
+  const id=String(doc.data.id),entry=translations.homework[id];
+  if(!entry||typeof entry.fr!=='string'||!entry.fr.trim()||entry.fr.length>10000||
+     !/^[a-f0-9]{64}$/.test(String(entry.sha256||'')))
+   problem('Traduction du devoir invalide : '+id);
+  const originalHash=await hashOriginal(homeworkOriginal(doc));
+  if(originalHash!==entry.sha256)problem('La traduction ne correspond pas au devoir ENT '+id+'.');
+ }
+ return {lessons:lessonIds.size,homework:homeIds.size};
+}
+function appendFrench(root,entries,id){
+ const item=entries?.[String(id)];
+ if(!item?.fr)return;
+ const title=$('h4','ent-es-traduction-title','Traduction française');
+ title.style.cssText='color:#a6f2df;margin:16px 0 6px';
+ root.append(title);
+ txt(root,item.fr);
+ const note=$('small','','Traduction d’aide à la lecture — le texte original de l’ENT reste inchangé.');
+ note.style.cssText='display:block;opacity:.8;margin-bottom:10px';
+ root.append(note);
+}
 function txt(root,str){
  const pre=$('pre','ent-es-pre',String(str||'')||'[Aucun texte publié dans l’ENT]');
  pre.style.cssText='white-space:pre-wrap;overflow-wrap:anywhere;font:inherit;background:#152039;color:#f3f6fc;padding:12px;border:1px solid #40516d;border-radius:10px;max-height:500px;overflow:auto';
@@ -129,18 +176,48 @@ async function render(root,opts={}){
  }
  root.append($('h2','','Espagnol — cours et devoirs originaux ENT'));
  const bridge=window.__TIM_BRIDGE,pack=window.__TIM_DATA?.metadata?.spanishEnt;
+ const translations=pack?.translations;
  const isParent=!!window.__TIM_PARENT&&!window.__TIM_GUEST;
  if(!pack){
   root.append($('p','','Aucune collecte ENT complète n’est encore installée dans Firebase. Les anciennes leçons BIS et entraînements ne sont pas affichés dans cette matière.'));
  }else{
   const c=validate(pack);
   root.append($('p','','Source : ENT du collège Frédéric Desmons — '+c.lessons+' séances, '+c.homework+' devoirs associés, '+c.pdfs+' PDF. Mise à jour : '+(pack.collectedAt||'date non fournie')+'.'));
+  root.append($('p','','Traduction française : '+(translations?.language==='fr'?'disponible pour '+Object.keys(translations.courses||{}).length+' séances et '+Object.keys(translations.homework||{}).length+' devoirs, sur les comptes Parent et Tim.':'à installer depuis le compte Parent.')));
+
   const pstatus=$('p','','Vérification des pièces jointes privées…');root.append(pstatus);
   let metas=[];
   try{metas=await bridge.attachments.list('lesson',TAG);
       const have=pack.index.filter(i=>metas.some(m=>m.fileName===getHrefFile(i))).length;
       pstatus.textContent='PDF originaux disponibles dans Firebase : '+have+'/'+pack.index.length;
   }catch(e){pstatus.textContent='Accès aux PDF privés impossible : '+e.message;}
+  if(isParent){
+   const controls=$('section','ent-es-translations-import');
+   controls.style.cssText='padding:14px;margin:16px 0;border:1px solid #638f87;border-radius:12px;background:#11342d';
+   controls.append($('h3','','Parent — ajouter les traductions françaises'));
+   controls.append($('p','','Un seul fichier de traduction est nécessaire. Les cours et PDF originaux restent inchangés. Après installation, Tim et Parent verront la même traduction.'));
+   const file=$('input');file.type='file';file.accept='.json,application/json';
+   file.setAttribute('aria-label','Traductions françaises JSON');
+   file.style.cssText='display:block;max-width:100%;margin:10px 0';
+   const action=$('button','btn','Installer les traductions françaises');action.type='button';
+   const feedback=$('p','','Aucune traduction modifiée pour le moment.');
+   action.addEventListener('click',async()=>{
+    action.disabled=true;feedback.textContent='Vérification des traductions…';
+    try{
+     if(!file.files[0])problem('Choisis le fichier de traduction française au format JSON.');
+     if(file.files[0].size>100000)problem('Fichier de traduction trop volumineux.');
+     const payload=JSON.parse(await file.files[0].text());
+     const result=await validateTranslations(pack,payload);
+     feedback.textContent='Correspondance ENT vérifiée : '+result.lessons+' séances et '+result.homework+' devoirs. Enregistrement privé dans Firebase…';
+     await bridge.saveSpanishTranslations(payload);
+     feedback.textContent='Traductions enregistrées pour Parent et Tim. Actualisation…';
+     window.location.reload();
+    }catch(e){feedback.textContent='Traductions non installées : '+String(e.message||e);}
+    finally{action.disabled=false;}
+   });
+   controls.append(file,action,feedback);
+   root.append(controls);
+  }
   const lessonsById=new Map(pack.lessons.map(l=>[String(l.data.id),l]));
   const homeworkById=new Map(pack.homework.map(h=>[String(h.data.id),h]));
   const assignments=$('details');assignments.append($('summary','','Les '+pack.homework.length+' devoirs / consignes officiels ENT'));
@@ -150,6 +227,7 @@ async function render(root,opts={}){
    block.append($('strong','','Devoir ENT '+h.data.id+' — pour le '+deadline(attrs.dueDateTime||attrs.dueDate)));
    block.append($('small','',' Référence ENT '+h.data.id));
    txt(block,asText([attrs.title,attrs.html,...(h.included||[]).filter(i=>i.type==='pedagogicContent').map(i=>i.attributes?.html)].filter(Boolean).join('\n')));
+   appendFrench(block,translations?.homework,h.data.id);
    appendFileLinks(block,pack.index.filter(i=>(i.rattache_a||[]).some(x=>x.type==='travail_associe'&&x.id===h.data.id)),metas);
    assignments.append(block);
   }
@@ -170,12 +248,14 @@ async function render(root,opts={}){
    panel.append($('small','',String(time.startDateTime||'')+' — '+String(time.endDateTime||'')));
    panel.append($('h4','','Activité de séance — texte original ENT'));
    txt(panel,asText(lessonHtml(l)));
+   appendFrench(panel,translations?.courses,id);
    const original=$('details');original.append($('summary','','Voir le texte HTML brut, identique à la source ENT'));
    txt(original,lessonHtml(l));panel.append(original);
    for(const hid of lessonHomeworkIds(l)){
     const h=homeworkById.get(hid);
     if(h){panel.append($('h4','','Travail associé ENT '+hid));const attrs=h.data.attributes||{};
       txt(panel,asText([attrs.title,attrs.html].filter(Boolean).join('\n')));
+      appendFrench(panel,translations?.homework,hid);
       appendFileLinks(panel,pack.index.filter(i=>(i.rattache_a||[]).some(x=>x.type==='travail_associe'&&x.id===hid)),metas);
     }
    }
@@ -243,5 +323,5 @@ async function render(root,opts={}){
  });
  uploader.append(act,status);root.append(uploader);
 }
-window.TIM_SPANISH_ENT_EXACT={render,parse:readTwoZips,validate,TAG};
+window.TIM_SPANISH_ENT_EXACT={render,parse:readTwoZips,validate,validateTranslations,TAG};
 })();
