@@ -103,8 +103,14 @@ export function explainSpanishResponse(q,response,mark,verbs,lesson){
   if(/^No /i.test(q.right)&&!/^No /i.test(String(response).trim()))
    return {category:'construction',feedback:'La négation « no » manque : sans elle, la phrase ne dit plus la même chose.',
      rule:'En espagnol, « no » précède généralement le verbe : « No tengo » = « Je n’ai pas ».'};
-  return {category:'traduction',feedback:'Cette phrase ne traduit pas encore « '+q.sourceFr+' ». Compare le sujet, le verbe et les compléments avec la réponse attendue.',
-    rule:'« '+q.sourceFr+' » → « '+q.right+' ». Repère notamment l’ordre des mots, le vocabulaire et les accords.'};
+  const expected=String(q.right),source=String(q.sourceFr||''),answer=String(response);
+  const shortExpression=expected.trim().split(/\s+/).length<=3;
+  if(shortExpression)return {category:'vocabulaire',
+    feedback:'Tu as écrit « '+answer+' ». Pour « '+source+' », la formulation attendue est « '+expected+' ».',
+    rule:'Retenir cette expression : « '+source+' » → « '+expected+' ». Compare les mots et leur orthographe.'};
+  return {category:'traduction',
+    feedback:'Tu as écrit « '+answer+' ». Pour traduire « '+source+' », il fallait écrire « '+expected+' ».',
+    rule:'Compare les mots importants et leur ordre dans « '+expected+' ». Vérifie les accords et la conjugaison lorsque la phrase en contient.'};
  }
  return {category:'vocabulaire',feedback:mark.feedback,rule:q.explanation};
 }
