@@ -128,7 +128,7 @@ async function render(root,opts={}){
   const back=$('button','btn','← Toutes les matières');back.onclick=opts.back;root.append(back);
  }
  root.append($('h2','','Espagnol — cours et devoirs originaux ENT'));
- const bridge=window.__TIM_BRIDGE,pack=window.__TIM_DATA?.spanishEnt;
+ const bridge=window.__TIM_BRIDGE,pack=window.__TIM_DATA?.metadata?.spanishEnt;
  const isParent=!!window.__TIM_PARENT&&!window.__TIM_GUEST;
  if(!pack){
   root.append($('p','','Aucune collecte ENT complète n’est encore installée dans Firebase. Les anciennes leçons BIS et entraînements ne sont pas affichés dans cette matière.'));
@@ -160,6 +160,12 @@ async function render(root,opts={}){
    const panel=$('details');panel.style.cssText='padding:10px;margin:10px 0;border:1px solid #4e6280;border-radius:12px';
    panel.append($('summary','',date+' — '+courseTitle(l)));
    panel.append($('small','','Intitulé ENT : '+String(l.data.attributes?.title||'Espagnol LV2')+' · Réf. '+id));
+   // Fiches attachées directement à la séance ENT, conservées à leur emplacement.
+   const lessonFiles=pack.index.filter(i=>(i.rattache_a||[]).some(x=>x.type==='cours'&&x.id===id));
+   if(lessonFiles.length){
+    panel.append($('h4','','Fiches originales du cours'));
+    appendFileLinks(panel,lessonFiles,metas);
+   }
    const time=l.data.attributes||{};
    panel.append($('small','',String(time.startDateTime||'')+' — '+String(time.endDateTime||'')));
    panel.append($('h4','','Activité de séance — texte original ENT'));
