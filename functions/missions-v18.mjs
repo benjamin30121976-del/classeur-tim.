@@ -46,7 +46,7 @@ function pool(content,on){
 }
 function curriculumPool(curriculum){
  if(!curriculum||typeof curriculum!=='object')return [];
- const entries=Object.entries(curriculum).filter(([id,lesson])=>/^L\d{2}$/.test(id)&&Array.isArray(lesson.pairs));
+ const entries=Object.entries(curriculum).filter(([id,lesson])=>/^L(?:0[1-9]|1[0-3])$/.test(id)&&Array.isArray(lesson.pairs));
  const out=[];
  for(const [id,lesson] of entries){
   const pairs=lesson.pairs.filter(p=>Array.isArray(p)&&p.length===2&&typeof p[0]==='string'&&typeof p[1]==='string');
@@ -83,9 +83,9 @@ export function buildMission(id,content,curriculum=null){
  if(dm){
   const on=dm[1]+'-'+dm[2]+'-'+dm[3],number=Number(dm[4]);
   if(!validDate(on)||[0,6].includes(dateUTC(on).getUTCDay())||number<1||number>DAILY_MISSION_COUNT)return null;
-  const source=pool(content,on),extra=curriculumPool(curriculum);
-  const seen=new Set(source.map(x=>x.id));
-  const available=[...source,...extra.filter(x=>!seen.has(x.id))];
+  // Le même référentiel est disponible dans le navigateur et au serveur.
+  // Ne pas mélanger avec les devoirs privés pour éviter tout décalage des réponses.
+  const available=curriculumPool(curriculum);
   chosen=select(available,DAILY_MISSION_COUNT*10,'DAY_'+on,(number-1)*10).slice(0,10);
   kind='daily';period=on;label='Défi du jour · Mission '+number+' / '+DAILY_MISSION_COUNT;
  }
