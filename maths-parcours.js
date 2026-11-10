@@ -172,12 +172,15 @@ function resultPage(record){
  const id=record.lessonId, x=lesson(id);selected=id;group=groupOfId(id);
  const hasCorrection=Array.isArray(record.items)&&record.items.length===record.total&&record.items.every(a=>a&&typeof a.explanation==='string'&&a.explanation.trim());
  const failures=hasCorrection?record.items.filter(a=>!a.correct):[];
+ const perfect=hasCorrection&&Number(record.score)===Number(record.total)&&Number(record.total)>0&&failures.length===0;
  draw(header('Résultat : '+cleanTitle(x?.title||id),'Exercice terminé définitivement. La note reste consultable dans le compte Parent.')+
  back('Retour aux sous-leçons')+
  '<section class="spx-panel"><h3>Ma note : '+esc(mark20(record))+'</h3><p>'+esc(record.submittedAt?'Résultat enregistré · 0 XP · une seule tentative':'Résultat validé · 0 XP · une seule tentative')+'</p>'+ 
  (!hasCorrection?'<p>Les explications détaillées sont momentanément indisponibles. Reviens consulter cette note ; tu ne dois pas refaire l’exercice.</p>':'')+
- (hasCorrection?(failures.length?'<p><strong>À revoir :</strong> '+failures.length+' question(s). Retourne à la leçon BIS de cette sous-leçon.</p>':'<p>Aucune erreur sur cet exercice.</p>'):'')+'</section>'+ 
- (hasCorrection?record.items:[]).map((a,i)=>'<section class="spx-panel math-correction '+(a.correct?'correct':'incorrect')+'"><h3>Question '+(i+1)+' : '+(a.correct?'Correct':'À revoir')+'</h3><p><strong>'+esc(a.prompt)+'</strong></p><p>Réponse de Tim : '+esc(a.response)+'</p>'+ 
+ (hasCorrection?(failures.length?'<p><strong>À revoir :</strong> '+failures.length+' question(s). Retourne à la leçon BIS de cette sous-leçon.</p>':'<p>Toutes les réponses sont correctes. Aucune correction nécessaire.</p>'):'')+'</section>'+ 
+ (hasCorrection?'<details class="spx-panel math-exercise-review"><summary>Revoir mon exercice — questions et réponses</summary>'+
+  record.items.map((a,i)=>'<p><strong>Question '+(i+1)+' : '+esc(a.prompt)+'</strong></p><p>Ma réponse : '+esc(a.response)+'</p>').join('')+'</details>':'')+
+ (hasCorrection&&!perfect?record.items.map((a,i)=>({a,i})).filter(x=>!x.a.correct):[]).map(({a,i})=>'<section class="spx-panel math-correction incorrect"><h3>Question '+(i+1)+' : À revoir</h3><p><strong>'+esc(a.prompt)+'</strong></p><p>Réponse de Tim : '+esc(a.response)+'</p>'+ 
  (!a.correct?'<p>Réponse attendue : <strong>'+esc(a.expected)+'</strong></p>':'')+
  '<p>'+esc(a.explanation)+'</p></section>').join('')+
  '<section class="spx-panel"><h3>Revoir la sous-leçon</h3>'+btn('data-math-bis',id,'2 · Leçon BIS')+btn('data-math-help',id,'3 · Je n’ai pas compris')+'</section>',()=>category(group));
