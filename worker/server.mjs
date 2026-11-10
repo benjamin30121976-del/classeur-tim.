@@ -8,6 +8,7 @@ import {rawPoints,cappedPoints} from '../functions/xp.mjs';
 import {buildMission,isMissionId,isMissionOpen} from '../functions/missions-v18.mjs';
 import {SPANISH_COURSE} from '../functions/spanish-training-curriculum.mjs';
 import {mathId,mathTask,mathPublicTask,gradeMathTask} from './maths-training-curriculum.mjs';
+import {spanishEntTrainingId,spanishEntTask,spanishEntPublicTask,gradeSpanishEntTask} from './spanish-ent-training.mjs';
 
 const PRIVATE_FIELDS=new Set(['right','also','why','expected','answer','answers','answerKey','answerKeys','solution','solutions','correction','corrections','explanation','rubric']);
 function sanitize(value){
@@ -207,7 +208,53 @@ export async function getMathTrainingProgress(db,uid){
    .map(x=>({...x.data,id:x.id,xp:0})).sort((a,b)=>String(b.submittedAt||'').localeCompare(String(a.submittedAt||'')))};
 }
 
+
+/* Parcours Espagnol : résultats immédiats, zéro XP et tentative unique.
+   Les questions sont publiques seulement après authentification, les clés
+   de correction restent dans le serveur et ne sont renvoyées qu'après
+   la validation enregistrée dans Firestore. */
+async function getSpanishEntTrainingTask(db,uid,payload){
+ allowedFamily(uid);
+ const id=payload?.id;
+ if(!spanishEntTrainingId(id))throw new ApiFault(400,'invalid-exercise');
+ const task=spanishEntPublicTask(id);
+ const saved=await db.get('spanishEntTrainingAttempts/'+id);
+ return {task,completed:Boolean(saved&&saved.authorUid===TIM_UID)};
+}
+async function submitSpanishEntTraining(db,uid,payload){
+ permitted(uid,'tim');
+ const id=payload?.id,answers=payload?.answers;
+ if(!spanishEntTrainingId(id)||!Array.isArray(answers)||answers.length!==10||
+   answers.some(v=>!Number.isInteger(v)||v<0||v>3))throw new ApiFault(400,'invalid-answers');
+ let result;
+ try{result=gradeSpanishEntTask(id,answers);}catch{throw new ApiFault(400,'invalid-answers');}
+ const transaction=await db.transaction();
+ const old=await db.get('spanishEntTrainingAttempts/'+id,transaction);
+ if(old)throw new ApiFault(409,'already-exists');
+ await db.commit([createWrite('spanishEntTrainingAttempts/'+id,{
+  ...result,authorUid:uid,subject:'Espagnol',answers,version:1
+ },NOW)],transaction);
+ return {...result,submitted:true,submittedAt:new Date().toISOString()};
+}
+async function getSpanishEntTrainingProgress(db,uid,payload){
+ allowedFamily(uid);
+ const id=payload?.id;
+ if(id!==undefined && id!==null){
+  if(!spanishEntTrainingId(id))throw new ApiFault(400,'invalid-exercise');
+  const saved=await db.get('spanishEntTrainingAttempts/'+id);
+  return {attempt:saved?.authorUid===TIM_UID?{...saved,id,xp:0}:null};
+ }
+ const docs=await db.list('spanishEntTrainingAttempts',100);
+ return {attempts:docs.filter(r=>spanishEntTrainingId(r.id)&&r.data?.authorUid===TIM_UID)
+   .map(r=>({id:r.id,lessonId:r.data.lessonId,series:r.data.series,
+    score:r.data.score,total:r.data.total,submittedAt:r.data.submittedAt||'',xp:0}))
+   .sort((a,b)=>String(b.submittedAt).localeCompare(String(a.submittedAt)))};
+}
+
 const ACTIONS={
+ getSpanishEntTrainingTask:getSpanishEntTrainingTask,
+ submitSpanishEntTraining:submitSpanishEntTraining,
+ getSpanishEntTrainingProgress:getSpanishEntTrainingProgress,
  getMathTrainingTask:getMathTrainingTask,
  submitMathTraining:submitMathTraining,
  getMathTrainingProgress:getMathTrainingProgress,
@@ -242,4 +289,4 @@ export async function handleRequest(request,env){
   return respond({error:code},status);
  }
 }
-export const TESTABLE={sanitize,resolveExercise,submitExercise,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress};
+export const TESTABLE={sanitize,resolveExercise,submitExercise,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
