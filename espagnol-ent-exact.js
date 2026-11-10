@@ -9,6 +9,13 @@ function datesSorted(pack){return Object.entries(pack.dates||{}).sort((a,b)=>Str
 function escFiles(name){return String(name||'').split('/').pop();}
 function getHrefFile(info){return escFiles(info.nom_dans_archive||'');}
 function lessonHtml(doc){return (doc.included||[]).filter(i=>i.type==='lessonContent').map(i=>String(i.attributes?.html||'')).filter(Boolean).join('\n');}
+function frenchPreview(raw,max=125){
+ let value=String(raw||'').replace(/\s+/g,' ').trim();
+ value=value.replace(/^(Lundi|Mardi|Mercredi|Jeudi|Vendredi|Samedi|Dimanche)\s+\d{1,2}(?:er)?\s+[^:]{2,24}:\s*/i,'');
+ if(!value)return 'Traduction française non disponible';
+ if(value.length>max)value=value.slice(0,max-1).replace(/\s+\S*$/,'')+'…';
+ return value;
+}
 function courseTitle(doc){
  const official=asText(lessonHtml(doc)).replace(/\s+/g,' ').trim();
  const withoutDate=official.replace(/^(?:lunes|martes|mi[eé]rcoles|jueves|viernes)\s+\d{1,2}\s*\/\s*\d{1,2}\s*:\s*/i,'').trim();
@@ -153,7 +160,10 @@ function appendFileLinks(root,refs,metas){
   const meta=metas.find(x=>x.fileName===name);
   const row=$('div','ent-es-file');
   row.style.cssText='display:flex;gap:10px;align-items:center;margin:6px 0';
-  row.append($('span','','PDF · '+String(info.nom_ENT||name)));
+  const originalName=String(info.nom_ENT||name);
+  const nameBox=$('span','','Fiche PDF ENT · '+originalName);
+  nameBox.style.cssText='flex:1;min-width:0;overflow-wrap:anywhere';
+  row.append(nameBox);
   if(meta){
    const b=$('button','','Ouvrir');b.type='button';
    b.addEventListener('click',async()=>{
@@ -163,7 +173,7 @@ function appendFileLinks(root,refs,metas){
      const url=URL.createObjectURL(blob);const link=$('a');link.href=url;link.target='_blank';link.rel='noopener noreferrer';link.download=info.nom_ENT||name;
      link.click();setTimeout(()=>URL.revokeObjectURL(url),60000);
     }catch(e){alert('Lecture du PDF impossible : '+e.message)}
-    finally{b.disabled=false;b.textContent='Ouvrir';}
+    finally{b.disabled=false;b.textContent='Ouvrir le PDF';}
    });row.append(b);
   }else row.append($('small','','PDF non présent dans Firebase'));
   root.append(row);
@@ -224,7 +234,8 @@ async function render(root,opts={}){
   for(const h of pack.homework){
    const attrs=h.data.attributes||{};
    const block=$('section');block.style.cssText='padding:10px;margin:10px 0;border:1px solid #485d78;border-radius:10px';
-   block.append($('strong','','Devoir ENT '+h.data.id+' — pour le '+deadline(attrs.dueDateTime||attrs.dueDate)));
+   block.append($('strong','','Devoir ENT — pour le '+deadline(attrs.dueDateTime||attrs.dueDate)));
+   block.append($('p','','En français : '+frenchPreview(translations?.homework?.[h.data.id]?.fr,220)));
    block.append($('small','',' Référence ENT '+h.data.id));
    txt(block,asText([attrs.title,attrs.html,...(h.included||[]).filter(i=>i.type==='pedagogicContent').map(i=>i.attributes?.html)].filter(Boolean).join('\n')));
    appendFrench(block,translations?.homework,h.data.id);
@@ -236,12 +247,23 @@ async function render(root,opts={}){
   for(const [id,date] of datesSorted(pack)){
    const l=lessonsById.get(id);if(!l)continue;
    const panel=$('details');panel.style.cssText='padding:10px;margin:10px 0;border:1px solid #4e6280;border-radius:12px';
-   panel.append($('summary','',date+' — '+courseTitle(l)));
+   const heading=$('summary');
+   heading.style.cssText='line-height:1.45;padding:5px 0';
+   const line1=$('div','',''+date+' — '+frenchPreview(translations?.courses?.[id]?.fr,155));
+   line1.style.cssText='font-weight:700;white-space:normal;overflow-wrap:anywhere';
+   const line2=$('div','','Espagnol : '+courseTitle(l));
+   line2.style.cssText='font-size:.84em;opacity:.8;white-space:normal;overflow-wrap:anywhere;margin-top:4px';
+   heading.append(line1,line2);panel.append(heading);
    panel.append($('small','','Intitulé ENT : '+String(l.data.attributes?.title||'Espagnol LV2')+' · Réf. '+id));
    // Fiches attachées directement à la séance ENT, conservées à leur emplacement.
-   const lessonFiles=pack.index.filter(i=>(i.rattache_a||[]).some(x=>x.type==='cours'&&x.id===id));
+   // Les fichiers de l'ENT sont rattachés aux devoirs associés à la séance.
+   const associatedHomeworkIds=lessonHomeworkIds(l);
+   const lessonFiles=pack.index.filter(i=>(i.rattache_a||[]).some(x=>
+     (x.type==='cours'&&x.id===id)||
+     (x.type==='travail_associe'&&associatedHomeworkIds.includes(x.id))
+   ));
    if(lessonFiles.length){
-    panel.append($('h4','','Fiches originales du cours'));
+    panel.append($('h4','','Fiches PDF originales liées aux devoirs de cette séance ('+lessonFiles.length+')'));
     appendFileLinks(panel,lessonFiles,metas);
    }
    const time=l.data.attributes||{};
@@ -253,7 +275,7 @@ async function render(root,opts={}){
    txt(original,lessonHtml(l));panel.append(original);
    for(const hid of lessonHomeworkIds(l)){
     const h=homeworkById.get(hid);
-    if(h){panel.append($('h4','','Travail associé ENT '+hid));const attrs=h.data.attributes||{};
+    if(h){panel.append($('h4','','Devoir associé — '+frenchPreview(translations?.homework?.[hid]?.fr,120)));const attrs=h.data.attributes||{};
       txt(panel,asText([attrs.title,attrs.html].filter(Boolean).join('\n')));
       appendFrench(panel,translations?.homework,hid);
       appendFileLinks(panel,pack.index.filter(i=>(i.rattache_a||[]).some(x=>x.type==='travail_associe'&&x.id===hid)),metas);
