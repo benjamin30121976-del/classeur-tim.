@@ -232,7 +232,7 @@ function summaryOf(attempts,where){
  if(complete>=3){
   const good=attempts.reduce((s,a)=>s+(Number(a.score)||0),0);
   const total=attempts.reduce((s,a)=>s+(Number(a.total)||10),0);
-  p(result,'Bilan après '+complete+' exercices : '+good+' réponses correctes sur '+total+'.','font-weight:850;font-size:16px;color:#263d89');
+  p(result,'Bilan après '+complete+' exercices : '+good.toLocaleString('fr-FR')+' points sur '+total+'.','font-weight:850;font-size:16px;color:#263d89');
   const difficulties=new Map();
   for(const attempt of attempts)for(const [name,count] of Object.entries(attempt.errorCounts||{})){
    if(name!=='réussi'&&Number.isFinite(Number(count))&&Number(count)>0)
