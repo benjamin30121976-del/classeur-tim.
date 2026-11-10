@@ -64,7 +64,15 @@ async function getStatus(){
    await timPage.locator('#login-button').click();
    await timPage.waitForFunction(()=>document.body.classList.contains('ready')&&window.__TIM_PARENT===false&&!window.__TIM_GUEST,null,{timeout:50000});
    console.log('OK : connexion reelle au compte Tim reussie sur ecran de telephone.');
-   await timPage.locator('[data-nav="matieres"]:visible').first().click();
+   // Le classeur presente une animation d'introduction devant la navigation.
+   // La passer sans toucher au contenu ni a une tentative d'exercice.
+   const intro=timPage.locator('#intro-screen');
+   if(await intro.isVisible()){
+     await timPage.locator('#intro-silent').click({timeout:8000});
+     await intro.waitFor({state:'hidden',timeout:20000});
+   }
+   await timPage.waitForFunction(()=>typeof window.openLesson==='function' && !!document.querySelector('#home.page.active'),null,{timeout:15000});
+   await timPage.locator('[data-nav="matieres"]:visible').first().click({timeout:12000});
    await timPage.locator('#matieres-content button.matter-espanol').first().click();
    await timPage.locator('#matieres-content details.tim-es-lesson').first().waitFor({timeout:20000});
    const view=await timPage.evaluate(async()=>{
