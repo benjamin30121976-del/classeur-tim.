@@ -8,7 +8,7 @@ import {rawPoints,cappedPoints} from '../functions/xp.mjs';
 import {buildMission,isMissionId,isMissionOpen} from '../functions/missions-v18.mjs';
 import {SPANISH_COURSE} from '../functions/spanish-training-curriculum.mjs';
 import {mathId,mathTask,mathPublicTask,gradeMathTask} from './maths-training-curriculum.mjs';
-import {spanishEntTrainingId,spanishEntTask,spanishEntPublicTask,gradeSpanishEntTask} from './spanish-ent-training.mjs';
+import {spanishEntTrainingId,spanishEntTask,spanishEntPublicTask,gradeSpanishEntTask,isSpanishDailyMissionId,spanishDailyMissionIds,buildSpanishDailyMission,gradeSpanishDailyMission} from './spanish-ent-training.mjs';
 import {spanishLessonXp} from './spanish-lesson-xp.mjs';
 
 const PRIVATE_FIELDS=new Set(['right','also','why','expected','answer','answers','answerKey','answerKeys','solution','solutions','correction','corrections','explanation','rubric']);
@@ -45,6 +45,12 @@ function checkOrigin(req){
  if(fetchSite==='cross-site')throw new ApiFault(403,'origin-denied');
 }
 async function resolveExercise(db,id){
+ if(isSpanishDailyMissionId(id)){
+  const mission=buildSpanishDailyMission(id);
+  if(!mission)throw new ApiFault(404,'mission-not-found');
+  if(!isMissionOpen(mission))throw new ApiFault(409,'mission-not-open');
+  return {exercise:{...sanitize(mission),enabled:true},key:null,spanishSource:mission};
+ }
  if(isMissionId(id)){
   const source=await db.get('content/main'),mission=buildMission(id,source,SPANISH_COURSE);
   if(!mission)throw new ApiFault(404,'mission-not-found');
@@ -70,10 +76,10 @@ async function submitExercise(db,uid,payload){
  if(!validId(id)||!Array.isArray(answers)||answers.length>30||
   answers.some(x=>!['string','number','boolean'].includes(typeof x)||String(x).length>2000))
   throw new ApiFault(400,'invalid-exercise');
- const {exercise,key}=await resolveExercise(db,id);
+ const {exercise,key,spanishSource}=await resolveExercise(db,id);
  if(exercise.enabled!==true)throw new ApiFault(409,'exercise-closed');
  let evaluated;
- try{evaluated=grade(exercise,key,answers);}catch{throw new ApiFault(400,'invalid-answers');}
+ try{evaluated=spanishSource?gradeSpanishDailyMission(spanishSource,answers):grade(exercise,key,answers);}catch{throw new ApiFault(400,'invalid-answers');}
  const transaction=await db.transaction();
  const [publicRecord,privateRecord,xpRecord]=await Promise.all([
   db.get('attempts/'+id,transaction),db.get('privateAttempts/'+id,transaction),db.get('xpState/tim',transaction)
@@ -278,7 +284,16 @@ async function getSpanishEntTrainingProgress(db,uid,payload){
    .sort((a,b)=>String(b.submittedAt).localeCompare(String(a.submittedAt)))};
 }
 
+async function getSpanishDailyMissions(db,uid){
+ allowedFamily(uid);
+ const day=parisDate(new Date()),dailyIds=spanishDailyMissionIds(day);
+ const exercises=dailyIds.map(id=>buildSpanishDailyMission(id)).filter(Boolean).map(sanitize);
+ if(exercises.length!==dailyIds.length)throw new ApiFault(503,'mission-bank-incomplete');
+ return {day,dailyIds,exercises};
+}
+
 const ACTIONS={
+ getSpanishDailyMissions:getSpanishDailyMissions,
  getSpanishEntTrainingTask:getSpanishEntTrainingTask,
  submitSpanishEntTraining:submitSpanishEntTraining,
  getSpanishEntTrainingProgress:getSpanishEntTrainingProgress,
@@ -316,4 +331,4 @@ export async function handleRequest(request,env){
   return respond({error:code},status);
  }
 }
-export const TESTABLE={sanitize,resolveExercise,submitExercise,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
+export const TESTABLE={sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
