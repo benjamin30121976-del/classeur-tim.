@@ -168,7 +168,14 @@ function mount(root,{lesson,onBack,onHelp,onLesson}){
   const task=ENGINE.buildSpanishTasks(record.id,COURSE());
   if(!task){drawList();return;}
   if(!Array.isArray(record.items)||record.items.length!==10){
-   const perfect=Number(record.score)===10&&record.items.length===10&&record.items.every(item=>item.correct===true);
+   slot.innerHTML='<button class="spx-training-back" type="button" id="spx-training-return">← Liste des exercices</button>'+
+    '<h3>Exercice terminé · '+(task.mode==='Q'?'QCM ':'Écriture ')+task.series+'</h3>'+
+    '<p class="spx-training-score">Exercice enregistré dans le compte · 0 XP</p>'+
+    '<p class="spx-note">Cet exercice ne peut pas être rejoué. Ses réponses ne sont pas disponibles sur cet appareil. Le Parent peut consulter son bilan.</p>';
+   slot.querySelector('#spx-training-return').onclick=drawList;
+   return;
+  }
+  const perfect=Number(record.score)===10&&record.items.length===10&&record.items.every(item=>item.correct===true);
   const answerText=(item,i)=>task.questions[i].type==='mc'?(task.questions[i].choices[Number(item.response)]||item.response):item.response;
   const review='<details class="spx-panel spx-exercise-review"><summary>Revoir mon exercice — questions et réponses</summary>'+
    record.items.map((item,i)=>'<p><strong>Question '+(i+1)+' : '+esc(item.prompt||task.questions[i].prompt)+'</strong></p>'+
