@@ -95,11 +95,11 @@ async function getStatus(){
      let pdf={available:0,readable:0};
      try{
        const list=await bridge.attachments.list('lesson','ENTESP_2026');
-       pdf.available=list.filter(x=>/\\.pdf$/i.test(x.fileName||'')).length;
-       for(const item of list.filter(x=>/\\.pdf$/i.test(x.fileName||''))){
+       pdf.available=list.filter(x=>String(x.fileName||'').toLowerCase().endsWith('.pdf')).length;
+       for(const item of list.filter(x=>String(x.fileName||'').toLowerCase().endsWith('.pdf'))){
          try{const blob=await bridge.attachments.read(item);if(blob.size>0&&(await blob.slice(0,5).text())==='%PDF-')pdf.readable++;}catch{}
        }
-     }catch{}
+     }catch(e){pdf.error=String(e?.code||e?.message||e).slice(0,120);}
      return {cardCount,tasks,progress,pdf};
    });
    console.log('AUDIT COMPTE TIM (lecture seule) : '+JSON.stringify(view));
