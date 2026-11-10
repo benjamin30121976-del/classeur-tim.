@@ -26,7 +26,7 @@ if(!['inspect','execute'].includes(mode))throw Error('Mode inconnu');
     getDocs(collection(db,'attempts')),getDocs(collection(db,'privateAttempts'))
    ]);
    if(!main.exists()||!Array.isArray(main.data().exercises))throw Error('Catalogue principal absent');
-   const wanted=new Set(Array.from({length:28},(_,i)=>'E'+String(i+1).padStart(2,'0')));
+   const wanted=new Set([...Array.from({length:18},(_,i)=>'E'+String(i+1).padStart(2,'0')),...Array.from({length:10},(_,i)=>'R'+String(i+1).padStart(2,'0'))]);
    const oldMain=main.data().exercises.filter(e=>wanted.has(String(e?.id||'')));
    const oldExtra=extras.docs.filter(d=>wanted.has(d.id));
    const used=[...attempts.docs,...privateAttempts.docs].filter(d=>wanted.has(d.id));
@@ -36,7 +36,8 @@ if(!['inspect','execute'].includes(mode))throw Error('Mode inconnu');
    if(mode==='inspect')return report;
    if(oldMain.length!==28||new Set(oldMain.map(e=>e.id)).size!==28||used.length!==0||
       oldMain.some(e=>e.subject&&e.subject!=='Espagnol')||
-      oldMain.some(e=>!(Array.isArray(e.questions)&&e.questions.length>=1&&e.questions.length<=5)))
+      oldMain.filter(e=>Array.isArray(e.questions)&&e.questions.length===1).length!==1||
+      oldMain.filter(e=>Array.isArray(e.questions)&&e.questions.length===5).length!==27)
       throw Error('Sécurité : les 28 anciens exercices ne correspondent pas exactement au lot prévu. Aucune suppression.');
    await runTransaction(db,async tx=>{
     const current=await tx.get(mainRef);
