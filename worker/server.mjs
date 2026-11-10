@@ -235,7 +235,7 @@ async function submitSpanishEntTraining(db,uid,payload){
  const old=await db.get('spanishEntTrainingAttempts/'+id,transaction);
  if(old)throw new ApiFault(409,'already-exists');
  await db.commit([createWrite('spanishEntTrainingAttempts/'+id,{
-  ...result,authorUid:uid,subject:'Espagnol',answers,translationsUsed,version:2
+  ...result,authorUid:uid,subject:'Espagnol',answers,translationsUsed,version:3
  },NOW)],transaction);
  return {...result,submitted:true,submittedAt:new Date().toISOString()};
 }
@@ -250,7 +250,7 @@ async function getSpanishEntTrainingProgress(db,uid,payload){
  const docs=await db.list('spanishEntTrainingAttempts',100);
  return {attempts:docs.filter(r=>spanishEntTrainingId(r.id)&&r.data?.authorUid===TIM_UID)
    .map(r=>({id:r.id,lessonId:r.data.lessonId,series:r.data.series,
-    score:r.data.score,total:r.data.total,translationHelpCount:r.data.translationHelpCount||0,submittedAt:r.data.submittedAt||'',xp:0}))
+    score:r.data.score,total:r.data.total,translationHelpCount:r.data.translationHelpCount||0,errorCounts:r.data.errorCounts||{},submittedAt:r.data.submittedAt||'',xp:0}))
    .sort((a,b)=>String(b.submittedAt).localeCompare(String(a.submittedAt)))};
 }
 
