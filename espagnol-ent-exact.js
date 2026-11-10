@@ -247,14 +247,51 @@ function enhanceBisL01Audio(body){
    String(li.textContent||'').split(';').map(s=>s.trim().split(' = ')[0].trim()).filter(Boolean).forEach(s=>li.append(makeButton(s)));
   });
  }
- // Leçon §4 : les 18 formes de llamarse, ser et ir sont écoutables séparément.
+ // Tableau de L01 : un pronom par encadré, puis un verbe par ligne.
+ // Sur téléphone, seules trois colonnes restent visibles : verbe / forme et sens / audio.
  if(lists[1]){
-  lists[1].querySelectorAll('li').forEach(li=>{
-   const parts=String(li.textContent||'').split(':');
-   if(parts.length<2)return;
-   const forms=parts.slice(1).join(':').replace(/\.$/,'').split(' / ').map(s=>s.trim()).filter(Boolean);
-   forms.forEach(s=>li.append(makeButton(s)));
-  });
+  const phrases=[
+   ['Yo — je',[['Llamarse','me llamo','je m’appelle'],['Ser','soy','je suis'],['Ir','voy','je vais']]],
+   ['Tú — tu',[['Llamarse','te llamas','tu t’appelles'],['Ser','eres','tu es'],['Ir','vas','tu vas']]],
+   ['Él / Ella — il / elle',[['Llamarse','se llama','il / elle s’appelle'],['Ser','es','il / elle est'],['Ir','va','il / elle va']]],
+   ['Nosotros / Nosotras — nous',[['Llamarse','nos llamamos','nous nous appelons'],['Ser','somos','nous sommes'],['Ir','vamos','nous allons']]],
+   ['Vosotros / Vosotras — vous',[['Llamarse','os llamáis','vous vous appelez'],['Ser','sois','vous êtes'],['Ir','vais','vous allez']]],
+   ['Ellos / Ellas — ils / elles',[['Llamarse','se llaman','ils / elles s’appellent'],['Ser','son','ils / elles sont'],['Ir','van','ils / elles vont']]]
+  ];
+  const wrap=$('div','ent-es-bis-conjugation-cards');
+  wrap.style.cssText='display:grid;grid-template-columns:minmax(0,1fr);gap:11px;margin:13px 0';
+  for(const [person,rows] of phrases){
+   const card=$('section');
+   card.style.cssText='border:1px solid #cbd2ec;background:white;padding:10px 9px;border-radius:12px;max-width:100%;overflow:hidden';
+   const label=$('h5','',person);
+   label.style.cssText='margin:2px 0 8px;font-size:16px;color:#243a90';
+   card.append(label);
+   const tab=$('table');
+   tab.style.cssText='width:100%;border-collapse:collapse;table-layout:fixed;font-size:14px';
+   const header=$('tr');
+   for(const [i,word] of ['Verbe','Espagnol — français','Écouter'].entries()){
+    const th=$('th','',word);
+    th.style.cssText='text-align:left;color:#32435f;border-bottom:2px solid #e1e5f4;padding:7px 3px;'+(i===0?'width:70px;':i===2?'width:46px;':'');
+    header.append(th);
+   }
+   const thead=$('thead');thead.append(header);tab.append(thead);
+   const tbody=$('tbody');
+   for(const [verb,form,fr] of rows){
+    const tr=$('tr');
+    const a=$('td','',verb);a.style.cssText='padding:9px 3px;border-bottom:1px solid #e6e9f3;vertical-align:middle;font-weight:750;overflow-wrap:anywhere';
+    const b=$('td');b.style.cssText='padding:9px 3px;border-bottom:1px solid #e6e9f3;vertical-align:middle;overflow-wrap:anywhere';
+    const es=$('strong','',form);es.style.cssText='color:#263a90;display:block;font-size:15px';
+    const french=$('span','',fr);french.style.cssText='display:block;color:#58657e;font-size:13px';
+    b.append(es,french);
+    const c=$('td');c.style.cssText='padding:7px 0;border-bottom:1px solid #e6e9f3;vertical-align:middle';
+    const audio=makeButton(form,'▶');audio.textContent='▶';
+    audio.style.cssText='width:39px;height:38px;min-height:38px!important;padding:4px!important;border-radius:9px;background:#273b91!important;color:#fff!important;border:1px solid #273b91!important;font-weight:850';
+    c.append(audio);
+    tr.append(a,b,c);tbody.append(tr);
+   }
+   tab.append(tbody);card.append(tab);wrap.append(card);
+  }
+  lists[1].replaceWith(wrap);
  }
  const groups=[
   ['La fiche de renseignements',[
@@ -347,7 +384,7 @@ function appendBisL01(panel){
  example('¿De qué nacionalidad eres? — Soy francés.','Quelle est ta nationalité ? — Je suis français. (« francesa » au féminin.)');
  example('¿Qué te gusta? — Me gusta el fútbol.','Qu’aimes-tu ? — J’aime le football.');
  heading('4. Les trois verbes demandés par le professeur');
- paragraph('LLAMARSE signifie « s’appeler », SER signifie « être », IR signifie « aller ». Voici les six personnes au présent. Dans chaque ligne, l’ordre est : s’appeler / être / aller.');
+ paragraph('LLAMARSE signifie « s’appeler », SER signifie « être », IR signifie « aller ». Voici les six personnes au présent. Pour chaque pronom, le tableau montre les trois verbes sur trois lignes séparées, avec leur traduction et un bouton d’écoute.');
  list([
   'Yo (je) : me llamo / soy / voy.',
   'Tú (tu) : te llamas / eres / vas.',
@@ -466,6 +503,7 @@ async function render(root,opts={}){
    coursePanel.append(original);
    panel.append(coursePanel);
    if(String(id)==='10099~6400501')appendBisL01(panel);
+   else window.TIM_SPANISH_ENT_BIS?.render(panel,String(id));
    const associatedHomeworkIds=lessonHomeworkIds(l);
    const lessonFiles=pack.index.filter(i=>(i.rattache_a||[]).some(x=>
      (x.type==='cours'&&x.id===id)||
