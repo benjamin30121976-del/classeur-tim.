@@ -1,0 +1,77 @@
+/* Tim · design du défi du jour et de la progression XP.
+   Visuels issus des deux images transmises par le parent. */
+.daily-loup-panel{
+ display:grid;grid-template-columns:minmax(220px,38%) minmax(0,62%);
+ gap:0;overflow:hidden;isolation:isolate;
+ margin:18px 0 20px;border:2px solid #bc8e37;border-radius:23px;
+ background:radial-gradient(ellipse at 78% 12%,#164983 0,transparent 55%),linear-gradient(135deg,#070e1d,#112744 75%,#071321);
+ color:#f5f7fd;box-shadow:0 10px 35px #07132699,inset 0 0 24px #2872a719;
+}
+.daily-loup-image{position:relative;overflow:hidden;min-height:315px;background:#07111f}
+.daily-loup-image::after{content:'';position:absolute;inset:0;pointer-events:none;box-shadow:inset -17px 0 30px #09162a80}
+.daily-loup-gif{display:block;width:100%;height:100%;max-height:440px;object-fit:cover;object-position:center;filter:saturate(1.07)}
+.daily-loup-content{padding:clamp(17px,2.6vw,29px);min-width:0;display:flex;flex-direction:column;justify-content:center;gap:9px}
+.daily-loup-eyebrow{margin:0!important;letter-spacing:.13em;font-size:12px!important;font-weight:900;color:#80caff!important}
+.daily-loup-content h2{margin:0!important;font-size:clamp(24px,3.3vw,35px)!important;line-height:1.14;color:#f8dfaa!important;letter-spacing:.035em;text-shadow:0 0 20px #0a5dc953}
+.daily-loup-summary{margin:2px 0 10px!important;color:#d6eafa!important;line-height:1.55;font-size:14px!important}
+.daily-xp-scale{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin:5px 0 10px}
+.daily-xp-rule{display:flex;flex-direction:column;align-items:center;text-align:center;justify-content:center;gap:3px;min-height:59px;
+ padding:6px 4px;border-radius:9px;background:#132e4e;border:1px solid #4085c480;color:#d0e8fc;font-size:12px;font-weight:750;white-space:nowrap}
+.daily-xp-rule strong{color:#f7d080;font-size:14px}
+.daily-xp-loss{border-color:#a85851a8;background:#371e2a}
+.daily-xp-loss strong{color:#ffa7a1}
+.daily-loup-buttons{display:grid;gap:8px}
+.daily-loup-launch{display:block;width:100%!important;min-height:44px!important;padding:11px 15px!important;text-align:left!important;
+ color:#09182d!important;font-weight:850!important;background:linear-gradient(100deg,#f4ca70,#f9e8aa)!important;
+ border:1px solid #ffebbd!important;border-radius:12px!important;box-shadow:0 3px 12px #0004!important}
+.daily-loup-launch:hover:not(:disabled){filter:brightness(1.07);transform:translateY(-1px)}
+.daily-loup-launch.done{background:linear-gradient(110deg,#236a72,#287e8d)!important;color:#f0fcff!important;border-color:#6cd6e0!important}
+.daily-loup-launch:disabled{opacity:.6;cursor:not-allowed}
+.daily-loup-unavailable{font-size:13px!important;color:#dde6f3!important;margin:5px 0!important;line-height:1.5}
+.xp-showcase{position:relative;padding:15px 18px 17px;margin:14px 0 20px;background:#0b1b31;
+ border:2px solid #bf9450;border-radius:21px;box-shadow:0 12px 33px #0008;color:#e9f4ff;overflow:hidden}
+.xp-showcase-top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 11px;flex-wrap:wrap}
+.xp-showcase-title{font-weight:900;letter-spacing:.1em;font-size:clamp(12px,2vw,16px);color:#f1d39c}
+.xp-current-count{font-size:clamp(17px,2.4vw,24px);font-weight:900;color:#fff;white-space:nowrap}
+.xp-illustration{position:relative;width:100%;border-radius:12px;overflow:hidden;background:#06101e;border:1px solid #aa8237}
+.xp-illustration-img{display:block;width:100%;height:auto;aspect-ratio:3/1;object-fit:contain}
+.xp-art-track{position:absolute;z-index:2;left:16.3%;top:67%;width:64.5%;height:7.1%;border-radius:100px;overflow:hidden;pointer-events:none}
+.xp-art-fill{height:100%;width:100%;transform-origin:left center;
+ background:linear-gradient(90deg,#21c7efb8,#7fe9ffc9);
+ box-shadow:0 0 13px 6px #27c9fa88,inset 0 1px 4px #e9ffff;
+ border-radius:100px;transition:transform .5s ease}
+.xp-art-meter{position:absolute;z-index:3;top:5%;left:2.5%;border-radius:7px;
+ background:#08192edb;border:1px solid #e6b96c;color:#fff9e4;
+ padding:6px 10px;font-size:clamp(10px,1.8vw,16px);font-weight:900;text-shadow:0 1px #071326;}
+.xp-reward-tiers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:11px 0}
+.xp-reward-tier{display:flex;justify-content:space-between;align-items:center;gap:6px;padding:9px 12px;
+ border-radius:11px;background:#152e4a;border:1px solid #456e94;color:#cae7f7;font-size:14px}
+.xp-reward-tier strong{color:#f4d69a}
+.xp-reward-tier span{font-weight:900;color:#f5f9ff}
+.xp-reward-tier.achieved{background:#154e57;border-color:#5ccee4}
+.xp-explainer{font-size:14px!important;margin:10px 0 4px!important;color:#e7f3fc!important;line-height:1.5}
+.xp-level-caption{margin:4px 0 0!important;color:#9eb9d8!important;font-size:12px!important;line-height:1.45}
+@media(max-width:700px){
+ .daily-loup-panel{grid-template-columns:1fr}
+ .daily-loup-image{min-height:0;max-height:270px;aspect-ratio:358/200}
+ .daily-loup-gif{width:100%;height:100%;object-fit:cover;object-position:center 45%}
+ .daily-loup-image::after{box-shadow:inset 0 -18px 26px #09162a99}
+ .daily-loup-content{padding:18px 16px 20px}
+ .daily-xp-scale{gap:4px}
+ .daily-xp-rule{min-height:53px;padding:5px 2px;font-size:10px}
+ .daily-xp-rule strong{font-size:12px}
+ .xp-showcase{padding:12px 9px 14px}
+ .xp-showcase-top{gap:5px}
+ .xp-art-meter{left:1.5%;top:2%;padding:3px 6px;font-size:10px;border-radius:5px}
+ .xp-reward-tier{padding:8px 6px;font-size:12px;flex-direction:column;gap:2px}
+ .xp-art-fill{box-shadow:0 0 6px 2px #27c9fa88}
+}
+@media(max-width:370px){
+ .daily-loup-content{padding:14px 11px 17px}
+ .daily-xp-rule{font-size:9px}
+ .daily-xp-rule strong{font-size:11px}
+}
+@media(prefers-reduced-motion:reduce){
+ .xp-art-fill{transition:none}
+ .daily-loup-launch:hover:not(:disabled){transform:none}
+}
