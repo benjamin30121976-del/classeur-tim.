@@ -31,7 +31,7 @@ async function getStatus(){
   let matched=false;
   for(let pass=0;pass<12;pass++){
    const r=await fetch(URL+'/'+file+'?verification=perfect-20261110',{cache:'no-store'});
-   if(r.ok()&&(await r.text()).includes(phrase)){matched=true;break;}
+   if(r.ok&&(await r.text()).includes(phrase)){matched=true;break;}
    await pause(5000);
   }
   if(!matched)throw Error('Version publiée non confirmée pour '+file);
