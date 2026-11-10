@@ -538,6 +538,31 @@ async function startSession(user){
   return window.__TIM_SPANISH_PROGRESS;
  };
  window.__TIM_BRIDGE={
+  spanishEntTrainingTask:async(id)=>{
+   if(!/^ESE_L(?:0[1-9]|1[0-3])_0[1-3]$/.test(String(id||'')))throw Error('Exercice espagnol inconnu.');
+   const r=await cloudCallable('getSpanishEntTrainingTask')({id});
+   if(!r.data?.task||r.data.task.questions?.length!==10)throw Error('Les dix questions sont indisponibles.');
+   return r.data;
+  },
+  spanishEntTrainingSubmit:async(id,answers)=>{
+   if(activeUser?.uid!==TIM_UID)throw Error('Seul Tim peut valider.');
+   if(!/^ESE_L(?:0[1-9]|1[0-3])_0[1-3]$/.test(String(id||''))||
+      !Array.isArray(answers)||answers.length!==10||
+      answers.some(v=>!Number.isInteger(v)||v<0||v>3))throw Error('Réponses incomplètes.');
+   const r=await cloudCallable('submitSpanishEntTraining')({id,answers});
+   if(!r.data?.submitted||!Number.isInteger(r.data.score)||r.data.xp!==0||
+      !Array.isArray(r.data.items)||r.data.items.length!==10)
+    throw Error('La validation n’a pas été confirmée.');
+   return r.data;
+  },
+  spanishEntTrainingProgress:async(id)=>{
+   if(activeUser?.uid!==TIM_UID&&activeUser?.uid!==PARENT_UID)throw Error('Accès réservé à la famille.');
+   const r=await cloudCallable('getSpanishEntTrainingProgress')(id?{id}:{});
+   if(id){
+    if(!('attempt'in (r.data||{})))throw Error('Copie indisponible.');
+   }else if(!Array.isArray(r.data?.attempts))throw Error('Suivi des exercices indisponible.');
+   return r.data;
+  },
   trainingProgress:loadSpanishProgress,
   mathTrainingTask:async(id)=>{
    if(!/^MT(?:0[1-9]|1[0-9]|2[0-3])$/.test(id))throw Error('Exercice de mathématiques invalide.');
