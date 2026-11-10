@@ -591,18 +591,42 @@ function xpInfo(done=attempts()){
   inLevel:Math.max(0,Math.min(100,total-(level-1)*100)),
   done:base.done+unique.size};
 }
-function makeXPPanel(){const st=xpInfo(),p=E('div','xp-panel');
- p.innerHTML='<div class="xp-panel-head"><strong>⭐ Niveau '+st.level+'</strong><span>'+st.total.toLocaleString('fr-FR')+' XP au total</span></div><div class="xp-track" role="progressbar" aria-label="Progression vers le prochain niveau" aria-valuemin="0" aria-valuemax="100" aria-valuenow="'+st.inLevel+'"><div class="xp-track-fill" style="width:'+st.inLevel+'%"></div></div><div class="xp-small">'+st.inLevel.toLocaleString('fr-FR')+' / 100 XP pour le prochain niveau.</div>';
- const badges=E('div','trophies'),entries=[['🏅 Premier quiz',st.done>=1],['🎯 5 quiz',st.done>=5],['🏆 Sans faute',st.perfect>=1],['⭐ 100 XP',st.peak>=100],['🔥 500 XP',st.peak>=500]];
- entries.forEach(([t,ok])=>badges.append(E('span','trophy'+(ok?'':' locked'),(ok?'🔓 ':'🔒 ')+t)));p.append(badges);
- const week=Math.max(0,st.week),head=E('div','xp-panel-head');
- head.style.marginTop='18px';head.append(E('strong','','Cette semaine · '+week.toLocaleString('fr-FR')+' / 75 XP'),E('span','',st.reward+' €'));
- const track=E('div','xp-track');track.setAttribute('role','progressbar');track.setAttribute('aria-label','XP de la semaine pour la récompense');
- track.setAttribute('aria-valuemin','0');track.setAttribute('aria-valuemax','75');track.setAttribute('aria-valuenow',String(Math.min(75,week)));
- const fill=E('div','xp-track-fill');fill.style.width=Math.min(100,100*week/75)+'%';track.append(fill);
+function makeXPPanel(){
+ const st=xpInfo(),week=Math.max(0,Number(st.week)||0);
+ const cap=Math.min(75,week),value=week.toLocaleString('fr-FR');
+ const wrapper=E('section','xp-showcase');
+ const top=E('div','xp-showcase-top');
+ top.append(E('div','xp-showcase-title','MES XP DE LA SEMAINE'),E('strong','xp-current-count',value+' / 75 XP'));
+ wrapper.append(top);
+ const art=E('div','xp-illustration');
+ const picture=E('img','xp-illustration-img');
+ picture.src='./assets/barre-xp-original.jpg';
+ picture.alt='Illustration du loup allongé devant une jauge de 0 à 75 XP, dans une bibliothèque bleue et dorée.';
+ picture.width=1536;picture.height=512;picture.loading='eager';picture.decoding='async';
+ art.append(picture);
+ const track=E('div','xp-art-track');
+ track.setAttribute('role','progressbar');track.setAttribute('aria-label','XP de la semaine');
+ track.setAttribute('aria-valuemin','0');track.setAttribute('aria-valuemax','75');
+ track.setAttribute('aria-valuenow',String(cap));
+ const fill=E('div','xp-art-fill');fill.style.transform='scaleX('+cap/75+')';
+ track.append(fill);art.append(track);
+ const meter=E('div','xp-art-meter',value+' XP cette semaine');
+ art.append(meter);wrapper.append(art);
+ const tierRow=E('div','xp-reward-tiers');
+ for(const [threshold,euros] of [[19,2],[38,5],[75,10]]){
+  const reached=week>=threshold;
+  const tile=E('div','xp-reward-tier'+(reached?' achieved':''));
+  tile.append(E('strong','',threshold+' XP'),E('span','',euros+' €'));
+  tile.setAttribute('aria-label',threshold+' XP : '+euros+' euros'+(reached?', palier atteint':''));
+  tierRow.append(tile);
+ }
+ wrapper.append(tierRow);
  const next=week<19?19:week<38?38:week<75?75:null;
- p.append(head,track,E('div','xp-small',next===null?'Objectif atteint : 10 € à valider par le parent.':('Encore '+(next-week).toLocaleString('fr-FR')+' XP pour '+(next===19?'2 €':next===38?'5 €':'10 €')+'. Les XP de la semaine repartent à zéro chaque lundi.')));
- return p;
+ wrapper.append(E('p','xp-explainer',next===null?
+  'Objectif de 75 XP atteint. Récompense de 10 € à valider par le parent.':
+  'Encore '+(next-week).toLocaleString('fr-FR')+' XP pour atteindre le palier de '+(next===19?'2 €':next===38?'5 €':'10 €')+'.'));
+ wrapper.append(E('p','xp-level-caption','Niveau '+st.level+' · '+st.total.toLocaleString('fr-FR')+' XP cumulés · remise à zéro du compteur hebdomadaire chaque lundi.'));
+ return wrapper;
 }
 function refreshXPHeader(){const el=document.getElementById('xp-header');if(!el||window.__TIM_GUEST)return;const s=xpInfo();el.innerHTML='<span>⭐ '+s.total.toLocaleString('fr-FR')+' XP</span><small>Niveau '+s.level+'</small>';}
 document.addEventListener('tim-spanish-ent-xp-progress',()=>refreshXPHeader());
@@ -619,6 +643,45 @@ function makeRewardsTile(){const b=E('button','reward-open');b.type='button';
  });return b;}
 document.getElementById('rewards-close')?.addEventListener('click',()=>{const d=document.getElementById('rewards-dialog');if(d.close)d.close();else d.removeAttribute('open');});
 // Le défi quotidien et son panneau ont été supprimés.
+function dailyMissionPanel(){
+ const meta=window.__TIM_CHALLENGES||{};
+ const ids=Array.isArray(meta.dailyIds)?meta.dailyIds:[];
+ const section=E('section','daily-loup-panel');
+ section.setAttribute('aria-label','Défi du jour et barème des XP');
+ const imageBox=E('div','daily-loup-image');
+ const wolf=E('img','daily-loup-gif');
+ wolf.src='./assets/loup-defi-original.webp';
+ wolf.width=358;wolf.height=267;wolf.alt='Loup avec casque bleu dans sa bibliothèque, faisant apparaître le défi du jour et trois XP.';
+ wolf.loading='eager';wolf.decoding='async';
+ imageBox.append(wolf);section.append(imageBox);
+ const content=E('div','daily-loup-content');
+ content.append(E('p','daily-loup-eyebrow','MISSION · DU LUNDI AU VENDREDI'));
+ content.append(E('h2','','DÉFI DU JOUR'));
+ content.append(E('p','daily-loup-summary','3 défis possibles par jour · 10 questions chacun · une seule validation par défi.'));
+ const scores=E('div','daily-xp-scale');
+ for(const [grade,award] of [['9–10/10','+3 XP'],['7–8/10','+2 XP'],['5–6/10','+1 XP'],['2–4/10','0 XP'],['0–1/10','−1 XP']]){
+  const row=E('div','daily-xp-rule'+(award.startsWith('−')?' daily-xp-loss':''));
+  row.append(E('span','',grade),E('strong','',award));scores.append(row);
+ }
+ content.append(scores);
+ const buttons=E('div','daily-loup-buttons');
+ if(ids.length===0){
+  buttons.append(E('p','daily-loup-unavailable','Les défis du jour sont accessibles du lundi au vendredi. Les grands défis restent disponibles le week-end.'));
+ }else for(const [i,id] of ids.entries()){
+  const ex=DATA.exercises.find(x=>x.id===id),done=ex?attemptFor(id):null;
+  if(!ex){
+   buttons.append(E('p','daily-loup-unavailable','Mission '+(i+1)+' : pas assez de questions disponibles.'));
+   continue;
+  }
+  const label=done?'Mission '+(i+1)+' · Terminée'+(done.score!==null?' · '+done.score+'/10':'')+' · '+Number(done.xp||0).toLocaleString('fr-FR')+' XP':'Mission '+(i+1)+' · Commencer';
+  const b=button(label,()=>openExercise(id),'daily-loup-launch'+(done?' done':''));
+  if(window.__TIM_GUEST&&!done){b.disabled=true;b.title='Connexion nécessaire pour répondre';}
+  buttons.append(b);
+ }
+ content.append(buttons);
+ section.append(content);
+ return section;
+}
 function missionCard(kind){
  if(kind==='daily')return null;
  const meta=window.__TIM_CHALLENGES||{},id=kind==='weekly'?meta.weekly:meta.sunday;
@@ -656,8 +719,8 @@ function renderHome(){
  const root=clear(document.getElementById('home-content'));refreshXPHeader();
  const hero=E('section','mission-hero');
  const copy=E('div','mission-copy');copy.append(E('div','shout','CLASSEUR · 3e'),E('h1','','CHOISIS TA MISSION'),E('p','','Cours, défis et progression. À toi de jouer.'));
- copy.append(button('Choisir une matière →',()=>page('matieres'),'lobo-go'));hero.append(copy);const wolf=E('img','mission-wolf');wolf.src='./assets/loup-accueil.webp';wolf.alt='Le loup jongleur du classeur';hero.append(wolf);// Défi du jour supprimé : seules les autres rubriques restent actives.
- root.append(hero,...(window.__TIM_GUEST?[]:[makeXPPanel()]),makeRewardsTile(),makeSoundSettings(),bonusMissionPanel(true),missionCard('weekly'),missionCard('sunday'));
+ copy.append(button('Choisir une matière →',()=>page('matieres'),'lobo-go'));hero.append(copy);const wolf=E('img','mission-wolf');wolf.src='./assets/loup-accueil.webp';wolf.alt='Le loup jongleur du classeur';hero.append(wolf);// Défis quotidiens rétablis avec les images originales du parent.
+ root.append(hero,dailyMissionPanel(),...(window.__TIM_GUEST?[]:[makeXPPanel()]),makeRewardsTile(),makeSoundSettings(),bonusMissionPanel(true),missionCard('weekly'),missionCard('sunday'));
  root.append(E('h2','home-section-title','Que veux-tu travailler ?'));
  const cards=E('div','home-grid');
  for(const o of [{name:'Matières',sub:'Cours classés par matière',icon:'▦',cls:'cours',dest:'matieres'},
