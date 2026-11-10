@@ -177,15 +177,18 @@ function appendFileLinks(root,refs,metas,translations){
   nameBox.style.cssText='flex:1;min-width:0;overflow-wrap:anywhere';
   row.append(nameBox);
   if(meta){
-   const b=$('button','','Ouvrir');b.type='button';
+   const b=$('button','','Voir le PDF');b.type='button';
    b.addEventListener('click',async()=>{
     b.disabled=true;b.textContent='Ouverture…';
     try{
      const blob=await window.__TIM_BRIDGE.attachments.read(meta);
-     const url=URL.createObjectURL(blob);const link=$('a');link.href=url;link.target='_blank';link.rel='noopener noreferrer';link.download=info.nom_ENT||name;
-     link.click();setTimeout(()=>URL.revokeObjectURL(url),60000);
+     const url=URL.createObjectURL(blob);
+     // Voir la fiche dans le navigateur, pas télécharger obligatoirement.
+     const link=$('a');link.href=url;link.target='_blank';link.rel='noopener noreferrer';
+     document.body.append(link);link.click();link.remove();
+     setTimeout(()=>URL.revokeObjectURL(url),180000);
     }catch(e){alert('Lecture du PDF impossible : '+e.message)}
-    finally{b.disabled=false;b.textContent='Ouvrir le PDF';}
+    finally{b.disabled=false;b.textContent='Voir le PDF';}
    });row.append(b);
   }else row.append($('small','','PDF non présent dans Firebase'));
   root.append(row);
