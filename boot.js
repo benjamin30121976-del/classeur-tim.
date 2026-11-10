@@ -233,27 +233,26 @@ async function saveSpanishEnt(pack,binaries,progress=()=>{}){
   if(!snap.exists())throw Error('Classeur Firebase principal introuvable.');
   const previous=decodeFromFirestore(snap.data());
   if(!Array.isArray(previous.lessons)||!Array.isArray(previous.exercises))throw Error('Structure Firebase inattendue.');
-  const spanish=x=>String(x?.subject||'').toLowerCase().includes('espagnol');
-  // Copie de sécurité privée de l'état précédent, sans écraser les sauvegardes existantes.
-  const backupRef=doc(db,'content','backup_before_ent_spanish_20261110');
-  const oldBackup=await getDoc(backupRef);
-  if(!oldBackup.exists())await setDoc(backupRef,encodeForFirestore(previous));
+  // Les règles Firestore publiées n'autorisent que les champs existants de content/main.
+  // On conserve intégralement les anciennes données (dont les notes et exercices)
+  // et on stocke l'ENT sous le champ deja autorise « metadata ».
+  // Le filtre d'affichage isole uniquement l'espagnol original sans destruction.
   const next={
    ...previous,
-   lessons:previous.lessons.filter(x=>!spanish(x)),
-   exercises:previous.exercises.filter(x=>!spanish(x)),
-   timeline:Array.isArray(previous.timeline)?previous.timeline.filter(x=>!Array.isArray(x)||!/espagnol/i.test(String(x[3]||''))):previous.timeline,
-   spanishEnt:{
-    lessons:pack.lessons,homework:pack.homework,dates:pack.dates,index:pack.index,
-    collectedAt:pack.report.date_collecte||new Date().toISOString(),
-    source:'ENT Skolengo — données originales Termux',version:1
+   metadata:{
+    ...(previous.metadata && typeof previous.metadata==='object' && !Array.isArray(previous.metadata) ? previous.metadata : {}),
+    spanishEnt:{
+     lessons:pack.lessons,homework:pack.homework,dates:pack.dates,index:pack.index,
+     collectedAt:pack.report.date_collecte||new Date().toISOString(),
+     source:'ENT Skolengo — données originales Termux',version:2
+    }
    }
   };
   const bytes=new TextEncoder().encode(JSON.stringify(next)).length;
   if(bytes>850000)throw Error('Classeur trop volumineux pour Firebase ('+bytes+' octets). Aucune leçon modifiée.');
   await setDoc(mainRef,encodeForFirestore(next));
   const confirmed=decodeFromFirestore((await getDoc(mainRef)).data());
-  if(!confirmed?.spanishEnt||confirmed.spanishEnt.lessons.length!==counts.lessons||confirmed.spanishEnt.index.length!==counts.pdfs)
+  if(!confirmed?.metadata?.spanishEnt||confirmed.metadata.spanishEnt.lessons.length!==counts.lessons||confirmed.metadata.spanishEnt.homework.length!==counts.homework||confirmed.metadata.spanishEnt.index.length!==counts.pdfs)
    throw Error('Vérification après enregistrement impossible. Vérifier le contenu Parent.');
   progress('Import ENT terminé : '+counts.lessons+' cours, '+counts.homework+' devoirs, '+counts.pdfs+' PDF.');
   return true;
@@ -263,7 +262,7 @@ async function saveSpanishEnt(pack,binaries,progress=()=>{}){
   // Aucune suppression automatique : les éventuels fichiers sans rattachement
   // seront conservés dans l'espace privé pour éviter toute perte.
   if(/permission|autorisation|access denied/i.test(String(error?.message||''))){
-   throw new Error('Accès refusé pendant '+stage+'. Il faut publier les règles Firebase des pièces jointes.');
+   throw new Error('Accès refusé pendant '+stage+'. Les règles actuelles ne permettent pas cette écriture ; aucune règle n’a été modifiée.');
   }
   throw new Error(stage+' : '+String(error?.message||error));
  }
