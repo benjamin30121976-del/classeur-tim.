@@ -168,32 +168,33 @@ function mount(root,{lesson,onBack,onHelp,onLesson}){
   const task=ENGINE.buildSpanishTasks(record.id,COURSE());
   if(!task){drawList();return;}
   if(!Array.isArray(record.items)||record.items.length!==10){
-   slot.innerHTML='<button class="spx-training-back" type="button" id="spx-training-return">← Liste des exercices</button>'+
-     '<h3>Exercice terminé · '+(task.mode==='Q'?'QCM ':'Écriture ')+task.series+'</h3>'+
-     '<p class="spx-training-score">Exercice enregistré dans le compte · 0 XP</p>'+
-     '<p class="spx-note">Cet exercice ne peut pas être rejoué. Les réponses de cette tentative ne sont pas disponibles sur cet appareil. Le compte Parent peut consulter la note enregistrée et le détail des corrections.</p>'+
-     '<div class="spx-example">Réponses de référence : '+task.questions.map((q,i)=>(i+1)+'. '+esc(q.answer)).join(' · ')+'</div>';
-   slot.querySelector('#spx-training-return').onclick=drawList;return;
-  }
+   const perfect=Number(record.score)===10&&record.items.length===10&&record.items.every(item=>item.correct===true);
+  const answerText=(item,i)=>task.questions[i].type==='mc'?(task.questions[i].choices[Number(item.response)]||item.response):item.response;
+  const review='<details class="spx-panel spx-exercise-review"><summary>Revoir mon exercice — questions et réponses</summary>'+
+   record.items.map((item,i)=>'<p><strong>Question '+(i+1)+' : '+esc(item.prompt||task.questions[i].prompt)+'</strong></p>'+
+    '<p>Ma réponse : '+esc(answerText(item,i))+'</p>').join('')+'</details>';
   slot.innerHTML='<button class="spx-training-back" type="button" id="spx-training-return">← Liste des exercices</button>'+
    '<h3>Exercice terminé · '+(task.mode==='Q'?'QCM ':'Écriture ')+task.series+'</h3>'+
    '<p class="spx-training-score">'+(record.localOnly?'Résultat conservé sur cet appareil : ':'Résultat enregistré dans le compte : ')+record.score+' / 10 · 0 XP</p>'+
-   (record.localOnly?'<p class="spx-training-warning">Correction conservée localement. Elle sera synchronisée avec le compte Tim dès que Firebase sera disponible.</p>':'')+
-   '<p class="spx-note">Une seule tentative. Voici tes réponses, les bonnes réponses et les explications. Cet exercice est verrouillé pour éviter de le rejouer.</p>'+
-   record.items.map((item,i)=>'<section class="spx-training-correction '+(item.correct?'good':'bad')+'">'+
-    '<h4>Question '+(i+1)+' · '+(item.correct?'Bonne réponse':'À revoir')+'</h4>'+
+   (record.localOnly?'<p class="spx-training-warning">Résultat conservé localement. Il sera synchronisé avec le compte Tim dès que Firebase sera disponible.</p>':'')+
+   '<p class="spx-note">'+(perfect?'10/10 : toutes les réponses sont correctes. Aucune correction nécessaire.':'Une seule tentative. Les erreurs sont expliquées ci-dessous.')+'</p>'+
+   review+
+   (perfect?'':record.items.map((item,i)=>({item,i})).filter(x=>!x.item.correct).map(({item,i})=>'<section class="spx-training-correction bad">'+
+    '<h4>Question '+(i+1)+' · À revoir</h4>'+
     '<p>'+esc(item.prompt||task.questions[i].prompt)+'</p>'+
-    '<p><strong>Ta réponse :</strong> '+esc(task.questions[i].type==='mc'?(task.questions[i].choices[Number(item.response)]||item.response):item.response)+'</p>'+
+    '<p><strong>Ta réponse :</strong> '+esc(answerText(item,i))+'</p>'+
     '<p><strong>Réponse attendue :</strong> '+esc(item.expected)+'</p>'+
     '<p>'+esc(item.explanation||'')+'</p>'+
-    (!item.correct?'<p class="spx-error-tip"><strong>Pour comprendre :</strong> '+esc(GUIDE()?.errorHint(lesson,task.questions[i])||'Reviens à la leçon et observe l’exemple.')+'</p>':'')+'</section>').join('')+
-   '<div class="spx-correction-next"><h4>Pour comprendre les erreurs</h4><p>'+esc(GUIDE()?.difficulty(lesson)||'Reprends la leçon et vérifie les exemples.')+'</p>'+
+    '<p class="spx-error-tip"><strong>Pour comprendre :</strong> '+esc(GUIDE()?.errorHint(lesson,task.questions[i])||'Reviens à la leçon et observe l’exemple.')+'</p></section>').join(''))+
+   (perfect?'':'<div class="spx-correction-next"><h4>Pour comprendre les erreurs</h4><p>'+esc(GUIDE()?.difficulty(lesson)||'Reprends la leçon et vérifie les exemples.')+'</p>'+
    '<button type="button" class="spx-button subtle" id="spx-review-lesson">Revoir la leçon expliquée</button>'+
-   '<button type="button" class="spx-button subtle" id="spx-review-help">Je n’ai pas compris</button></div>'+
+   '<button type="button" class="spx-button subtle" id="spx-review-help">Je n’ai pas compris</button></div>')+
    '<p class="spx-note">Pour continuer sans changer ta note, utilise les mises en situation libres ou les bonus XP de l’accueil.</p>';
   slot.querySelector('#spx-training-return').onclick=drawList;
-  slot.querySelector('#spx-review-lesson').onclick=()=>onLesson?.();
-  slot.querySelector('#spx-review-help').onclick=()=>onHelp?.();
+  if(!perfect){
+   slot.querySelector('#spx-review-lesson').onclick=()=>onLesson?.();
+   slot.querySelector('#spx-review-help').onclick=()=>onHelp?.();
+  }
  }
  drawList();
  const update=()=>{if(!currentId){drawList();syncPending().then(()=>{if(!currentId)drawList();}).catch(()=>{});}};
