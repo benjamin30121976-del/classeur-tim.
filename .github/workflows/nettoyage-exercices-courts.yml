@@ -15,7 +15,7 @@ jobs:
     env:
       TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
       TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
-      NETTOYAGE_MODE: inspect
+      NETTOYAGE_MODE: execute
     steps:
       - uses: actions/checkout@v4
       - name: Installer Chromium
