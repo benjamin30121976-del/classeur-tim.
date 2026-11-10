@@ -88,8 +88,10 @@ function generate(meta){
   }
   for(let i=0;i<10;i++){
    const {v,p}=combos[i],verb=VERBS[v],answer=verb.forms[p];
-   q.push({kind:'write',instructionEs:'Escribe la forma correcta del verbo « '+v+' » con el pronombre « '+PRONOUNS[p]+' ».',
-    instructionFr:'Écris la forme correcte du verbe « '+v+' » avec le pronom « '+PRONOUNS[p]+' ».',
+   q.push({kind:'write',instructionEs:'Conjuga el verbo indicado en presente con el pronombre señalado.',
+    instructionFr:'Conjugue le verbe indiqué au présent avec le pronom demandé.',
+    speechEs:'Conjuga el verbo indicado en presente con el pronombre señalado',
+    speechFr:'Conjugue le verbe indiqué au présent avec le pronom demandé',
     stem:'Verbo: '+v+' — '+PRONOUNS[p]+' ______',right:answer,
     explanation:'Au présent, « '+v+' » ('+verb.meaning+') avec « '+PRONOUNS[p]+' » donne « '+answer+' ». Revois le tableau de conjugaison.'});
   }
@@ -101,26 +103,32 @@ function generate(meta){
   for(const [i,[es,fr]] of chosen.entries()){
    if(series===1){
     const o=options(fr,pool,i+13);
-    q.push({kind:'qcm',instructionEs:'Elige la traducción francesa correcta de « '+es+' ».',
-     instructionFr:'Choisis la bonne traduction française de « '+es+' ».',
+    q.push({kind:'qcm',instructionEs:'Elige la traducción correcta al francés.',
+     instructionFr:'Choisis la bonne traduction en français.',
+     speechEs:'Elige la traducción correcta al francés',
+     speechFr:'Choisis la bonne traduction en français',
      stem:'',sourceEs:es,choices:o.choices,right:o.right,
      explanation:'« '+es+' » signifie « '+fr+' ». Revois le vocabulaire de la leçon.'});
    }else if(series===2){
     const hole=blank(es);
     if(!hole)throw Error('Impossible de créer une phrase à trou');
-    q.push({kind:'gap',instructionEs:'Completa la frase en español para expresar « '+fr+' ».',
-     instructionFr:'Complète la phrase en espagnol pour exprimer « '+fr+' ».',
-     stem:hole.stem,right:hole.answer,
+    q.push({kind:'gap',instructionEs:'Completa la frase en español.',
+     instructionFr:'Complète la phrase en espagnol.',
+     speechEs:'Completa la frase en español',
+     speechFr:'Complète la phrase en espagnol',
+     sourceFr:fr,stem:hole.stem,right:hole.answer,
      explanation:'La phrase complète est « '+es+' ». Il fallait écrire « '+hole.answer+' ». Relis la phrase dans la leçon.'});
    }else{
-    q.push({kind:'write',instructionEs:'Escribe en español « '+fr+' ».',
-     instructionFr:'Écris en espagnol « '+fr+' ».',
-     stem:'',right:es,
+    q.push({kind:'write',instructionEs:'Traduce la expresión al español.',
+     instructionFr:'Traduis l’expression en espagnol.',
+     speechEs:'Traduce la expresión al español',
+     speechFr:'Traduis l’expression en espagnol',
+     sourceFr:fr,stem:'',right:es,
      explanation:'« '+fr+' » s’écrit en espagnol « '+es+' ». Revois le vocabulaire et les phrases de la leçon.'});
    }
   }
  }
- if(q.length!==10||new Set(q.map(x=>x.instructionEs+(x.stem||''))).size!==10)
+ if(q.length!==10||new Set(q.map(x=>x.instructionEs+(x.sourceEs||'')+(x.sourceFr||'')+(x.stem||''))).size!==10)
   throw Error('Questions manquantes ou répétées');
  return q;
 }
@@ -132,9 +140,10 @@ export function spanishEntTask(id){
 export function spanishEntPublicTask(id){
  const t=spanishEntTask(id);if(!t)return null;
  return {id,lessonId:t.lessonId,series:t.series,title:t.title,questions:t.questions.map(
-  ({kind,instructionEs,instructionFr,stem,sourceEs,choices})=>({
-   kind,instructionEs,instructionFr,stem,
-   ...(sourceEs?{sourceEs}:{}),...(Array.isArray(choices)?{choices}:{})
+  ({kind,instructionEs,instructionFr,speechEs,speechFr,stem,sourceEs,sourceFr,choices})=>({
+   kind,instructionEs,instructionFr,speechEs,speechFr,stem,
+   ...(sourceEs?{sourceEs}:{}),...(sourceFr?{sourceFr}:{}),
+   ...(Array.isArray(choices)?{choices}:{})
   }))};
 }
 export function gradeSpanishEntTask(id,answers,translationsUsed){
