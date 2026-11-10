@@ -215,6 +215,70 @@ function appendFileLinks(root,refs,metas,translations){
   }
  }
 }
+
+/* Leçon BIS L01 : aide pédagogique en français, distincte du cours ENT original.
+   Première séance du 16/09/2026, réf. ENT 10099~6400501.
+   Aucun exercice ajouté, aucune donnée privée enregistrée. */
+function appendBisL01(panel){
+ const bis=$('details','ent-es-bis-l01');
+ bis.style.cssText='margin:14px 0;padding:12px 14px;border:2px solid #a7a1eb;border-radius:13px;background:#f5f3ff;color:#232b46';
+ const toggle=$('summary','','Ouvrir la leçon BIS — comprendre « Se présenter » (en français)');
+ toggle.style.cssText='cursor:pointer;font-weight:900;font-size:18px;line-height:1.45;color:#263a97;padding:10px 3px';
+ bis.append(toggle);
+ const body=$('div','ent-es-bis-body');
+ body.style.cssText='font-size:16px;line-height:1.65;color:#1e2b43;padding:4px 2px 14px';
+ const heading=(s)=>{const e=$('h4','',s);e.style.cssText='margin:22px 0 9px;font-size:18px;color:#1c307c';body.append(e);};
+ const paragraph=(s)=>{const e=$('p','',s);e.style.cssText='margin:7px 0 12px';body.append(e);};
+ const list=(items)=>{const e=$('ul');e.style.cssText='padding-left:23px;margin:9px 0 16px';for(const t of items){const li=$('li','',t);li.style.cssText='margin:8px 0';e.append(li);}body.append(e);};
+ const example=(es,fr)=>{
+  const row=$('div','ent-es-bis-example');
+  row.style.cssText='padding:10px 12px;margin:7px 0;background:#fff;border:1px solid #d6d9ed;border-radius:10px';
+  const spanish=$('strong','',es);spanish.style.cssText='display:block;color:#253996;font-weight:800';
+  const french=$('span','',fr);french.style.cssText='display:block;color:#34405a;margin-top:2px';
+  row.append(spanish,french);body.append(row);
+ };
+ heading('1. À quoi sert cette leçon ?');
+ paragraph('La fiche de renseignements (« ficha de datos ») sert à parler de toi. Le professeur demande une présentation à l’oral, notée sur 10, à partir d’une fiche vide. Il faut donc savoir former quelques phrases sans lire un texte tout préparé.');
+ paragraph('L’objectif n’est pas de traduire chaque mot de la fiche par cœur : il faut comprendre la question, puis savoir répondre.');
+ heading('2. Comprendre les mots de la fiche');
+ list([
+  'Mi nombre = mon prénom ; mi apellido = mon nom de famille.',
+  'Mi edad = mon âge ; mi fecha de nacimiento = ma date de naissance.',
+  'Mi dirección = mon adresse ; mi lugar de nacimiento = mon lieu de naissance.',
+  'Mi nacionalidad = ma nationalité ; mis gustos = mes goûts.'
+ ]);
+ heading('3. Savoir répondre aux questions');
+ example('¿Cómo te llamas? — Me llamo Alex.','Comment t’appelles-tu ? — Je m’appelle Alex.');
+ example('¿Cuántos años tienes? — Tengo quince años.','Quel âge as-tu ? — J’ai quinze ans.');
+ example('¿Dónde vives? — Vivo en Francia.','Où habites-tu ? — J’habite en France.');
+ example('¿De qué nacionalidad eres? — Soy francés.','Quelle est ta nationalité ? — Je suis français. (« francesa » au féminin.)');
+ example('¿Qué te gusta? — Me gusta el fútbol.','Qu’aimes-tu ? — J’aime le football.');
+ heading('4. Les trois verbes demandés par le professeur');
+ paragraph('LLAMARSE signifie « s’appeler », SER signifie « être », IR signifie « aller ». Voici les six personnes au présent. Dans chaque ligne, l’ordre est : s’appeler / être / aller.');
+ list([
+  'Yo (je) : me llamo / soy / voy.',
+  'Tú (tu) : te llamas / eres / vas.',
+  'Él, ella (il, elle) : se llama / es / va.',
+  'Nosotros, nosotras (nous) : nos llamamos / somos / vamos.',
+  'Vosotros, vosotras (vous) : os llamáis / sois / vais.',
+  'Ellos, ellas (ils, elles) : se llaman / son / van.'
+ ]);
+ paragraph('Pour indiquer l’âge, on utilise un autre verbe : TENER (avoir). « Tengo quince años » = « J’ai quinze ans ». On ne dit pas « Soy quince años ».');
+ heading('5. Exemple de présentation complète');
+ example('Hola. Me llamo Alex. Tengo quince años. Vivo en Francia. Soy francés. Me gusta el fútbol. Voy al colegio.','Bonjour. Je m’appelle Alex. J’ai quinze ans. J’habite en France. Je suis français. J’aime le football. Je vais au collège.');
+ paragraph('Cet exemple utilise un personnage fictif. Pour ton oral, remplace son prénom et ses informations par les tiennes, sans les publier sur le site.');
+ heading('6. Ce qu’il faut apprendre et comprendre');
+ list([
+  'Comprendre les rubriques de la ficha de datos.',
+  'Savoir dire au moins ton prénom, ton âge, où tu habites et ce que tu aimes.',
+  'Savoir répondre aux questions simples ci-dessus avec une phrase complète.',
+  'Reconnaître et conjuguer llamarse, ser et ir, comme demandé sur la photocopie.',
+  'Comprendre que « me llamo » veut dire « je m’appelle », que « soy » exprime une identité et que « voy » signifie « je vais ».'
+ ]);
+ paragraph('Pour réviser : lis les exemples avec leur traduction, cache la partie française, puis refais la présentation à voix haute sans regarder la fiche.');
+ bis.append(body);panel.append(bis);
+}
+
 async function render(root,opts={}){
  root.replaceChildren();
  if(typeof opts.back==='function'){
@@ -307,6 +371,7 @@ async function render(root,opts={}){
    txt(original,lessonHtml(l));
    coursePanel.append(original);
    panel.append(coursePanel);
+   if(String(id)==='10099~6400501')appendBisL01(panel);
    const associatedHomeworkIds=lessonHomeworkIds(l);
    const lessonFiles=pack.index.filter(i=>(i.rattache_a||[]).some(x=>
      (x.type==='cours'&&x.id===id)||
