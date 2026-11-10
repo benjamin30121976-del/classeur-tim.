@@ -32,7 +32,7 @@ if(!['inspect','execute'].includes(mode))throw Error('Mode inconnu');
    const used=[...attempts.docs,...privateAttempts.docs].filter(d=>wanted.has(d.id));
    const beforeSPQ=privateAttempts.docs.filter(d=>d.id==='SPQ_L01_01').length;
    const report={mode,oldMain:oldMain.length,oldExtra:oldExtra.length,used:used.length,spqKept:beforeSPQ,remaining:main.data().exercises.length-oldMain.length,
-    oldIds:oldMain.map(e=>e.id).sort(),oldQuestionSizes:oldMain.map(e=>e.questions?.length||0).sort((a,b)=>a-b)};
+    oldIds:oldMain.map(e=>e.id).sort(),oldQuestionSizes:oldMain.map(e=>e.questions?.length||0).sort((a,b)=>a-b),allMain:main.data().exercises.map(e=>({id:e.id,subject:e.subject||'',length:e.questions?.length||0,category:e.category||'',kind:e.kind||''})).sort((a,b)=>String(a.id).localeCompare(String(b.id)))};
    if(mode==='inspect')return report;
    if(oldMain.length!==28||new Set(oldMain.map(e=>e.id)).size!==28||used.length!==0||
       oldMain.some(e=>e.subject&&e.subject!=='Espagnol')||
