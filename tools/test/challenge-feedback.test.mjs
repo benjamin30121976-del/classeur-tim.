@@ -55,6 +55,19 @@ test('Le résultat présente la note avant les XP, puis les réponses et les le�
  assert.ok(h.detail.children.indexOf(summary)<h.detail.children.indexOf(correction));
  assert.ok(!nodes.some(x=>x.cls==='panel'&&x.children.some(y=>y.cls==='q')));
 });
+test('Une réussite parfaite reste relisible sans correction détaillée',()=>{
+ const perfect=structuredClone(result);
+ perfect.score=2;perfect.total=2;perfect.xp=3;
+ perfect.answers[1]={question:'Écris gracias',response:'gracias',correct:true,expected:'gracias',explanation:'Réponse bien écrite.'};
+ const h=harness(perfect);h.openExercise(h.exercise.id);
+ const texts=all(h.detail).map(x=>x.textContent);
+ assert.ok(texts.includes('Ta note : 2/2'));
+ assert.ok(texts.includes('Toutes les réponses sont correctes — aucune correction nécessaire.'));
+ assert.ok(texts.includes('Revoir mon exercice — questions et réponses'));
+ assert.ok(texts.includes('Ma réponse : gracias'));
+ assert.ok(!texts.some(x=>x.startsWith('Réponse attendue :')||x.startsWith('Correction détaillée :')||x.startsWith('Explication :')));
+ assert.ok(!texts.includes('Valider définitivement cet exercice'));
+});
 test('Si la correction ne se charge pas, Tim peut la recharger sans recommencer',()=>{
  const h=harness({...structuredClone(result),score:null,total:null,answers:[],correctionLocked:true});
  h.openExercise(h.exercise.id);
