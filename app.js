@@ -308,7 +308,7 @@ if(old){
   const grade=Number.isFinite(old.score)&&Number.isFinite(old.total)?old.score+'/'+old.total:'note en cours de chargement';
   const xp=Number.isFinite(old.xp)?(old.xp>=0?'+':'')+old.xp+' XP':'XP indisponibles';
   summary.append(E('h3','','Ta note : '+grade),E('p','challenge-result-xp','XP attribués : '+xp));
-  summary.append(E('p','small','Défi terminé. Tes réponses sont enregistrées ; tu peux revoir la correction, mais pas recommencer.'));
+  summary.append(E('p','small','Défi terminé. Tes réponses sont enregistrées ; tu peux relire ton exercice, mais pas recommencer.'));
   root.append(summary);
  }
  const locked=old.correctionStatus==='pending-parent'||old.correctionLocked===true;
@@ -386,10 +386,24 @@ scrollTop();}
 function renderFeedback(ex,t,root){
  const isChallenge=['daily','weekly','sunday'].includes(ex.kind);
  const box=E('section','result'+(t.needsReview?' waiting':''));
+ const perfect=!t.needsReview&&Number(t.score)===Number(t.total)&&Number(t.total)>0&&
+  Array.isArray(t.answers)&&t.answers.length===Number(t.total)&&t.answers.every(a=>a.correct===true);
  if(isChallenge)box.id='challenge-detailed-correction';
- box.append(E('h3','',t.needsReview?'Rédaction enregistrée — à revoir':'Correction détaillée : '+t.score+'/'+t.total));
+ box.append(E('h3','',perfect?'Toutes les réponses sont correctes — aucune correction nécessaire.':
+  t.needsReview?'Rédaction enregistrée — à revoir':'Correction détaillée : '+t.score+'/'+t.total));
  box.append(E('p','subtle','Validé le '+new Date(t.date).toLocaleString('fr-FR')+'. Les réponses sont verrouillées sur tous les appareils.'));
+ // Questions et réponses toujours relisibles, sans expliquer les réponses déjà correctes.
+ const review=E('details','summary-details');
+ review.append(E('summary','','Revoir mon exercice — questions et réponses'));
  for(const [i,a] of t.answers.entries()){
+  const q=ex.questions[i]||{},given=q.type==='mc'?(q.options?.[Number(a.response)]??a.response):a.response;
+  const row=E('div','separated');
+  row.append(E('strong','',(i+1)+'. '+safe(a.question||q.q||'Question')),E('p','','Ma réponse : '+safe(given)));
+  review.append(row);
+ }
+ box.append(review);
+ for(const [i,a] of (perfect?[]:t.answers).entries()){
+  if(a.correct===true)continue;
   const q=ex.questions[i]||{},p=E('div','feedback');
   const given=q.type==='mc'?(q.options?.[Number(a.response)]??a.response):a.response;
   p.append(E('strong','',(i+1)+'. '+safe(a.question||q.q||'Question')),E('p','','Ta réponse : '+safe(given)));
