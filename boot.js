@@ -4,7 +4,7 @@ import {getFirestore,doc,getDoc,setDoc,deleteDoc,collection,getDocs,query,where,
 import {getFunctions,httpsCallable} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-functions.js';
 import {initializeAppCheck,ReCaptchaV3Provider} from 'https://www.gstatic.com/firebasejs/13.2.0/firebase-app-check.js';
 import {makeAttachmentBridge} from './attachments.js';
-import {setupMissions,isMissionId} from './missions-v18.mjs';
+import {setupMissions,isMissionId} from './missions-v18.mjs?v=defi-du-jour-20261110';
 
 // Only the two existing Firebase Authentication users are authorized.
 // Security does NOT rely on these frontend constants: Firestore Rules enforce them.
@@ -918,7 +918,7 @@ async function startSession(user){
  document.getElementById('account-name').textContent=isParent?'Espace parent — compte connecté':'Espace Tim — compte connecté';
  document.querySelectorAll('[data-nav="parent"]').forEach(el=>el.hidden=!isParent);
  document.getElementById('logout-button').onclick=()=>signOut(auth);
- const sc=document.createElement('script');sc.src='./app.js?v=espagnol-xp-par-exercice-20261110';sc.onerror=()=>{stopApp();message('Le module pédagogique du classeur n’a pas chargé.');};
+ const sc=document.createElement('script');sc.src='./app.js?v=loup-defis-et-barre-20261110';sc.onerror=()=>{stopApp();message('Le module pédagogique du classeur n’a pas chargé.');};
  sc.addEventListener('load',()=>{try{if(document.querySelector('.mission-hero'))window.TIM_INTRO_SHOW?.();}catch(e){console.warn('Animation d’ouverture indisponible :',e);}});
  document.body.append(sc);appLoaded=true;
 }
