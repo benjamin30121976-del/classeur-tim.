@@ -237,6 +237,19 @@ async function saveSpanishEnt(pack,binaries,progress=()=>{}){
   // On conserve intégralement les anciennes données (dont les notes et exercices)
   // et on stocke l'ENT sous le champ deja autorise « metadata ».
   // Le filtre d'affichage isole uniquement l'espagnol original sans destruction.
+  // Si le nouvel export correspond encore aux memes cours/devoirs,
+  // ne pas perdre les traductions francaises deja sauvegardees.
+  let keptTranslations=null;
+  const oldTranslations=previous.metadata?.spanishEnt?.translations;
+  if(oldTranslations&&ent.validateTranslations){
+   try{
+    await ent.validateTranslations(pack,{
+     schema:oldTranslations.schema,language:oldTranslations.language,
+     courses:oldTranslations.courses,homework:oldTranslations.homework
+    });
+    keptTranslations=oldTranslations;
+   }catch{keptTranslations=null;}
+  }
   const next={
    ...previous,
    metadata:{
@@ -244,7 +257,8 @@ async function saveSpanishEnt(pack,binaries,progress=()=>{}){
     spanishEnt:{
      lessons:pack.lessons,homework:pack.homework,dates:pack.dates,index:pack.index,
      collectedAt:pack.report.date_collecte||new Date().toISOString(),
-     source:'ENT Skolengo — données originales Termux',version:2
+     source:'ENT Skolengo — données originales Termux',version:2,
+     ...(keptTranslations?{translations:keptTranslations}:{})
     }
    }
   };
@@ -266,6 +280,39 @@ async function saveSpanishEnt(pack,binaries,progress=()=>{}){
   }
   throw new Error(stage+' : '+String(error?.message||error));
  }
+}
+
+// Traductions francaises : enregistrement prive dans le meme document Firebase.
+// Les textes ENT et les anciennes notes ne sont jamais modifies.
+async function saveSpanishTranslations(translations){
+ if(activeUser?.uid!==PARENT_UID)throw Error('La traduction doit être installée depuis le compte Parent.');
+ const ent=window.TIM_SPANISH_ENT_EXACT;
+ if(!ent?.validateTranslations)throw Error('Le module de traduction n’est pas chargé.');
+ const ref=doc(db,'content','main');
+ const snap=await getDoc(ref);
+ if(!snap.exists())throw Error('Le classeur principal est introuvable.');
+ const old=decodeFromFirestore(snap.data());
+ const original=old.metadata?.spanishEnt;
+ if(!original)throw Error('Il faut d’abord installer les cours ENT dans la matière espagnole.');
+ const counts=await ent.validateTranslations(original,translations);
+ const compact={
+  schema:translations.schema,language:'fr',
+  notice:'Traduction pédagogique non officielle ; les textes et PDF ENT restent inchangés.',
+  courses:translations.courses,homework:translations.homework,
+  validatedAt:new Date().toISOString()
+ };
+ const next={...old,metadata:{...old.metadata,spanishEnt:{...original,translations:compact}}};
+ const bytes=new TextEncoder().encode(JSON.stringify(next)).length;
+ if(bytes>850000)throw Error('Le document Firebase deviendrait trop volumineux. Les anciens cours restent inchangés.');
+ try{await setDoc(ref,encodeForFirestore(next));}
+ catch(e){throw Error('Firebase a refusé la sauvegarde des traductions : '+String(e.code||e.message||e));}
+ const check=await getDoc(ref);
+ if(!check.exists())throw Error('Vérification de la sauvegarde impossible.');
+ const saved=decodeFromFirestore(check.data()).metadata?.spanishEnt?.translations;
+ if(saved?.language!=='fr'||Object.keys(saved.courses||{}).length!==counts.lessons||
+    Object.keys(saved.homework||{}).length!==counts.homework)
+  throw Error('La sauvegarde n’a pas pu être confirmée.');
+ return counts;
 }
 
 // Aucune installation automatique de cours hors ENT.
@@ -525,6 +572,7 @@ async function startSession(user){
   saveLesson:saveEditableLesson,
   attachments:makeAttachmentBridge(db,()=>activeUser,PARENT_UID,TIM_UID),
   saveSpanishEnt,
+  saveSpanishTranslations,
   diagnose:runFirebaseDiagnostic,
   saveAlertWebhook,
   readAlertWebhook,
