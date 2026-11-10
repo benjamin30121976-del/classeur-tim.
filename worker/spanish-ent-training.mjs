@@ -27,6 +27,21 @@ function options(correct,pool,seed){
  const unrotated=[correct,...other],rot=seed%4;
  return {choices:[...unrotated.slice(rot),...unrotated.slice(0,rot)],right:(4-rot)%4};
 }
+
+const STOPWORDS=new Set(['de','del','el','la','los','las','un','una','unos','unas','en','con','por','para','que','me','te','se','mi','tu','su','y','o','a','al','es']);
+function tokens(value){return Array.from(String(value).matchAll(/[a-záéíóúüñ]+/gi),m=>({word:m[0],at:m.index}));}
+function blank(es){
+ const words=tokens(es);
+ if(!words.length)return null;
+ const selected=[...words].reverse().find(t=>t.word.length>=3&&!STOPWORDS.has(t.word.toLocaleLowerCase('es')))||
+    [...words].reverse().find(t=>t.word.length>=2);
+ if(!selected)return null;
+ return {stem:es.slice(0,selected.at)+'______'+es.slice(selected.at+selected.word.length),answer:selected.word};
+}
+function norm(value){
+ return String(value??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+   .replace(/[’']/g,"").replace(/[¿?¡!.,;:()«»"-]/g,' ').replace(/\s+/g,' ').trim().toLowerCase();
+}
 function generate(meta){
  const {lesson,series}=meta;
  const q=[];
@@ -40,39 +55,71 @@ function generate(meta){
   }
   for(let i=0;i<10;i++){
    const {v,p}=combos[i],verb=VERBS[v],answer=verb.forms[p];
-   const o=options(answer,verb.forms,i+9);
-   q.push({prompt:'Avec « '+PRONOUNS[p]+' », quelle forme de « '+v+' » ('+verb.meaning+') est correcte ?',choices:o.choices,right:o.right,
-    explanation:'Au présent, « '+v+' » ('+verb.meaning+') avec « '+PRONOUNS[p]+' » donne « '+answer+' ». Revois ce verbe dans les tableaux de la leçon.'});
+   q.push({kind:'write',instructionEs:'Escribe la forma correcta del verbo « '+v+' » con el pronombre « '+PRONOUNS[p]+' ».',
+    instructionFr:'Écris la forme correcte du verbe « '+v+' » avec le pronom « '+PRONOUNS[p]+' ».',
+    stem:'Verbo: '+v+' — '+PRONOUNS[p]+' ______',right:answer,
+    explanation:'Au présent, « '+v+' » ('+verb.meaning+') avec « '+PRONOUNS[p]+' » donne « '+answer+' ». Revois le tableau de conjugaison.'});
   }
  }else{
   const pairs=series===1?unique(lesson.vocab):series===2?unique([...lesson.examples,...lesson.vocab]):unique([...lesson.vocab,...lesson.examples]);
   if(pairs.length<10)throw Error('Pas assez de vocabulaire');
   const chosen=(series===3?[...pairs].reverse():pairs).slice(0,10);
-  const pool=pairs.map(x=>series===3?x[0]:x[1]);
+  const pool=pairs.map(x=>x[1]);
   for(const [i,[es,fr]] of chosen.entries()){
-   const answer=series===3?es:fr,o=options(answer,pool,i+series*13);
-   q.push({prompt:series===3?'Comment écrit-on en espagnol « '+fr+' » ?':'Que signifie en français « '+es+' » ?',
-    sourceEs:es,choices:o.choices,right:o.right,
-    explanation:series===3?'« '+fr+' » se dit « '+es+' » en espagnol. Relis le dictionnaire de la leçon.':
-     '« '+es+' » signifie « '+fr+' ». Relis les exemples traduits de la leçon.'});
+   if(series===1){
+    const o=options(fr,pool,i+13);
+    q.push({kind:'qcm',instructionEs:'Elige la traducción francesa correcta de « '+es+' ».',
+     instructionFr:'Choisis la bonne traduction française de « '+es+' ».',
+     stem:'',sourceEs:es,choices:o.choices,right:o.right,
+     explanation:'« '+es+' » signifie « '+fr+' ». Revois le vocabulaire de la leçon.'});
+   }else if(series===2){
+    const hole=blank(es);
+    if(!hole)throw Error('Impossible de créer une phrase à trou');
+    q.push({kind:'gap',instructionEs:'Completa la frase en español para expresar « '+fr+' ».',
+     instructionFr:'Complète la phrase en espagnol pour exprimer « '+fr+' ».',
+     stem:hole.stem,right:hole.answer,
+     explanation:'La phrase complète est « '+es+' ». Il fallait écrire « '+hole.answer+' ». Relis la phrase dans la leçon.'});
+   }else{
+    q.push({kind:'write',instructionEs:'Escribe en español « '+fr+' ».',
+     instructionFr:'Écris en espagnol « '+fr+' ».',
+     stem:'',right:es,
+     explanation:'« '+fr+' » s’écrit en espagnol « '+es+' ». Revois le vocabulaire et les phrases de la leçon.'});
+   }
   }
  }
- if(q.length!==10||new Set(q.map(x=>x.prompt)).size!==10)throw Error('Questions manquantes ou répétées');
+ if(q.length!==10||new Set(q.map(x=>x.instructionEs+(x.stem||''))).size!==10)
+  throw Error('Questions manquantes ou répétées');
  return q;
 }
 export function spanishEntTask(id){
  const c=context(id);if(!c)return null;
- const names=['Je comprends les mots','Je comprends les phrases','Je sais utiliser'];
+ const names=['Je comprends les mots','Je complète les phrases','J’écris seul'];
  return {id,lessonId:c.lessonId,series:c.series,title:'Exercice '+c.series+' — '+names[c.series-1],questions:generate(c)};
 }
 export function spanishEntPublicTask(id){
  const t=spanishEntTask(id);if(!t)return null;
- return {id,lessonId:t.lessonId,series:t.series,title:t.title,questions:t.questions.map(({prompt,choices,sourceEs})=>({prompt,choices,...(sourceEs?{sourceEs}:{})}))};
+ return {id,lessonId:t.lessonId,series:t.series,title:t.title,questions:t.questions.map(
+  ({kind,instructionEs,instructionFr,stem,sourceEs,choices})=>({
+   kind,instructionEs,instructionFr,stem,
+   ...(sourceEs?{sourceEs}:{}),...(Array.isArray(choices)?{choices}:{})
+  }))};
 }
-export function gradeSpanishEntTask(id,answers){
+export function gradeSpanishEntTask(id,answers,translationsUsed){
  const t=spanishEntTask(id);
- if(!t||!Array.isArray(answers)||answers.length!==10||answers.some(v=>!Number.isInteger(v)||v<0||v>3))throw Error('Réponses invalides');
- const items=t.questions.map((q,i)=>({prompt:q.prompt,response:q.choices[answers[i]],expected:q.choices[q.right],correct:q.right===answers[i],explanation:q.explanation}));
- return {id,lessonId:t.lessonId,series:t.series,title:t.title,score:items.filter(x=>x.correct).length,total:10,xp:0,items};
+ if(!t||!Array.isArray(answers)||answers.length!==10||!Array.isArray(translationsUsed)||translationsUsed.length!==10)
+  throw Error('Réponses invalides');
+ if(translationsUsed.some(x=>typeof x!=='boolean'))throw Error('Suivi des aides invalide');
+ if(answers.some((x,i)=>t.questions[i].kind==='qcm'?
+    (!Number.isInteger(x)||x<0||x>3):
+    (typeof x!=='string'||x.trim().length<1||x.length>200)))
+  throw Error('Réponse écrite invalide');
+ const items=t.questions.map((q,i)=>{
+  const correct=q.kind==='qcm'?q.right===answers[i]:norm(answers[i])===norm(q.right);
+  return {prompt:q.instructionEs+(q.stem?' '+q.stem:''),response:q.kind==='qcm'?q.choices[answers[i]]:answers[i],
+   expected:q.kind==='qcm'?q.choices[q.right]:q.right,correct,explanation:q.explanation,translationUsed:translationsUsed[i]};
+ });
+ return {id,lessonId:t.lessonId,series:t.series,title:t.title,
+  score:items.filter(x=>x.correct).length,total:10,xp:0,
+  translationHelpCount:translationsUsed.filter(Boolean).length,items};
 }
 export const SPANISH_ENT_LESSONS=Object.keys(BANK);
