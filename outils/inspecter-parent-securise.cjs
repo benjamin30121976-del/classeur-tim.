@@ -164,6 +164,109 @@ async function inspect(browser,label,viewport){
       check(label+' exercice complet avec cinq questions',(await five.count())===5,'Fiche ENT sans validation');
       await picture(page,label+'-maths-programmes-a-b');
     }catch(e){check(label+' fiche programmes A/B',false,'Navigation ou affichage incomplet : '+String(e.message||e).slice(0,110));}
+
+    // AUDIT ESPAGNOL NOVEMBRE 2026 — lecture seule des vraies pages et du serveur.
+    // Aucun submit / upload / changement de donnee ni affichage de resultat individuel.
+    try{
+      await page.locator('[data-nav="matieres"]:visible').first().click({timeout:10000});
+      await page.locator('#matieres-content button.matter-espanol').first().click({timeout:12000});
+      await page.locator('#matieres-content details.tim-es-lesson').first().waitFor({timeout:15000});
+      const lessonCards=page.locator('#matieres-content details.tim-es-lesson');
+      const cardCount=await lessonCards.count();
+      check(label+' espagnol 13 lecons affichees',cardCount===13,'Cartes : '+cardCount);
+      let goodLessons=0,missingLessons=[];
+      for(let i=0;i<cardCount;i++){
+        const card=lessonCards.nth(i);
+        await card.evaluate(el=>el.open=true);
+        const open=card.getByRole('button',{name:'Lire et écouter la leçon'}).first();
+        if(await open.count())await open.click({timeout:10000});
+        const detail=await card.evaluate(el=>({
+          title:el.querySelector('summary')?.textContent||'',
+          text:(el.querySelector('div:not(.ent-es-archive-parent)')?.textContent||'').length,
+          show:(el.textContent||'').includes('Mes 3 exercices'),
+          lesson:!!el.querySelector('button[data-say-es], [data-say-es], .ent-bis-audio')
+        }));
+        if(detail.text>150&&detail.show&&detail.lesson)goodLessons++;
+        else missingLessons.push((i+1)+':'+detail.text+'/'+detail.show+'/'+detail.lesson);
+        if(i!==0 && i!==cardCount-1)await card.evaluate(el=>el.open=false);
+      }
+      check(label+' espagnol pedagogie 13 lecons presentes',goodLessons===13,
+        'Fiches avec contenu et ecoute : '+goodLessons+'/'+cardCount+
+        (missingLessons.length?' ; anomalies '+missingLessons.join('; ').slice(0,150):''));
+      const mobileSizing=await page.evaluate(()=>({
+        wide:document.documentElement.scrollWidth-document.documentElement.clientWidth,
+        width:document.documentElement.clientWidth
+      }));
+      check(label+' espagnol aucune barre horizontale',mobileSizing.wide<=12,
+        'Debordement : '+mobileSizing.wide+' px ; largeur : '+mobileSizing.width+' px');
+      if(label==='telephone')await picture(page,'telephone-espagnol-lecons');
+      if(label==='ordinateur'){
+        const training=await page.evaluate(async()=>{
+          const bridge=window.__TIM_BRIDGE;let correct=0,wrong=0,fail=0;const examples=[];
+          for(let l=1;l<=13;l++)for(let s=1;s<=3;s++){
+            const id='ESE_L'+String(l).padStart(2,'0')+'_0'+s;
+            try{
+              const r=await bridge.spanishEntTrainingTask(id),qs=r?.task?.questions||[];
+              if(qs.length===10 && qs.every(q=>!('right' in q)&&!('expected' in q)&&q.instructionEs))
+                correct++;
+              else {wrong++;examples.push(id+' format incomplet');}
+            }catch(e){fail++;examples.push(id+' API indisponible');}
+          }
+          return {correct,wrong,fail,examples};
+        });
+        check('Serveur Parent : 39 exercices espagnols lisibles et sans corriges exposes',
+          training.correct===39,'Complets : '+training.correct+'/39 ; erreurs : '+training.wrong+
+          ' ; requetes bloquees : '+training.fail+
+          (training.examples.length?' ; '+training.examples.slice(0,4).join(', '):''));
+      }
+      const archive=page.locator('#matieres-content details.ent-es-archive-parent').first();
+      check(label+' espagnol acces archive Parent',await archive.count()===1);
+      if(await archive.count()){
+        await archive.evaluate(el=>el.open=true);
+        await page.waitForFunction(()=>{
+          const r=document.querySelector('#matieres-content details.ent-es-archive-parent');
+          return !!r && (r.textContent||'').includes('PDF originaux disponibles dans Firebase');
+        },null,{timeout:20000}).catch(()=>{});
+        const archiveInfo=await page.evaluate(async()=>{
+          const pack=window.__TIM_DATA?.metadata?.spanishEnt;
+          const bridge=window.__TIM_BRIDGE?.attachments;
+          const root=document.querySelector('#matieres-content details.ent-es-archive-parent');
+          const output={installed:!!pack,lessons:pack?.lessons?.length||0,
+            homework:pack?.homework?.length||0,expected:pack?.index?.length||0,
+            displayed:root?.querySelectorAll('.ent-es-pdf-open').length||0,
+            visibleRows:root?.querySelectorAll('.ent-es-file').length||0,
+            readable:0,failed:0};
+          if(!pack||!bridge)return output;
+          try{
+            const stored=await bridge.list('lesson','ENTESP_2026');
+            for(const entry of pack.index||[]){
+              const name=String(entry.nom_dans_archive||'').split('/').pop();
+              const match=stored.find(x=>x.fileName===name);
+              if(!match){output.failed++;continue;}
+              try{
+                const blob=await bridge.read(match);
+                const signature=await blob.slice(0,5).text();
+                if(signature==='%PDF-'&&blob.size>0)output.readable++;
+                else output.failed++;
+              }catch{output.failed++;}
+            }
+          }catch{output.failed=output.expected;}
+          return output;
+        });
+        check(label+' original ENT espagnol installe',archiveInfo.installed,
+          'Seances : '+archiveInfo.lessons+' ; devoirs : '+archiveInfo.homework+
+          ' ; PDF references : '+archiveInfo.expected);
+        check(label+' PDF espagnols en Firebase et lisibles',
+          archiveInfo.expected===9 && archiveInfo.readable===9 && archiveInfo.failed===0,
+          'PDF lisibles : '+archiveInfo.readable+'/'+archiveInfo.expected+
+          ' ; absents/inaccessibles : '+archiveInfo.failed+
+          ' ; boutons visibles : '+archiveInfo.displayed);
+        data.notes.push(label+' - controle archive espagnole : '+JSON.stringify(archiveInfo));
+        if(label==='telephone')await picture(page,'telephone-espagnol-archive');
+      }
+    }catch(e){
+      check(label+' audit espagnol interrompu',false,String(e?.message||e).slice(0,160));
+    }
     // Les résultats individuels ont été volontairement masqués pour les captures.
     // Lire textContent (et non isVisible/innerText) pour ne pas confondre masquage et panne.
     await page.waitForFunction(()=>{
