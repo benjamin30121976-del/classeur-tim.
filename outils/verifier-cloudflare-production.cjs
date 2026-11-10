@@ -72,8 +72,10 @@ async function getStatus(){
      await intro.waitFor({state:'hidden',timeout:20000});
    }
    await timPage.waitForFunction(()=>typeof window.openLesson==='function' && !!document.querySelector('#home.page.active'),null,{timeout:15000});
-   await timPage.locator('[data-nav="matieres"]:visible').first().click({timeout:12000});
-   await timPage.locator('#matieres-content button.matter-espanol').first().click();
+   // Test de navigation par evenement DOM : evite les calques visuels temporaires (aucune ecriture).
+   await timPage.locator('[data-nav="matieres"]').first().evaluate(el=>el.click());
+   await timPage.locator('#matieres-content button.matter-espanol').first().waitFor({timeout:12000});
+   await timPage.locator('#matieres-content button.matter-espanol').first().evaluate(el=>el.click());
    await timPage.locator('#matieres-content details.tim-es-lesson').first().waitFor({timeout:20000});
    const view=await timPage.evaluate(async()=>{
      const bridge=window.__TIM_BRIDGE;
