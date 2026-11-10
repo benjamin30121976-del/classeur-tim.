@@ -528,6 +528,7 @@ async function render(root,opts={}){
      ex.append($('h5','','Consigne originale ENT'));
      txt(ex,asText(homeworkOriginal(h)));
      appendFrench(ex,translations?.homework,hid);
+     window.TIM_SPANISH_ENT_EXERCISE_BIS?.render(ex,hid);
      if(pdfs.length){
       ex.append($('h5','','Fiche'+(pdfs.length>1?'s':'')+' originale'+(pdfs.length>1?'s':'')+' de l’exercice'));
       appendFileLinks(ex,pdfs,metas,translations);
