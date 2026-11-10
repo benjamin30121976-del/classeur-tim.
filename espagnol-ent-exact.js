@@ -291,32 +291,60 @@ async function render(root,opts={}){
    line2.style.cssText='font-size:.84em;opacity:.8;white-space:normal;overflow-wrap:anywhere;margin-top:4px';
    heading.append(line1,line2);panel.append(heading);
    panel.append($('small','','Intitulé ENT : '+String(l.data.attributes?.title||'Espagnol LV2')+' · Réf. '+id));
-   // Fiches attachées directement à la séance ENT, conservées à leur emplacement.
-   // Les fichiers de l'ENT sont rattachés aux devoirs associés à la séance.
    const associatedHomeworkIds=lessonHomeworkIds(l);
    const lessonFiles=pack.index.filter(i=>(i.rattache_a||[]).some(x=>
      (x.type==='cours'&&x.id===id)||
      (x.type==='travail_associe'&&associatedHomeworkIds.includes(x.id))
    ));
-   if(lessonFiles.length){
-    panel.append($('h4','','Fiches PDF originales liées aux devoirs de cette séance ('+lessonFiles.length+')'));
-    appendFileLinks(panel,lessonFiles,metas,translations);
+   // La leçon et l'exercice de l'ENT ne sont pas des questionnaires interactifs
+   // dans le classeur : la consigne originale s'ouvre ici, avec sa fiche si elle existe.
+   const associatedHomework=associatedHomeworkIds.map(hid=>homeworkById.get(hid)).filter(Boolean);
+   if(associatedHomework.length || lessonFiles.length){
+    const exerciseArea=$('section','ent-es-assignment-area');
+    exerciseArea.style.cssText='padding:10px;margin:14px 0;border:1px solid #5c88b9;border-radius:12px;background:#102b40';
+    exerciseArea.append($('h4','','Exercices et devoirs de l’ENT'));
+    exerciseArea.append($('p','','Appuie sur « Voir l’exercice » pour lire la consigne originale et sa traduction. Si une fiche PDF est prévue par la professeure, son bouton est également affiché.'));
+    for(const h of associatedHomework){
+     const hid=String(h.data.id),attrs=h.data.attributes||{};
+     const pdfs=pack.index.filter(i=>(i.rattache_a||[]).some(x=>x.type==='travail_associe'&&x.id===hid));
+     const ex=$('details','ent-es-exercise');
+     ex.style.cssText='margin:10px 0;padding:10px 12px;border:1px solid #82b6c9;border-radius:10px;background:#173450';
+     const summary=$('summary','','Voir l’exercice / le devoir ENT'+(pdfs.length?' — '+pdfs.length+' fiche'+(pdfs.length>1?'s':'')+' PDF':' — consigne écrite'));
+     summary.style.cssText='cursor:pointer;font-weight:800;color:#ffffff;font-size:17px;padding:10px 4px;line-height:1.4';
+     ex.append(summary);
+     ex.append($('h5','','Consigne originale ENT'));
+     txt(ex,asText(homeworkOriginal(h)));
+     appendFrench(ex,translations?.homework,hid);
+     if(pdfs.length){
+      ex.append($('h5','','Fiche'+(pdfs.length>1?'s':'')+' originale'+(pdfs.length>1?'s':'')+' de l’exercice'));
+      appendFileLinks(ex,pdfs,metas,translations);
+     }else{
+      ex.append($('p','','Aucune fiche PDF n’est associée à ce devoir dans la collecte ENT ; la consigne écrite est conservée ci-dessus.'));
+     }
+     exerciseArea.append(ex);
+    }
+    const unassigned=lessonFiles.filter(info=>!associatedHomework.some(h=>
+      (info.rattache_a||[]).some(x=>x.type==='travail_associe'&&x.id===String(h.data.id))));
+    if(unassigned.length){
+     const extra=$('details','ent-es-course-pdfs');
+     extra.style.cssText='margin:10px 0;padding:8px 12px;border:1px solid #82b6c9;border-radius:10px;background:#173450';
+     const summary=$('summary','','Voir les autres fiches PDF de cette séance ('+unassigned.length+')');
+     summary.style.cssText='cursor:pointer;font-weight:800;color:#fff;font-size:17px;padding:10px 4px';
+     extra.append(summary);appendFileLinks(extra,unassigned,metas,translations);exerciseArea.append(extra);
+    }
+    panel.append(exerciseArea);
+   }else{
+    panel.append($('p','','Aucun exercice ou document PDF associé à cette séance dans la collecte ENT.'));
    }
    const time=l.data.attributes||{};
    panel.append($('small','',String(time.startDateTime||'')+' — '+String(time.endDateTime||'')));
-   panel.append($('h4','','Activité de séance — texte original ENT'));
+   panel.append($('h4','','Cours ENT — texte original, non cliquable'));
+   panel.append($('small','','Pour ouvrir un exercice ou sa fiche, utilise le volet « Voir l’exercice / le devoir ENT » situé au-dessus.'));
+
    txt(panel,asText(lessonHtml(l)));
    appendFrench(panel,translations?.courses,id);
    const original=$('details');original.append($('summary','','Voir le texte HTML brut, identique à la source ENT'));
    txt(original,lessonHtml(l));panel.append(original);
-   for(const hid of lessonHomeworkIds(l)){
-    const h=homeworkById.get(hid);
-    if(h){panel.append($('h4','','Devoir associé — '+frenchPreview(translations?.homework?.[hid]?.fr,120)));const attrs=h.data.attributes||{};
-      txt(panel,asText([attrs.title,attrs.html].filter(Boolean).join('\n')));
-      appendFrench(panel,translations?.homework,hid);
-      appendFileLinks(panel,pack.index.filter(i=>(i.rattache_a||[]).some(x=>x.type==='travail_associe'&&x.id===hid)),metas,translations);
-    }
-   }
    root.append(panel);
   }
   const all=$('details');all.append($('summary','','Les '+pack.index.length+' fiches originales (inventaire complet)'));
