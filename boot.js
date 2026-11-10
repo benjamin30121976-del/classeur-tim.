@@ -231,6 +231,10 @@ async function saveSpanishEnt(pack,binaries,progress=()=>{}){
   const previous=decodeFromFirestore(snap.data());
   if(!Array.isArray(previous.lessons)||!Array.isArray(previous.exercises))throw Error('Structure Firebase inattendue.');
   const spanish=x=>String(x?.subject||'').toLowerCase().includes('espagnol');
+  // Copie de sécurité privée de l'état précédent, sans écraser les sauvegardes existantes.
+  const backupRef=doc(db,'content','backup_before_ent_spanish_20261110');
+  const oldBackup=await getDoc(backupRef);
+  if(!oldBackup.exists())await setDoc(backupRef,encodeForFirestore(previous));
   const next={
    ...previous,
    lessons:previous.lessons.filter(x=>!spanish(x)),
