@@ -73,7 +73,7 @@ function drawCorrection(slot,report,lessonNumber,ensureLesson){
  const wrapper=css(el('section',undefined,'tim-es-training-result'),ST.panel);
  const title=css(el('h4','Résultat de l’exercice — '+String(score).replace('.',',')+' / 10 points'),ST.title);
  wrapper.append(title);
- p(wrapper,'Ce résultat mesure la compréhension de la leçon. Ce n’est pas une note scolaire. Aucune récompense XP n’est associée à cet exercice.');
+ p(wrapper,'Ce résultat mesure la compréhension de la leçon. Ce n’est pas une note scolaire. XP gagnés : '+Number(report.xp||0).toLocaleString('fr-FR')+' XP.','font-size:15px;font-weight:750;color:#263d89;line-height:1.6');
  if(Number.isInteger(report.translationHelpCount))p(wrapper,'Traduction française consultée pour '+report.translationHelpCount+' question(s) sur 10. Aucune pénalité.','font-weight:850;color:#263d89;font-size:15px');
  const incorrect=items.filter(x=>x.correct===false);
  const partial=items.filter(x=>x.points===0.5);
@@ -117,7 +117,7 @@ function renderQuestions(slot,task,lessonNumber,after,ensureLesson){
  slot.replaceChildren();
  const wrapper=css(el('section'),ST.panel);
  const head=css(el('h4',task.title),ST.title);wrapper.append(head);
- p(wrapper,'Les consignes sont en espagnol. Tu peux écouter chaque consigne ou afficher sa traduction française. Cette aide ne retire aucun point. Une seule validation par exercice.');
+ p(wrapper,'Les consignes sont en espagnol. Tu peux écouter chaque consigne ou afficher sa traduction française. Une seule validation par exercice. De 7 à 10/10 : +1 XP ; de 5 à moins de 7/10 : +0,5 XP ; moins de 5/10 : 0 XP.');
  spellingWarning(wrapper);
  if(!isTim()){
   p(wrapper,'Seul Tim peut répondre. Le Parent peut relire les questions, les réponses et les corrections.','font-weight:750;color:#6b4c2a');
@@ -229,6 +229,8 @@ function summaryOf(attempts,where){
  const result=css(el('div'),ST.panel);
  const title=css(el('h3','Mes résultats' ),ST.title);result.append(title);
  p(result,complete+' / 39 exercices réalisés. Chaque exercice a 10 questions et ne peut être validé qu’une fois.','font-size:15px;color:#34445f;line-height:1.55');
+ const totalXp=attempts.reduce((n,a)=>n+Number(a.xp||0),0);
+ p(result,'XP gagnés avec les leçons d’espagnol : '+totalXp.toLocaleString('fr-FR')+' XP.','font-size:15px;font-weight:850;color:#263d89;line-height:1.55');
  if(complete>=3){
   const good=attempts.reduce((s,a)=>s+(Number(a.score)||0),0);
   const total=attempts.reduce((s,a)=>s+(Number(a.total)||10),0);
@@ -279,7 +281,7 @@ async function render(root,opts={},helpers={}){
    summaryOf(attempts,resultSlot);
    root.querySelectorAll('[data-es-training-id]').forEach(b=>{
     const done=attempts.find(a=>a.id===b.getAttribute('data-es-training-id'));
-    b.textContent=done?'✓ '+b.getAttribute('data-es-title')+' — '+done.score+'/10 · Voir la correction':b.getAttribute('data-es-title')+' · À faire';
+    b.textContent=done?'✓ '+b.getAttribute('data-es-title')+' — '+done.score+'/10 · +'+Number(done.xp||0).toLocaleString('fr-FR')+' XP · Voir la correction':b.getAttribute('data-es-title')+' · À faire';
    });
   }catch(e){
    loaded=false;progressStatus.textContent='Résultats indisponibles : '+(e.message||e)+'. Les exercices ne pourront pas être validés tant que le suivi sécurisé est inaccessible.';
@@ -305,7 +307,7 @@ async function render(root,opts={},helpers={}){
   };
   inner.append(learn,lessonSlot);
   const trainer=css(el('h3','Mes 3 exercices'),ST.h);inner.append(trainer);
-  p(inner,'Une seule validation par exercice. Le résultat et les explications apparaissent tout de suite.');
+  p(inner,'Une seule validation par exercice. Le résultat, les explications et les XP gagnés apparaissent immédiatement après l’envoi.');
   const rows=el('div');rows.style.cssText='display:grid;grid-template-columns:minmax(0,1fr);gap:8px';
   const work=el('div');work.style.cssText='margin-top:13px';
   for(let i=1;i<=3;i++){
