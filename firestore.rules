@@ -22,6 +22,17 @@ service cloud.firestore {
   // Notes et corrections privées : consultables uniquement par le Parent authentifié.
   // Tim voit son état dans /attempts et les corrections approuvées via le serveur.
   match /privateAttempts/{id} { allow get, list: if parent(); allow create, update, delete: if false; }
+  // Fichiers PDF et annexes du classeur : Parent seul peut importer ou effacer.
+  // Tim et le Parent peuvent consulter les fichiers apres identification Firebase.
+  // Le public et les invites n'ont aucun acces.
+  match /attachments/{attachmentId} {
+   allow get, list: if family();
+   allow create, update, delete: if parent();
+  }
+  match /attachment_chunks/{chunkId} {
+   allow get, list: if family();
+   allow create, update, delete: if parent();
+  }
   match /settings/{id} { allow read, write: if parent(); }
   match /{document=**} { allow read, write: if false; }
  }
