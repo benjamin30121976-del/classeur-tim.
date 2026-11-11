@@ -22,7 +22,10 @@ async function loadBank(env){
 // Firestore existant du classeur : stockage privé alternatif quand aucun KV n'est lié.
 async function loadQuiz(env,db,id){
  const kv=env?.TIM_MATH_PRIVATE_KV;
- if(kv&&typeof kv.get==='function')return extract(await loadBank(env),id);
+ if(kv&&typeof kv.get==='function'){
+  try{return extract(await loadBank(env),id);}
+  catch(e){if(!db||typeof db.get!=='function')throw e;}
+ }
  if(!db||typeof db.get!=='function')throw Error('math-bank-unavailable');
  const fragment=await db.get('mathPrivateQuizzes/'+id);
  if(!fragment||fragment.version!==MATH_BANK_VERSION)throw Error('math-bank-unavailable');
