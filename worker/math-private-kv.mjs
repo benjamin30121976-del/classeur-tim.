@@ -27,8 +27,13 @@ async function loadQuiz(env,db,id){
   catch(e){if(!db||typeof db.get!=='function')throw e;}
  }
  if(!db||typeof db.get!=='function')throw Error('math-bank-unavailable');
- const fragment=await db.get('mathPrivateQuizzes/'+id);
- if(!fragment||fragment.version!==MATH_BANK_VERSION)throw Error('math-bank-unavailable');
+ const record=await db.get('mathPrivateQuizzes/'+id);
+ if(!record||record.version!==MATH_BANK_VERSION||typeof record.payloadJson!=='string')
+  throw Error('math-bank-unavailable');
+ let fragment;
+ try{fragment=JSON.parse(record.payloadJson);}
+ catch{throw Error('math-bank-invalid');}
+ validateMathFragment(fragment,id);
  return extract({public:{quizzes:{[id]:fragment.public}},private:{quizzes:{[id]:fragment.private}}},id);
 }
 export function validateMathFragment(fragment,id){
