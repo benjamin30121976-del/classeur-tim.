@@ -621,12 +621,13 @@ async function startSession(user){
    const r=await cloudCallable('getMathTrainingTask')({id});
    return r.data;
   },
-  mathTrainingSubmit:async(id,answers)=>{
+  mathTrainingSubmit:async(id,answers,bankVersion)=>{
    if(activeUser?.uid!==TIM_UID)throw Error('Seul Tim peut valider une évaluation.');
    if(!/^MT(?:0[1-9]|1[0-9]|2[0-3])$/.test(id)||
       !Array.isArray(answers)||answers.length!==10)throw Error('Réponses invalides.');
-   const r=await cloudCallable('submitMathTraining')({id,answers});
-   if(!r.data?.submitted||r.data?.xp!==0||!Number.isInteger(r.data?.score))
+   if(typeof bankVersion!=='string'||!bankVersion.startsWith('TIM-MATH-'))throw Error('Questionnaire périmé : recharge la page.');
+   const r=await cloudCallable('submitMathTraining')({id,answers,bankVersion});
+   if(!r.data?.submitted||r.data?.bankVersion!==bankVersion||!Number.isFinite(r.data?.xp)||!Number.isInteger(r.data?.score))
     throw Error('La note ne peut pas être confirmée.');
    return r.data;
   },
