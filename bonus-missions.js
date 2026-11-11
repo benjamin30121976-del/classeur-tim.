@@ -1,44 +1,33 @@
-/* V11 : 3 bonus proposés chaque jour, tirage stable par date (Europe/Paris).
- * Tirage calculé sans appels externes. Un changement facultatif est mémorisé
- * dans CE navigateur. Aucun changement à Firebase ou aux règles de correction.
+/* Défi bonus à l'accueil : aucun exercice n'est attribué automatiquement.
+ * Pour publier un exercice, renseigner son ID existant dans BONUS_EXERCISE_ID,
+ * ou un ID par date dans BONUS_SCHEDULE. Un seul exercice est montré.
+ * Les résultats et le barème des exercices bonus restent inchangés.
  */
 (()=>{'use strict';
+ const BONUS_EXERCISE_ID='';
+ const BONUS_SCHEDULE=Object.freeze({
+  // '2026-11-13':'ID_D_UN_EXERCICE_BONUS_EXISTANT'
+ });
  const dt=new Intl.DateTimeFormat('fr-CA',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'});
  function day(value=new Date()){
   const p=Object.fromEntries(dt.formatToParts(new Date(value)).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
   return `${p.year}-${p.month}-${p.day}`;
  }
- function hash(s){let h=2166136261;for(const c of s){h^=c.charCodeAt(0);h=Math.imul(h,16777619);}return h>>>0;}
- function key(stamp){return 'tim_v11_bonus_draw_'+stamp;}
- function read(stamp){try{return localStorage.getItem(key(stamp))==='1'?1:0;}catch(e){return 0;}}
- function pool(exercises,attempts,stamp){
-  const existing=new Set((attempts||[]).filter(a=>{try{return day(a.date)<stamp;}catch(e){return false;}}).map(a=>a.id));
-  const on=new Date(stamp+'T12:00:00Z');
-  return (exercises||[]).filter(e=>e&&!e.kind&&!existing.has(e.id)&&window.TIM_EXERCISE?.mode(e,on)==='bonus');
+ function pool(exercises,attempts,stamp=day()){
+  const chosenId=BONUS_SCHEDULE[stamp]||BONUS_EXERCISE_ID;
+  if(!chosenId)return [];
+  const exercise=(exercises||[]).find(e=>e?.id===chosenId);
+  if(!exercise||exercise.enabled===false||exercise.kind)return [];
+  if(window.TIM_EXERCISE?.mode(exercise,new Date(stamp+'T12:00:00Z'))!=='bonus')return [];
+  return [exercise];
  }
- function draw(exercises,attempts,stamp,round){
-  const eligible=pool(exercises,attempts,stamp);
-  const sorted=eligible.slice().sort((a,b)=>hash(stamp+'|'+round+'|'+a.id)-hash(stamp+'|'+round+'|'+b.id)||a.id.localeCompare(b.id));
-  if(round){
-   const original=new Set(draw(exercises,attempts,stamp,0).map(e=>e.id));
-   // Une autre série quand le catalogue est assez fourni ; jamais plus de 3.
-   sorted.sort((a,b)=>Number(original.has(a.id))-Number(original.has(b.id))||hash(stamp+'|second|'+a.id)-hash(stamp+'|second|'+b.id));
-  }
-  const bySubject=new Map();for(const ex of sorted){const s=ex.subject||'Espagnol';if(!bySubject.has(s))bySubject.set(s,[]);bySubject.get(s).push(ex);}
-  const subjects=[...bySubject.keys()].sort((a,b)=>hash(stamp+'|subject|'+round+'|'+a)-hash(stamp+'|subject|'+round+'|'+b));
-  const result=[];let progress=true;while(result.length<3&&progress){progress=false;for(const s of subjects){const next=bySubject.get(s).shift();if(next){result.push(next);progress=true;if(result.length===3)break;}}}
-  return result;
- }
+ function draw(exercises,attempts,stamp=day()){return pool(exercises,attempts,stamp);}
  function state(exercises,attempts,date=new Date()){
-  const stamp=day(date),round=read(stamp),chosen=draw(exercises,attempts,stamp,round);
-  const done=chosen.filter(e=>(attempts||[]).some(a=>a.id===e.id));
-  return {stamp,chosen,round,done:done.length,remaining:chosen.length-done.length,canChange:!round&&done.length===0&&pool(exercises,attempts,stamp).length>3};
+  const stamp=day(date),chosen=pool(exercises,attempts,stamp);
+  const done=chosen.filter(ex=>(attempts||[]).some(a=>a.id===ex.id));
+  return {stamp,chosen,round:0,done:done.length,remaining:chosen.length-done.length,canChange:false};
  }
- function change(exercises,attempts,date=new Date()){
-  const s=state(exercises,attempts,date);
-  if(!s.canChange)return false;
-  try{localStorage.setItem(key(s.stamp),'1');return true;}catch(e){return false;}
- }
- // Fonctions pures exposées pour le test et pour le calcul stable.
+ // Le tirage aléatoire et l'attribution Parent ne s'appliquent plus au bonus de l'accueil.
+ const change=()=>false;
  window.TIM_BONUS={day,pool,draw,state,change};
 })();
