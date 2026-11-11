@@ -2,7 +2,7 @@ name: Installer les animations validées de Tim
 on:
   push:
     paths:
-      - 'Tim_Toutes_Animations_Validees_Avec_Bonus.zip'
+      - 'Tim_Animations.zip'
   workflow_dispatch:
 permissions:
   contents: write
@@ -21,7 +21,7 @@ jobs:
           python - <<'PY'
           from pathlib import Path
           from zipfile import ZipFile
-          archive=Path('Tim_Toutes_Animations_Validees_Avec_Bonus.zip')
+          archive=Path('Tim_Animations.zip')
           if not archive.exists():
               raise SystemExit('Archive absente : ajoute-la à la racine de cette branche GitHub.')
           expected=[
