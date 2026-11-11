@@ -272,3 +272,31 @@ test('Rejet de banque Firestore invalide sans écrire de corrigés',async()=>{
  await assert.rejects(()=>importMathPrivateQuiz(db,PARENT_UID,{id,fragment}),e=>e.status===400);
  assert.equal(db.data.size,0);
 });
+
+
+test('Parent ZIP import is readable from Firestore without KV and safe to retry',async()=>{
+ const db=mockFirestore(),id='MT07';
+ const bank=await mathEnv.TIM_MATH_PRIVATE_KV.get(MATH_BANK_VERSION,'json');
+ const fragment={
+  id,version:MATH_BANK_VERSION,
+  public:bank.public.quizzes[id],
+  private:bank.private.quizzes[id]
+ };
+ const first=await importMathPrivateQuiz(db,PARENT_UID,{id,fragment});
+ assert.deepEqual(first,{saved:true,id,unchanged:false});
+ const row=db.data.get('mathPrivateQuizzes/'+id);
+ assert.equal(row.version,MATH_BANK_VERSION);
+ assert.equal(typeof row.payloadJson,'string');
+ const second=await importMathPrivateQuiz(db,PARENT_UID,{id,fragment});
+ assert.deepEqual(second,{saved:true,id,unchanged:true});
+ const task=await getMathTrainingTask(db,TIM_UID,{id},{});
+ assert.equal(task.task.questions.length,10);
+ for(const question of task.task.questions){
+  assert.deepEqual(Object.keys(question).sort(),['choices','prompt']);
+ }
+ const answers=fragment.private.questions.map(q=>q.correctIndex);
+ const result=await submitMathTraining(db,TIM_UID,{id,answers,bankVersion:MATH_BANK_VERSION},{});
+ assert.equal(result.score,10);
+ assert.equal(result.xp,1);
+ await assert.rejects(()=>importMathPrivateQuiz(db,TIM_UID,{id,fragment}),e=>e.status===403);
+});
