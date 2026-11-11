@@ -1,0 +1,33 @@
+name: Contrôler classeur production avec Chromium lecture seule
+on:
+  pull_request:
+    paths:
+      - 'tools/test/production-maths-animations.readonly.cjs'
+      - '.github/workflows/controle-production-chromium-readonly.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Installer Chromium et Playwright
+        run: |
+          mkdir -p /tmp/tim-readonly
+          npm install --prefix /tmp/tim-readonly --no-audit --no-fund playwright
+          /tmp/tim-readonly/node_modules/.bin/playwright install --with-deps chromium
+      - name: Auditer Cloudflare en mode Visiteur, sans authentification ni écriture
+        env:
+          NODE_PATH: /tmp/tim-readonly/node_modules
+          TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
+        run: node tools/test/production-maths-animations.readonly.cjs
+      - name: Archiver les captures et le bilan
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-classeur-production-lecture-seule
+          path: audit-production-tim/
+          if-no-files-found: warn
+          retention-days: 7
