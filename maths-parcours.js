@@ -29,7 +29,7 @@ function groupOfEnt(lesson){
  if(/brevet/.test(text))return GROUPS[4];
  if(/thales/.test(text))return GROUPS[3];
  if(/pythagore/.test(text))return GROUPS[1];
- if(/litteral|developp|programme de calcul|expression/.test(text))return GROUPS[2];
+ if(/litteral|developp|programme de calcul|expression|equation|factoris/.test(text))return GROUPS[2];
  if(/fraction|puissanc|relatif|calcul numerique|ecriture scientifique/.test(text))return GROUPS[0];
  return null;
 }
@@ -48,7 +48,7 @@ function sectionBtns(id){
  btn('data-math-help',id,'3 · Je n’ai pas compris')+
  (ex?btn('data-math-ex',id,'Exercices ENT du chapitre ('+ex+')'):'')+
  (id==='MBIS13'?btn('data-math-programs',id,'Fiche originale · Programmes A et B'):'')+
- btn('data-math-train',id,'Évaluation BIS · 10 questions · une seule fois · 0 XP')+
+ btn('data-math-train',id,'Évaluation BIS · 10 questions · une seule fois · jusqu’à +1 XP')+
  '</div>';
 }
 function wire(){
@@ -72,7 +72,7 @@ function home(){
  GROUPS.map((g,i)=>{
  const bs=bis.filter(x=>groupOfId(x.id)===g);
  return '<button type="button" class="spx-card" data-math-group="'+i+'"><span class="spx-icon">∑</span><strong>'+esc(g.name)+'</strong><p>'+bs.length+' sous-leçon(s) · '+entFor(g).length+' cours ENT</p><small>Ouvrir les sous-leçons</small></button>';
- }).join('')+'</div><p class="spx-note">Leçons ENT originales, leçons BIS, explications et exercices distincts. Chaque évaluation est validée une seule fois ; aucun XP.</p>', options.back);
+ }).join('')+'</div><p class="spx-note">Leçons ENT originales, leçons BIS, explications et exercices distincts. Chaque évaluation est validée une seule fois ; elle rapporte 0, 0,5 ou 1 XP selon la note.</p>', options.back);
  wire();
 }
 function viewEntChronology(){
@@ -175,14 +175,14 @@ function resultPage(record){
  const perfect=hasCorrection&&Number(record.score)===Number(record.total)&&Number(record.total)>0&&failures.length===0;
  draw(header('Résultat : '+cleanTitle(x?.title||id),'Exercice terminé définitivement. La note reste consultable dans le compte Parent.')+
  back('Retour aux sous-leçons')+
- '<section class="spx-panel"><h3>Ma note : '+esc(mark20(record))+'</h3><p>'+esc(record.submittedAt?'Résultat enregistré · 0 XP · une seule tentative':'Résultat validé · 0 XP · une seule tentative')+'</p>'+ 
+ '<section class="spx-panel"><h3>Ma note : '+esc(mark20(record))+'</h3><p>'+esc((record.submittedAt?'Résultat enregistré':'Résultat validé')+' · '+Number(record.xp||0)+' XP · une seule tentative')+'</p>'+ 
  (!hasCorrection?'<p>Les explications détaillées sont momentanément indisponibles. Reviens consulter cette note ; tu ne dois pas refaire l’exercice.</p>':'')+
  (hasCorrection?(failures.length?'<p><strong>À revoir :</strong> '+failures.length+' question(s). Retourne à la leçon BIS de cette sous-leçon.</p>':'<p>Toutes les réponses sont correctes. Aucune correction nécessaire.</p>'):'')+'</section>'+ 
  (hasCorrection?'<details class="spx-panel math-exercise-review"><summary>Revoir mon exercice — questions et réponses</summary>'+
   record.items.map((a,i)=>'<p><strong>Question '+(i+1)+' : '+esc(a.prompt)+'</strong></p><p>Ma réponse : '+esc(a.response)+'</p>').join('')+'</details>':'')+
  (hasCorrection&&!perfect?record.items.map((a,i)=>({a,i})).filter(x=>!x.a.correct):[]).map(({a,i})=>'<section class="spx-panel math-correction incorrect"><h3>Question '+(i+1)+' : À revoir</h3><p><strong>'+esc(a.prompt)+'</strong></p><p>Réponse de Tim : '+esc(a.response)+'</p>'+ 
  (!a.correct?'<p>Réponse attendue : <strong>'+esc(a.expected)+'</strong></p>':'')+
- '<p>'+esc(a.explanation)+'</p></section>').join('')+
+ '<p>'+esc(a.explanation)+'</p>'+(a.entReference?.title?'<p>Document ENT à revoir : '+esc(a.entReference.title)+' · page(s) '+esc((a.entReference.pages||[]).join(', '))+'</p>':'')+'</section>').join('')+
  '<section class="spx-panel"><h3>Revoir la sous-leçon</h3>'+btn('data-math-bis',id,'2 · Leçon BIS')+btn('data-math-help',id,'3 · Je n’ai pas compris')+'</section>',()=>category(group));
  wire();
 }
@@ -191,7 +191,7 @@ async function viewTraining(id){
  const testId='MT'+suffix(id);
  const completed=grades.attempts.find(a=>a.id===testId);
  if(completed){resultPage(completed);return;}
- draw(header('Évaluation : '+cleanTitle(x.title),'Une seule tentative. Correction et note dès la validation ; aucun XP.')+
+ draw(header('Évaluation : '+cleanTitle(x.title),'Une seule tentative. Correction et note dès la validation ; 7 à 10/10 : +1 XP, 5 à 6/10 : +0,5 XP.')+
  back('Retour aux sous-leçons')+
  '<section class="spx-panel"><h3>Avant de commencer</h3><p>10 questions, 2 points par bonne réponse. Lis toute la consigne avant de choisir. Tu peux revoir la méthode sans utiliser ta tentative.</p>'+btn('data-math-bis',id,'Revoir la leçon BIS')+btn('data-math-help',id,'Je n’ai pas compris')+'</section>'+
  '<section class="spx-panel" id="math-quiz"><p>Chargement sécurisé de l’exercice…</p></section>',()=>category(group));
@@ -245,8 +245,9 @@ async function viewTraining(id){
    const buttons=holder.querySelectorAll('button,input');buttons.forEach(b=>b.disabled=true);
    status.textContent='Enregistrement de la note…';
    try{
-    const record=await options.submit(testId,answers);
-    if(!record?.submitted||record.id!==testId||record.xp!==0)throw Error('Confirmation serveur incomplète.');
+    if(!task.bankVersion)throw Error('Version du questionnaire manquante : recharge la page avant de valider.');
+    const record=await options.submit(testId,answers,task.bankVersion);
+    if(!record?.submitted||record.id!==testId||record.bankVersion!==task.bankVersion||!Number.isFinite(record.xp))throw Error('Confirmation serveur incomplète.');
     grades.attempts=[record,...grades.attempts.filter(a=>a.id!==testId)];
     resultPage(record);
    }catch(e){
@@ -278,12 +279,12 @@ function renderParentProgress(container){
   const list=grades.attempts||[];
   if(grades.status!=='ok'){dest.textContent='Le suivi des mathématiques est indisponible : '+(grades.message||'réessaie après reconnexion')+'.';return;}
   const misses=list.flatMap(a=>(a.items||[]).filter(q=>!q.correct).map(q=>({id:a.lessonId,prompt:q.prompt,explanation:q.explanation})));
-  dest.innerHTML='<p><strong>'+list.length+' / 23</strong> évaluations réalisées. Une validation par sous-leçon, 0 XP.</p>'+
+  dest.innerHTML='<p><strong>'+list.length+' / 23</strong> évaluations réalisées. Une validation par sous-leçon ; XP affichés sur chaque copie.</p>'+
    (misses.length?'<p><strong>À retravailler :</strong> '+misses.length+' erreur(s) dans les évaluations réalisées.</p>':'<p>Aucune difficulté relevée dans les évaluations terminées.</p>')+
    list.map(a=>{
     const course=(window.__TIM_DATA?.lessons||[]).find(l=>l.id===a.lessonId);
     const faults=(a.items||[]).filter(it=>!it.correct);
-    return '<details class="spx-parent-result"><summary>'+esc(cleanTitle(course?.title||a.lessonId))+' — '+esc(mark20(a))+'</summary>'+ 
+    return '<details class="spx-parent-result"><summary>'+esc(cleanTitle(course?.title||a.lessonId))+' — '+esc(mark20(a))+' · '+esc(Number(a.xp||0))+' XP</summary>'+ 
      (Array.isArray(a.items)&&a.items.length===a.total?(faults.length?'<p><strong>À revoir :</strong> '+esc(faults.map(v=>v.prompt).join(' ; '))+'</p><p>Leçon conseillée : '+esc(cleanTitle(course?.title||a.lessonId))+' (BIS et ENT du même chapitre).</p>':'<p>Toutes les réponses sont correctes.</p>'):'<p>Le détail de cette correction est momentanément indisponible.</p>')+
      (a.items||[]).map(it=>'<p>'+esc(it.prompt)+' — '+(it.correct?'correct':'incorrect')+'<br>Tim : '+esc(it.response)+' ; attendu : '+esc(it.expected)+'<br>'+esc(it.explanation)+'</p>').join('')+
     '</details>';
