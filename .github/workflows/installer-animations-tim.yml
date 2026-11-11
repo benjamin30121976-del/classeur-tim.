@@ -1,0 +1,58 @@
+name: Installer les animations validées de Tim
+on:
+  push:
+    paths:
+      - 'Tim_Toutes_Animations_Validees_Avec_Bonus.zip'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  installer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Vérifier et extraire uniquement les nouvelles animations
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          archive=Path('Tim_Toutes_Animations_Validees_Avec_Bonus.zip')
+          if not archive.exists():
+              raise SystemExit('Archive absente : ajoute-la à la racine de cette branche GitHub.')
+          expected=[
+              'Tim_Animation_3XP_Mouche.mp4',
+              'Tim_Animation_2XP_Grattage.mp4',
+              'Tim_Animation_1XP_Vitre_Embuee.mp4',
+              'Tim_Animation_0XP_Toc_Toc_Paume.mp4',
+              'Tim_Animation_Minus1XP_Tete_Penaude.gif',
+              'Tim_Defi_Du_Samedi_10XP.gif',
+              'Tim_Defi_Du_Dimanche_20XP_Original.mp4',
+              'Tim_Defi_Du_Dimanche_20XP_Original.gif',
+              'Tim_Defi_Bonus_5XP.gif']
+          target=Path('assets/animations')
+          target.mkdir(parents=True,exist_ok=True)
+          with ZipFile(archive) as z:
+              for name in expected:
+                  info=z.getinfo(name)
+                  if info.file_size<=100 or info.file_size>8_000_000:raise ValueError('Taille anormale : '+name)
+                  data=z.read(name)
+                  if name.endswith('.gif') and data[:6] not in (b'GIF87a',b'GIF89a'):raise ValueError('GIF invalide')
+                  if name.endswith('.mp4') and b'ftyp' not in data[:20]:raise ValueError('MP4 invalide')
+                  (target/name).write_bytes(data)
+                  print(name,info.file_size,'octets')
+          # Ne pas remplacer la barre XP, l'introduction ou le défi du jour existants.
+          PY
+      - name: Enregistrer uniquement les neuf médias dans la branche
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/animations/
+          if ! git diff --cached --quiet; then
+            git commit -m 'Installer animations XP, samedi, dimanche et cadeau bonus'
+            git push
+          fi
