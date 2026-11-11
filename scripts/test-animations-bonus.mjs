@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {readFileSync,existsSync} from 'node:fs';
+import {createHash} from 'node:crypto';
 import {rawPoints,cappedPoints} from '../functions/xp.mjs';
 const checks=[
  ['daily 10/10',3,rawPoints({kind:'daily',category:'challenge',score:10,total:10})],
@@ -34,6 +35,25 @@ assert.ok(existsSync('assets/barre-xp-original.png'),'Image PNG originale absent
 assert.ok(existsSync('assets/loup-intro.gif'),'Introduction du loup absente');
 assert.ok(existsSync('assets/animations/Tim_Defi_Du_Dimanche_20XP_Original.mp4'),'MP4 du dimanche absent');
 assert.ok(existsSync('assets/animations/Tim_Defi_Du_Dimanche_20XP_Original.gif'),'Version GIF du dimanche absente');
+// Éviter toute reconversion ou substitution des deux originaux du parent.
+const originals=[
+ ['assets/animations/Tim_Defi_Du_Jour_Valide.gif','b9e2e539dc10c9660ef72492b48af09c1b01494d'],
+ ['assets/barre-xp-original.png','03699c1e938b1dc7f709412ff04859e2dc148ef2']
+];
+for(const [file,sha] of originals){
+ const data=readFileSync(file);
+ const actual=createHash('sha1').update(Buffer.from('blob '+data.length+'\\0'.replace('\\0','\\u0000'))).update(data).digest('hex');
+ assert.equal(actual,sha,'Original modifié ou remplacé : '+file);
+}
+const originalDaily=readFileSync('assets/animations/Tim_Defi_Du_Jour_Valide.gif');
+assert.match(originalDaily.toString('ascii',0,6),/^GIF8[79]a$/);
+assert.equal(originalDaily.readUInt16LE(6),358);
+assert.equal(originalDaily.readUInt16LE(8),356);
+const originalBar=readFileSync('assets/barre-xp-original.png');
+assert.equal(originalBar.readUInt32BE(16),2172);
+assert.equal(originalBar.readUInt32BE(20),724);
+const css=readFileSync('assets/design-defis-xp.css','utf8');
+assert.ok(css.includes('object-fit:contain'),'Original du loup potentiellement recadré');
 const backend=readFileSync('functions/index.mjs','utf8');
 for(const func of ['assignParentBonus','getParentBonus','submitTimExercise'])
  assert.ok(backend.includes('export const '+func+'=onCall('),'Fonction manquante '+func);
