@@ -350,3 +350,21 @@
  #matieres-content .tim-es-worked{padding:6px 0}
  #matieres-content .tim-es-ent-original{padding:11px 12px}
 }
+
+
+/* Même menu de navigation que les mathématiques pour les leçons espagnoles. */
+#matieres-content .tim-es-quick-links{
+  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:9px;margin:20px 0;padding:16px 12px;
+  border:1px solid #e1e5ee;border-radius:14px;background:#fff;
+}
+#matieres-content .tim-es-quick-links .tim-es-quick-link{
+  width:100%;min-height:64px;box-sizing:border-box;
+  font-size:13px!important;line-height:1.4!important;
+}
+#matieres-content .tim-es-ent-original[hidden],
+#matieres-content .tim-es-course-help[hidden]{display:none!important}
+@media(max-width:520px){
+ #matieres-content .tim-es-quick-links{padding:13px 10px;gap:8px}
+ #matieres-content .tim-es-quick-links .tim-es-quick-link{min-height:67px;font-size:12.5px!important}
+}
