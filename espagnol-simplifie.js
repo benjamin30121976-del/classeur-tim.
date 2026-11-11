@@ -6,12 +6,12 @@
 const LESSONS=[
  ['10099~6400501','16 septembre','Se présenter'],
  ['10099~6400551','17 septembre','Parler de son sport préféré'],
- ['10099~6400534','22 septembre','Écrire à un correspondant'],
- ['10099~6400502','23 septembre','L’animal totem et la lettre'],
+ ['10099~6400534','22 septembre','La lettre : se présenter et inviter'],
+ ['10099~6400502','23 septembre','La lettre : expliquer le choix d’un animal'],
  ['10099~6400485','24 septembre','Horoscope et caractère'],
  ['10099~6400552','1er octobre','Accords et conjugaison'],
  ['10099~6400535','6 octobre','Horoscope et articles'],
- ['10099~6400486','8 octobre','Comprendre une conversation'],
+ ['10099~6400486','8 octobre','Comprendre « Mes camarades » à l’oral'],
  ['10099~6400505','14 octobre','Articles et goûts'],
  ['10099~6400553','15 octobre','Questions et possessifs'],
  ['10099~6400536','3 novembre','Tutoiement, politesse et contrôle'],
@@ -41,24 +41,150 @@ const p=(parent,text,style)=>{const n=el('p',text);n.style.cssText=style||ST.mut
 const isParent=()=>Boolean(window.__TIM_PARENT)&&!window.__TIM_GUEST;
 const isTim=()=>!window.__TIM_PARENT&&!window.__TIM_GUEST;
 const taskId=(lesson,series)=>'ESE_L'+String(lesson).padStart(2,'0')+'_0'+series;
+
+/* Fiches rédigées à partir des séances ENT : la consigne du professeur et
+   l'explication pédagogique ne doivent pas être confondues. */
+const ENT_WHAT_WAS_DONE={
+ '10099~6400501':'Se présenter à l’oral avec la fiche de renseignements ; revoir llamarse, ser et ir.',
+ '10099~6400551':'Se présenter puis expliquer quel sport on préfère, en utilisant les phrases du cahier.',
+ '10099~6400534':'Rédiger une lettre à un correspondant : se présenter, parler de ses goûts et l’inviter à son anniversaire.',
+ '10099~6400502':'Compléter cette même lettre avec une phrase sur l’animal totem préféré et expliquer pourquoi.',
+ '10099~6400485':'Travailler l’horoscope, les dates de naissance et les adjectifs de caractère.',
+ '10099~6400552':'Revoir les accords au féminin/pluriel et les verbes llamarse, ir et traer.',
+ '10099~6400535':'Corriger l’oral sur l’horoscope ; revoir aussi les articles du devoir associé.',
+ '10099~6400486':'Comprendre à l’oral « Mis compañeros » (mes camarades). L’enregistrement original n’est pas présent ici.',
+ '10099~6400505':'Corriger l’expression écrite et travailler les articles définis et indéfinis.',
+ '10099~6400553':'Comprendre les questions, les possessifs et le dialogue du manuel avec la professeure.',
+ '10099~6400536':'Réviser su et usted, puis préparer l’évaluation de compréhension et d’expression écrite.',
+ '10099~6400506':'Évaluation de fin de séquence ; travail de conjugaison Práctica (photocopie du professeur).',
+ '10099~6400487':'Réviser les dix verbes au présent pour l’évaluation de conjugaison et préparer la carte Plickers.'
+};
+const LESSON_HELP_IDS=['L01','L04','L05','L05','L06','L07','L08','L07','L04','L11','L12','L10','L15'];
+const SPECIAL_HELP={
+ '10099~6400534':[
+  ['Pourquoi parle-t-on d’un anniversaire dans la lettre ?',
+   'C’est une partie de la consigne d’expression écrite : tu écris à un correspondant, tu te présentes et tu l’invites. Ce n’est pas une leçon indépendante sur les fêtes.',
+   'Te invito a mi cumpleaños el veinte de mayo. = Je t’invite à mon anniversaire le 20 mai.'],
+  ['Comment construire une lettre sans tout mélanger ?',
+   'Écris dans cet ordre : bonjour, prénom et âge, goûts, animal préféré, invitation, formule de fin. Chaque partie peut tenir en une phrase courte.',
+   '¡Hola! Me llamo Ana. Tengo quince años. Me gusta el fútbol. ¡Hasta pronto!']
+ ],
+ '10099~6400502':[
+  ['À quoi sert l’animal totem dans ce cours ?',
+   'La professeure demande une phrase supplémentaire dans la lettre au correspondant. Tu choisis un animal, puis tu expliques ton choix avec « porque » (parce que).',
+   'Mi animal tótem preferido es el lobo porque es inteligente. = Mon animal totem préféré est le loup parce qu’il est intelligent.'],
+  ['Pourquoi reparle-t-on d’une lettre et d’un anniversaire ?',
+   'C’est le même travail commencé le 22 septembre : l’animal totem est seulement une partie de la lettre, et l’invitation à l’anniversaire est une autre partie.',
+   'Te invito a mi cumpleaños. = Je t’invite à mon anniversaire.']
+ ]
+};
+const FIRST_LESSON={
+ goal:'Savoir te présenter en quelques phrases et répondre aux questions simples sur ton identité.',
+ steps:['Commence par ton prénom avec « Me llamo… ».','Pour dire ton âge, utilise « Tengo… años » et non « Soy… años ».','Pour dire d’où tu viens, utilise « Soy… » ou « Vivo en… ».'],
+ examples:[['Me llamo Ana.','Je m’appelle Ana.'],['Tengo quince años.','J’ai quinze ans.'],['Vivo en Francia.','J’habite en France.']],
+ learn:['Je sais dire mon prénom, mon âge et mon lieu de vie.'],
+ conjugations:['llamarse','ser','ir'],
+ vocab:[['me llamo','je m’appelle'],['tengo','j’ai'],['años','ans'],['vivo','j’habite']]
+};
 function inlineLesson(holder,entId,renderL01){
  holder.replaceChildren();
- const tmp=el('div');
- const result=entId==='10099~6400501'?renderL01(tmp):window.TIM_SPANISH_ENT_BIS?.render(tmp,entId);
- if(result===false || !tmp.firstElementChild){p(holder,'Le cours ne peut pas être affiché pour le moment.');return;}
- const bis=tmp.firstElementChild;
- bis.open=true;
- const summary=bis.querySelector(':scope > summary');
- if(summary)summary.style.cssText='display:none!important';
- if(entId!=='10099~6400501'){
-  const end=bis.querySelector(':scope > div > p:last-child');
-  if(end?.textContent?.includes('Leçon BIS rédigée'))end.remove();
-  const title=bis.querySelector('h4');
-  if(title?.textContent==='1. Comprendre le cours du professeur')title.textContent='1. Comprendre la leçon';
+ const source=window.TIM_SPANISH_ENT_BIS;
+ const data=entId==='10099~6400501'?FIRST_LESSON:source?.getLesson?.(entId);
+ if(!data){p(holder,'Le cours n’est pas disponible pour cette séance.');return;}
+ const sheet=el('article',undefined,'tim-es-course-sheet');
+ const h=(title)=>sheet.append(el('h3',title));
+ const para=(text,cls)=>sheet.append(el('p',text,cls));
+ const example=(parent,item)=>{
+  if(!Array.isArray(item)||item.length<2)return;
+  const block=el('p',undefined,'tim-es-course-example');
+  const spanish=el('strong',item[0]);spanish.lang='es';
+  block.append(spanish,say(item[0],'es','Écouter'),el('span',item[1]));
+  parent.append(block);
+ };
+ h('Comprendre la leçon');
+ para(data.goal||'Comprendre et réutiliser les expressions vues en classe.');
+ const context=el('p',undefined,'tim-es-teacher-context');
+ context.append(el('strong','En classe : '),document.createTextNode(ENT_WHAT_WAS_DONE[entId]||'Travail de la séance ENT.'));
+ sheet.append(context);
+ h('La méthode');
+ const steps=el('ol',undefined,'tim-es-course-steps');
+ (data.steps||[]).slice(0,4).forEach(step=>steps.append(el('li',step)));
+ sheet.append(steps);
+ h('Regarde ces exemples');
+ (data.examples||[]).slice(0,3).forEach(item=>example(sheet,item));
+ if(data.learn?.length)para(data.learn[0],'tim-es-course-remember');
+ holder.append(sheet);
+
+ /* Aide réellement distincte du cours : deux difficultés ciblées,
+    avec une autre explication et une phrase traduite. */
+ const i=LESSONS.findIndex(row=>row[0]===entId);
+ const mapped=window.TIM_SPANISH_HELP_TOPICS?.[LESSON_HELP_IDS[i]]||[];
+ const topics=SPECIAL_HELP[entId]||mapped;
+ const help=el('details',undefined,'tim-es-course-help');
+ const summary=el('summary','Je n’ai pas compris');
+ help.append(summary);
+ help.append(el('p','Choisis ce qui te bloque :'));
+ const choices=el('div',undefined,'tim-es-help-choices');
+ const answer=el('div',undefined,'tim-es-help-answer');
+ answer.setAttribute('aria-live','polite');
+ topics.slice(0,3).forEach(topic=>{
+  const b=button(topic[0]);
+  b.className='tim-es-help-question';
+  b.onclick=()=>{
+   answer.replaceChildren();
+   answer.append(el('strong',topic[0]),el('p',topic[1]),el('p',topic[2]));
+  };
+  choices.append(b);
+ });
+ help.append(choices,answer);
+ holder.append(help);
+
+ /* Les tableaux, le lexique et les autres exemples existent toujours,
+    mais ils ne prennent pas la place de la leçon à lire. */
+ const extra=el('details',undefined,'tim-es-course-extra');
+ extra.append(el('summary','Approfondir : autres exemples, vocabulaire et conjugaison'));
+ const body=el('div');
+ const extras=(data.examples||[]).slice(3);
+ if(extras.length){
+  body.append(el('h4','Autres exemples'));
+  extras.forEach(item=>example(body,item));
  }
- bis.style.margin='0';bis.style.border='none';bis.style.background='#f7f9ff';
- holder.append(bis);
+ if(data.steps?.length>4){
+  body.append(el('h4','Conseils supplémentaires'));
+  const list=el('ul');data.steps.slice(4).forEach(t=>list.append(el('li',t)));body.append(list);
+ }
+ if(data.conjugations?.length){
+  body.append(el('h4','Les verbes au présent'));
+  for(const name of data.conjugations){
+   const info=source?.getVerb?.(name);
+   if(!info?.forms)continue;
+   const d=el('details',undefined,'tim-es-verb-sheet');
+   d.append(el('summary',name+' — '+info.meaning));
+   const persons=['yo — je','tú — tu','él/ella — il/elle','nosotros — nous','vosotros — vous','ellos/ellas — ils/elles'];
+   const t=el('table',undefined,'tim-es-verb-table');
+   const tbody=el('tbody');
+   info.forms.forEach((form,j)=>{
+    const tr=el('tr');
+    tr.append(el('th',persons[j]));
+    const td=el('td');td.append(el('strong',form),say(form,'es','Écouter'));tr.append(td);tbody.append(tr);
+   });
+   t.append(tbody);d.append(t);body.append(d);
+  }
+ }
+ if(data.vocab?.length){
+  body.append(el('h4','Le vocabulaire de la leçon'));
+  const vocab=el('ul',undefined,'tim-es-vocab-list');
+  data.vocab.forEach(pair=>{
+   if(!Array.isArray(pair)||pair.length<2)return;
+   const li=el('li');
+   li.append(el('strong',pair[0]+' : '),document.createTextNode(pair[1]));
+   vocab.append(li);
+  });
+  body.append(vocab);
+ }
+ extra.append(body);holder.append(extra);
 }
+
 function spellingWarning(parent){
  const note=css(el('aside'),'background:#fff4df;color:#613f17;border:1px solid #d8aa53;border-left:5px solid #a76a1b;border-radius:11px;padding:12px 14px;margin:13px 0;line-height:1.55;font-size:15px');
  note.setAttribute('role','note');

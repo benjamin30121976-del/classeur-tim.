@@ -42,6 +42,9 @@ const out=path.join(process.cwd(),'test-espagnol-results');fs.mkdirSync(out,{rec
      await card.locator(':scope > summary').click();
      if(!await card.evaluate(node=>node.open))throw Error('Leçon '+(i+1)+' ne s’ouvre pas directement');
      if(!(await card.locator('.tim-es-reading').innerText()).trim())throw Error('Leçon '+(i+1)+' sans contenu affiché');
+     if(await card.locator('.tim-es-course-sheet').count()!==1)throw Error('Leçon '+(i+1)+' : page de lecture manquante');
+     if(await card.locator('.tim-es-course-help > summary').innerText()!=='Je n’ai pas compris')throw Error('Leçon '+(i+1)+' : aide pédagogique manquante');
+     if(await card.locator('.tim-es-help-question').count()<2)throw Error('Leçon '+(i+1)+' : explications ciblées manquantes');
      if(await card.locator('.tim-es-exercises').evaluate(el=>el.open))throw Error('Exercices visibles avant la fin du cours');
      if(await card.getByText('Lire et écouter la leçon').count())throw Error('Bouton de lecture intermédiaire toujours présent');
      const choices=card.locator('[data-es-training-id]');
@@ -74,11 +77,24 @@ const out=path.join(process.cwd(),'test-espagnol-results');fs.mkdirSync(out,{rec
      });
     });
     const math=page.locator('#test-math-reading');
-    if(await math.locator('.math-lesson-entry').count()!==23)throw Error('Mathématiques : les 23 titres ne sont pas proposés directement');
+    const chapterButtons=math.locator('.math-chapter-entry');
+    if(await chapterButtons.count()!==7)throw Error('Mathématiques : les 7 chapitres ne sont pas proposés');
+    let mathCount=0;
+    for(let g=0;g<7;g++){
+     await chapterButtons.nth(g).click();
+     mathCount+=await math.locator('.math-lesson-entry').count();
+     await math.locator('[data-math-back]').first().click();
+    }
+    if(mathCount!==23)throw Error('Mathématiques : les sous-leçons ne sont pas toutes accessibles');
+    await chapterButtons.first().click();
     await math.locator('.math-lesson-entry').first().click();
     if(await math.locator('.math-reading-section').count()!==6)throw Error('Mathématiques : cours incomplet ou blocs absents');
     if(!await math.locator('.math-reading-lesson').isVisible())throw Error('Mathématiques : la leçon ne s’ouvre pas directement');
     if(await math.locator('.math-reading-actions').count()!==1)throw Error('Mathématiques : exercices absents en fin de leçon');
+    await math.locator('[data-math-help]').first().click();
+    if(!await math.locator('.math-help-page').isVisible())throw Error('Mathématiques : explication de secours absente');
+    await math.locator('[data-math-back]').first().click();
+    if(!await math.locator('.math-reading-lesson').isVisible())throw Error('Mathématiques : retour à la leçon impossible');
     await page.screenshot({path:path.join(out,device+'-mathematiques-lecture.png'),fullPage:true});
     await math.evaluate(node=>node.remove());
     if(errors.length)throw Error('Erreurs JavaScript : '+errors.join(' / '));

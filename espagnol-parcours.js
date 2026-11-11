@@ -309,4 +309,5 @@ function render(root,opts){
  home();
 }
 window.TIM_SPANISH_PATH={render:render,groupCount:C.length,lessonCount:Object.keys(ED).length};
+window.TIM_SPANISH_HELP_TOPICS=HELP_TOPICS;
 })();
