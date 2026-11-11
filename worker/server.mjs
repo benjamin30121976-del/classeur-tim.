@@ -196,7 +196,8 @@ export async function importMathPrivateQuiz(db,uid,payload){
  const tx=await db.transaction();
  const existing=await db.get(path,tx);
  if(existing){
-  if(JSON.stringify(existing)===raw)return {saved:true,id,unchanged:true};
+  if(existing.version===MATH_BANK_VERSION&&existing.payloadJson===raw)
+   return {saved:true,id,unchanged:true};
   throw new ApiFault(409,'math-bank-already-installed');
  }
  await db.commit([createWrite(path,{payloadJson:raw,version:MATH_BANK_VERSION})],tx);
