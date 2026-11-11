@@ -95,6 +95,8 @@ async function run(device,browser){
           const help=more.locator('[data-math-help="'+id+'"]');
           await help.click();
           record('Aide mathématiques sans grille de boutons',await page.locator('#matieres-content .spx-quick-links').count()===0);
+          // Depuis l'aide, revenir au chapitre, puis à toutes les leçons.
+          await page.locator('#matieres-content [data-math-back]').first().click();
         }
         await page.locator('#matieres-content [data-math-back]').first().click();
         const again=page.locator('#matieres-content .math-lesson-entry[data-math-bis]');
