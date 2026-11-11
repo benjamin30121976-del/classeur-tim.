@@ -170,30 +170,17 @@ function render(root,opts){
  const trainingNames=["Je comprends les expressions","Je retrouve les mots espagnols","Je m’entraîne dans les deux sens","Je comprends les phrases","Je révise toute la sous-leçon"];
  function openCategory(i){
   category=i;const c=C[i];
-  const item=ref=>{
-   const hasEnt=lessons.some(l=>l.id===ref);
-   const activities=ENT_ACTIVITIES[ref]||0;
-   return '<article class="spx-lesson-item">'+
-    '<div class="spx-lesson-intro"><span class="spx-chip" aria-hidden="true">▤</span><div class="spx-lesson-copy"><h4>'+esc(ED[ref].name)+'</h4><p>'+esc(ED[ref].intro)+'</p>'+statLine([ref])+'</div></div>'+
-    '<div class="spx-quick-links" aria-label="Accès directs : '+esc(ED[ref].name)+'">'+
-     (hasEnt?'<button type="button" class="spx-quick-link" data-course="'+ref+'">1 · Leçon ENT</button>':'')+
-     '<button type="button" class="spx-quick-link spx-quick-easy" data-easy="'+ref+'">2 · Leçon simplifiée</button>'+
-     '<button type="button" class="spx-quick-link spx-quick-help" data-help="'+ref+'">3 · Je n’ai pas compris</button>'+
-     (activities>0?'<button type="button" class="spx-quick-link" data-ent-exercises="'+ref+'">Exercices ENT ('+activities+')</button>':'')+
-     '<button type="button" class="spx-quick-link" data-training="'+ref+'">Exercices d’entraînement · 10 × 10</button>'+
-    '</div></article>';
-  };
-  draw(header(c.title,c.text)+back("Toutes les rubriques")+
-   '<p class="spx-chapter-overview">'+plural(entCourseCount(c.ids),'fiche de cours ENT','fiches de cours ENT')+' · '+plural(entActivityCount(c.ids),'activité/exercice ENT repéré','activités/exercices ENT repérés')+' · '+(c.ids.length*TRAINING_SERIES*2)+' exercices à faire une fois (5 QCM + 5 écrits par sous-leçon)</p>'+
-   '<h3 class="spx-subheading">Choisis une sous-leçon</h3>'+
-   c.ids.map(item).join("")+
-   '<p class="spx-note">Les leçons ENT viennent du classeur de cours ; les exercices ENT sont ceux retrouvés dans les documents. Les dix exercices d’entraînement par sous-leçon sont créés pour Tim : une seule tentative, avec correction consultable, à 0 XP.</p>');
+  // Une sous-leçon ouvre directement sa page de lecture, sans menu intermédiaire.
+  const item=ref=>'<button type="button" class="spx-row" data-easy="'+esc(ref)+'">'+
+   '<span class="spx-chip" aria-hidden="true">▤</span>'+
+   '<span><strong>'+esc(ED[ref].name)+'</strong><small>'+esc(ED[ref].intro)+'</small></span>'+
+   '<span aria-hidden="true">Lire →</span></button>';
+  draw(header(c.title,"Choisis une leçon pour lire son contenu.")+
+   back("Toutes les rubriques")+
+   '<h3 class="spx-subheading">Leçons</h3>'+
+   c.ids.map(item).join(""));
   bindBack(home);
   root.querySelectorAll("[data-easy]").forEach(b=>b.onclick=()=>openSimplified(b.dataset.easy));
-  root.querySelectorAll("[data-help]").forEach(b=>b.onclick=()=>openHelp(b.dataset.help));
-  root.querySelectorAll("[data-training]").forEach(b=>b.onclick=()=>openPractice(b.dataset.training));
-  root.querySelectorAll("[data-ent-exercises]").forEach(b=>b.onclick=()=>openEntExercises(b.dataset.entExercises));
-  root.querySelectorAll("[data-course]").forEach(b=>b.onclick=()=>opts.original(b.dataset.course));
   scroll();
  }
  function navButtons(ref,options){
@@ -216,20 +203,20 @@ function render(root,opts){
   const explanation=help.simple||x.intro;
   const steps=Array.isArray(help.steps)&&help.steps.length?help.steps:[x.tip,"Regarde ensuite l’exemple avant de t’entraîner."];
   const example=help.example||x.example;
-  draw(header("Leçon simplifiée : "+x.name,"Niveau 2 · La même notion, expliquée plus facilement.")+
+  draw(header(x.name,"Une leçon expliquée avec des exemples et la traduction française.")+
    back("Retour aux sous-leçons")+
-   '<section class="spx-panel spx-simplified-page"><span class="spx-label">2 · LEÇON SIMPLIFIÉE</span>'+
-   '<h3>On reprend doucement</h3><p>'+esc(explanation)+'</p>'+
+   '<section class="spx-panel spx-simplified-page"><span class="spx-label">MA LEÇON</span>'+
+   '<h3>Comprendre</h3><p>'+esc(explanation)+'</p>'+
    '<h4>Les étapes à retenir</h4><ol class="spx-simple-steps">'+steps.map(step=>'<li>'+esc(step)+'</li>').join("")+'</ol>'+
    '<div class="spx-example"><strong>Exemple :</strong> '+esc(example)+'</div>'+
    '<p><strong>À retenir :</strong> '+esc(x.tip)+'</p></section>'+ 
    (BOOST?.guide(ref)||'')+
-   (BOOST?.practice(ref)||'')+
+   (BOOST?.practice(ref)?'<details class="spx-panel"><summary>Exemples supplémentaires pour s’entraîner</summary>'+BOOST.practice(ref)+'</details>':'')+
    '<section class="spx-panel"><h3>Mon petit dictionnaire</h3><p>Appuie sur 🔊 pour écouter les expressions en espagnol.</p>'+
    '<table class="spx-words"><tr><th>Espagnol</th><th>Français</th></tr>'+
    x.pairs.map(p=>'<tr><td><span lang="es">'+esc(p[0])+'</span> '+listen(p[0])+'</td><td>'+esc(p[1])+'</td></tr>').join("")+'</table></section>'+
-   '<section class="spx-panel"><h3>Tu veux continuer ?</h3>'+
-   navButtons(ref,[["help","3 · Je n’ai pas compris"],["practice","Exercices d’entraînement"],["ent","1 · Leçon ENT"]])+'</section>');
+   '<details class="spx-panel"><summary>Après la leçon : exercices, aide et cours ENT</summary>'+
+   navButtons(ref,[["help","Je n’ai pas compris"],["practice","Exercices d’entraînement"],["ent","Cours original du professeur (ENT)"]])+'</details>');
   if(ref==="L05"&&window.TIM_SPANISH_LETTER)root.querySelector(".spx-simplified-page").after(window.TIM_SPANISH_LETTER.createPanel());
   bindBack(listBack);bindSwitch();scroll();
  }
