@@ -97,5 +97,5 @@ function render(panel,id){
  glossary(body,entry);
  bis.append(body);panel.append(bis);return true;
 }
-window.TIM_SPANISH_ENT_BIS={render,lessonIds:Object.keys(lessons),emptyIds:Object.keys(missing)};
+window.TIM_SPANISH_ENT_BIS={render,getLesson:id=>lessons[String(id)]||null,getVerb:id=>verbs[String(id)]||null,lessonIds:Object.keys(lessons),emptyIds:Object.keys(missing)};
 })();
