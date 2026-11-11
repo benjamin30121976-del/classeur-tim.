@@ -78,6 +78,24 @@ async function getStatus(){
   if(checks.forbidden.status!==403)throw Error('Protection du cours Tim incorrecte pour Parent : HTTP '+checks.forbidden.status);
   console.log('OK : compte Parent lit les notes et ne peut pas consulter les fonctions réservées à Tim.');
 
+  // Vérifier la vraie lettre manuscrite privée, pas seulement le module visible.
+  const letter=await page.evaluate(async()=>{
+   const api=window.__TIM_BRIDGE?.attachments;
+   if(!api||!window.TIM_SPANISH_LETTER)return {ready:false};
+   const files=await api.list('lesson','L05');
+   const matches=files.filter(x=>/lettre.*tim|tim.*lettre|manuscrite.*corrig|copie.*corrig/i.test(String(x.title||'')+' '+String(x.fileName||'')));
+   const file=matches.find(x=>x.mime==='application/pdf')||matches.find(x=>String(x.mime).startsWith('image/'));
+   if(!file)return {ready:true,exists:false,count:files.length};
+   const blob=await api.read(file);
+   return {ready:true,exists:true,count:files.length,mime:file.mime,
+     isPdf:blob.type==='application/pdf',bytes:blob.size,integrity:blob.size===file.size,
+     titleIsLetter:/lettre.*tim|tim.*lettre/i.test(String(file.title||'')+' '+String(file.fileName||''))};
+  });
+  console.log('AUDIT LETTRE CORRESPONDANT PRIVEE : '+JSON.stringify(letter));
+  if(!letter.ready||!letter.exists||!letter.integrity||letter.bytes<1000)
+    throw Error('La lettre originale de Tim ne peut pas être confirmée dans la leçon L05');
+  console.log('OK : copie manuscrite privée liée à la leçon L05, fichier relu intégralement et vérifié.');
+
   // Audit transversal Parent : catalogue, progression et évaluations accessibles.
   const parentView=await page.evaluate(async()=>{
     const data=window.__TIM_DATA||{},bridge=window.__TIM_BRIDGE||{},lessons=data.lessons||[],exercises=data.exercises||[];
