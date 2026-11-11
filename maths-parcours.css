@@ -45,3 +45,7 @@
 .math-path .math-reading-docs summary{cursor:pointer;font-weight:700}
 .math-path .math-reading-docs .spx-quick-link{margin-top:10px}
 @media(max-width:600px){.math-path .math-reading-lesson{padding:17px 15px}.math-path .math-lesson-entry{padding:16px 14px}}
+
+.math-path .math-topic-group{margin:25px 0}
+.math-path .math-topic-group h3{font-size:18px;color:#e1ebf7;margin:0 0 12px;padding:0 3px}
+.math-path .math-topic-group .math-lesson-list{margin:0}
