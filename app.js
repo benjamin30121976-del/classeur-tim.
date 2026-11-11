@@ -851,7 +851,7 @@ function renderMatiere(name,openLessonId=null){
    lessons:DATA.lessons,exercises:DATA.exercises,
    back:renderMatieres,original:openLesson,exercise:openExercise,
    task:id=>window.__TIM_BRIDGE.mathTrainingTask(id),
-   submit:(id,answers)=>window.__TIM_BRIDGE.mathTrainingSubmit(id,answers),
+   submit:(id,answers,bankVersion)=>window.__TIM_BRIDGE.mathTrainingSubmit(id,answers,bankVersion),
    progress:()=>window.__TIM_BRIDGE.mathTrainingProgress()
   });
   return;
