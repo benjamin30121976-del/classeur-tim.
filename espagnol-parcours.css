@@ -269,3 +269,15 @@
 #matieres-content .tim-es-exercises{margin:25px 0 6px;padding:10px 13px;border:1px solid #b9cee4;border-radius:12px;background:#f3f7fc}
 #matieres-content .tim-es-exercises>summary{color:#254776!important}
 #matieres-content .tim-es-results{margin-bottom:26px}
+
+
+/* Les exercices de Tim se lisent une question à la fois. */
+#matieres-content .tim-es-question-page[hidden],
+#matieres-content .tim-es-question-navigation button[hidden]{display:none!important}
+#matieres-content .tim-es-question-navigation{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:14px 0}
+#matieres-content .tim-es-question-navigation p{flex:1 0 100%}
+#matieres-content .tim-es-question-navigation button{min-width:130px;min-height:44px;border-radius:10px;padding:9px 13px;background:#294889!important;color:white!important;border:1px solid #294889!important;font-weight:800}
+#matieres-content .tim-es-answer-advice{padding:10px 12px;margin:12px 0;border:1px solid #d6dfee;border-radius:10px;color:#2c4060;background:#f6f9ff}
+#matieres-content .tim-es-answer-advice summary{font-weight:700;cursor:pointer}
+#matieres-content .tim-es-question-page{border:0!important;padding:10px 0!important;background:#fff!important}
+#matieres-content .tim-es-question-page legend{font-size:16px}

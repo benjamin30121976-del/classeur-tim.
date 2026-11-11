@@ -49,3 +49,27 @@
 .math-path .math-topic-group{margin:25px 0}
 .math-path .math-topic-group h3{font-size:18px;color:#e1ebf7;margin:0 0 12px;padding:0 3px}
 .math-path .math-topic-group .math-lesson-list{margin:0}
+
+
+/* Parcours de lecture : un chapitre, puis une leçon. */
+.math-path .math-chapter-list{display:flex;flex-direction:column;gap:10px;margin:18px 0 25px}
+.math-path .math-chapter-entry{display:flex;align-items:center;justify-content:space-between;gap:15px;width:100%;text-align:left;background:#fff;color:#243c59;border:1px solid #b9cde3;border-radius:12px;padding:17px 16px;font:inherit}
+.math-path .math-chapter-entry strong{font-size:17px;color:#213e62}
+.math-path .math-chapter-entry span{font-size:13px;color:#546b85;white-space:nowrap}
+.math-path .math-quiz-brief{font-size:16px;line-height:1.55;color:#eef5ff;margin:14px 5px}
+.math-path .math-one-try{font-size:14px;color:#384c69}
+.math-path #math-quiz h3{font-size:20px;color:#234a73;margin-bottom:12px}
+.math-path #math-quiz .spx-training-question[hidden]{display:none!important}
+.math-path #math-quiz .spx-training-question{background:#fff;border:0;padding:13px 0;box-shadow:none}
+.math-path #math-quiz .spx-training-question legend{font-size:15px;color:#395b79}
+.math-path #math-quiz .spx-training-question>p{font-size:19px;line-height:1.5;color:#203b5b;font-weight:700}
+.math-path #math-quiz .math-choice{font-size:16px;line-height:1.45;background:#f7faff;border-radius:12px}
+.math-path #math-quiz .math-choice:has(input:checked){border-color:#24547f;background:#e8f3ff}
+.math-path #math-quiz .spx-quiz-navigation{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:12px}
+.math-path #math-quiz .spx-quiz-navigation p{width:100%;margin:0;font-weight:800;color:#2d537e}
+.math-path #math-quiz button[hidden]{display:none!important}
+@media(max-width:600px){
+ .math-path .math-chapter-entry{padding:16px 13px}
+ .math-path .math-chapter-entry span{font-size:12px}
+ .math-path #math-quiz .spx-training-question>p{font-size:18px}
+}

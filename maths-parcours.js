@@ -65,19 +65,15 @@ function wire(){
 }
 function home(){
  selected=null;group=null;
- draw(header('Mes leçons de mathématiques','Choisis une leçon pour la lire.')+
+ draw(header('Mathématiques','Choisis ton chapitre, puis ta leçon.')+
  back('Toutes les matières')+
- GROUPS.map(g=>{
-  const items=bis.filter(x=>groupOfId(x.id)===g);
-  if(!items.length)return '';
-  return '<section class="math-topic-group"><h3>'+esc(g.name)+'</h3><div class="math-lesson-list">'+
-   items.map(x=>'<button type="button" class="math-lesson-entry" data-math-bis="'+esc(x.id)+'">'+
-    '<strong>'+esc(cleanTitle(x.title))+'</strong>'+
-    (x.summary?'<span class="math-lesson-description">'+esc(x.summary)+'</span>':'')+
-    '<span class="math-lesson-open">Lire la leçon →</span></button>').join('')+
-   '</div></section>';
- }).join('')+
- '<details class="math-reading-docs"><summary>Voir les cours originaux du professeur (ENT)</summary>'+btn('data-math-all-ent','all','Consulter les '+ent.length+' cours ENT')+'</details>', options.back);
+ '<div class="math-chapter-list">'+GROUPS.map((g,i)=>{
+  const lessons=bis.filter(x=>groupOfId(x.id)===g);
+  if(!lessons.length)return '';
+  return '<button type="button" class="math-chapter-entry" data-math-group="'+i+'"><strong>'+esc(g.name)+'</strong><span>'+lessons.length+' leçon'+(lessons.length>1?'s':'')+' à lire</span></button>';
+ }).join('')+'</div>'+
+ '<details class="math-reading-docs"><summary>Voir les cours du professeur (ENT)</summary>'+
+ btn('data-math-all-ent','all','Consulter les '+ent.length+' cours originaux')+'</details>',options.back);
  wire();
 }
 function viewEntChronology(){
@@ -100,7 +96,7 @@ function category(g){
    (x.summary?'<span class="math-lesson-description">'+esc(x.summary)+'</span>':'')+
    '<span class="math-lesson-open">'+(done?'Lire la leçon · Évaluation déjà faite':'Lire la leçon')+' →</span></button>';
  }).join('');
- draw(header(g.name,'Choisis une leçon. Elle s’ouvre directement.')+back('Tous les chapitres')+
+ draw(header(g.name,'Choisis une leçon pour la lire.')+back('Tous les chapitres')+
  '<div class="math-lesson-list">'+rows+'</div>',home);
  wire();
 }
@@ -209,10 +205,10 @@ async function viewTraining(id){
  const testId='MT'+suffix(id);
  const completed=grades.attempts.find(a=>a.id===testId);
  if(completed){resultPage(completed);return;}
- draw(header('Évaluation : '+cleanTitle(x.title),'Une seule tentative. Correction et note dès la validation ; 7 à 10/10 : +1 XP, 5 à 6/10 : +0,5 XP.')+
- back('Retour aux sous-leçons')+
- '<section class="spx-panel"><h3>Avant de commencer</h3><p>10 questions, 2 points par bonne réponse. Lis toute la consigne avant de choisir. Tu peux revoir la méthode sans utiliser ta tentative.</p>'+btn('data-math-bis',id,'Revoir la leçon BIS')+btn('data-math-help',id,'Je n’ai pas compris')+'</section>'+
- '<section class="spx-panel" id="math-quiz"><p>Chargement sécurisé de l’exercice…</p></section>',()=>category(group));
+ draw(header('Exercice : '+cleanTitle(x.title),'10 questions. Une seule réponse à choisir chaque fois.')+
+ back('Retour aux leçons')+
+ '<p class="math-quiz-brief">Lis la question, choisis ta réponse et avance. La note et les explications arrivent à la fin.</p>'+
+ '<section class="spx-panel" id="math-quiz"><p>Chargement de l’exercice…</p></section>',()=>category(group));
  wire();
  if(window.__TIM_GUEST){const p=root.querySelector('#math-quiz');p.innerHTML='<p>Le questionnaire est réservé aux comptes Tim et Parent. La visite en invité reste en lecture seule.</p>';return;}
  const holder=root.querySelector('#math-quiz');
@@ -232,10 +228,9 @@ async function viewTraining(id){
   if(!context&&task.questions.some(q=>dependsOnMissingData.test(q.prompt)&&!embeddedData.test(q.prompt)))
    throw Error('Une question renvoie à un programme ou à une figure dont l’énoncé manque. Exercice suspendu, aucune tentative utilisée.');
   if(window.__TIM_PARENT){holder.innerHTML='<h3>Aperçu Parent · 10 questions (lecture seule)</h3><p>Ces questions ne sont pas les réponses correctes. Aucune tentative n’est créée lors de cet aperçu.</p>'+task.questions.map((q,i)=>'<section class="spx-training-question"><h4>Question '+(i+1)+' / 10</h4><p>'+esc(q.prompt)+'</p><ul>'+q.choices.map(c=>'<li>'+esc(c)+'</li>').join('')+'</ul></section>').join('');return;}
-  holder.innerHTML='<h3>10 questions de compréhension</h3>'+ 
-   '<p><strong>Avant de répondre :</strong> lis les données et la consigne de chaque question. Ce questionnaire BIS de dix questions est distinct des exercices ENT du professeur.</p>'+
+  holder.innerHTML='<h3>À toi de jouer</h3>'+
    (context?'<section class="spx-panel"><h3>Énoncé à consulter pour les dix questions</h3><p style="white-space:pre-wrap">'+esc(context)+'</p></section>':'')+
-   '<p>Après la validation définitive, tu recevras la note et les explications. Tu ne pourras pas refaire cet exercice.</p>'+
+   '<p class="math-one-try">Une seule validation. Tu peux changer tes réponses jusqu’à l’envoi.</p>'+
    '<form id="math-quiz-form">'+task.questions.map((q,i)=>'<fieldset class="spx-training-question"><legend>Question '+(i+1)+' / '+task.questions.length+'</legend><p>'+esc(q.prompt)+'</p>'+
     q.choices.map((v,j)=>'<label class="math-choice"><input type="radio" name="mq'+i+'" value="'+j+'"> '+esc(v)+'</label>').join('')+'</fieldset>').join('')+
    '<div class="spx-quiz-navigation"><p id="math-quiz-progress" role="status" aria-live="polite"></p><button type="button" id="math-quiz-prev" class="spx-back">← Question précédente</button> <button type="button" id="math-quiz-next" class="spx-button">Question suivante →</button></div><button type="submit" id="math-quiz-submit" class="spx-button">Valider définitivement les 10 réponses</button><p id="math-quiz-status" role="status" aria-live="polite"></p></form>';
