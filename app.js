@@ -679,7 +679,7 @@ function makeXPPanel(){
  const picture=E('img','xp-illustration-img');
  picture.src='./assets/barre-xp-original.png';
  picture.alt='Illustration du loup allongé devant une jauge de 0 à 75 XP, dans une bibliothèque bleue et dorée.';
- picture.width=1536;picture.height=512;picture.loading='eager';picture.decoding='async';
+ picture.width=2172;picture.height=724;picture.loading='eager';picture.decoding='async';
  art.append(picture);
  const track=E('div','xp-art-track');
  track.setAttribute('role','progressbar');track.setAttribute('aria-label','XP de la semaine');
@@ -730,7 +730,7 @@ function dailyMissionPanel(){
  const dailyFallback='./assets/loup-defi-original.webp';
  wolf.src=dailyFallback;
  if(!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)window.TIM_ANIMATIONS?.setCardImage?.(wolf,'daily',dailyFallback);
- wolf.width=358;wolf.height=267;wolf.alt='Loup avec casque bleu dans sa bibliothèque, faisant apparaître le défi du jour et trois XP.';
+ wolf.width=358;wolf.height=356;wolf.alt='Loup animateur du défi du jour devant son échiquier, présentant la mission.';
  wolf.loading='eager';wolf.decoding='async';
  imageBox.append(wolf);section.append(imageBox);
  const content=E('div','daily-loup-content');
