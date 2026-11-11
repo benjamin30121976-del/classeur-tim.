@@ -65,6 +65,42 @@ async function run(device,browser){
         await list.nth(i).waitFor({state:'visible',timeout:5000});
       }
     }
+    // Test isolé des 23 leçons BIS de mathématiques, sans session Tim :
+    // lecture de données pédagogiques statiques et aucune soumission.
+    const mathSetup=await page.evaluate(()=>{
+      const pack=window.TIM_MATHS_BIS_PACK?.lessons||[];
+      if(!window.TIM_MATH_PATH||!Array.isArray(pack)||pack.length!==23)return {count:pack.length,mounted:false};
+      const container=document.getElementById('matieres-content');
+      container.replaceChildren();
+      const mount=document.createElement('div');container.append(mount);
+      window.TIM_MATH_PATH.render(mount,{lessons:pack,exercises:[],back:()=>{}});
+      return {count:pack.length,mounted:true};
+    });
+    record('23 leçons BIS mathématiques disponibles',mathSetup.mounted&&mathSetup.count===23,'Leçons : '+mathSetup.count);
+    if(mathSetup.mounted){
+      const list=page.locator('#matieres-content .math-lesson-entry[data-math-bis]');
+      record('Liste des 23 leçons de mathématiques',await list.count()===23,'Titres : '+await list.count());
+      const ids=await list.evaluateAll(nodes=>nodes.map(n=>n.getAttribute('data-math-bis')));
+      for(const [i,id] of ids.entries()){
+        await page.locator('#matieres-content .math-lesson-entry[data-math-bis="'+id+'"]').click();
+        const article=page.locator('#matieres-content article.math-reading-lesson');
+        const sectionCount=await article.locator('.math-reading-section').count();
+        const content=(await article.innerText()).trim();
+        record('Lecture mathématiques '+(i+1),content.length>=110&&sectionCount>=3,'Texte : '+content.length+' ; sections : '+sectionCount);
+        const more=page.locator('#matieres-content details.math-reading-actions');
+        record('Exercices mathématiques repliés '+(i+1),await more.count()===1&&!(await more.evaluate(n=>n.open)));
+        if(i===0){
+          await page.screenshot({path:dir+'/'+device+'-maths-lecon.png',fullPage:true,animations:'disabled'});
+          await more.locator('summary').click();
+          const help=more.locator('[data-math-help="'+id+'"]');
+          await help.click();
+          record('Aide mathématiques sans grille de boutons',await page.locator('#matieres-content .spx-quick-links').count()===0);
+        }
+        await page.locator('#matieres-content [data-math-back]').first().click();
+        const again=page.locator('#matieres-content .math-lesson-entry[data-math-bis]');
+        record('Retour liste mathématiques '+(i+1),await again.count()===23);
+      }
+    }
     if(catalog.lessons.length){
       await page.evaluate(id=>window.openLesson(id),catalog.lessons[0].id);
       const title=page.locator('#lesson-detail.active h2');
