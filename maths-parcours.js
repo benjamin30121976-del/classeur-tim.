@@ -111,14 +111,14 @@ function listPage(id,title,rows,kind){
 function viewEnt(id){listPage(id,'Leçons ENT — '+groupOfId(id).name,entFor(groupOfId(id)),'original');}
 function viewEntExercises(id){listPage(id,'Exercices ENT du chapitre — '+groupOfId(id).name,exFor(groupOfId(id)),'exercise');}
 function blocks(lesson,mode){
- const content=(lesson?.blocks||[]).filter(b=>!/^Question d[’']entraînement\\s*[12]$/iu.test(b.h||'')&&(mode==='bis'||['Comprendre','Méthode étape par étape','Exemples corrigés','Erreur fréquente','Objectif'].includes(b.h)));
+ const content=(lesson?.blocks||[]).filter(b=>!/^Question d[’']entraînement\s*[12]$/iu.test(b.h||'')&&(mode==='bis'||['Comprendre','Méthode étape par étape','Exemples corrigés','Erreur fréquente','Objectif'].includes(b.h)));
  return content.map(b=>{
   if(b.kind==='svg'&&typeof b.svg==='string'){
-   const svg=b.svg.replace(/<script[\\s\\S]*?<\\/script>/gi,'').replace(/\\son[a-z]+\\s*=\\s*(["']).*?\\1/gi,'');
+   const svg=b.svg.replace(/<script[\s\S]*?<\/script>/gi,'').replace(/\son[a-z]+\s*=\s*(["']).*?\1/gi,'');
    return '<section class="math-reading-section"><h3>'+esc(b.h||'Schéma')+'</h3><div class="math-diagram">'+svg+'</div></section>';
   }
   if(b.kind==='bullets')return '<section class="math-reading-section"><h3>'+esc(b.h||'Méthode')+'</h3><ol>'+((b.items||[]).map(x=>'<li>'+esc(x)+'</li>').join(''))+'</ol></section>';
-  if(b.kind==='note')return '<section class="math-reading-section"><h3>'+esc(b.h||'Explication')+'</h3><p>'+esc(b.body||'').replace(/\\n/g,'</p><p>')+'</p></section>';
+  if(b.kind==='note')return '<section class="math-reading-section"><h3>'+esc(b.h||'Explication')+'</h3><p>'+esc(b.body||'').replace(/\n/g,'</p><p>')+'</p></section>';
   return '';
  }).join('');
 }
