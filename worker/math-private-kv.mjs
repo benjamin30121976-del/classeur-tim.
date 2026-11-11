@@ -19,6 +19,34 @@ async function loadBank(env){
   throw Error('math-bank-invalid');
  return bank;
 }
+// Firestore existant du classeur : stockage privé alternatif quand aucun KV n'est lié.
+async function loadQuiz(env,db,id){
+ const kv=env?.TIM_MATH_PRIVATE_KV;
+ if(kv&&typeof kv.get==='function')return extract(await loadBank(env),id);
+ if(!db||typeof db.get!=='function')throw Error('math-bank-unavailable');
+ const fragment=await db.get('mathPrivateQuizzes/'+id);
+ if(!fragment||fragment.version!==MATH_BANK_VERSION)throw Error('math-bank-unavailable');
+ return extract({public:{quizzes:{[id]:fragment.public}},private:{quizzes:{[id]:fragment.private}}},id);
+}
+export function validateMathFragment(fragment,id){
+ if(!fragment||fragment.version!==MATH_BANK_VERSION||!mathId(id)||fragment.id!==id)
+  throw Error('math-fragment-invalid');
+ const {pub,priv}=extract({public:{quizzes:{[id]:fragment.public}},private:{quizzes:{[id]:fragment.private}}},id);
+ if(pub.questions.length!==10||priv.questions.length!==10||fragment.public.bankVersion!==MATH_BANK_VERSION)
+  throw Error('math-fragment-invalid');
+ for(let i=0;i<10;i++){
+  const q=pub.questions[i],key=priv.questions[i];
+  if(!q||typeof q.prompt!=='string'||q.prompt.trim().length<10||!Array.isArray(q.choices)||q.choices.length!==4||
+     q.choices.some(x=>typeof x!=='string'||!x.trim())||new Set(q.choices).size!==4||
+     !key||!Number.isInteger(key.correctIndex)||key.correctIndex<0||key.correctIndex>3||
+     q.choices[key.correctIndex]!==key.expected||typeof key.explanation!=='string'||key.explanation.length<20||
+     !Array.isArray(key.feedbackByIndex)||key.feedbackByIndex.length!==4||
+     key.feedbackByIndex[key.correctIndex]!==null||
+     key.feedbackByIndex.some((v,j)=>j!==key.correctIndex&&(typeof v!=='string'||v.length<10)))
+   throw Error('math-fragment-invalid');
+ }
+ return true;
+}
 function extract(bank,id){
  if(!mathId(id))throw Error('math-invalid-id');
  const pub=bank.public.quizzes[id],priv=bank.private.quizzes[id];
@@ -28,8 +56,8 @@ function extract(bank,id){
    throw Error('math-quiz-invalid');
  return {pub,priv};
 }
-export async function mathPublicTaskPrivate(env,id){
- const {pub}=extract(await loadBank(env),id);
+export async function mathPublicTaskPrivate(env,id,db){
+ const {pub}=await loadQuiz(env,db,id);
  const questions=pub.questions.map(q=>{
   if(typeof q.prompt!=='string'||!Array.isArray(q.choices)||q.choices.length!==4||
      q.choices.some(c=>typeof c!=='string'||!c.trim())||new Set(q.choices).size!==4)
@@ -38,11 +66,11 @@ export async function mathPublicTaskPrivate(env,id){
  });
  return {id,lessonId:pub.lessonId,title:pub.title,bankVersion:MATH_BANK_VERSION,questions};
 }
-export async function gradeMathTaskPrivate(env,id,answers,version){
+export async function gradeMathTaskPrivate(env,id,answers,version,db){
  if(!mathId(id)||!Array.isArray(answers)||answers.length!==10||
     answers.some(x=>!Number.isInteger(x)||x<0||x>3))throw Error('math-invalid-answers');
  if(version!==MATH_BANK_VERSION)throw Error('math-stale-bank');
- const {pub,priv}=extract(await loadBank(env),id);
+ const {pub,priv}=await loadQuiz(env,db,id);
  const items=pub.questions.map((question,i)=>{
   const key=priv.questions[i];
   if(!key||!Number.isInteger(key.correctIndex)||key.correctIndex<0||key.correctIndex>3||
