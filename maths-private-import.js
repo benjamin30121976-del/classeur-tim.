@@ -30,9 +30,9 @@
   return bank;
  }
  function render(){
-  const wrap=make('details');wrap.className='panel math-private-import';
+  const wrap=make('details');wrap.className='panel math-private-import';wrap.open=true;
   if(!window.__TIM_PARENT||window.__TIM_GUEST)return wrap;
-  const summary=make('summary','Administration Parent — installer les corrigés de mathématiques');
+  const summary=make('summary','Mathématiques — installer les 23 évaluations');
   summary.style.cssText='cursor:pointer;font-weight:750';
   const intro=make('p','Importer les 230 questions dans le stockage privé Firebase du classeur. Les réponses ne seront jamais ajoutées à GitHub ni affichées à Tim avant validation.');
   const input=make('input');input.type='file';input.accept='.json,.zip,application/json,application/zip';

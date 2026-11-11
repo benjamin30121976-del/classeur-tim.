@@ -596,7 +596,8 @@ function renderParent(){
  // et des copies est maintenant réuni en un seul tableau de bord.
  if(window.__TIM_BRIDGE?.diagnose)parentAdminPanels(root);
  root.prepend(parentBonusPanel());
- if(window.TIM_MATH_PRIVATE_IMPORT?.render)root.append(window.TIM_MATH_PRIVATE_IMPORT.render());
+ // L'import privé des évaluations est la première action de l'espace Parent.
+ if(window.TIM_MATH_PRIVATE_IMPORT?.render)root.prepend(window.TIM_MATH_PRIVATE_IMPORT.render());
  root.append(notice('Les devoirs officiels restent ceux de l’ENT ; le classeur permet de consulter le suivi des exercices de Tim.','note info'));
 }
 
