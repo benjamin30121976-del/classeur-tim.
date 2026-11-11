@@ -2,6 +2,7 @@ name: Vérifier les mathématiques et XP privé
 on:
   pull_request:
     paths:
+      - 'maths-private-import.js'
       - 'maths-parcours.js'
       - 'maths-parcours.css'
       - 'worker/maths-training-curriculum.mjs'
@@ -41,6 +42,7 @@ jobs:
       - name: Vérifier la syntaxe JavaScript
         run: |
           node --check maths-parcours.js
+          node --check maths-private-import.js
           node --check worker/maths-training-curriculum.mjs
           node --check worker/math-private-kv.mjs
           node --check worker/maths-training-extra.mjs
