@@ -101,7 +101,7 @@ function inlineLesson(holder,entId,renderL01){
   block.append(spanish,say(item[0],'es','Écouter'),el('span',item[1]));
   parent.append(block);
  };
- h('Ce que tu vas apprendre');
+ h('Comprendre la leçon');
  para(data.goal||'Comprendre et réutiliser les expressions vues en classe.');
  const context=el('p',undefined,'tim-es-teacher-context');
  context.append(el('strong','En classe : '),document.createTextNode(ENT_WHAT_WAS_DONE[entId]||'Travail de la séance ENT.'));
