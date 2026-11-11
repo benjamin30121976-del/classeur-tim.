@@ -18,7 +18,7 @@ const files=[
  'Tim_Animation_3XP_Mouche.mp4','Tim_Animation_2XP_Grattage.mp4',
  'Tim_Animation_1XP_Vitre_Embuee.mp4','Tim_Animation_0XP_Toc_Toc_Paume.mp4',
  'Tim_Animation_Minus1XP_Tete_Penaude.gif','Tim_Defi_Du_Samedi_10XP.gif',
- 'Tim_Defi_Du_Dimanche_20XP_Original.mp4','Tim_Defi_Du_Dimanche_20XP_Original.gif',
+ 'Tim_Dimanche_Hologramme_20XP_Gagne.gif',
  'Tim_Defi_Bonus_5XP.gif'
 ];
 const src=readFileSync('tim-animations.js','utf8');
