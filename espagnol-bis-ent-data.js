@@ -24,7 +24,7 @@ function points(where,arr){
  where.append(ul);
 }
 function example(where,[es,fr]){
- const card=st(el('div',undefined,'ent-bis-example'),'padding:11px 12px;background:#fff;border:1px solid #dce0f1;border-radius:11px;margin:8px 0');
+ const card=st(el('div',undefined,'ent-bis-example'),'padding:10px 2px 12px;border-bottom:1px solid #dce0f1;margin:0');
  const top=st(el('div'),'display:flex;flex-wrap:wrap;gap:7px;align-items:center');
  top.append(st(el('strong',es),'color:#263a90;flex:1 1 190px'),speech(es));
  card.append(top,st(el('div',fr),'font-size:15px;color:#36445c;margin-top:6px'));where.append(card);
@@ -86,13 +86,15 @@ function render(panel,id){
  const bis=st(el('details',undefined,'ent-es-bis ent-es-bis-'+id.replace(/[^A-Za-z0-9]/g,'')),'margin:14px 0;border:2px solid #aaa1ec;border-radius:13px;background:#f5f3ff;color:#26344b;padding:12px 14px');
  bis.append(st(el('summary','Ouvrir la leçon BIS — '+entry.title),'cursor:pointer;font-size:18px;line-height:1.4;font-weight:900;color:#263a97;padding:10px 3px'));
  const body=st(el('div'),'font-size:16px;line-height:1.6;padding:5px 2px 16px');
- h(body,'1. Comprendre le cours du professeur');note(body,entry.goal);points(body,entry.steps);
- h(body,'2. Ce qu’il faut apprendre');points(body,entry.learn);
- h(body,'3. Exemples espagnols avec traduction et écoute');
+ h(body,'Ce que tu vas comprendre');note(body,entry.goal);
+ h(body,'La méthode, simplement');points(body,entry.steps);
+ h(body,'Exemples en espagnol et en français');
  entry.examples.forEach(e=>example(body,e));
+ const more=st(el('details',undefined,'ent-bis-goals'),'margin:18px 0;padding:10px 12px;border:1px solid #dce0f1;border-radius:10px;background:#fafcff');
+ more.append(st(el('summary','Ce qu’il faut savoir faire'),'cursor:pointer;font-size:16px;font-weight:800;color:#243683'));
+ points(more,entry.learn);body.append(more);
  conjugate(body,entry.conjugations);
  glossary(body,entry);
- note(body,'Leçon BIS rédigée pour expliquer l’ENT. Les exemples ajoutés ici sont pédagogiques ; les documents et consignes officiels restent accessibles séparément.');
  bis.append(body);panel.append(bis);return true;
 }
 window.TIM_SPANISH_ENT_BIS={render,lessonIds:Object.keys(lessons),emptyIds:Object.keys(missing)};
