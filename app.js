@@ -76,39 +76,46 @@ const COURSE_GROUPS=[
  {title:'Méthodes de contrôle',topics:['Méthode'],icon:'✓',sub:'Comprendre les consignes et réviser'}
 ];
 let lessonGroup='', lessonSubject='', exerciseGroup='', exerciseSubject='', exerciseMode='';
-// Les missions bonus sont un tirage quotidien stable. Le compteur XP existant
-// ne change pas : au plus +3 XP bonus/jour, une seule validation par exercice.
+// Le bonus du jour reste vide tant qu'aucun exercice n'a été publié explicitement.
+// Un seul exercice peut être présenté ; aucune sélection automatique ni envoi Parent.
 function bonusStatus(){return window.TIM_BONUS.state(DATA.exercises,attempts());}
 function bonusMissionPanel(onHome=false,subject=''){
- const st=bonusStatus(),box=E('section',onHome?'bonus-spotlight home-bonus':'bonus-spotlight');
- const header=E('div','bonus-spotlight-head');header.append(E('div','bonus-spotlight-heading',onHome?'🎁 MISSION BONUS DU JOUR':'🎁 TES EXERCICES BONUS'),E('span','bonus-xp','Jusqu’à +3 XP / jour'));box.append(header);
- box.append(E('p','bonus-lead','3 suggestions surprises chaque jour. Tu peux aussi faire autant d’autres exercices bonus que tu veux : seuls les XP sont plafonnés.')); 
- const chosen=st.chosen.filter(e=>!subject||(e.subject||'Espagnol')===subject);
- if(!chosen.length)box.append(E('p','bonus-empty',subject?'Aucun exercice de '+subject+' dans le tirage du jour. Tu peux consulter les autres exercices bonus.':'Toutes les missions bonus disponibles ont déjà été terminées.'));
- const list=E('div','bonus-mission-list');
- for(let i=0;i<chosen.length;i++){const ex=chosen[i],done=!!attemptFor(ex.id);
-  const b=E('button','bonus-mission-item');b.type='button';b.append(E('span','bonus-mission-number',done?'✓':String(st.chosen.findIndex(x=>x.id===ex.id)+1)));
-  const meta=E('span','bonus-mission-copy');meta.append(E('strong','',ex.title),E('small','',(ex.subject||'Espagnol')+' · '+(lessonBy(ex.lesson)?.title||'Cours enregistré')));b.append(meta,E('span','bonus-mission-status',done?'Terminé':'Jouer ›'));
-  b.addEventListener('click',()=>openExercise(ex.id));list.append(b);
- }box.append(list);
- const actions=E('div','bonus-mission-actions');
- if(!window.__TIM_GUEST&&!window.__TIM_PARENT){
-  const reroll=button(st.round?'Tirage déjà changé':'🔀 Changer mes bonus (1 fois)',()=>{
-    if(window.TIM_BONUS.change(DATA.exercises,attempts())){if(onHome)renderHome();else renderExerciseIndex();}
-    else v7Toast('Le changement a déjà été utilisé ou une mission est commencée.');
-  },'bonus-reroll');reroll.disabled=!st.canChange;
-  actions.append(reroll);
+ const status=bonusStatus();
+ const available=status.chosen.filter(ex=>!subject||(ex.subject||'Espagnol')===subject).slice(0,1);
+ const box=E('section',onHome?'bonus-spotlight home-bonus':'bonus-spotlight');
+ box.setAttribute('aria-label','Défi bonus du jour');
+ const head=E('div','bonus-spotlight-head');
+ head.append(E('h2','bonus-spotlight-heading','DÉFI BONUS DU JOUR'),
+  E('span','bonus-count',available.length+' exercice'+(available.length>1?'s':'')));
+ box.append(head);
+ if(onHome){
+  const scene=E('div','bonus-home-scene');
+  const wolf=E('img','bonus-home-wolf');
+  wolf.src=window.TIM_ANIMATIONS?.url?.('bonus')||'./assets/animations/Tim_Defi_Bonus_5XP.gif';
+  wolf.alt='Loup animé avec casque, assis devant une fenêtre';
+  wolf.width=307;wolf.height=309;
+  const present=E('div','bonus-present');
+  present.setAttribute('role','img');
+  present.setAttribute('aria-label','Cadeau noir entouré d’un ruban bleu');
+  present.append(E('span','bonus-present-bow'),E('span','bonus-present-lid'),E('span','bonus-present-box'));
+  scene.append(wolf,present);box.append(scene);
  }
- if(onHome){actions.append(button('VOIR MES BONUS →',()=>{exerciseMode='bonus-mission';exerciseSubject='';exerciseGroup='';page('exercices');},'bonus-browse'));}
- else if(subject){actions.append(button('Voir tous les exercices bonus →',()=>{exerciseMode='bonus-all';exerciseGroup='';renderExerciseIndex();},'bonus-browse'));}
- else actions.append(button('Voir toutes les matières →',()=>{exerciseMode='';exerciseSubject='';renderExerciseIndex();},'bonus-browse'));
- box.append(actions);
- if(!st.round)box.append(E('p','bonus-footnote','Tu peux changer le tirage une seule fois, avant de valider un exercice.'));
- else box.append(E('p','bonus-footnote','Tirage modifié pour aujourd’hui. Le changement ne se renouvelle que demain.'));
- if(window.__TIM_GUEST)box.append(E('p','bonus-footnote','Mode invité : aperçu uniquement, sans validation ni XP.'));
+ if(!available.length){
+  box.append(E('p','bonus-empty','Aucun exercice pour le moment.'));
+ }else{
+  const ex=available[0],done=attemptFor(ex.id);
+  box.append(E('p','bonus-lead',done?'Défi terminé : ton résultat reste consultable.':'Un exercice est disponible pour le défi bonus.'));
+  const b=E('button','bonus-mission-item');b.type='button';
+  b.append(E('span','bonus-mission-number',done?'✓':'1'));
+  const meta=E('span','bonus-mission-copy');
+  meta.append(E('strong','',ex.title),E('small','',ex.subject||'Cours enregistré'));
+  b.append(meta,E('span','bonus-mission-status',done?'Résultat':'Ouvrir'));
+  b.addEventListener('click',()=>openExercise(ex.id));
+  box.append(b);
+ }
+ if(window.__TIM_GUEST)box.append(E('p','bonus-footnote','Mode invité : consultation uniquement, sans validation ni XP.'));
  return box;
 }
-
 // V15 : chapitres classés par matière, et non par thèmes espagnols pour tout le site.
 function subjectOf(item){return item?.subject||'Espagnol';}
 function chapterOf(lesson){
@@ -219,7 +226,7 @@ function renderExerciseIndex(){
    else for(const ex of schoolwork)root.append(cardAction(ex.title,(ex.subject||'Espagnol')+' · 0 XP',exerciseDescription(ex),()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));return;
   }
   if(exerciseMode==='bonus-mission'){
-   root.className='clicklist';document.getElementById('exercise-count').textContent='Tes 3 missions bonus du jour';
+   root.className='clicklist';document.getElementById('exercise-count').textContent='Défi bonus du jour';
    toolbar.append(button('← Toutes les matières',()=>{exerciseMode='';renderExerciseIndex();},'group-back'));
    root.append(bonusMissionPanel(false));return;
   }
@@ -253,7 +260,7 @@ function renderExerciseIndex(){
   root.append(E('p','exercise-type-prompt','Les devoirs de l’école n’apportent aucun XP. Les exercices bonus sont libres, avec un plafond de +3 XP par jour.'),choices);
   return;
  }
- // Entrée rapide : les 3 bonus du jour, sans obliger Tim à choisir un chapitre.
+ // Défi bonus du jour : aucun exercice sans ajout explicite.
  if(exerciseMode==='bonus'&&!q){
   finder.classList.add('hide');
   document.getElementById('exercise-count').textContent='Tes missions bonus en '+exerciseSubject;
@@ -595,7 +602,7 @@ function renderParent(){
  // Les commandes de gestion Parent restent accessibles ; le suivi des notes
  // et des copies est maintenant réuni en un seul tableau de bord.
  if(window.__TIM_BRIDGE?.diagnose)parentAdminPanels(root);
- root.prepend(parentBonusPanel());
+ /* Le Parent ne choisit plus et n'envoie plus de défi bonus. */
  // L'import privé des évaluations est la première action de l'espace Parent.
  if(window.TIM_MATH_PRIVATE_IMPORT?.render)root.prepend(window.TIM_MATH_PRIVATE_IMPORT.render());
  root.append(notice('Les devoirs officiels restent ceux de l’ENT ; le classeur permet de consulter le suivi des exercices de Tim.','note info'));
@@ -807,7 +814,7 @@ function renderHome(){
  const hero=E('section','mission-hero');
  const copy=E('div','mission-copy');copy.append(E('div','shout','CLASSEUR · 3e'),E('h1','','CHOISIS TA MISSION'),E('p','','Cours, défis et progression. À toi de jouer.'));
  copy.append(button('Choisir une matière →',()=>page('matieres'),'lobo-go'));hero.append(copy);const wolf=E('img','mission-wolf');wolf.src='./assets/loup-accueil.webp';wolf.alt='Le loup jongleur du classeur';hero.append(wolf);// Défis quotidiens rétablis avec les images originales du parent.
- root.append(hero,dailyMissionPanel(),...(window.__TIM_GUEST?[]:[makeXPPanel()]),makeRewardsTile(),makeSoundSettings(),bonusMissionPanel(true),window.__TIM_GUEST?document.createDocumentFragment():timBonusPanel(),missionCard('weekly'),missionCard('sunday'));
+ root.append(hero,dailyMissionPanel(),...(window.__TIM_GUEST?[]:[makeXPPanel()]),makeRewardsTile(),makeSoundSettings(),bonusMissionPanel(true),missionCard('weekly'),missionCard('sunday'));
  root.append(E('h2','home-section-title','Que veux-tu travailler ?'));
  const cards=E('div','home-grid');
  for(const o of [{name:'Matières',sub:'Cours classés par matière',icon:'▦',cls:'cours',dest:'matieres'},
