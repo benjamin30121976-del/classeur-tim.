@@ -10,7 +10,9 @@ const report={site:base,date:new Date().toISOString(),mode:'visiteur lecture seu
 async function probe(page,p){
  try{
   const resp=await page.request.get(new URL(p,base).href,{timeout:20000});
-  return {status:resp.status(),available:resp.ok(),contentType:resp.headers()['content-type']||''};
+  const type=resp.headers()['content-type']||'';
+  const expected=p.endsWith('.gif')?'image/':p.endsWith('.js')?'javascript':'';
+  return {status:resp.status(),available:resp.ok()&&(!expected||(expected==='image/'?type.startsWith('image/'):type.includes('javascript'))),contentType:type};
  }catch(e){return {status:'error',available:false,error:String(e.message).slice(0,120)};}
 }
 async function main(){
@@ -44,6 +46,7 @@ async function main(){
     if(row.checks.enterGuest){
      await page.locator('#guest-enter').click({timeout:15000});
      await page.locator('body.guest-mode').waitFor({timeout:20000});
+     await page.waitForFunction(()=>typeof window.openLesson==='function'&&Boolean(document.querySelector('#home.page.active')),{timeout:20000});
      row.checks.guestOpened=true;
      const intro=page.locator('#intro-screen');
      if(await intro.isVisible()){
@@ -92,7 +95,7 @@ async function main(){
   '', 'Site : '+base,'Date UTC : '+report.date,
   'Aucune connexion Parent/Tim ni exercice validé. Toute requête POST a été bloquée.',
   '','## Ressources du site public'];
- for(const [key,v] of Object.entries(report.staticFiles))lines.push('- '+key+' : '+v.status);
+ for(const [key,v] of Object.entries(report.staticFiles))lines.push('- '+key+' : HTTP '+v.status+', '+(v.available?'fichier correct':'absent ou mauvais type')+' ('+v.contentType+')');
  for(const d of report.devices){
   lines.push('','## '+d.device,'- Page HTTP : '+d.checks.http,
    '- Accès Visiteur : '+Boolean(d.checks.guestOpened),
