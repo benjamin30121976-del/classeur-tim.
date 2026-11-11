@@ -281,3 +281,44 @@
 #matieres-content .tim-es-answer-advice summary{font-weight:700;cursor:pointer}
 #matieres-content .tim-es-question-page{border:0!important;padding:10px 0!important;background:#fff!important}
 #matieres-content .tim-es-question-page legend{font-size:16px}
+
+
+/* Fiche d'espagnol lisible : la leçon est une page, pas une mosaïque. */
+#matieres-content .tim-es-course-sheet {
+  margin:10px 0 14px;padding:8px 2px 16px;background:#fff;color:#233449;
+  font-size:16px;line-height:1.65;
+}
+#matieres-content .tim-es-lesson[open] {background:#fff;color:#233449;border-color:#bbcbe0}
+#matieres-content .tim-es-course-sheet h3 {color:#1b3769!important;font-size:18px;line-height:1.35;margin:20px 0 8px}
+#matieres-content .tim-es-course-sheet>h3:first-child{margin-top:8px}
+#matieres-content .tim-es-course-sheet p{font-size:16px;line-height:1.62;margin:9px 0}
+#matieres-content .tim-es-course-steps{margin:7px 0 17px;padding-left:25px}
+#matieres-content .tim-es-course-steps li{margin:9px 0;padding-left:3px}
+#matieres-content .tim-es-teacher-context{font-size:14px!important;color:#43546b!important;border-left:3px solid #b5c7e2;padding-left:12px;margin:13px 0!important}
+#matieres-content .tim-es-course-example{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;border-bottom:1px solid #e2e7f0;padding:10px 0;margin:0!important}
+#matieres-content .tim-es-course-example strong{flex:1 1 150px;font-size:17px;color:#1c377d}
+#matieres-content .tim-es-course-example span{display:block;flex:1 0 100%;font-size:15px;color:#43536a}
+#matieres-content .tim-es-course-example button{font-size:12px!important;min-height:34px!important;padding:4px 8px!important;width:auto!important}
+#matieres-content .tim-es-course-remember{margin:19px 0 8px!important;padding:11px 13px;border-left:3px solid #b4aa64;background:#fbf8ea}
+#matieres-content .tim-es-course-help{margin:15px 0;background:#f5f8ff;border:1px solid #c0cfe6;border-radius:12px;padding:13px 14px;color:#243b60}
+#matieres-content .tim-es-course-help>summary{cursor:pointer;font-size:18px;font-weight:850;color:#24447c!important;padding:6px 3px}
+#matieres-content .tim-es-course-help>p{font-size:15px;margin:10px 0}
+#matieres-content .tim-es-help-choices{display:flex;flex-direction:column;gap:8px;margin:10px 0}
+#matieres-content button.tim-es-help-question{display:block;width:100%;min-height:44px;text-align:left;padding:11px 13px!important;border:1px solid #b6cce5!important;border-radius:9px;background:#fff!important;color:#24447c!important;font-size:15px!important;font-weight:750!important;justify-content:flex-start!important}
+#matieres-content .tim-es-help-answer:not(:empty){background:#fff;border-left:3px solid #526f9f;padding:12px 14px;margin-top:12px;line-height:1.65}
+#matieres-content .tim-es-help-answer p{margin:8px 0 2px;color:#273b57}
+#matieres-content .tim-es-course-extra{margin:15px 0 23px;padding:12px 14px;border:1px solid #d0d7e3;border-radius:12px;background:#fbfcff;color:#233449}
+#matieres-content .tim-es-course-extra>summary{font-size:15px;cursor:pointer;font-weight:750;color:#38547e!important}
+#matieres-content .tim-es-course-extra h4{font-size:16px;margin:18px 0 8px;color:#243f73}
+#matieres-content .tim-es-verb-sheet{margin:8px 0;border-top:1px solid #d6deec;padding:8px 3px}
+#matieres-content .tim-es-verb-sheet summary{cursor:pointer;font-size:16px;font-weight:750;color:#243f73}
+#matieres-content .tim-es-verb-table{width:100%;border-collapse:collapse;font-size:15px}
+#matieres-content .tim-es-verb-table th,#matieres-content .tim-es-verb-table td{border-bottom:1px solid #e0e8f2;text-align:left;padding:7px 5px;vertical-align:middle;word-break:break-word}
+#matieres-content .tim-es-verb-table th{width:45%;font-weight:550}
+#matieres-content .tim-es-verb-table td button{margin-left:5px;min-height:31px!important;padding:4px 7px!important;font-size:11px!important}
+#matieres-content .tim-es-vocab-list li{padding:4px 0}
+@media(max-width:600px) {
+ #matieres-content .tim-es-course-sheet{padding:6px 0}
+ #matieres-content .tim-es-course-example strong{flex:1 1 120px}
+ #matieres-content .tim-es-course-sheet p{font-size:16px}
+}
