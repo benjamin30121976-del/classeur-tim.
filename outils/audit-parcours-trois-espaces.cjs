@@ -61,6 +61,7 @@ async function inspectMath(p,dev,role){
  const root=await selectMatter(p,'Mathématiques');
  const n=await root.locator('.math-lesson-entry').count();
  add(dev,role,'23 leçons de maths directement choisissables',n===23,n);
+ if(n===0){add(dev,role,'Maths dans ce rôle',role==='Visiteur','aucune leçon, visiteur');return;}
  const indexes=dev==='mobile'&&role==='Visiteur'?Array.from({length:n},(_,i)=>i):[0,Math.max(0,n-1)];
  let courses=0,after=0;
  for(const i of indexes){
@@ -79,7 +80,7 @@ async function inspectMath(p,dev,role){
  add(dev,role,'Exercices maths après le cours',after===indexes.length,after+'/'+indexes.length);
 }
 async function inspectNavigation(p,dev,role){
- for(const name of ['home','matieres','exercices','outils','difficultes']){
+ for(const name of ['home','matieres','exercices','dico','difficultes']){
   const exists=await p.locator('[data-nav="'+name+'"]').count()>0;
   if(exists)await nav(p,name);
   add(dev,role,'Onglet '+name,exists&&await p.locator('#'+name+'.page.active').count()>0);
@@ -90,6 +91,7 @@ async function inspectNavigation(p,dev,role){
 }
 async function inspectParent(p,dev){
  await nav(p,'parent');
+ try{await p.waitForFunction(()=>document.querySelector('#parent-content .tim-parent-unified .results-list')?.querySelectorAll('article').length>0,null,{timeout:17000});}catch{}
  const x=await p.evaluate(()=>({
   auth:window.__TIM_PARENT===true&&!window.__TIM_GUEST,
   reports:!!document.querySelector('#parent-content .tim-parent-unified'),
