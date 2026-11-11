@@ -65,14 +65,14 @@ function wire(){
 }
 function home(){
  selected=null;group=null;
- draw(header('Mes leçons de mathématiques','Choisis un chapitre, puis une sous-leçon. Les cours du professeur restent séparés des explications.')+
+ draw(header('Mes leçons de mathématiques','Choisis un chapitre, puis une leçon pour la lire.')+
  back('Toutes les matières')+
- '<section class="spx-panel"><h3>Les cours officiels du professeur</h3><p>Consulter les '+ent.length+' fiches ENT classées par date. Les documents du professeur restent séparés des explications BIS et des exercices notés.</p><button type="button" class="spx-quick-link" data-math-all-ent>Voir tous les cours ENT dans l’ordre chronologique</button></section>'+
- '<h3 class="spx-subheading">Qu’est-ce que tu veux apprendre ?</h3><div class="spx-grid">'+
+ '<div class="spx-grid math-chapter-list">'+
  GROUPS.map((g,i)=>{
- const bs=bis.filter(x=>groupOfId(x.id)===g);
- return '<button type="button" class="spx-card" data-math-group="'+i+'"><span class="spx-icon">∑</span><strong>'+esc(g.name)+'</strong><p>'+bs.length+' sous-leçon(s) · '+entFor(g).length+' cours ENT</p><small>Ouvrir les sous-leçons</small></button>';
- }).join('')+'</div><p class="spx-note">Leçons ENT originales, leçons BIS, explications et exercices distincts. Chaque évaluation est validée une seule fois ; elle rapporte 0, 0,5 ou 1 XP selon la note.</p>', options.back);
+  const count=bis.filter(x=>groupOfId(x.id)===g).length;
+  return '<button type="button" class="spx-card" data-math-group="'+i+'"><strong>'+esc(g.name)+'</strong><small>'+count+' leçon(s) · Ouvrir</small></button>';
+ }).join('')+'</div>'+
+ '<details class="math-reading-docs"><summary>Voir les cours originaux du professeur (ENT)</summary>'+btn('data-math-all-ent','all','Consulter les '+ent.length+' cours ENT')+'</details>',options.back);
  wire();
 }
 function viewEntChronology(){
@@ -89,12 +89,14 @@ function category(g){
  group=g;selected=null;
  const bs=bis.filter(x=>groupOfId(x.id)===g);
  const rows=bs.map(x=>{
- const id=x.id,exists=grades.attempts.find(a=>a.lessonId===id);
- return '<article class="spx-lesson-item"><div class="spx-lesson-intro"><span class="spx-chip">∑</span><div class="spx-lesson-copy"><h4>'+esc(cleanTitle(x.title))+'</h4><p>'+esc(x.summary||'')+'</p><small>'+esc(exists?'Évaluation terminée · note consultable':'Évaluation disponible : une seule tentative')+'</small></div></div>'+sectionBtns(id)+'</article>';
+  const done=grades.attempts.some(a=>a.lessonId===x.id);
+  return '<button type="button" class="math-lesson-entry" data-math-bis="'+esc(x.id)+'">'+
+   '<strong>'+esc(cleanTitle(x.title))+'</strong>'+
+   (x.summary?'<span class="math-lesson-description">'+esc(x.summary)+'</span>':'')+
+   '<span class="math-lesson-open">'+(done?'Lire la leçon · Évaluation déjà faite':'Lire la leçon')+' →</span></button>';
  }).join('');
- draw(header(g.name,'Cours, méthodes et exercices de ce chapitre.')+back('Toutes les rubriques')+
- '<h3 class="spx-subheading">Choisis une sous-leçon</h3>'+rows+
- '<p class="spx-note">Les exercices ENT sont les documents originaux du professeur. Les évaluations BIS comportent chacune dix questions : une tentative, note sur 20, correction immédiate expliquée et bilan Parent.</p>',home);
+ draw(header(g.name,'Choisis une leçon. Elle s’ouvre directement.')+back('Tous les chapitres')+
+ '<div class="math-lesson-list">'+rows+'</div>',home);
  wire();
 }
 function listPage(id,title,rows,kind){
@@ -109,15 +111,14 @@ function listPage(id,title,rows,kind){
 function viewEnt(id){listPage(id,'Leçons ENT — '+groupOfId(id).name,entFor(groupOfId(id)),'original');}
 function viewEntExercises(id){listPage(id,'Exercices ENT du chapitre — '+groupOfId(id).name,exFor(groupOfId(id)),'exercise');}
 function blocks(lesson,mode){
- const content=(lesson?.blocks||[]).filter(b=>!/^Question d[’']entraînement\s*[12]$/iu.test(b.h||'')&&(mode==='bis'||['Comprendre','Méthode étape par étape','Exemples corrigés','Erreur fréquente','Objectif'].includes(b.h)));
+ const content=(lesson?.blocks||[]).filter(b=>!/^Question d[’']entraînement\\s*[12]$/iu.test(b.h||'')&&(mode==='bis'||['Comprendre','Méthode étape par étape','Exemples corrigés','Erreur fréquente','Objectif'].includes(b.h)));
  return content.map(b=>{
   if(b.kind==='svg'&&typeof b.svg==='string'){
-   // Dessins vectoriels de la leçon BIS archivée : pas de script ni d'évènement exécutable.
-   const svg=b.svg.replace(/<script[\s\S]*?<\/script>/gi,'').replace(/\son[a-z]+\s*=\s*(["']).*?\1/gi,'');
-   return '<section class="spx-panel"><h3>'+esc(b.h||'Schéma')+'</h3><div class="math-diagram">'+svg+'</div></section>';
+   const svg=b.svg.replace(/<script[\\s\\S]*?<\\/script>/gi,'').replace(/\\son[a-z]+\\s*=\\s*(["']).*?\\1/gi,'');
+   return '<section class="math-reading-section"><h3>'+esc(b.h||'Schéma')+'</h3><div class="math-diagram">'+svg+'</div></section>';
   }
-  if(b.kind==='bullets')return '<section class="spx-panel"><h3>'+esc(b.h||'Méthode')+'</h3><ol>'+((b.items||[]).map(x=>'<li>'+esc(x)+'</li>').join(''))+'</ol></section>';
-  if(b.kind==='note')return '<section class="spx-panel"><h3>'+esc(b.h||'Explication')+'</h3><p>'+esc(b.body||'').replace(/\n/g,'</p><p>')+'</p></section>';
+  if(b.kind==='bullets')return '<section class="math-reading-section"><h3>'+esc(b.h||'Méthode')+'</h3><ol>'+((b.items||[]).map(x=>'<li>'+esc(x)+'</li>').join(''))+'</ol></section>';
+  if(b.kind==='note')return '<section class="math-reading-section"><h3>'+esc(b.h||'Explication')+'</h3><p>'+esc(b.body||'').replace(/\\n/g,'</p><p>')+'</p></section>';
   return '';
  }).join('');
 }
@@ -144,8 +145,20 @@ function viewProgramsOriginal(){
 }
 function viewBis(id){
  selected=id;group=groupOfId(id);const x=lesson(id);if(!x)return;
- draw(header('Leçon simplifiée : '+cleanTitle(x.title),'Niveau 2 · Explications, exemples et schémas.')+back('Retour aux sous-leçons')+
- blocks(x,'bis')+'<section class="spx-panel"><h3>Exercice noté · 10 questions</h3><p>Les deux anciennes questions courtes font désormais partie de l’évaluation complète. Réponds aux dix questions, puis valide une seule fois pour obtenir immédiatement ta note sur 20 et une correction expliquée question par question.</p>'+btn('data-math-train',id,'Faire les 10 questions et recevoir ma correction')+'</section><section class="spx-panel"><h3>Pour continuer</h3>'+sectionBtns(id)+'</section>',()=>category(group));
+ const g=group,hasEnt=entFor(g).length>0,hasEntEx=exFor(g).length>0;
+ draw(header(cleanTitle(x.title),'Lis la leçon du début à la fin.')+
+ back('Retour à la liste des leçons')+
+ '<article class="spx-panel math-reading-lesson">'+blocks(x,'bis')+'</article>'+
+ '<div class="math-reading-actions"><h3>Après la leçon</h3>'+
+ btn('data-math-help',id,'Je n’ai pas compris')+
+ btn('data-math-train',id,'Faire les 10 questions')+
+ '</div>'+
+ (hasEnt||hasEntEx||id==='MBIS13'?'<details class="math-reading-docs"><summary>Documents et exercices du professeur (ENT)</summary>'+
+ (hasEnt?btn('data-math-ent',id,'Voir les cours du professeur'):'')+
+ (hasEntEx?btn('data-math-ex',id,'Voir les exercices du professeur'):'')+
+ (id==='MBIS13'?btn('data-math-programs',id,'Fiche originale : programmes A et B'):'')+
+ '</details>':''),
+ ()=>category(group));
  wire();
 }
 function viewHelp(id){
