@@ -14,6 +14,7 @@ on:
       - 'app.js'
       - 'index.html'
       - 'tools/test/maths-parcours.test.mjs'
+      - 'tools/diagnostic-cloudflare-kv.cjs'
       - '.github/workflows/verifier-mathematiques.yml'
   push:
     branches: [main]
@@ -49,3 +50,8 @@ jobs:
           node --check app.js
       - name: Vérifier le barème et la communication Parent-Tim sans utiliser leurs comptes
         run: node --test tools/test/maths-parcours.test.mjs worker/test/math-training.test.mjs
+      - name: Diagnostic Cloudflare KV des mathématiques (lecture seule)
+        env:
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_READ_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_READONLY }}
+        run: node tools/diagnostic-cloudflare-kv.cjs
