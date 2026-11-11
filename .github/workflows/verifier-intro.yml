@@ -20,7 +20,9 @@ jobs:
         run: |
           mkdir -p /tmp/tim-intro-test
           npm install --prefix /tmp/tim-intro-test --no-audit --no-fund playwright
-          /tmp/tim-intro-test/node_modules/.bin/playwright install --with-deps chromium
+          if ! command -v google-chrome >/dev/null 2>&1 && ! command -v chromium >/dev/null 2>&1; then
+            /tmp/tim-intro-test/node_modules/.bin/playwright install chromium
+          fi
       - name: Tester le classeur sans navigateur externe payant
         env:
           NODE_PATH: /tmp/tim-intro-test/node_modules
