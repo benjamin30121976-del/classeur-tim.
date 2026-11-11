@@ -22,7 +22,7 @@ const crypto=require('node:crypto');
     },{url:base+path+'?audit=20261111'});
     const response=await p.request.get(base+path+'?auditbytes=20261111',{timeout:12000}).catch(e=>null);
     const data=response?.ok()?await response.body():null;
-    const found=data?crypto.createHash('sha1').update(Buffer.concat([Buffer.from('blob '+data.length+'\\0'),data])).digest('hex'):null;
+    const found=data?crypto.createHash('sha1').update(Buffer.concat([Buffer.from('blob '+data.length+String.fromCharCode(0)),data])).digest('hex'):null;
     const x={name,path,...result,http:response?.status()??null,exactOriginal:found===sha,digest:found,expected:sha,dimensionOK:result.width===width&&result.height===height};
     checks.push(x);console.log('FICHIER',JSON.stringify(x));
    }
