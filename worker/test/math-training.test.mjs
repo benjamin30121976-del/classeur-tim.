@@ -214,3 +214,22 @@ test('Le questionnaire envoyé à Tim ne contient aucune correction (KV de test)
  const scores=await gradeMathTaskPrivate(mathEnv,'MT01',mathTask('MT01').questions.map(q=>q.correctIndex),MATH_BANK_VERSION);
  assert.equal(scores.score,10);
 });
+
+test('Les trois paliers XP mathématiques 4/10, 5/10 et 7/10 sont cumulatifs et sans doublon',async()=>{
+ const db=mockFirestore();
+ for(const [id,n,expectedXp] of [['MT02',4,0],['MT03',5,0.5],['MT04',7,1]]){
+  const task=mathTask(id);
+  const answers=task.questions.map((q,i)=>i<n?q.correctIndex:(q.correctIndex+1)%4);
+  const report=await submitMathTraining(db,TIM_UID,{id,answers,bankVersion:MATH_BANK_VERSION},mathEnv);
+  assert.equal(report.score,n,id+' score');
+  assert.equal(report.xp,expectedXp,id+' XP');
+  await assert.rejects(()=>submitMathTraining(db,TIM_UID,{id,answers,bankVersion:MATH_BANK_VERSION},mathEnv),
+   e=>e.status===409&&e.code==='already-exists');
+ }
+ const state=db.data.get('xpState/tim');
+ assert.equal(state.weekXp,1.5);
+ assert.equal(state.weekEarned,1.5);
+ const records=(await getMathTrainingProgress(db,PARENT_UID)).attempts;
+ assert.equal(records.length,3);
+ assert.deepEqual(records.map(r=>r.xp).sort((a,b)=>a-b),[0,0.5,1]);
+});
