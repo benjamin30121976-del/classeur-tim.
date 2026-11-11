@@ -24,6 +24,13 @@ async function main(){
   for(const file of ['/tim-animations.js','/assets/animations/Tim_Defi_Du_Samedi_10XP.gif','/assets/animations/Tim_Defi_Bonus_5XP.gif','/maths-parcours.js','/maths-bis-data.js']){
    report.staticFiles[file]=await probe(probePage,file);
   }
+  // Vérification publique sans jeton ni secret : service du backend configuré ?
+  try{
+   const response=await probePage.request.get(new URL('/api/status',base).href,{timeout:20000});
+   const type=response.headers()['content-type']||'';
+   let body={};try{body=await response.json();}catch{}
+   report.backend={status:response.status(),platform:body.platform||null,available:body.available===true,contentType:type};
+  }catch(e){report.backend={available:false,error:String(e.message).slice(0,120)};}
   await probePage.close();
   for(const [device,size] of [['telephone',{width:390,height:844}],['ordinateur',{width:1280,height:860}]]){
    const page=await browser.newPage({viewport:size,locale:'fr-FR'});
@@ -94,7 +101,7 @@ async function main(){
  const lines=['# État du classeur Tim en production (lecture seule)',
   '', 'Site : '+base,'Date UTC : '+report.date,
   'Aucune connexion Parent/Tim ni exercice validé. Toute requête POST a été bloquée.',
-  '','## Ressources du site public'];
+  '','## État du serveur privé','- API Cloudflare : '+JSON.stringify(report.backend||{}),'','## Ressources du site public'];
  for(const [key,v] of Object.entries(report.staticFiles))lines.push('- '+key+' : HTTP '+v.status+', '+(v.available?'fichier correct':'absent ou mauvais type')+' ('+v.contentType+')');
  for(const d of report.devices){
   lines.push('','## '+d.device,'- Page HTTP : '+d.checks.http,
