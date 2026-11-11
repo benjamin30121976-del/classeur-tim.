@@ -777,7 +777,7 @@ async function startSession(user){
    // sont corrigés immédiatement ; le compteur "en attente" reste réservé
    // aux devoirs dont la correction doit être débloquée.
    const spanishTraining=id=>/^SP[QW]_L(?:0[1-9]|1[0-5])_0[1-5]$/.test(String(id||''));
-   const gradedMission=id=>/^DAY_20\d{6}_\d{2}$|^WEEK_20\d{2}W\d{2}$|^SUNDAY_20\d{6}$/.test(String(id||''));
+   const gradedMission=id=>/^DAY_20\d{6}_\d{2}$|^WEEK_20\d{2}W\d{2}$|^SUNDAY_20\d{6}$/.test(String(id||''))||window.__TIM_DATA?.exercises?.some(e=>e.id===id&&e.kind==='bonus-day');
    attempts=attempts.filter(a=>a.id!=='DAY_20261108_01');
    const automatic=[...attempts.filter(a=>spanishTraining(a.id)||gradedMission(a.id)),...mathRecords];
    const schoolAttempts=attempts.filter(a=>!spanishTraining(a.id)&&!gradedMission(a.id));
