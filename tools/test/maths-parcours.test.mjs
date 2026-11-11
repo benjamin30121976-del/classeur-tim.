@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {mathTask,mathPublicTask,mathId,gradeMathTask,MATH_TOTAL} from '../../worker/maths-training-curriculum.mjs';
 import {TESTABLE} from '../../worker/server.mjs';
+import {MATH_BANK_VERSION} from '../../worker/math-private-kv.mjs';
 import {TIM_UID,PARENT_UID} from '../../worker/auth.mjs';
 import {fromFields} from '../../worker/firestore.mjs';
 
@@ -32,8 +33,25 @@ test('23 sous-leçons, dix questions notées sans réponses divulguées',()=>{
  assert.throws(()=>gradeMathTask('MT01',[0]),/invalid-answers/);
 });
 
+function dummyMathEnv(){
+ const publicQuizzes={},privateQuizzes={};
+ for(let i=1;i<=23;i++){
+  const id='MT'+String(i).padStart(2,'0'),t=mathTask(id);
+  publicQuizzes[id]={id,lessonId:t.lessonId,title:t.title,bankVersion:MATH_BANK_VERSION,
+   questions:t.questions.map(q=>({prompt:q.prompt,choices:q.choices.slice()}))};
+  privateQuizzes[id]={lessonId:t.lessonId,questions:t.questions.map((q,j)=>({
+   questionId:id+'-TEST-'+j,correctIndex:q.correctIndex,expected:q.expected,
+   explanation:q.explanation,feedbackByIndex:q.feedbackByIndex.slice(),entReference:{title:'test',pages:[1]}
+  }))};
+ }
+ const bank={version:MATH_BANK_VERSION,
+  public:{version:MATH_BANK_VERSION,questions:230,quizzes:publicQuizzes},
+  private:{version:MATH_BANK_VERSION,questions:230,quizzes:privateQuizzes}};
+ return {TIM_MATH_PRIVATE_KV:{async get(){return bank;}}};
+}
+
 test('validation unique côté serveur, note immédiatement disponible au Parent et à Tim',async()=>{
- const dbEntries=new Map();
+ const env=dummyMathEnv(),dbEntries=new Map();
  const db={
   transaction:async()=>({}),
   get:async(path)=>dbEntries.get(path)||null,
@@ -48,22 +66,22 @@ test('validation unique côté serveur, note immédiatement disponible au Parent
  };
  const task=mathTask('MT01');
  const answer=task.questions.map(q=>q.correctIndex);
- const visible=await TESTABLE.getMathTrainingTask(db,TIM_UID,{id:'MT01'});
+ const visible=await TESTABLE.getMathTrainingTask(db,TIM_UID,{id:'MT01'},env);
  assert.equal(visible.completed,false);
  assert.equal(visible.task.questions.length,10);
- const reply=await TESTABLE.submitMathTraining(db,TIM_UID,{id:'MT01',answers:answer});
+ const reply=await TESTABLE.submitMathTraining(db,TIM_UID,{id:'MT01',answers:answer,bankVersion:MATH_BANK_VERSION},env);
  assert.equal(reply.submitted,true);
  assert.equal(reply.score,10);
- assert.equal(reply.xp,0);
+ assert.equal(reply.xp,1);
  const state=await TESTABLE.getMathTrainingProgress(db,PARENT_UID);
  assert.equal(state.attempts.length,1);
  assert.equal(state.attempts[0].score,10);
  assert.equal(state.attempts[0].items[0].correct,true);
  const timState=await TESTABLE.getMathTrainingProgress(db,TIM_UID);
  assert.equal(timState.attempts.length,1);
- assert.equal((await TESTABLE.getMathTrainingTask(db,PARENT_UID,{id:'MT01'})).completed,true);
- await assert.rejects(()=>TESTABLE.submitMathTraining(db,TIM_UID,{id:'MT01',answers:answer}),e=>e.status===409);
- await assert.rejects(()=>TESTABLE.submitMathTraining(db,PARENT_UID,{id:'MT02',answers:answer}),e=>e.status===403);
+ assert.equal((await TESTABLE.getMathTrainingTask(db,PARENT_UID,{id:'MT01'},env)).completed,true);
+ await assert.rejects(()=>TESTABLE.submitMathTraining(db,TIM_UID,{id:'MT01',answers:answer,bankVersion:MATH_BANK_VERSION},env),e=>e.status===409);
+ await assert.rejects(()=>TESTABLE.submitMathTraining(db,PARENT_UID,{id:'MT02',answers:answer,bankVersion:MATH_BANK_VERSION},env),e=>e.status===403);
  await assert.rejects(()=>TESTABLE.getMathTrainingProgress(db,'invite'),e=>e.status===403);
 });
 
@@ -75,7 +93,7 @@ test('intégration de la matière et du bilan dans le même classeur',()=>{
  assert.match(html,/maths-parcours\.css/);
  assert.match(html,/maths-parcours\.js/);
  assert.match(app,/window\.TIM_MATH_PATH\.render\(root/);
- assert.match(app,/window\.TIM_MATH_PATH\.renderParentProgress\(root\)/);
+ assert.match(app,/window\.TIM_PARENT_UNIFIED\?\.render/);
  assert.match(boot,/submitMathTraining/);
  assert.match(boot,/getMathTrainingProgress/);
  assert.ok(boot.includes('...mathRecords]')); assert.ok(boot.includes('spanishTraining(a.id)||gradedMission(a.id)'));
