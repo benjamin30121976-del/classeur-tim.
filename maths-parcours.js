@@ -154,7 +154,7 @@ function viewBis(id){
  draw(header(cleanTitle(x.title),'Lis la leçon du début à la fin.')+
  back('Retour à toutes les leçons')+
  '<article class="spx-panel math-reading-lesson">'+blocks(x,'bis')+'</article>'+
- '<details class="math-reading-actions"><summary>Après la lecture : exercices et aide</summary><div class="math-reading-next">'+
+ '<details class="math-reading-actions"><summary>Après la leçon : exercices et aide</summary><div class="math-reading-next">'+
  btn('data-math-help',id,'Je n’ai pas compris')+
  btn('data-math-train',id,'Faire les 10 questions')+
  '</div></details>'+
