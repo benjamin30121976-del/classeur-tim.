@@ -589,9 +589,9 @@ function parentAdminPanels(root){
 function renderParent(){
  const root=clear(document.getElementById('parent-content'));
  if(!window.__TIM_PARENT){root.append(notice('Connexion Parent requise.'));return;}
- root.append(parentBonusPanel());
  if(window.TIM_PARENT_UNIFIED?.render)window.TIM_PARENT_UNIFIED.render(root);
  else root.append(notice('Le tableau de bord centralisé est momentanément indisponible.'));
+ root.prepend(parentBonusPanel());
  root.append(makeXPPanel(),makeRewardsTile());
  // Les commandes de gestion Parent restent accessibles ; le suivi des notes
  // et des copies est maintenant réuni en un seul tableau de bord.
