@@ -20,3 +20,23 @@ jobs:
         run: node tools/qa/check-site.mjs
       - name: Tester les evaluations de mathematiques et les protections des tentatives
         run: node --test worker/test/math-training.test.mjs
+      - name: Installer Chromium et Playwright
+        run: |
+          mkdir -p /tmp/tim-qa-browser
+          npm install --prefix /tmp/tim-qa-browser --no-audit --no-fund playwright
+          /tmp/tim-qa-browser/node_modules/.bin/playwright install --with-deps chromium
+      - name: Tester la navigation sur la version de cette branche
+        env:
+          NODE_PATH: /tmp/tim-qa-browser/node_modules
+          TIM_PREVIEW_URL: http://127.0.0.1:8765/
+        run: |
+          python3 -m http.server 8765 --bind 127.0.0.1 > /tmp/tim-qa-http.log 2>&1 &
+          node tools/qa/smoke-browser.cjs
+      - name: Archiver captures des tests
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: controles-classeur-mobile-et-ordinateur
+          path: browser-qa-results/
+          retention-days: 3
+          if-no-files-found: warn
