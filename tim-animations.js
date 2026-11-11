@@ -10,6 +10,7 @@
   minus1:'Tim_Animation_Minus1XP_Tete_Penaude.gif',
   saturday:'Tim_Defi_Du_Samedi_10XP.gif',
   sunday:'Tim_Defi_Du_Dimanche_20XP_Original.mp4',
+  sundayCard:'Tim_Defi_Du_Dimanche_20XP_Original.gif',
   bonus:'Tim_Defi_Bonus_5XP.gif'
  };
  const dur={minus1:5000,saturday:6500,bonus:6500};
@@ -37,12 +38,12 @@
     media.playsInline=true;media.preload='auto';media.autoplay=true;media.volume=.75;
     media.onended=close;
    }else{media.alt='Animation du loup';media.onload=()=>{if(active?.media===media)active.timer=setTimeout(close,dur[key]||6000);};}
-   media.onerror=close;
+   media.onerror=()=>{if(active?.media===media)close();};
    const skip=document.createElement('button');skip.type='button';skip.className='tim-anim-skip';
    skip.textContent='Passer l’animation';skip.onclick=close;
    card.append(media,skip);layer.append(card);document.body.append(layer);
    active={layer,media,resolve,timer:null};
-   const originalClose=resolve;active.resolve=()=>{clearTimeout(active?.timer);originalClose();};
+   // Le timer est nettoyé dans close, avant toute nouvelle animation.
    media.src=url(key);
    if(media.tagName==='VIDEO'){
     const attempt=media.play();
