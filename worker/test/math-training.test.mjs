@@ -3,7 +3,7 @@ import {readFileSync} from 'node:fs';
 import {runInNewContext} from 'node:vm';
 import assert from 'node:assert/strict';
 import {mathId, mathTask, mathPublicTask, gradeMathTask, MATH_TOTAL} from '../maths-training-curriculum.mjs';
-import {getMathTrainingTask, submitMathTraining, getMathTrainingProgress} from '../server.mjs';
+import {getMathTrainingTask, submitMathTraining, getMathTrainingProgress,importMathPrivateQuiz} from '../server.mjs';
 import {MATH_BANK_VERSION,mathPublicTaskPrivate,gradeMathTaskPrivate} from '../math-private-kv.mjs';
 import {fromFields} from '../firestore.mjs';
 import {TIM_UID, PARENT_UID} from '../auth.mjs';
@@ -232,4 +232,43 @@ test('Les trois paliers XP mathématiques 4/10, 5/10 et 7/10 sont cumulatifs et 
  const records=(await getMathTrainingProgress(db,PARENT_UID)).attempts;
  assert.equal(records.length,3);
  assert.deepEqual(records.map(r=>r.xp).sort((a,b)=>a-b),[0,0.5,1]);
+});
+
+test('Import Firestore Parent sécurisé : 23 fiches privées, sans KV ni essai Tim',async()=>{
+ const db=mockFirestore();
+ const originalGet=db.get.bind(db);
+ db.get=async (path,tx)=>{
+  const item=await originalGet(path,tx);
+  return path.startsWith('mathPrivateQuizzes/')&&item?.payloadJson?JSON.parse(item.payloadJson):item;
+ };
+ const env=await mathEnv.TIM_MATH_PRIVATE_KV.get(MATH_BANK_VERSION,'json');
+ for(let i=1;i<=23;i++){
+  const id='MT'+String(i).padStart(2,'0');
+  const fragment={id,version:MATH_BANK_VERSION,public:env.public.quizzes[id],private:env.private.quizzes[id]};
+  await assert.rejects(()=>importMathPrivateQuiz(db,TIM_UID,{id,fragment}),e=>e.status===403);
+  const imported=await importMathPrivateQuiz(db,PARENT_UID,{id,fragment});
+  assert.equal(imported.saved,true);
+  assert.equal(imported.unchanged,false);
+  assert.equal((await importMathPrivateQuiz(db,PARENT_UID,{id,fragment})).unchanged,true);
+  const page=await getMathTrainingTask(db,TIM_UID,{id},{});
+  assert.equal(page.task.questions.length,10);
+  assert.equal(JSON.stringify(page.task).includes('correctIndex'),false);
+ }
+ assert.equal([...db.data.keys()].filter(p=>p.startsWith('mathPrivateQuizzes/')).length,23);
+ assert.equal([...db.data.keys()].filter(p=>p.startsWith('mathTrainingAttempts/')).length,0);
+ const task=mathTask('MT10'),answers=task.questions.map(q=>q.correctIndex);
+ const result=await submitMathTraining(db,TIM_UID,{id:'MT10',answers,bankVersion:MATH_BANK_VERSION},{});
+ assert.equal(result.score,10);
+ assert.equal(result.xp,1);
+ const summary=await getMathTrainingProgress(db,PARENT_UID);
+ assert.equal(summary.attempts.length,1);
+ assert.equal(summary.attempts[0].score,10);
+});
+test('Rejet de banque Firestore invalide sans écrire de corrigés',async()=>{
+ const db=mockFirestore(),id='MT07';
+ const bank=await mathEnv.TIM_MATH_PRIVATE_KV.get(MATH_BANK_VERSION,'json');
+ const fragment=JSON.parse(JSON.stringify({id,version:MATH_BANK_VERSION,public:bank.public.quizzes[id],private:bank.private.quizzes[id]}));
+ fragment.private.questions[0].correctIndex=(fragment.private.questions[0].correctIndex+1)%4;
+ await assert.rejects(()=>importMathPrivateQuiz(db,PARENT_UID,{id,fragment}),e=>e.status===400);
+ assert.equal(db.data.size,0);
 });
