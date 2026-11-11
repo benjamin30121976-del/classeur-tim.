@@ -1,10 +1,12 @@
-name: Vérifier les mathématiques sans XP
+name: Vérifier les mathématiques et XP privé
 on:
   pull_request:
     paths:
+      - 'maths-private-import.js'
       - 'maths-parcours.js'
       - 'maths-parcours.css'
       - 'worker/maths-training-curriculum.mjs'
+      - 'worker/math-private-kv.mjs'
       - 'worker/maths-training-extra.mjs'
       - 'maths-bis-data.js'
       - 'worker/test/math-training.test.mjs'
@@ -13,6 +15,7 @@ on:
       - 'app.js'
       - 'index.html'
       - 'tools/test/maths-parcours.test.mjs'
+      - 'tools/diagnostic-cloudflare-kv.cjs'
       - '.github/workflows/verifier-mathematiques.yml'
   push:
     branches: [main]
@@ -39,7 +42,9 @@ jobs:
       - name: Vérifier la syntaxe JavaScript
         run: |
           node --check maths-parcours.js
+          node --check maths-private-import.js
           node --check worker/maths-training-curriculum.mjs
+          node --check worker/math-private-kv.mjs
           node --check worker/maths-training-extra.mjs
           node --check maths-bis-data.js
           node --check worker/server.mjs
@@ -47,3 +52,8 @@ jobs:
           node --check app.js
       - name: Vérifier le barème et la communication Parent-Tim sans utiliser leurs comptes
         run: node --test tools/test/maths-parcours.test.mjs worker/test/math-training.test.mjs
+      - name: Diagnostic Cloudflare KV des mathématiques (lecture seule)
+        env:
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_READ_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_READONLY }}
+        run: node tools/diagnostic-cloudflare-kv.cjs

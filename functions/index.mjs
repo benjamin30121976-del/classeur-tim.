@@ -11,9 +11,19 @@ initializeApp();
 const db=getFirestore();
 const timUid=process.env.TIM_STUDENT_UID||'uqZI3Up97YWzKvWhssWQidn4TJO2',parentUid=process.env.TIM_PARENT_UID||'BPEuNAhHVyX8ewQ2I54s56m11vj1';
 const validId=id=>typeof id==='string'&&/^[A-Za-z][A-Za-z0-9_-]{1,35}$/.test(id);
+const parentBonusId=id=>typeof id==='string'&&/^BONUS_[A-Za-z0-9]{20}$/.test(id);
 function role(request,which){const uid=which==='tim'?timUid:parentUid;if(!uid||request.auth?.uid!==uid)throw new HttpsError('permission-denied','Accès non autorisé');}
 function parisDate(d){const p=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d);const get=t=>p.find(x=>x.type===t).value;return `${get('year')}-${get('month')}-${get('day')}`;}
 async function resolveExercise(id){
+ if(parentBonusId(id)){
+  const doc=await db.doc('settings/parentBonusCurrent').get();
+  const assigned=doc.exists?doc.data():null;
+  if(assigned?.id!==id||!validId(assigned.sourceId)||parentBonusId(assigned.sourceId))
+   throw new HttpsError('failed-precondition','Ce défi bonus n’est plus actif.');
+  const source=await resolveExercise(assigned.sourceId);
+  if(source.exercise.kind)throw new HttpsError('failed-precondition','Exercice bonus invalide.');
+  return {exercise:{...source.exercise,id,kind:'bonus-parent',category:'challenge',title:'Défi bonus · '+source.exercise.title,enabled:true},key:source.key};
+ }
  if(isMissionId(id)){
   const doc=await db.doc('content/main').get();
   const main=doc.exists?decodeCourse(doc.data()?.payloadJson?JSON.parse(doc.data().payloadJson):doc.data()):null;
@@ -41,10 +51,12 @@ export const submitTimExercise=onCall({region:'europe-west1',enforceAppCheck:tru
  const attemptRef=db.doc('attempts/'+id),privateRef=db.doc('privateAttempts/'+id),xpRef=db.doc('xpState/tim');
  const resolved=await resolveExercise(id);
  try{return await db.runTransaction(async tx=>{
-  const [attemptDoc,privateDoc,xpDoc]=await Promise.all([tx.get(attemptRef),tx.get(privateRef),tx.get(xpRef)]);
+  const bonusRef=parentBonusId(id)?db.doc('settings/parentBonusCurrent'):null;
+  const [attemptDoc,privateDoc,xpDoc,activeBonus]=await Promise.all([tx.get(attemptRef),tx.get(privateRef),tx.get(xpRef),bonusRef?tx.get(bonusRef):Promise.resolve(null)]);
+  if(bonusRef&&(!activeBonus?.exists||activeBonus.data()?.id!==id))throw new HttpsError('failed-precondition','Défi bonus retiré ou remplacé.');
 
   if(attemptDoc.exists||privateDoc.exists)throw new HttpsError('already-exists','Déjà validé');
-  const ex=resolved.exercise,autoRelease=isMissionId(id);
+  const ex=resolved.exercise,autoRelease=isMissionId(id)||parentBonusId(id);
   if(ex.enabled!==true)throw new HttpsError('failed-precondition','Exercice fermé');
   const now=new Date(),date=parisDate(now),state=xpDoc.exists?xpDoc.data():{};
   const result=grade(ex,resolved.key,answers);
@@ -63,6 +75,41 @@ export const submitTimExercise=onCall({region:'europe-west1',enforceAppCheck:tru
   return autoRelease?{id,submitted:true,xp,correctionLocked:false,correctionStatus:'released',score:result.score,total:result.total,answers:result.answers}:
    {id,submitted:true,xp,correctionLocked:true,correctionStatus:'pending-parent'};
  });}catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError('internal','Échec de validation');}
+});
+// Défi bonus exceptionnel de 5 XP : un exercice choisi par le parent, validation unique par Tim.
+export const assignParentBonus=onCall({region:'europe-west1',enforceAppCheck:true},async request=>{
+ role(request,'parent');
+ const sourceId=request.data?.sourceId;
+ if(!validId(sourceId)||parentBonusId(sourceId)||isMissionId(sourceId))
+  throw new HttpsError('invalid-argument','Choisis un exercice existant.');
+ const source=await resolveExercise(sourceId);
+ if(source.exercise.kind||!Array.isArray(source.exercise.questions)||source.exercise.questions.length<10)
+  throw new HttpsError('failed-precondition','Le défi bonus exige un exercice de 10 questions minimum.');
+ if((await db.doc('attempts/'+sourceId).get()).exists)
+  throw new HttpsError('failed-precondition','Cet exercice a déjà été validé.');
+ const id='BONUS_'+db.collection('settings').doc().id;
+ await db.doc('settings/parentBonusCurrent').set({
+  id,sourceId,title:String(source.exercise.title||sourceId).slice(0,180),
+  assignedAt:FieldValue.serverTimestamp(),assignedBy:request.auth.uid,maxXP:5
+ });
+ return {assigned:true,id,sourceId,maxXP:5};
+});
+export const getParentBonus=onCall({region:'europe-west1',enforceAppCheck:true},async request=>{
+ const uid=request.auth?.uid;
+ if(uid!==timUid&&uid!==parentUid)throw new HttpsError('permission-denied','Réservé aux comptes Tim et Parent.');
+ const doc=await db.doc('settings/parentBonusCurrent').get();
+ if(!doc.exists)return {exercise:null};
+ const assigned=doc.data();
+ if(!parentBonusId(assigned.id)||!validId(assigned.sourceId))return {exercise:null};
+ const attempt=await db.doc('attempts/'+assigned.id).get();
+ try{
+  const source=await resolveExercise(assigned.sourceId);
+  const ex=sanitizeCourse({...source.exercise,id:assigned.id,kind:'bonus-parent',
+   category:'challenge',title:'Défi bonus · '+source.exercise.title,
+   description:'Défi personnalisé du parent · jusqu’à 5 XP · une seule validation.',
+   enabled:true});
+  return {exercise:ex,completed:attempt.exists,maxXP:5};
+ }catch(error){console.warn('Défi bonus inaccessible:',error?.message);return {exercise:null};}
 });
 export const getParentReport=onCall({region:'europe-west1',enforceAppCheck:true},async request=>{
  role(request,'parent');

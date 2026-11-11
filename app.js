@@ -281,7 +281,7 @@ function renderExerciseIndex(){
 }
 function answerValue(input){if(input.type==='radio'){const chosen=document.querySelector('input[name="'+input.name+'"]:checked');return chosen?chosen.value:'';}return input.value;}
 function freeOrTextAnswer(question,answer){if(question.type==='free')return null;const correct=question.type==='mc'?String(question.right)===String(answer):[question.right,...(question.also||[])].some(x=>norm(x)===norm(answer));return correct;}
-function openExercise(id){const ex=exerciseBy(id);if(!ex)return;const existing=attemptFor(id),completedChallenge=Boolean(existing&&['daily','weekly','sunday'].includes(ex.kind));window.__TIM_OPEN_EXERCISE_ID=id;page('exercices');document.getElementById('exercise-index').classList.add('hide');const root=clear(document.getElementById('exercise-detail'));root.classList.add('active');root.append(button('← Retour aux exercices',()=>{root.classList.remove('active');document.getElementById('exercise-index').classList.remove('hide');renderExerciseIndex();scrollTop();},'plain back'));root.append(badge(ex.level),E('h2','',ex.title),E('p','intro',exerciseDescription(ex)));
+function openExercise(id){const ex=exerciseBy(id);if(!ex)return;const existing=attemptFor(id),completedChallenge=Boolean(existing&&['daily','weekly','sunday','bonus-parent'].includes(ex.kind));window.__TIM_OPEN_EXERCISE_ID=id;page('exercices');document.getElementById('exercise-index').classList.add('hide');const root=clear(document.getElementById('exercise-detail'));root.classList.add('active');root.append(button('← Retour aux exercices',()=>{root.classList.remove('active');document.getElementById('exercise-index').classList.remove('hide');renderExerciseIndex();scrollTop();},'plain back'));root.append(badge(ex.level),E('h2','',ex.title),E('p','intro',exerciseDescription(ex)));
 if(ex.kind==='daily'&&ex.questionBank==='spanish-ent-v1'){
  root.append(E('p','small','Révision de plusieurs leçons d’espagnol : vocabulaire, phrases, traduction et conjugaison.'));
  root.append(button('Revoir les leçons d’espagnol',()=>{page('matieres');renderMatiere('Espagnol');},'plain'));
@@ -301,7 +301,7 @@ ex.questions.forEach((question,i)=>{const row=E('div','q');row.append(E('div','q
 function values(){return controls.map(c=>c.kind==='mc'?(document.querySelector('input[name="'+c.name+'"]:checked')?.value??''):c.node.value.trim());}
 function saveDraft(){if(old)return;const d=drafts();d[id]=values();save(DRAFT_KEY,d);}
 if(old){
- const challenge=['daily','weekly','sunday'].includes(ex.kind);
+ const challenge=['daily','weekly','sunday','bonus-parent'].includes(ex.kind);
  if(challenge){
   const summary=E('section','panel challenge-result-summary');summary.id='challenge-result-summary';
   summary.style.cssText='margin:12px 0;padding:18px;border:2px solid #dfbc61;border-radius:16px;line-height:1.6';
@@ -357,9 +357,10 @@ if(old){
   if(notification?.catch)notification.catch(()=>{});
   const d=drafts();delete d[id];save(DRAFT_KEY,d);v7NewAttempt(saved);
   // Un défi affiche son BILAN (note, XP, correction) directement, sans alerte XP seule.
-  const isChallenge=['daily','weekly','sunday'].includes(ex.kind);
+  const isChallenge=['daily','weekly','sunday','bonus-parent'].includes(ex.kind);
   try{
-   if(!isChallenge)alert('Devoir envoyé. '+(saved.xp>=0?'+':'')+saved.xp+' XP. '+(saved.correctionStatus==='released'?'Correction disponible.':'Correction en attente du parent.'));
+   if(isChallenge)await window.TIM_ANIMATIONS?.playResult?.(ex,saved);
+   else alert('Devoir envoyé. '+(saved.xp>=0?'+':'')+saved.xp+' XP. '+(saved.correctionStatus==='released'?'Correction disponible.':'Correction en attente du parent.'));
    openExercise(id);
   }catch(renderError){
    console.error('Affichage du résultat indisponible :',renderError);
@@ -384,7 +385,7 @@ if(!old && !window.__TIM_PARENT && controls.length>1){
  }
 scrollTop();}
 function renderFeedback(ex,t,root){
- const isChallenge=['daily','weekly','sunday'].includes(ex.kind);
+ const isChallenge=['daily','weekly','sunday','bonus-parent'].includes(ex.kind);
  const box=E('section','result'+(t.needsReview?' waiting':''));
  const perfect=!t.needsReview&&Number(t.score)===Number(t.total)&&Number(t.total)>0&&
   Array.isArray(t.answers)&&t.answers.length===Number(t.total)&&t.answers.every(a=>a.correct===true);
@@ -518,6 +519,42 @@ function makeAttachmentAdminPanel(){
  box.append(E('p','small','Matière'),subject,E('p','small','Rattacher à'),target,E('p','small','Titre visible dans le classeur'),label,E('p','small','Fichier'),file,send,state);
  return box;
 }
+// Nouveau défi bonus attribué par le Parent. Les trois bonus ordinaires restent inchangés.
+function parentBonusPanel(){
+ const box=E('section','panel');
+ box.append(E('h3','','Défi bonus personnalisé · +5 XP'),
+  E('p','small','Choisis un exercice de 10 questions minimum. Tim verra le cadeau surprise et pourra valider une seule fois. +5 XP si au moins 85 % des réponses sont justes.'));
+ const current=window.__TIM_BONUS_PARENT,attempt=current&&attemptFor(current.id);
+ if(current)box.append(E('p','note info','Défi actuel : '+current.title+(attempt?' · Terminé · '+Number(attempt.xp||0)+' XP':' · En attente de Tim')));
+ const candidates=DATA.exercises.filter(ex=>!ex.kind&&Array.isArray(ex.questions)&&ex.questions.length>=10&&!attemptFor(ex.id)&&ex.enabled!==false)
+  .sort((a,b)=>(a.subject||'').localeCompare(b.subject||'','fr')||a.title.localeCompare(b.title,'fr'));
+ const select=E('select','attachment-select');select.setAttribute('aria-label','Exercice à offrir en défi bonus');
+ select.append(new Option('Choisir un exercice…',''));
+ for(const ex of candidates)select.append(new Option((ex.subject||'Cours')+' · '+ex.title+' ('+ex.questions.length+' questions)',ex.id));
+ const status=E('p','small','Une nouvelle attribution remplace le défi bonus précédent, sans effacer les notes déjà enregistrées.');
+ const launch=button('Attribuer ce défi bonus à Tim',async()=>{
+  if(!select.value){status.textContent='Choisis un exercice.';return;}
+  if(!confirm('Attribuer ce défi bonus de 5 XP à Tim ?'))return;
+  launch.disabled=true;status.textContent='Attribution sécurisée en cours…';
+  try{await window.__TIM_BRIDGE.assignParentBonus(select.value);renderParent();}
+  catch(error){status.textContent='Attribution impossible : '+(error?.message||error);launch.disabled=false;}
+ },'btn');
+ if(!candidates.length){select.disabled=true;launch.disabled=true;status.textContent='Aucun exercice inédit de 10 questions n’est disponible.';}
+ box.append(select,launch,status);
+ return box;
+}
+function timBonusPanel(){
+ const ex=window.__TIM_BONUS_PARENT,empty=document.createDocumentFragment();
+ if(!ex)return empty;
+ const done=attemptFor(ex.id),box=E('section','panel');
+ box.append(E('h3','','Cadeau surprise · Défi bonus du Parent'),
+  E('p','small',done?'Défi terminé. Tu peux consulter ta note et ton corrigé.':'Un exercice choisi spécialement pour toi · jusqu’à +5 XP · une seule tentative.'));
+ box.append(button(done?'Voir mon défi bonus terminé':'Découvrir mon défi bonus',async()=>{
+  if(!done)await window.TIM_ANIMATIONS?.play?.('bonus');
+  openExercise(ex.id);
+ },'mission-launch'));
+ return box;
+}
 function parentAdminPanels(root){
  if(window.TIM_ENT_PRIVATE_IMPORT?.render&&window.__TIM_BRIDGE?.attachments)root.prepend(window.TIM_ENT_PRIVATE_IMPORT.render({lessons:DATA.lessons,api:window.__TIM_BRIDGE.attachments}));
  if(window.__TIM_BRIDGE?.attachments)root.prepend(makeAttachmentAdminPanel());
@@ -558,6 +595,8 @@ function renderParent(){
  // Les commandes de gestion Parent restent accessibles ; le suivi des notes
  // et des copies est maintenant réuni en un seul tableau de bord.
  if(window.__TIM_BRIDGE?.diagnose)parentAdminPanels(root);
+ root.prepend(parentBonusPanel());
+ if(window.TIM_MATH_PRIVATE_IMPORT?.render)root.append(window.TIM_MATH_PRIVATE_IMPORT.render());
  root.append(notice('Les devoirs officiels restent ceux de l’ENT ; le classeur permet de consulter le suivi des exercices de Tim.','note info'));
 }
 
@@ -674,7 +713,7 @@ function makeRewardsTile(){const b=E('button','reward-open');b.type='button';
   body.append(E('p','','Les XP des défis sont comptés du lundi au dimanche. Le compteur hebdomadaire revient à zéro le lundi. La récompense est à valider et à verser par le parent ; les montants ne se cumulent pas.'));
   const table=E('table'),heads=E('tr');for(const t of ['XP de la semaine','Récompense'])heads.append(E('th','',t));table.append(heads);
   for(const [score,amount] of [[19,'2 €'],[38,'5 €'],[75,'10 €']]){const row=E('tr');row.append(E('td','',score+' XP'),E('td','',amount));table.append(row);}body.append(table);
-  const p=E('ul');for(const t of ['Défi du samedi (20 questions) : 17–20 = +10 XP ; 15–16 = +7 XP ; 12–14 = +4 XP ; 10–11 = +1 XP ; 8–9 = 0 XP ; 0–7 = −1 XP.','Défi du dimanche (20 questions sur la rentrée) : mêmes paliers que samedi, doublés pour atteindre 20 XP maximum.','Devoirs scolaires et autres entraînements : 0 XP. Exercices des leçons d’espagnol : 7 à 10/10 = +1 XP ; 5 à moins de 7/10 = +0,5 XP ; moins de 5/10 = 0 XP. Exercice bonus libre : maximum +3 XP par jour.','Une seule validation par défi du week-end. Les résultats et les XP déjà acquis restent enregistrés.','À chaque lundi, seul le compteur hebdomadaire repart à zéro : les notes, copies, trophées et XP de niveau restent enregistrés.','Les récompenses ne sont pas versées automatiquement ; le parent valide le montant.'])p.append(E('li','',t));body.append(p);
+  const p=E('ul');for(const t of ['Défi du samedi (20 questions) : 17–20 = +10 XP ; 15–16 = +7 XP ; 12–14 = +4 XP ; 10–11 = +1 XP ; 8–9 = 0 XP ; 0–7 = −1 XP.','Défi du dimanche (20 questions sur la rentrée) : mêmes paliers que samedi, doublés pour atteindre 20 XP maximum.','Devoirs scolaires ENT : 0 XP. Entraînements des leçons de mathématiques et d’espagnol : 7 à 10/10 = +1 XP ; 5 à 6/10 = +0,5 XP ; 0 à 4/10 = 0 XP. Exercice bonus libre : maximum +3 XP par jour.','Une seule validation par défi du week-end. Les résultats et les XP déjà acquis restent enregistrés.','À chaque lundi, seul le compteur hebdomadaire repart à zéro : les notes, copies, trophées et XP de niveau restent enregistrés.','Les récompenses ne sont pas versées automatiquement ; le parent valide le montant.'])p.append(E('li','',t));body.append(p);
   if(!window.__TIM_GUEST){const st=xpInfo();body.append(E('p','','Cette semaine : '+st.week.toLocaleString('fr-FR')+' XP. Récompense actuelle : '+st.reward+' €.'));}
   dialog.setAttribute('tabindex','-1');if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');dialog.scrollTop=0;dialog.focus({preventScroll:true});
  });return b;}
@@ -743,6 +782,9 @@ function missionCard(kind){
  const wolfWrap=E('div','challenge-wolf-scene'),artKind=sunday?'sunday':'weekly';
  const img=E('img','challenge-wolf challenge-wolf-'+artKind);
  img.src='./assets/loup-'+artKind+(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'-statique.webp':'-anime.webp');
+ const previousArt=img.src;
+ if(!sunday)window.TIM_ANIMATIONS?.setCardImage?.(img,'saturday',previousArt);
+ else if(done&&Number(done.xp)===20)window.TIM_ANIMATIONS?.setCardImage?.(img,'sundayCard',previousArt);
  img.alt=sunday?'Loup couronné du grand défi':'Loup victorieux avec une coupe';img.loading='lazy';img.width=126;img.height=100;
  wolfWrap.append(img);body.append(wolfWrap);c.append(body);
  const dow=new Date((meta.today||'2026-11-08')+'T12:00:00Z').getUTCDay(),open=sunday?dow===0:dow===6;
@@ -751,7 +793,7 @@ function missionCard(kind){
  else if(done)actions.append(badge('✓ Déjà validé · '+(done.score===null?'correction en attente':done.score+'/'+done.total),'green'),button('Voir ma validation',()=>openExercise(ex.id),'small-cta'));
  else if(!open)actions.append(badge(sunday?'Disponible dimanche':'Disponible samedi'));
  else if(window.__TIM_GUEST)actions.append(badge('Lecture seule · invité'));
- else actions.append(button(window.__TIM_PARENT?'Prévisualiser le défi':'LANCER LE DÉFI',()=>openExercise(ex.id),'mission-launch'));
+ else actions.append(button(window.__TIM_PARENT?'Prévisualiser le défi':'LANCER LE DÉFI',async()=>{if(!sunday)await window.TIM_ANIMATIONS?.play?.('saturday');openExercise(ex.id);},'mission-launch'));
  c.append(actions);return c;
 }
 function makeSoundSettings(){const zone=E('div','sound-settings');zone.append(E('span','','🔊 Bruit des touches : '));
@@ -762,7 +804,7 @@ function renderHome(){
  const hero=E('section','mission-hero');
  const copy=E('div','mission-copy');copy.append(E('div','shout','CLASSEUR · 3e'),E('h1','','CHOISIS TA MISSION'),E('p','','Cours, défis et progression. À toi de jouer.'));
  copy.append(button('Choisir une matière →',()=>page('matieres'),'lobo-go'));hero.append(copy);const wolf=E('img','mission-wolf');wolf.src='./assets/loup-accueil.webp';wolf.alt='Le loup jongleur du classeur';hero.append(wolf);// Défis quotidiens rétablis avec les images originales du parent.
- root.append(hero,dailyMissionPanel(),...(window.__TIM_GUEST?[]:[makeXPPanel()]),makeRewardsTile(),makeSoundSettings(),bonusMissionPanel(true),missionCard('weekly'),missionCard('sunday'));
+ root.append(hero,dailyMissionPanel(),...(window.__TIM_GUEST?[]:[makeXPPanel()]),makeRewardsTile(),makeSoundSettings(),bonusMissionPanel(true),window.__TIM_GUEST?document.createDocumentFragment():timBonusPanel(),missionCard('weekly'),missionCard('sunday'));
  root.append(E('h2','home-section-title','Que veux-tu travailler ?'));
  const cards=E('div','home-grid');
  for(const o of [{name:'Matières',sub:'Cours classés par matière',icon:'▦',cls:'cours',dest:'matieres'},
@@ -810,7 +852,7 @@ function renderMatiere(name,openLessonId=null){
    lessons:DATA.lessons,exercises:DATA.exercises,
    back:renderMatieres,original:openLesson,exercise:openExercise,
    task:id=>window.__TIM_BRIDGE.mathTrainingTask(id),
-   submit:(id,answers)=>window.__TIM_BRIDGE.mathTrainingSubmit(id,answers),
+   submit:(id,answers,bankVersion)=>window.__TIM_BRIDGE.mathTrainingSubmit(id,answers,bankVersion),
    progress:()=>window.__TIM_BRIDGE.mathTrainingProgress()
   });
   return;

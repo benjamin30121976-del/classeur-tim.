@@ -1,0 +1,73 @@
+name: Diagnostiquer KV mathématiques sans modification
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/diagnostic-kv-maths.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  diagnostic:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Contrôle lecture seule du namespace et de la clé
+        env:
+          CF_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CF_READ_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN_READONLY }}
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const account = process.env.CF_ACCOUNT_ID || '';
+          const token = process.env.CF_READ_TOKEN || '';
+          const summary = process.env.GITHUB_STEP_SUMMARY;
+          const lines = ['## Diagnostic Cloudflare KV — mathématiques', 'Lecture seule : aucune écriture, aucun déploiement, aucun corrigé téléchargé.'];
+          const report = (label, state) => lines.push('- '+label+' : **'+state+'**');
+          const finish = () => {
+            const output = lines.join('\n')+'\n';
+            if (summary) fs.appendFileSync(summary, output);
+            console.log(output);
+          };
+          if (!account || !token) {
+            report('Accès Cloudflare', 'NON CONFIGURÉ : renseigner les deux secrets GitHub Cloudflare de lecture seule');
+            finish();
+            process.exit(0);
+          }
+          async function get(path) {
+            const response = await fetch('https://api.cloudflare.com/client/v4/accounts/'+encodeURIComponent(account)+path, {
+              method:'GET', headers:{Authorization:'Bearer '+token, Accept:'application/json'}, signal:AbortSignal.timeout(18000)
+            });
+            if (!response.ok) throw new Error('HTTP '+response.status);
+            const body = await response.json();
+            if (!body.success) throw new Error('Cloudflare API a refusé la lecture');
+            return body.result;
+          }
+          (async()=>{
+            const project = await get('/pages/projects/classeur-tim-v16');
+            report('Projet Pages classeur-tim-v16','VISIBLE');
+            const config = project?.deployment_configs || {};
+            const bindings = {};
+            for (const env of ['preview','production']) {
+              const id = config?.[env]?.kv_namespaces?.TIM_MATH_PRIVATE_KV?.namespace_id || '';
+              bindings[env] = id;
+              report('Binding '+env, id ? 'PRÉSENT' : 'ABSENT');
+            }
+            const ns = await get('/storage/kv/namespaces?per_page=100');
+            const namespaces = Array.isArray(ns) ? ns : [];
+            for (const env of ['preview','production']) {
+              const id = bindings[env];
+              if (!id) continue;
+              const entry = namespaces.find(item => item.id === id);
+              report('Namespace '+env, entry ? 'ACCESSIBLE' : 'NON TROUVÉ DANS LA LISTE');
+              if (!entry) continue;
+              const keys = await get('/storage/kv/namespaces/'+encodeURIComponent(id)+'/keys?prefix=TIM-MATH-20261111-32b5d2cb2e6a');
+              const exists = Array.isArray(keys) && keys.some(item => item.name === 'TIM-MATH-20261111-32b5d2cb2e6a');
+              report('Clé privée '+env, exists ? 'PRÉSENTE (contenu non lu)' : 'ABSENTE');
+            }
+          })().catch(e=>{
+            report('Diagnostic API', 'INCOMPLET ('+String(e.message).replace(/[^A-Za-z0-9 ._-]/g,'')+')');
+          }).finally(finish);
+          NODE

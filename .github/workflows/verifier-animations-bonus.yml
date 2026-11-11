@@ -1,0 +1,32 @@
+name: Vérifier animations et défi bonus de Tim
+on:
+  pull_request:
+    paths:
+      - 'tim-animations.js'
+      - 'tim-animations.css'
+      - 'app.js'
+      - 'boot.js'
+      - 'xp-rules.js'
+      - 'functions/index.mjs'
+      - 'functions/xp.mjs'
+      - 'scripts/test-animations-bonus.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verification:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier syntaxe et barèmes
+        run: |
+          node --check tim-animations.js
+          node --check app.js
+          node --check boot.js
+          node --check xp-rules.js
+          node --check functions/index.mjs
+          node --check functions/xp.mjs
+          node scripts/test-animations-bonus.mjs

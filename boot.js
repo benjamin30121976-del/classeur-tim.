@@ -506,6 +506,17 @@ async function startSession(user){
    const notSpanish=x=>!String(x?.subject||'').toLowerCase().includes('espagnol');
    content={...content,lessons:content.lessons.filter(notSpanish),exercises:content.exercises.filter(notSpanish)};
  }
+ // Défi bonus personnalisé : indépendant des trois anciens bonus automatiques.
+ window.__TIM_BONUS_PARENT=null;
+ try{
+  const response=await cloudCallable('getParentBonus')({});
+  const assigned=response.data?.exercise;
+  if(assigned?.kind==='bonus-parent'&&Array.isArray(assigned.questions)){
+   window.__TIM_BONUS_PARENT=assigned;
+   if(!content.exercises.some(x=>x.id===assigned.id))
+    content={...content,exercises:[...content.exercises,assigned]};
+  }
+ }catch(error){console.warn('Défi bonus parent indisponible :',error?.message||error);}
  // Tim never receives answer fields through the application state.
  // Server-side storage/rules must also be migrated before production release.
  if(!isParent){
@@ -605,17 +616,26 @@ async function startSession(user){
    if(!Array.isArray(r.data?.attempts))throw Error('Archives Parent indisponibles.');
    return r.data;
   },
+  mathBankImport:async(id,fragment)=>{
+   if(activeUser?.uid!==PARENT_UID||window.__TIM_GUEST)throw Error('Import réservé au Parent.');
+   if(!/^MT(?:0[1-9]|1[0-9]|2[0-3])$/.test(id)||!fragment||fragment.id!==id)
+    throw Error('Banque de mathématiques invalide.');
+   const r=await cloudCallable('importMathPrivateQuiz')({id,fragment});
+   if(!r.data?.saved||r.data.id!==id)throw Error('Stockage privé non confirmé.');
+   return r.data;
+  },
   mathTrainingTask:async(id)=>{
    if(!/^MT(?:0[1-9]|1[0-9]|2[0-3])$/.test(id))throw Error('Exercice de mathématiques invalide.');
    const r=await cloudCallable('getMathTrainingTask')({id});
    return r.data;
   },
-  mathTrainingSubmit:async(id,answers)=>{
+  mathTrainingSubmit:async(id,answers,bankVersion)=>{
    if(activeUser?.uid!==TIM_UID)throw Error('Seul Tim peut valider une évaluation.');
    if(!/^MT(?:0[1-9]|1[0-9]|2[0-3])$/.test(id)||
       !Array.isArray(answers)||answers.length!==10)throw Error('Réponses invalides.');
-   const r=await cloudCallable('submitMathTraining')({id,answers});
-   if(!r.data?.submitted||r.data?.xp!==0||!Number.isInteger(r.data?.score))
+   if(typeof bankVersion!=='string'||!bankVersion.startsWith('TIM-MATH-'))throw Error('Questionnaire périmé : recharge la page.');
+   const r=await cloudCallable('submitMathTraining')({id,answers,bankVersion});
+   if(!r.data?.submitted||r.data?.bankVersion!==bankVersion||!Number.isFinite(r.data?.xp)||!Number.isInteger(r.data?.score))
     throw Error('La note ne peut pas être confirmée.');
    return r.data;
   },
@@ -647,6 +667,19 @@ async function startSession(user){
    const xp=Number(response.data?.xp||0);
    const released=response.data?.correctionStatus==='released'&&Array.isArray(response.data.answers)&&response.data.answers.length===ex.questions.length;
    return {id,date:new Date().toISOString(),title:ex.title,lesson:ex.lesson,xp,correctionLocked:!released,correctionStatus:released?'released':'pending-parent',answers:released?response.data.answers:[],score:released?Number(response.data.score):null,total:released?Number(response.data.total):null,needsReview:false,policyVersion:18};
+  },
+  assignParentBonus:async sourceId=>{
+   if(activeUser?.uid!==PARENT_UID)throw Error('Réservé au compte Parent.');
+   const response=await cloudCallable('assignParentBonus')({sourceId});
+   if(!response.data?.assigned)throw Error('Attribution non confirmée.');
+   const fresh=await cloudCallable('getParentBonus')({});
+   const assigned=fresh.data?.exercise;
+   if(assigned?.id){
+    window.__TIM_BONUS_PARENT=assigned;
+    const old=window.__TIM_DATA.exercises.filter(x=>x.kind!=='bonus-parent');
+    window.__TIM_DATA.exercises=[...old,assigned];
+   }
+   return response.data;
   },
   refresh:async()=>fetchAttempts(window.__TIM_DATA),
   publish:publishCoursePack,
@@ -834,7 +867,8 @@ async function startSession(user){
        const when=new Date(record.submittedAt||'');
        if(Number.isFinite(when.getTime()))
         note('Validé le '+when.toLocaleString('fr-FR',{timeZone:'Europe/Paris'}),'font-size:13px;color:#c3d8f2');
-       note('Note : '+record.score+'/'+record.total+' · 0 XP','font-weight:800;font-size:17px');
+       const mathXp=Number(record.xp??0),mathXpLabel=(mathXp>0?'+':'')+mathXp.toLocaleString('fr-FR');
+       note('Note : '+record.score+'/'+record.total+' · '+mathXpLabel+' XP','font-weight:800;font-size:17px');
        const errors=record.items.filter(q=>q.correct===false);
        note(errors.length?
          'Bilan : '+errors.length+' erreur'+(errors.length>1?'s':'')+'. Relire la leçon BIS « '+(lesson?.title||'Mathématiques')+' » et le cours ENT du même chapitre.':
@@ -945,7 +979,7 @@ async function startSession(user){
  document.getElementById('account-name').textContent=isParent?'Espace parent — compte connecté':'Espace Tim — compte connecté';
  document.querySelectorAll('[data-nav="parent"]').forEach(el=>el.hidden=!isParent);
  document.getElementById('logout-button').onclick=()=>signOut(auth);
- const sc=document.createElement('script');sc.src='./app.js?v=defis-espagnol-ecrits-20261110';sc.onerror=()=>{stopApp();message('Le module pédagogique du classeur n’a pas chargé.');};
+ const sc=document.createElement('script');sc.src='./app.js?v=maths-kv-20261111-v1';sc.onerror=()=>{stopApp();message('Le module pédagogique du classeur n’a pas chargé.');};
  sc.addEventListener('load',()=>{try{if(document.querySelector('.mission-hero'))window.TIM_INTRO_SHOW?.();}catch(e){console.warn('Animation d’ouverture indisponible :',e);}});
  document.body.append(sc);appLoaded=true;
 }

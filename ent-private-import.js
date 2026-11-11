@@ -29,9 +29,21 @@ function render({lessons,api}){
   try{
    const file=input.files?.[0];if(!file)return;if(file.size>65000000)throw Error('Archive trop volumineuse (maximum 65 Mo).');if(!window.JSZip)throw Error('Le lecteur ZIP n’a pas chargé.');
    zip=await window.JSZip.loadAsync(file,{checkCRC32:false});
-   const entries=Object.entries(zip.files).filter(([path,f])=>!f.dir&&/\.(pdf|png|jpg|jpeg|webp|gif)$/i.test(path)&&/(pieces jointes|pièces jointes)/i.test(path)).sort(([a],[b])=>a.localeCompare(b,'fr'));
+   const manifestNames=new Map();
+   const mf=zip.file('MANIFESTE_IMPORT_PRIVE.json');
+   if(mf){
+    let manifest;
+    try{manifest=JSON.parse(await mf.async('string'));}
+    catch{throw Error('Le manifeste de l’archive est invalide : aucun fichier importé.');}
+    for(const d of manifest.documents||[]){
+     const path=String(d.zipPath||''),orig=String(d.originalName||'');
+     if(path.startsWith('pieces_jointes/')&&/\.pdf$/i.test(orig)&&/\.pdf$/i.test(path))
+      manifestNames.set(path,orig.slice(0,120));
+    }
+   }
+   const entries=Object.entries(zip.files).filter(([path,f])=>!f.dir&&/\.(pdf|png|jpg|jpeg|webp|gif)$/i.test(path)&&/(pieces[_\s-]jointes|pièces[_\s-]jointes)/i.test(path)).sort(([a],[b])=>a.localeCompare(b,'fr'));
    if(!entries.length)throw Error('Aucun PDF ou schéma dans le dossier « Pièces jointes ».');if(entries.length>150)throw Error('Archive trop volumineuse en nombre de fichiers (150 maximum).');
-   for(const [path,entry] of entries){const name=cleanName(path),ext=name.split('.').pop().toLowerCase();const row=E('div','v16-import-row');const left=E('label');const ck=E('input');ck.type='checkbox';ck.checked=ext==='pdf'||/lecon|leçon|cours|fiche/i.test(name)&&!/ent maths/i.test(name);
+   for(const [path,entry] of entries){const name=manifestNames.get(path)||cleanName(path),ext=name.split('.').pop().toLowerCase();const row=E('div','v16-import-row');const left=E('label');const ck=E('input');ck.type='checkbox';ck.checked=ext==='pdf'||/lecon|leçon|cours|fiche/i.test(name)&&!/ent maths/i.test(name);
     left.append(ck,E('strong','',name));const sel=E('select');sel.setAttribute('aria-label','Cours associé à '+name);sel.append(new Option('— Choisir le cours ENT —',''));
     for(const l of courses)sel.append(new Option((l.date||'')+' · '+l.title,l.id));const guess=bestMatch(name,courses);sel.value=guess;
     // Do not preselect unclear matches: attaching a document to the wrong chapter is worse than a skipped import.

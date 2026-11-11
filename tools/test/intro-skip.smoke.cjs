@@ -6,7 +6,8 @@ const assert=require('assert').strict;
 const output=path.join(process.cwd(),'test-intro-results');
 fs.mkdirSync(output,{recursive:true});
 (async()=>{
- const browser=await chromium.launch({headless:true});
+ const chrome=['/usr/bin/google-chrome','/usr/bin/google-chrome-stable','/usr/bin/chromium'].find(p=>fs.existsSync(p));
+ const browser=await chromium.launch({headless:true,...(chrome?{executablePath:chrome}:{}),args:['--no-sandbox']});
  try{
   for(const [device,width,height] of [['mobile',390,844],['ordinateur',1200,820]]){
    const page=await browser.newPage({viewport:{width,height},deviceScaleFactor:1});

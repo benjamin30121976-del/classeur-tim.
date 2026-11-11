@@ -30,7 +30,9 @@ jobs:
         run: |
           mkdir -p /tmp/tim-spanish
           npm install --prefix /tmp/tim-spanish --no-audit --no-fund playwright
-          /tmp/tim-spanish/node_modules/.bin/playwright install --with-deps chromium
+          if ! command -v google-chrome >/dev/null 2>&1 && ! command -v chromium >/dev/null 2>&1; then
+            /tmp/tim-spanish/node_modules/.bin/playwright install chromium
+          fi
       - name: Vérifier le moteur de notation des 150 exercices
         run: node --test functions/test/spanish-training.test.mjs
       - name: Vérifier les 15 guides, 20 tableaux et 45 activités libres
