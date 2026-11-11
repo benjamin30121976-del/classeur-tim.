@@ -91,7 +91,9 @@ function inlineLesson(holder,entId,renderL01){
  const source=window.TIM_SPANISH_ENT_BIS;
  const data=entId==='10099~6400501'?FIRST_LESSON:source?.getLesson?.(entId);
  if(!data){p(holder,'Le cours n’est pas disponible pour cette séance.');return;}
+ const explained=window.TIM_SPANISH_BIS_EXPLAINED?.[entId]||null;
  const sheet=el('article',undefined,'tim-es-course-sheet');
+ sheet.setAttribute('aria-label','Leçon BIS, expliquée pour Tim');
  const h=(title)=>sheet.append(el('h3',title));
  const para=(text,cls)=>sheet.append(el('p',text,cls));
  const example=(parent,item)=>{
@@ -101,19 +103,53 @@ function inlineLesson(holder,entId,renderL01){
   block.append(spanish,say(item[0],'es','Écouter'),el('span',item[1]));
   parent.append(block);
  };
- h('Comprendre la leçon');
- para(data.goal||'Comprendre et réutiliser les expressions vues en classe.');
- const context=el('p',undefined,'tim-es-teacher-context');
- context.append(el('strong','En classe : '),document.createTextNode(ENT_WHAT_WAS_DONE[entId]||'Travail de la séance ENT.'));
- sheet.append(context);
- h('La méthode');
+ sheet.append(el('p','LEÇON BIS · EXPLICATION FACILE','tim-es-bis-label'));
+ h('À quoi sert cette leçon ?');
+ para(explained?.why||data.goal||'Comprendre les phrases vues en cours.');
+ h('Comprendre la règle');
+ para(explained?.rule||data.goal);
+ h('Comment faire');
  const steps=el('ol',undefined,'tim-es-course-steps');
- (data.steps||[]).slice(0,4).forEach(step=>steps.append(el('li',step)));
+ (data.steps||[]).slice(0,3).forEach(step=>steps.append(el('li',step)));
  sheet.append(steps);
- h('Regarde ces exemples');
- (data.examples||[]).slice(0,3).forEach(item=>example(sheet,item));
- if(data.learn?.length)para(data.learn[0],'tim-es-course-remember');
+ if(explained?.worked?.length===3){
+  h('Un exemple corrigé, pas à pas');
+  const worked=el('div',undefined,'tim-es-worked');
+  worked.append(el('p',explained.worked[0], 'tim-es-worked-question'));
+  worked.append(el('p',explained.worked[1], 'tim-es-worked-method'));
+  worked.append(el('p',explained.worked[2], 'tim-es-worked-answer'));
+  sheet.append(worked);
+ }
+ if(data.examples?.length){
+  h('Deux autres exemples');
+  (data.examples||[]).slice(0,2).forEach(item=>example(sheet,item));
+ }
+ const takeaway=el('p',undefined,'tim-es-course-remember');
+ takeaway.append(el('strong','À retenir : '),document.createTextNode(explained?.remember||data.learn?.[0]||'Revoir la méthode et les exemples.'));
+ sheet.append(takeaway);
  holder.append(sheet);
+ /* Le vrai document ENT reste distinct de la leçon expliquée. */
+ const original=el('details',undefined,'tim-es-ent-original');
+ const originalTitle=el('summary','Cours ENT du professeur et fiches originales');
+ const originalSlot=el('div',undefined,'tim-es-ent-original-content');
+ original.append(originalTitle,originalSlot);
+ let originalReady=false,loading=false;
+ original.addEventListener('toggle',async()=>{
+  if(!original.open||originalReady||loading)return;
+  loading=true;
+  originalSlot.replaceChildren();
+  originalSlot.append(el('p','Ouverture du cours original…'));
+  try{
+   if(window.__TIM_GUEST){
+    originalSlot.textContent='Les documents originaux sont réservés aux comptes Tim et Parent.';
+   }else if(typeof window.TIM_SPANISH_ENT_EXACT?.renderLessonOriginal==='function'){
+    await window.TIM_SPANISH_ENT_EXACT.renderLessonOriginal(originalSlot,entId);
+   }else originalSlot.textContent='Le cours original n’est pas accessible pour le moment.';
+   originalReady=true;
+  }catch(e){originalSlot.textContent='Le document original ne peut pas être chargé actuellement.';}
+  finally{loading=false;}
+ });
+ holder.append(original);
 
  /* Aide réellement distincte du cours : deux difficultés ciblées,
     avec une autre explication et une phrase traduite. */
