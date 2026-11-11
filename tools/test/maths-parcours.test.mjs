@@ -141,7 +141,7 @@ test('Import privé des maths : interface Parent et refus du mode Visiteur',()=>
 test('Mathématiques : choisir une leçon ouvre son cours complet avant les exercices',()=>{
  const src=readFileSync(new URL('../../maths-parcours.js',import.meta.url),'utf8');
  const dataScript=readFileSync(new URL('../../maths-bis-data.js',import.meta.url),'utf8');
- const raw=dataScript.slice(dataScript.indexOf('={')+1).trim().replace(/;\\s*$/,'');
+ const raw=dataScript.slice(dataScript.indexOf('={')+1).trim().replace(/;\s*$/,'');
  const pack=JSON.parse(raw);
  assert.equal(pack.lessons.length,23);
  for(const lesson of pack.lessons){
@@ -154,7 +154,7 @@ test('Mathématiques : choisir une leçon ouvre son cours complet avant les exer
  assert.match(category,/data-math-bis/);
  assert.doesNotMatch(category,/sectionBtns/);
  assert.match(reading,/math-reading-lesson/);
- assert.match(reading,/blocks\\(x,'bis'\\)/);
+ assert.match(reading,/blocks\(x,'bis'\)/);
  assert.match(reading,/Après la leçon/);
  assert.match(reading,/Documents et exercices du professeur/);
  assert.doesNotMatch(reading,/sectionBtns/);
