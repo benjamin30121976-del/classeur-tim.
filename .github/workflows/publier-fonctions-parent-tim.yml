@@ -36,12 +36,14 @@ jobs:
             'setParentCorrectionRelease',
             'getTimCourseContent',
             'submitSpanishTraining',
-            'getSpanishTrainingProgress'
+            'getSpanishTrainingProgress',
+            'assignParentBonus',
+            'getParentBonus'
           ];
           for(const func of funcs){
             if(!src.includes('export const '+func+'=onCall('))throw Error('Fonction absente du code : '+func);
           }
-          console.log('Sept fonctions privées présentes dans le code. Aucun déploiement pendant les tests.');
+          console.log('Neuf fonctions privées présentes dans le code. Aucun déploiement pendant les tests.');
           NODE
 
   deployer:
@@ -73,7 +75,7 @@ jobs:
           export GOOGLE_APPLICATION_CREDENTIALS="$KEY_FILE"
           node -e "const c=require(process.env.GOOGLE_APPLICATION_CREDENTIALS);if(c.project_id!=='classeur-ba3e7'||!c.client_email||!c.private_key)throw Error('Clé Firebase incorrecte ou autre projet');console.log('Projet Firebase correct : classeur-ba3e7')"
           npm install --prefix functions --ignore-scripts --no-audit --no-fund
-          npx --yes firebase-tools deploy --project classeur-ba3e7 --non-interactive --only functions:submitTimExercise,functions:getParentReport,functions:getTimReleasedCorrections,functions:setParentCorrectionRelease,functions:getTimCourseContent,functions:submitSpanishTraining,functions:getSpanishTrainingProgress
+          npx --yes firebase-tools deploy --project classeur-ba3e7 --non-interactive --only functions:submitTimExercise,functions:getParentReport,functions:getTimReleasedCorrections,functions:setParentCorrectionRelease,functions:getTimCourseContent,functions:submitSpanishTraining,functions:getSpanishTrainingProgress,functions:assignParentBonus,functions:getParentBonus
       - name: Indiquer les vérifications restantes
         if: success()
         run: |
