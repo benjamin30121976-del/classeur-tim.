@@ -42,7 +42,7 @@ const originals=[
 ];
 for(const [file,sha] of originals){
  const data=readFileSync(file);
- const actual=createHash('sha1').update(Buffer.from('blob '+data.length+'\\0'.replace('\\0','\\u0000'))).update(data).digest('hex');
+ const actual=createHash('sha1').update(Buffer.from('blob '+data.length+String.fromCharCode(0))).update(data).digest('hex');
  assert.equal(actual,sha,'Original modifié ou remplacé : '+file);
 }
 const originalDaily=readFileSync('assets/animations/Tim_Defi_Du_Jour_Valide.gif');
