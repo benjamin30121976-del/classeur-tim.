@@ -128,14 +128,15 @@ function renderQuestions(slot,task,lessonNumber,after,ensureLesson){
  slot.replaceChildren();
  const wrapper=css(el('section'),ST.panel);
  const head=css(el('h4',task.title),ST.title);wrapper.append(head);
- p(wrapper,'Les consignes sont en espagnol. Tu peux écouter chaque consigne ou afficher sa traduction française. Une seule validation par exercice. De 7 à 10/10 : +1 XP ; de 5 à moins de 7/10 : +0,5 XP ; moins de 5/10 : 0 XP.');
- spellingWarning(wrapper);
+ p(wrapper,'10 questions. Une question à la fois. Tu peux écouter ou traduire la consigne.','font-size:15px;line-height:1.55;color:#344663;margin:8px 0 14px');
  if(!isTim()){
   p(wrapper,'Seul Tim peut répondre. Le Parent peut relire les questions, les réponses et les corrections.','font-weight:750;color:#6b4c2a');
  }
  const readers=[],translationsUsed=Array(10).fill(false);
+ const pages=[];
  for(const [i,q] of task.questions.entries()){
-  const field=css(el('fieldset'),ST.panel+';padding:13px 12px;margin:14px 0');
+  const field=css(el('fieldset',undefined,'tim-es-question-page'),ST.panel+';padding:13px 12px;margin:14px 0');
+  field.hidden=i!==0;
   const legend=css(el('legend','Question '+(i+1)+' / 10'),'font-weight:900;color:#263d8c;padding:0 6px');
   field.append(legend);
   const instruction=el('p',q.instructionEs||'Consigne indisponible');
@@ -197,15 +198,40 @@ function renderQuestions(slot,task,lessonNumber,after,ensureLesson){
    readers.push(()=>null);
   }
   wrapper.append(field);
+  pages.push(field);
  }
+ const navigation=el('nav',undefined,'tim-es-question-navigation');
+ navigation.setAttribute('aria-label','Se déplacer entre les questions');
+ const progress=css(el('p','Question 1 sur 10'),'font-weight:850;color:#263a83;font-size:16px;margin:0 0 10px');
+ progress.setAttribute('role','status');
+ const previous=button('← Précédente');
+ const next=button('Suivante →');
+ previous.className='tim-es-question-prev';
+ next.className='tim-es-question-next';
+ let current=0;
+ const showQuestion=(index)=>{
+  current=Math.max(0,Math.min(pages.length-1,index));
+  pages.forEach((page,i)=>{page.hidden=i!==current;});
+  previous.hidden=current===0;
+  next.hidden=current===pages.length-1;
+  progress.textContent='Question '+(current+1)+' sur '+pages.length+' · '+readers.filter(read=>read()!==-1&&read()!=='').length+' réponse(s)';
+  pages[current]?.scrollIntoView?.({block:'nearest',behavior:'instant'});
+ };
+ previous.onclick=()=>showQuestion(current-1);
+ next.onclick=()=>showQuestion(current+1);
+ navigation.append(progress,previous,next);
+ wrapper.append(navigation);
+ wrapper.addEventListener('change',()=>showQuestion(current));
+ showQuestion(0);
  if(isTim()){
-  p(wrapper,'Réponds aux 10 questions avant de valider. La correction apparaît immédiatement après l’envoi ; tu pourras la relire, mais pas refaire l’exercice.','font-weight:750;color:#384a65');
-  spellingWarning(wrapper);
+  const advice=el('details',undefined,'tim-es-answer-advice');
+  advice.append(el('summary','Conseil avant de valider'),el('p','Vérifie les accents, la lettre ñ et les signes ¿ ? quand tu écris en espagnol.'));
+  wrapper.append(advice);
   const confirmButton=button('Valider mes 10 réponses — une seule fois');
   const feedback=p(wrapper,'','font-weight:750;color:#9a4b36;margin:12px 0');
   confirmButton.onclick=async()=>{
    const answers=readers.map(read=>read());
-   if(answers.some(a=>a===null||a===-1||a==='')){feedback.textContent='Réponds aux dix questions avant de valider.';return;}
+   if(answers.some(a=>a===null||a===-1||a==='')){showQuestion(answers.findIndex(a=>a===null||a===-1||a===''));feedback.textContent='Réponds à cette question avant de valider.';return;}
    if(!window.confirm('Avant de valider, as-tu vérifié les accents, la lettre ñ, la conjugaison et les signes « ¿ » et « ? » ?\\nUne fois validé, cet exercice ne pourra plus être recommencé.'))return;
    confirmButton.disabled=true;confirmButton.textContent='Enregistrement sécurisé…';feedback.textContent='';
    try{
