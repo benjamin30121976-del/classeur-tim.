@@ -65,14 +65,19 @@ function wire(){
 }
 function home(){
  selected=null;group=null;
- draw(header('Mes leçons de mathématiques','Choisis un chapitre, puis une leçon pour la lire.')+
+ draw(header('Mes leçons de mathématiques','Choisis une leçon pour la lire.')+
  back('Toutes les matières')+
- '<div class="spx-grid math-chapter-list">'+
- GROUPS.map((g,i)=>{
-  const count=bis.filter(x=>groupOfId(x.id)===g).length;
-  return '<button type="button" class="spx-card" data-math-group="'+i+'"><strong>'+esc(g.name)+'</strong><small>'+count+' leçon(s) · Ouvrir</small></button>';
- }).join('')+'</div>'+
- '<details class="math-reading-docs"><summary>Voir les cours originaux du professeur (ENT)</summary>'+btn('data-math-all-ent','all','Consulter les '+ent.length+' cours ENT')+'</details>',options.back);
+ GROUPS.map(g=>{
+  const items=bis.filter(x=>groupOfId(x.id)===g);
+  if(!items.length)return '';
+  return '<section class="math-topic-group"><h3>'+esc(g.name)+'</h3><div class="math-lesson-list">'+
+   items.map(x=>'<button type="button" class="math-lesson-entry" data-math-bis="'+esc(x.id)+'">'+
+    '<strong>'+esc(cleanTitle(x.title))+'</strong>'+
+    (x.summary?'<span class="math-lesson-description">'+esc(x.summary)+'</span>':'')+
+    '<span class="math-lesson-open">Lire la leçon →</span></button>').join('')+
+   '</div></section>';
+ }).join('')+
+ '<details class="math-reading-docs"><summary>Voir les cours originaux du professeur (ENT)</summary>'+btn('data-math-all-ent','all','Consulter les '+ent.length+' cours ENT')+'</details>', options.back);
  wire();
 }
 function viewEntChronology(){
@@ -147,7 +152,7 @@ function viewBis(id){
  selected=id;group=groupOfId(id);const x=lesson(id);if(!x)return;
  const g=group,hasEnt=entFor(g).length>0,hasEntEx=exFor(g).length>0;
  draw(header(cleanTitle(x.title),'Lis la leçon du début à la fin.')+
- back('Retour à la liste des leçons')+
+ back('Retour à toutes les leçons')+
  '<article class="spx-panel math-reading-lesson">'+blocks(x,'bis')+'</article>'+
  '<div class="math-reading-actions"><h3>Après la leçon</h3>'+
  btn('data-math-help',id,'Je n’ai pas compris')+
@@ -158,7 +163,7 @@ function viewBis(id){
  (hasEntEx?btn('data-math-ex',id,'Voir les exercices du professeur'):'')+
  (id==='MBIS13'?btn('data-math-programs',id,'Fiche originale : programmes A et B'):'')+
  '</details>':''),
- ()=>category(group));
+ home);
  wire();
 }
 function viewHelp(id){
