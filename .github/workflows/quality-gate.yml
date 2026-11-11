@@ -1,0 +1,22 @@
+name: Qualite classeur Tim - controle des changements
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Recuperer la branche a tester
+        uses: actions/checkout@v4
+      - name: Installer Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verifier ressources, pages et syntaxe
+        run: node tools/qa/check-site.mjs
+      - name: Tester les evaluations de mathematiques et les protections des tentatives
+        run: node --test worker/test/math-training.test.mjs
