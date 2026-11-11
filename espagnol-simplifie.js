@@ -373,6 +373,8 @@ async function render(root,opts={},helpers={}){
   exerciseBody.append(rows,work);exerciseSection.append(exerciseBody);
   inner.append(exerciseSection);card.append(inner);root.append(card);
   lessonCards.push(card);
+  // Ouvrir le cours pendant le clic, sans attendre l'événement toggle asynchrone.
+  label.addEventListener('click',()=>{if(!card.open)openLesson();});
   card.addEventListener('toggle',()=>{
    if(card.open){
     activeCard=card;
