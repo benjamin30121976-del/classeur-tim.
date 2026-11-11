@@ -322,3 +322,31 @@
  #matieres-content .tim-es-course-example strong{flex:1 1 120px}
  #matieres-content .tim-es-course-sheet p{font-size:16px}
 }
+
+
+/* Fiche BIS : vraie progression de lecture, sans mosaïque. */
+#matieres-content .tim-es-bis-label{font-size:12px!important;font-weight:850;letter-spacing:.06em;color:#41618a!important;margin:3px 0 10px!important}
+#matieres-content .tim-es-course-sheet{max-width:780px;margin-inline:auto;padding:9px 5px 15px}
+#matieres-content .tim-es-course-sheet h3{font-size:19px;line-height:1.4;margin:24px 0 8px}
+#matieres-content .tim-es-course-sheet h3:first-of-type{margin-top:8px}
+#matieres-content .tim-es-course-steps{padding-left:23px;line-height:1.65}
+#matieres-content .tim-es-worked{margin:12px 0 24px;padding:9px 0;border-top:1px solid #d6e0ec;border-bottom:1px solid #d6e0ec}
+#matieres-content .tim-es-worked p{margin:10px 0;padding:0 3px;font-size:16px;line-height:1.65}
+#matieres-content .tim-es-worked-question{color:#334967}
+#matieres-content .tim-es-worked-method{font-weight:650;color:#1f3654}
+#matieres-content .tim-es-worked-answer{font-weight:850;color:#174d75}
+#matieres-content .tim-es-ent-original{margin:19px 0;padding:13px 14px;border:1px solid #ccd9e6;border-radius:11px;background:#f7f9fc;color:#21374e}
+#matieres-content .tim-es-ent-original>summary{font-size:16px;font-weight:800;color:#264e7a;cursor:pointer;padding:5px 0}
+#matieres-content .tim-es-ent-original-content{padding-top:10px;line-height:1.6}
+#matieres-content .tim-es-ent-original-content h4{font-size:16px;color:#244a76;margin:18px 0 8px}
+#matieres-content .tim-es-ent-original-content .ent-es-source-text{color:#273c53;background:#fff;border-left:3px solid #8eabc8;padding:10px 12px;white-space:pre-wrap;overflow-wrap:anywhere}
+#matieres-content .tim-es-ent-original-content .ent-es-source-fr{color:#28435e;background:#edf4fc;padding:10px 12px;white-space:pre-wrap;overflow-wrap:anywhere}
+#matieres-content .tim-es-ent-original-content .ent-es-homework-item{margin:9px 0;padding:10px 12px;border-top:1px solid #d3deea}
+#matieres-content .tim-es-ent-original-content .ent-es-homework-item summary{cursor:pointer;font-weight:800;color:#244a76}
+#matieres-content .tim-es-ent-original-content .ent-es-file{border-bottom:1px solid #dce5ef;padding-bottom:10px}
+#matieres-content .tim-es-ent-original-content .ent-es-pdf-fr{color:#244a54!important;background:#eaf7f2!important}
+@media(max-width:600px){
+ #matieres-content .tim-es-course-sheet{padding:5px 1px}
+ #matieres-content .tim-es-worked{padding:6px 0}
+ #matieres-content .tim-es-ent-original{padding:11px 12px}
+}

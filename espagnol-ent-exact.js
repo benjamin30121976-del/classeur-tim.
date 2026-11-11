@@ -640,5 +640,64 @@ async function render(root,opts={}){
  }
 }
 
-window.TIM_SPANISH_ENT_EXACT={render,parse:readTwoZips,validate,validateTranslations,TAG};
+/* Lecture des sources originales, sous la leçon BIS correspondante.
+   Les fichiers ENT privés ne sont jamais recopiés dans le dépôt public. */
+async function renderLessonOriginal(root,lessonId){
+ root.replaceChildren();
+ if(window.__TIM_GUEST){root.append($('p','','Cours ENT original : connexion Tim ou Parent nécessaire.'));return;}
+ const pack=window.__TIM_DATA?.metadata?.spanishEnt;
+ if(!pack?.lessons){
+  root.append($('p','','Les documents originaux ENT ne sont pas encore disponibles dans cette session. La leçon BIS reste accessible.'));
+  return;
+ }
+ const id=String(lessonId);
+ const lesson=pack.lessons.find(doc=>String(doc?.data?.id)===id);
+ if(!lesson){root.append($('p','','Cette séance n’a pas de texte original retrouvé dans la collecte ENT.'));return;}
+ const source=asText(lessonHtml(lesson));
+ const translations=pack.translations;
+ const title=$('h4','', 'Ce que Mme Gonzalez a écrit dans l’ENT');
+ root.append(title);
+ const copy=$('p','ent-es-source-text',source||'Aucun texte de cours n’a été renseigné pour cette séance.');
+ copy.setAttribute('lang','es');copy.style.whiteSpace='pre-wrap';root.append(copy);
+ if(translations?.courses?.[id]?.fr){
+  root.append($('h4','','Traduction en français'));
+  const fr=$('p','ent-es-source-fr',translations.courses[id].fr);
+  fr.style.whiteSpace='pre-wrap';root.append(fr);
+ }
+ const homeIds=lessonHomeworkIds(lesson);
+ const homework=(pack.homework||[]).filter(x=>homeIds.includes(String(x?.data?.id)));
+ let metas=[];
+ const attachments=window.__TIM_BRIDGE?.attachments;
+ if(attachments?.list){
+  try{metas=await attachments.list('lesson',TAG);}catch(_){}
+ }
+ const refs=(pack.index||[]).filter(info=>(info.rattache_a||[]).some(link=>
+  (link.type==='cours'&&String(link.id)===id)||
+  (link.type==='travail_associe'&&homeIds.includes(String(link.id)))
+ ));
+ if(homework.length){
+  root.append($('h4','','Exercices demandés par la professeure'));
+  homework.forEach(item=>{
+   const hid=String(item.data.id);
+   const section=$('details','ent-es-homework-item');
+   section.append($('summary','','Lire la consigne originale du devoir'));
+   const es=$('p','ent-es-source-text',asText(homeworkOriginal(item)));
+   es.style.whiteSpace='pre-wrap';es.setAttribute('lang','es');section.append(es);
+   if(translations?.homework?.[hid]?.fr){
+    const fr=$('p','ent-es-source-fr',translations.homework[hid].fr);
+    fr.style.whiteSpace='pre-wrap';section.append(fr);
+   }
+   root.append(section);
+  });
+ }
+ if(refs.length){
+  root.append($('h4','','Fiches PDF du professeur'));
+  appendFileLinks(root,refs,metas,translations);
+ }
+ if(!homework.length&&!refs.length){
+  root.append($('p','ent-es-empty','Aucun devoir ou PDF associé à cette séance dans l’archive.'));
+ }
+}
+
+window.TIM_SPANISH_ENT_EXACT={render,renderLessonOriginal,parse:readTwoZips,validate,validateTranslations,TAG};
 })();

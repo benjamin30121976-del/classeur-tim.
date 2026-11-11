@@ -43,6 +43,9 @@ const out=path.join(process.cwd(),'test-espagnol-results');fs.mkdirSync(out,{rec
      if(!await card.evaluate(node=>node.open))throw Error('Leçon '+(i+1)+' ne s’ouvre pas directement');
      if(!(await card.locator('.tim-es-reading').innerText()).trim())throw Error('Leçon '+(i+1)+' sans contenu affiché');
      if(await card.locator('.tim-es-course-sheet').count()!==1)throw Error('Leçon '+(i+1)+' : page de lecture manquante');
+     if(await card.locator('.tim-es-worked').count()!==1)throw Error('Leçon '+(i+1)+' : exemple expliqué manquant');
+     if(await card.locator('.tim-es-ent-original > summary').count()!==1)throw Error('Leçon '+(i+1)+' : accès original ENT absent');
+     if(!(await card.locator('.tim-es-bis-label').innerText()).includes('LEÇON BIS'))throw Error('Leçon '+(i+1)+' : séparation ENT/BIS absente');
      if(await card.locator('.tim-es-course-help > summary').innerText()!=='Je n’ai pas compris')throw Error('Leçon '+(i+1)+' : aide pédagogique manquante');
      if(await card.locator('.tim-es-help-question').count()<2)throw Error('Leçon '+(i+1)+' : explications ciblées manquantes');
      if(await card.locator('.tim-es-exercises').evaluate(el=>el.open))throw Error('Exercices visibles avant la fin du cours');
