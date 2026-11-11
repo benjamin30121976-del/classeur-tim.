@@ -236,12 +236,7 @@ test('Les trois paliers XP mathématiques 4/10, 5/10 et 7/10 sont cumulatifs et 
 
 test('Import Firestore Parent sécurisé : 23 fiches privées, sans KV ni essai Tim',async()=>{
  const db=mockFirestore();
- const originalGet=db.get.bind(db);
- db.get=async (path,tx)=>{
-  const item=await originalGet(path,tx);
-  return path.startsWith('mathPrivateQuizzes/')&&item?.payloadJson?JSON.parse(item.payloadJson):item;
- };
- const env=await mathEnv.TIM_MATH_PRIVATE_KV.get(MATH_BANK_VERSION,'json');
+const env=await mathEnv.TIM_MATH_PRIVATE_KV.get(MATH_BANK_VERSION,'json');
  for(let i=1;i<=23;i++){
   const id='MT'+String(i).padStart(2,'0');
   const fragment={id,version:MATH_BANK_VERSION,public:env.public.quizzes[id],private:env.private.quizzes[id]};
