@@ -26,6 +26,41 @@ const out=path.join(process.cwd(),'test-espagnol-results');fs.mkdirSync(out,{rec
     await subject.locator('.spx-card[data-category="'+index+'"]').click();
    };
    await selectSpanish();
+   // Interface espagnole actuelle : 13 leçons, 3 exercices chacune.
+   // Ce contrôle ne touche ni aux cours ni aux résultats ; il remplace le
+   // parcours historique à six rubriques seulement quand l'interface moderne
+   // est réellement présente.
+   const modern=await page.evaluate(()=>Boolean(window.TIM_SPANISH_ENT_EXACT&&window.TIM_SPANISH_SIMPLIFIED));
+   if(modern){
+    await page.waitForFunction(()=>document.querySelectorAll('#matieres-content .tim-es-lesson').length===13,{timeout:20000});
+    const cards=subject.locator('.tim-es-lesson');
+    if(await cards.count()!==13)throw Error('13 leçons espagnoles attendues');
+    let trainingCount=0;
+    for(let i=0;i<13;i++){
+     const card=cards.nth(i);
+     await card.locator('summary').first().click();
+     const choices=card.locator('[data-es-training-id]');
+     if(await choices.count()!==3)throw Error('Trois entraînements manquants pour la leçon '+(i+1));
+     trainingCount+=await choices.count();
+    }
+    if(trainingCount!==39)throw Error('39 exercices espagnols attendus');
+    const first=cards.first();
+    await first.locator('button').filter({hasText:'Lire et écouter la leçon'}).first().click();
+    if(!(await first.innerText()).includes('Masquer la leçon'))
+     throw Error('Leçon simplifiée inaccessible');
+    if(await subject.locator('.tim-letter-original').count())
+     throw Error('Document personnel privé visible en visiteur');
+    await first.locator('[data-es-training-id]').first().click();
+    if(!(await first.innerText()).includes('Connexion au suivi impossible'))
+     throw Error('Visiteur : la validation doit rester inaccessible');
+    if(await first.locator('button[type="submit"]').count())
+     throw Error('Visiteur : bouton de validation présent');
+    if(errors.length)throw Error('Erreurs JavaScript : '+errors.join(' / '));
+    await page.screenshot({path:path.join(out,device+'-espagnol-13-lecons.png'),fullPage:true});
+    console.log('OK '+device+': 13 leçons, 39 exercices, aide, mode visiteur non validant');
+    await page.close();
+    continue;
+   }
    if(await subject.locator('.spx-card').count()!==6)throw Error('6 Spanish groups required');
    if(await subject.locator('.spx-topic-svg').count()!==6)throw Error('Topic pictograms missing');
    const search=subject.locator('#spx-find');await search.fill('je suis');
