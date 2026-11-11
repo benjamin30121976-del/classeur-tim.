@@ -301,7 +301,7 @@ ex.questions.forEach((question,i)=>{const row=E('div','q');row.append(E('div','q
 function values(){return controls.map(c=>c.kind==='mc'?(document.querySelector('input[name="'+c.name+'"]:checked')?.value??''):c.node.value.trim());}
 function saveDraft(){if(old)return;const d=drafts();d[id]=values();save(DRAFT_KEY,d);}
 if(old){
- const challenge=['daily','weekly','sunday'].includes(ex.kind);
+ const challenge=['daily','weekly','sunday','bonus-parent'].includes(ex.kind);
  if(challenge){
   const summary=E('section','panel challenge-result-summary');summary.id='challenge-result-summary';
   summary.style.cssText='margin:12px 0;padding:18px;border:2px solid #dfbc61;border-radius:16px;line-height:1.6';
@@ -357,7 +357,7 @@ if(old){
   if(notification?.catch)notification.catch(()=>{});
   const d=drafts();delete d[id];save(DRAFT_KEY,d);v7NewAttempt(saved);
   // Un défi affiche son BILAN (note, XP, correction) directement, sans alerte XP seule.
-  const isChallenge=['daily','weekly','sunday'].includes(ex.kind);
+  const isChallenge=['daily','weekly','sunday','bonus-parent'].includes(ex.kind);
   try{
    if(isChallenge)await window.TIM_ANIMATIONS?.playResult?.(ex,saved);
    else alert('Devoir envoyé. '+(saved.xp>=0?'+':'')+saved.xp+' XP. '+(saved.correctionStatus==='released'?'Correction disponible.':'Correction en attente du parent.'));
@@ -385,7 +385,7 @@ if(!old && !window.__TIM_PARENT && controls.length>1){
  }
 scrollTop();}
 function renderFeedback(ex,t,root){
- const isChallenge=['daily','weekly','sunday'].includes(ex.kind);
+ const isChallenge=['daily','weekly','sunday','bonus-parent'].includes(ex.kind);
  const box=E('section','result'+(t.needsReview?' waiting':''));
  const perfect=!t.needsReview&&Number(t.score)===Number(t.total)&&Number(t.total)>0&&
   Array.isArray(t.answers)&&t.answers.length===Number(t.total)&&t.answers.every(a=>a.correct===true);
