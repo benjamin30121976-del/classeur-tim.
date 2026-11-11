@@ -83,3 +83,13 @@
 .math-path .math-help-page details{margin-top:18px;border-top:1px solid #dce6f0;padding-top:14px}
 .math-path .math-help-page details summary{cursor:pointer;font-weight:750;color:#31567e}
 @media(max-width:600px){.math-path .math-help-page{padding:17px 15px}}
+
+
+/* Questions longues : les actions successives sont lisibles comme un programme de calcul. */
+.math-path #math-quiz .math-quiz-program{padding:13px 15px 10px;background:#f5f8fc;border:1px solid #cbd7e7;border-radius:12px;color:#253d59;margin:12px 0 16px}
+.math-path #math-quiz .math-quiz-program strong{font-size:16px;line-height:1.45;color:#254872}
+.math-path #math-quiz .math-quiz-program ol{margin:9px 0 2px;padding-left:24px}
+.math-path #math-quiz .math-quiz-program li{font-size:16px;line-height:1.6;padding:3px 0}
+.math-path #math-quiz .math-quiz-question-text{font-size:18px;line-height:1.55;font-weight:750;color:#213b5d;margin:12px 0 15px}
+
+.math-path #math-quiz .math-quiz-context{font-size:16px;line-height:1.55;color:#425873;background:#f5f8fc;border-left:3px solid #a9bed5;padding:10px 12px;margin:12px 0}
