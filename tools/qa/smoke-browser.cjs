@@ -31,8 +31,16 @@ async function run(device,browser){
       lessons:(window.__TIM_DATA?.lessons||[]).map(x=>({id:x.id,title:x.title})),
       exercises:(window.__TIM_DATA?.exercises||[]).filter(x=>x.id&&Array.isArray(x.questions)).map(x=>({id:x.id,title:x.title,questions:x.questions.length}))
     }));
-    record('Leçons chargées',catalog.lessons.length>0,'Quantité : '+catalog.lessons.length);
-    record('Exercices chargés',catalog.exercises.length>0,'Quantité : '+catalog.exercises.length);
+    // Le catalogue des anciennes leçons ENT est volontairement masqué au profil Invité.
+    // Ne jamais exposer des cours privés dans le seul but de réussir un test.
+    record('Séparation des cours privés',catalog.lessons.every(l=>!String(l.title).includes('Ficha de datos')),'Leçons publiques : '+catalog.lessons.length);
+    const exposed=await page.evaluate(()=>{
+      const banned=new Set(['right','also','why','expected','answer','answers','answerKey','answerKeys','solution','solutions','correction','corrections','explanation','rubric']);
+      const walk=(v,p)=>Array.isArray(v)?v.flatMap((x,i)=>walk(x,p+'/'+i)):v&&typeof v==='object'?Object.entries(v).flatMap(([k,x])=>banned.has(k)?[p+'/'+k]:walk(x,p+'/'+k)):[];
+      return walk(window.__TIM_DATA,'cours');
+    });
+    record('Corrigés non exposés au visiteur',exposed.length===0,'Champs interdits trouvés : '+exposed.length);
+    record('Exercices publics chargés',catalog.exercises.length>0,'Quantité : '+catalog.exercises.length);
     await page.locator('[data-nav="matieres"]:visible').first().click();
     record('Page matières',await page.locator('#matieres.page.active').count()>0);
     if(catalog.lessons.length){
