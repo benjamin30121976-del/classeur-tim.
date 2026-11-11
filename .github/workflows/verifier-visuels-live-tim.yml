@@ -1,0 +1,91 @@
+name: Verifier 10 animations et barre XP en ligne
+on:
+  push:
+    branches: [verifier-medias-live-tim-20261111]
+    paths: ['.github/workflows/verifier-visuels-live-tim.yml']
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check pillow==11.3.0
+      - name: Controle HTTP et formats sur Cloudflare
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          from urllib.request import Request, urlopen
+          from PIL import Image
+          import io,json
+          base='https://classeur-tim-v16.pages.dev/'
+          targets={
+           'Résultat +3 XP':'assets/animations/Tim_Animation_3XP_Mouche.mp4',
+           'Résultat +2 XP':'assets/animations/Tim_Animation_2XP_Grattage.mp4',
+           'Résultat +1 XP':'assets/animations/Tim_Animation_1XP_Vitre_Embuee.mp4',
+           'Résultat 0 XP':'assets/animations/Tim_Animation_0XP_Toc_Toc_Paume.mp4',
+           'Résultat -1 XP':'assets/animations/Tim_Animation_Minus1XP_Tete_Penaude.gif',
+           'Défi du jour':'assets/animations/Tim_Defi_Du_Jour_Valide.gif',
+           'Défi samedi':'assets/animations/Tim_Defi_Du_Samedi_10XP.gif',
+           'Défi dimanche +20 XP gagné':'assets/animations/Tim_Dimanche_Hologramme_20XP_Gagne.gif',
+           'Défi dimanche original MP4':'assets/animations/Tim_Defi_Du_Dimanche_20XP_Original.mp4',
+           'Défi dimanche original GIF':'assets/animations/Tim_Defi_Du_Dimanche_20XP_Original.gif',
+           'Défi bonus Parent':'assets/animations/Tim_Defi_Bonus_5XP.gif',
+           'Introduction du loup':'assets/loup-intro.gif',
+           'Jauge XP 0 à 75':'assets/barre-xp-original.png'
+          }
+          report=[]
+          errors=[]
+          for name,path in targets.items():
+           try:
+            req=Request(base+path,headers={'User-Agent':'Tim-Audit-Readonly/1.0'})
+            with urlopen(req,timeout=20) as r:
+             payload=r.read()
+             mime=r.headers.get('Content-Type','')
+             status=r.status
+            valid=len(payload)>50000
+            if path.endswith('.mp4'):valid=valid and b'ftyp' in payload[:24]
+            elif path.endswith('.png'):valid=valid and payload[:8]==b'\x89PNG\r\n\x1a\n'
+            elif path.endswith('.gif'):
+             valid=valid and payload[:6] in (b'GIF87a',b'GIF89a')
+            info=''
+            if valid and (path.endswith('.gif') or path.endswith('.png')):
+             img=Image.open(io.BytesIO(payload))
+             info=f'{img.size[0]}x{img.size[1]} · {getattr(img,"n_frames",1)} frame(s)'
+             if path.endswith('.gif'):valid=valid and img.n_frames>=8
+            report.append({'name':name,'file':path,'status':status,'bytes':len(payload),'mime':mime,'ok':valid,'info':info})
+            if not valid:errors.append(name+' (format incorrect)')
+           except Exception as e:
+            errors.append(name+' ('+str(e)[:130]+')')
+            report.append({'name':name,'file':path,'ok':False,'error':str(e)[:130]})
+          for filename,required in [
+           ('app.js',['barre-xp-original.png',"setCardImage?.(wolf,'daily'"]),
+           ('tim-animations.js',["daily:'Tim_Defi_Du_Jour_Valide.gif'",'Tim_Dimanche_Hologramme_20XP_Gagne.gif'])
+          ]:
+           try:
+            with urlopen(Request(base+filename+'?live-assets-20261111',headers={'User-Agent':'Tim-Audit-Readonly/1.0'}),timeout=20) as r:js=r.read().decode('utf-8')
+            ok=all(t in js for t in required)
+            report.append({'name':'Branchement '+filename,'ok':ok})
+            if not ok:errors.append('Référence non déployée dans '+filename)
+           except Exception as e:errors.append(filename+': '+str(e)[:130])
+          out=Path('audit-medias-live');out.mkdir(exist_ok=True)
+          (out/'rapport.json').write_text(json.dumps({'checks':report,'errors':errors},ensure_ascii=False,indent=2))
+          lines=['# Audit en production des 10 animations et de la jauge XP','','Date : 11 novembre 2026','',
+           'Lecture seule, aucune authentification et aucune note modifiée.','',
+           '| Élément | État | Détails |','|---|---|---|']
+          for row in report:lines.append('| '+row['name']+' | '+('OK' if row['ok'] else 'ERREUR')+' | '+str(row.get('info') or row.get('bytes',''))+' |')
+          if errors:lines.extend(['','## Problèmes',*('- '+x for x in errors)])
+          (out/'rapport.md').write_text('\n'.join(lines))
+          print('AUDIT MEDIAS '+json.dumps({'total':len(report),'ok':sum(x['ok'] for x in report),'errors':errors},ensure_ascii=False))
+          if errors:raise SystemExit(1)
+          PY
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: audit-10-animations-xp-live
+          path: audit-medias-live/
+          retention-days: 7
