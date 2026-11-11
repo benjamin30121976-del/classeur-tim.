@@ -859,7 +859,8 @@ async function startSession(user){
        const when=new Date(record.submittedAt||'');
        if(Number.isFinite(when.getTime()))
         note('Validé le '+when.toLocaleString('fr-FR',{timeZone:'Europe/Paris'}),'font-size:13px;color:#c3d8f2');
-       note('Note : '+record.score+'/'+record.total+' · 0 XP','font-weight:800;font-size:17px');
+       const mathXp=Number(record.xp??0),mathXpLabel=(mathXp>0?'+':'')+mathXp.toLocaleString('fr-FR');
+       note('Note : '+record.score+'/'+record.total+' · '+mathXpLabel+' XP','font-weight:800;font-size:17px');
        const errors=record.items.filter(q=>q.correct===false);
        note(errors.length?
          'Bilan : '+errors.length+' erreur'+(errors.length>1?'s':'')+'. Relire la leçon BIS « '+(lesson?.title||'Mathématiques')+' » et le cours ENT du même chapitre.':
