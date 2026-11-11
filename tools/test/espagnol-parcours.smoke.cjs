@@ -63,6 +63,24 @@ const out=path.join(process.cwd(),'test-espagnol-results');fs.mkdirSync(out,{rec
      throw Error('Visiteur : la validation doit rester inaccessible');
     if(await first.locator('button[type="submit"]').count())
      throw Error('Visiteur : bouton de validation présent');
+    // Lecture de maths en visiteur, avec les vraies 23 leçons BIS et un faux suivi en mémoire.
+    // Pas d'appel de validation ni d'écriture dans le compte de Tim.
+    await page.evaluate(()=>{
+     const root=document.createElement('div');root.id='test-math-reading';document.body.append(root);
+     window.TIM_MATH_PATH.render(root,{
+      lessons:window.TIM_MATHS_BIS_PACK.lessons,exercises:[],
+      back:()=>{},original:()=>{},exercise:()=>{},
+      progress:async()=>({attempts:[]})
+     });
+    });
+    const math=page.locator('#test-math-reading');
+    if(await math.locator('.math-lesson-entry').count()!==23)throw Error('Mathématiques : les 23 titres ne sont pas proposés directement');
+    await math.locator('.math-lesson-entry').first().click();
+    if(await math.locator('.math-reading-section').count()!==6)throw Error('Mathématiques : cours incomplet ou blocs absents');
+    if(!await math.locator('.math-reading-lesson').isVisible())throw Error('Mathématiques : la leçon ne s’ouvre pas directement');
+    if(await math.locator('.math-reading-actions').count()!==1)throw Error('Mathématiques : exercices absents en fin de leçon');
+    await page.screenshot({path:path.join(out,device+'-mathematiques-lecture.png'),fullPage:true});
+    await math.evaluate(node=>node.remove());
     if(errors.length)throw Error('Erreurs JavaScript : '+errors.join(' / '));
     await page.screenshot({path:path.join(out,device+'-espagnol-13-lecons.png'),fullPage:true});
     console.log('OK '+device+': 13 leçons, 39 exercices, aide, mode visiteur non validant');
