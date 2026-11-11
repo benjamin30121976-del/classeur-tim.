@@ -162,16 +162,50 @@ function viewBis(id){
  home);
  wire();
 }
+
+/* Aides courtes et différentes de la leçon, écrites pour chaque notion. */
+const MATH_RESCUE={
+ MBIS01:['Imagine un thermomètre : partir de −3 et monter de 7 degrés amène à +4. Le signe fait partie du nombre.','−3 + 7 = 4, car 7 est plus grand que 3.'],
+ MBIS02:['Deux fractions ne peuvent s’additionner que si leurs parts ont la même taille. Transforme-les d’abord au même dénominateur.','1/3 + 1/6 = 2/6 + 1/6 = 3/6 = 1/2.'],
+ MBIS03:['Une puissance est une multiplication répétée. Le petit chiffre ne veut pas dire « multiplier par ce chiffre ».','3⁴ = 3 × 3 × 3 × 3 = 81, et non 12.'],
+ MBIS04:['En écriture scientifique, le premier nombre est toujours entre 1 et 10. Puis une puissance de dix indique la taille du nombre.','4 520 = 4,52 × 10³ ; on a déplacé la virgule de trois rangs.'],
+ MBIS05:['Cherche d’abord l’angle droit, marqué par un petit carré. Le côté en face de cet angle est l’hypoténuse.','Si ABC est rectangle en A, le côté BC est l’hypoténuse.'],
+ MBIS06:['Pour trouver la diagonale (hypoténuse), additionne les carrés. Pour trouver un autre côté, soustrais les carrés.','13² − 5² = 169 − 25 = 144 ; la longueur cherchée vaut 12.'],
+ MBIS07:['Tu connais déjà les trois côtés : tu vérifies si les deux petits carrés additionnés donnent le carré du plus long.','Avec 3, 4 et 5 : 3² + 4² = 9 + 16 = 25 = 5² ; le triangle est rectangle.'],
+ MBIS08:['Même vérification, autre résultat : si les carrés ne sont pas égaux, le triangle n’est pas rectangle.','4² + 5² = 41, mais 6² = 36. Ce triangle n’est pas rectangle.'],
+ MBIS09:['Dans un problème concret, commence par dessiner le triangle et écrire les longueurs. Cherche l’angle droit avant la formule.','Dans un rectangle de 3 m sur 4 m, la diagonale vaut √(3² + 4²) = 5 m.'],
+ MBIS10:['La lettre x est simplement une place réservée à un nombre. Remplace-la par la valeur donnée pour comprendre le calcul.','Si x = 4, alors 3x + 2 = 3 × 4 + 2 = 14.'],
+ MBIS11:['Le nombre devant la parenthèse multiplie TOUS les termes à l’intérieur, même le deuxième.','3(x + 2) = 3 × x + 3 × 2 = 3x + 6.'],
+ MBIS12:['Avec deux parenthèses, compte quatre multiplications : chacun des deux termes de gauche avec chacun des deux termes de droite.','(x + 2)(x + 5) = x² + 5x + 2x + 10 = x² + 7x + 10.'],
+ MBIS13:['Écris le nombre de départ avec x. À chaque nouvelle consigne, transforme le résultat précédent, pas toujours x tout seul.','Choisir x, ajouter 3, puis multiplier par 7 donne 7(x + 3).'],
+ MBIS14:['Thalès parle de triangles construits avec des droites parallèles. Vérifie les parallèles avant d’écrire les fractions.','Si MN est parallèle à BC, alors AM/AB = AN/AC = MN/BC.'],
+ MBIS15:['Une fois les bonnes fractions écrites, cherche le nombre manquant par produit en croix.','3/9 = 4/x donne 3x = 36, donc x = 12.'],
+ MBIS16:['Garde toujours la même direction : petit côté sur grand côté pour toutes les fractions, ou l’inverse pour toutes.','AM/AB = AN/AC = MN/BC : ne retourne pas seulement la fraction du milieu.'],
+ MBIS17:['Une figure avec des parallèles appelle Thalès. Une série de consignes « choisir un nombre » appelle le calcul littéral. Ce sont deux questions différentes.','Choisir x, soustraire 9, multiplier par 2, ajouter 3x donne 2(x − 9) + 3x.'],
+ MBIS18:['Un problème long n’est pas un seul gros calcul : résous chaque petite question et réutilise la longueur trouvée pour la suivante.','Si CE = 30 m et ED = 10 m, alors CD = 40 m avant de calculer une diagonale.'],
+ MBIS19:['Avant de calculer, identifie la famille : nombres négatifs, fraction ou puissance. Applique ensuite sa règle propre.','(−2)² + 1/2 = 4 + 0,5 = 4,5.'],
+ MBIS20:['« Réduire » signifie regrouper ce qui se ressemble ; « développer » signifie multiplier dans les parenthèses.','3x + 4x = 7x, mais 2(x + 3) = 2x + 6.'],
+ MBIS21:['Pose une seule question avant de choisir : vois-tu un angle droit ou des droites parallèles ?','Angle droit → Pythagore. Droites parallèles avec côtés correspondants → Thalès.'],
+ MBIS22:['Ne révise pas cinq méthodes en même temps. Commence par un exercice de fractions, puis un de lettres, puis un de géométrie.','(x − 4)(x − 3) : fais les quatre produits, puis regroupe pour obtenir x² − 7x + 12.'],
+ MBIS23:['Une correction sert à trouver la PREMIÈRE ligne où ton calcul est devenu faux, pas seulement à recopier le résultat.','Si MN² = 20,25 m², alors MN = √20,25 = 4,5 m. Vérifie le sujet A ou B.']
+};
 function viewHelp(id){
  selected=id;group=groupOfId(id);const x=lesson(id);if(!x)return;
- const useful=(x.blocks||[]).filter(b=>['Comprendre','Méthode étape par étape','Exemples corrigés','Erreur fréquente'].includes(b.h));
- draw(header('Je n’ai pas compris : '+cleanTitle(x.title),'Niveau 3 · Revoir la notion autrement, sans question notée.')+back('Retour aux sous-leçons')+
- '<section class="spx-panel"><h3>Reprendre la méthode</h3><p>Relis chaque étape, puis regarde l’exemple corrigé et l’erreur à éviter.</p></section>'+
- useful.map(b=>b.kind==='bullets'?'<section class="spx-panel"><h3>'+esc(b.h)+'</h3><ol>'+b.items.map(t=>'<li>'+esc(t)+'</li>').join('')+'</ol></section>':
- '<section class="spx-panel"><h3>'+esc(b.h)+'</h3><p>'+esc(b.body||'')+'</p></section>').join('')+
- '<section class="spx-panel">'+sectionBtns(id)+'</section>',()=>category(group));
+ const help=MATH_RESCUE[id];
+ const notion=x.blocks.find(b=>b.h==='Comprendre');
+ const tip=x.blocks.find(b=>b.h==='Erreur fréquente');
+ draw(header('Je n’ai pas compris : '+cleanTitle(x.title),'On reprend une seule idée, sans exercice noté.')+
+  back('Retour à la leçon')+
+  '<article class="spx-panel math-help-page">'+
+  '<h3>Une autre façon de comprendre</h3><p>'+esc(help?.[0]||notion?.body||'Relis la règle puis l’exemple.')+'</p>'+
+  '<h3>Un exemple expliqué</h3><p class="math-help-example">'+esc(help?.[1]||'Regarde l’exemple corrigé du cours.')+'</p>'+
+  '<details><summary>L’erreur à éviter</summary><p>'+esc(tip?.body||'Vérifie les signes et les étapes du calcul.')+'</p></details>'+
+  '</article>'+
+  '<div class="math-reading-actions">'+btn('data-math-bis',id,'Revenir à la leçon complète')+'</div>',
+  ()=>viewBis(id));
  wire();
 }
+
 async function refreshProgress(){
  if(!options.progress)return grades;
  try{
