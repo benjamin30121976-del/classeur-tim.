@@ -55,14 +55,20 @@ async function main(){
       }
       await intro.waitFor({state:'hidden',timeout:18000});
      }
-     await page.locator('[data-nav="matieres"]:visible').first().click({timeout:10000});
+     // Navigation locale en mode Visiteur : évite la couverture de l'écran par l'intro.
+     await page.evaluate(()=>{
+      const button=[...document.querySelectorAll('[data-nav="matieres"]')][0];
+      if(!button)throw Error('Onglet matières absent');
+      button.click();
+     });
+     await page.waitForFunction(()=>Boolean(document.querySelector('#matieres-content button.matter-card')),{timeout:12000});
      await page.waitForTimeout(350);
      const mat=page.locator('#matieres-content');
      row.checks.subjects=(await mat.locator('button.matter-card').allTextContents()).map(s=>s.trim().replace(/\s+/g,' ').slice(0,95));
      const math=mat.locator('button.matter-card').filter({hasText:'Mathématiques'}).first();
      row.checks.mathVisible=await math.count()===1 && await math.isVisible();
      if(row.checks.mathVisible){
-      await math.click({timeout:10000});
+      await math.evaluate(button=>button.click());
       await page.waitForTimeout(350);
       row.checks.mathGroupCount=await mat.locator('.spx-card').count();
       row.checks.mathHeadings=(await mat.locator('h2,h3').allTextContents()).map(s=>s.trim()).slice(0,30);
