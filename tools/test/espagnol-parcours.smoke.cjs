@@ -3,7 +3,8 @@ const {chromium}=require('playwright');
 const fs=require('fs');const path=require('path');
 const out=path.join(process.cwd(),'test-espagnol-results');fs.mkdirSync(out,{recursive:true});
 (async()=>{
- const browser=await chromium.launch({headless:true});
+ const chrome=['/usr/bin/google-chrome','/usr/bin/google-chrome-stable','/usr/bin/chromium'].find(p=>fs.existsSync(p));
+ const browser=await chromium.launch({headless:true,...(chrome?{executablePath:chrome}:{}),args:['--no-sandbox']});
  try {
   for (const [device,width,height] of [['mobile',390,844],['desktop',1200,860]]) {
    const page=await browser.newPage({viewport:{width,height},deviceScaleFactor:1});
