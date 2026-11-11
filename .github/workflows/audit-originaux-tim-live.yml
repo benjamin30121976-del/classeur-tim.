@@ -1,0 +1,51 @@
+name: Contrôler exactitude des originaux sur le site public
+on:
+  push:
+    branches: [verif-originaux-tim-live-20261111]
+    paths: ['.github/workflows/audit-originaux-tim-live.yml']
+permissions:
+  contents: read
+jobs:
+  compare:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - name: Contrôler GitHub et les fichiers servis par Cloudflare
+        run: |
+          python - <<'PY'
+          from urllib.request import urlopen,Request
+          from hashlib import sha1
+          from pathlib import Path
+          import json
+          base="https://classeur-tim-v16.pages.dev/"
+          files={
+            "assets/animations/Tim_Defi_Du_Jour_Valide.gif":"b9e2e539dc10c9660ef72492b48af09c1b01494d",
+            "assets/barre-xp-original.png":"03699c1e938b1dc7f709412ff04859e2dc148ef2"
+          }
+          status=[]
+          for p,expected in files.items():
+            local=Path(p).read_bytes()
+            with urlopen(Request(base+p+"?original-tim-20261111-verify",headers={'Cache-Control':'no-cache'}),timeout=25) as r:
+              actual=r.read()
+              code=r.status
+            def digest(data):
+              return sha1(b"blob "+str(len(data)).encode()+bytes([0])+data).hexdigest()
+            local_hash=digest(local)
+            live_hash=digest(actual)
+            passed=code==200 and live_hash==expected and local_hash==expected
+            print("CONTROLE",p, "HTTP",code,"exact",passed,"github",local_hash,"public",live_hash)
+            status.append({'file':p,'github':local_hash,'public':live_hash,'expected':expected,'match':passed,'size':len(actual)})
+          text=Path('assets') / 'animations'
+          with urlopen(base+"tim-animations.js?original-tim-20261111-verify",timeout=25) as r:js=r.read().decode('utf-8')
+          with urlopen(base+"app.js?original-tim-20261111-verify",timeout=25) as r:app=r.read().decode('utf-8')
+          checks={
+            'dailyGifReference':"daily:'Tim_Defi_Du_Jour_Valide.gif'" in js,
+            'dayUsesDailyAnimation':"setCardImage?.(wolf,'daily'" in app,
+            'pngUsedAsXPBar':"picture.src='./assets/barre-xp-original.png'" in app,
+            'sundayUsesOriginalMP4':"sunday:'Tim_Defi_Du_Dimanche_20XP_Original.mp4'" in js,
+            'sundayUsesOriginalGifOnCard':"sundayCard:'Tim_Defi_Du_Dimanche_20XP_Original.gif'" in js
+          }
+          print("CODE DEPLOYE",json.dumps(checks,ensure_ascii=False))
+          assert all(a['match'] for a in status) and all(checks.values()),'Les originaux ou les références ne correspondent pas au site public'
+          PY
