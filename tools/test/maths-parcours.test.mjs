@@ -117,3 +117,22 @@ test('Le suivi Parent affiche les XP réels des mathématiques et le règlement 
  assert.ok(app.includes('Entraînements des leçons de mathématiques et d’espagnol'));
  assert.ok(app.includes('5 à 6/10 = +0,5 XP'));
 });
+
+test('Import privé des maths : interface Parent et refus du mode Visiteur',()=>{
+ const app=readFileSync(new URL('../../app.js',import.meta.url),'utf8');
+ const boot=readFileSync(new URL('../../boot.js',import.meta.url),'utf8');
+ const html=readFileSync(new URL('../../index.html',import.meta.url),'utf8');
+ const upload=readFileSync(new URL('../../maths-private-import.js',import.meta.url),'utf8');
+ const server=readFileSync(new URL('../../worker/server.mjs',import.meta.url),'utf8');
+ const rules=readFileSync(new URL('../../firestore.rules',import.meta.url),'utf8');
+ assert.match(html,/maths-private-import\.js/);
+ assert.match(app,/window\.TIM_MATH_PRIVATE_IMPORT\?\.render/);
+ assert.match(boot,/mathBankImport:async/);
+ assert.match(server,/permitted\(uid,'parent'\)/);
+ assert.match(server,/importMathPrivateQuiz:importMathPrivateQuiz/);
+ assert.match(upload,/!window\.__TIM_PARENT\|\|window\.__TIM_GUEST/);
+ assert.match(upload,/\.zip/);
+ assert.match(upload,/import interrompu/i);
+ assert.match(rules,/match \/\{document=\*\*\} \{ allow read, write: if false; \}/);
+ assert.doesNotMatch(upload,/correctIndex\s*:/);
+});
