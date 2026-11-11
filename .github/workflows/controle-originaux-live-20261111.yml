@@ -1,0 +1,22 @@
+name: Verification des originaux Tim sur le site public
+on:
+  push:
+    branches: [controle-visuel-originaux-20261111]
+    paths: ['.github/workflows/controle-originaux-live-20261111.yml']
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          npm install --prefix /tmp/tim-audit --no-audit --no-fund playwright
+          if ! command -v google-chrome >/dev/null 2>&1 && ! command -v chromium >/dev/null 2>&1; then
+             /tmp/tim-audit/node_modules/.bin/playwright install chromium
+          fi
+      - name: Ouvrir les vrais fichiers du site et comparer leurs empreintes
+        env:
+          NODE_PATH: /tmp/tim-audit/node_modules
+        run: node tools/test/audit-originaux-en-ligne.cjs
