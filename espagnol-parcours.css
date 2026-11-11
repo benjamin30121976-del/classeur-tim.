@@ -269,3 +269,53 @@
 #matieres-content .tim-es-exercises{margin:25px 0 6px;padding:10px 13px;border:1px solid #b9cee4;border-radius:12px;background:#f3f7fc}
 #matieres-content .tim-es-exercises>summary{color:#254776!important}
 #matieres-content .tim-es-results{margin-bottom:26px}
+
+/* Lecture scolaire simple : ouvrir une leçon donne un seul document continu.
+   Les exercices restent repliés sous le cours. Ne modifie aucun contenu ENT. */
+#matieres-content details.tim-es-lesson[open]{
+  background:#fff!important;
+  border:1px solid #bccbe0!important;
+  color:#263448!important;
+  overflow:hidden;
+}
+#matieres-content details.tim-es-lesson[open] > summary{
+  background:#eef4fc!important;
+  color:#243c70!important;
+  border-bottom:1px solid #dce6f1;
+}
+#matieres-content details.tim-es-lesson .tim-es-reading{
+  background:#fff;
+  color:#25344b;
+  line-height:1.7;
+  padding:4px 0 10px;
+}
+#matieres-content .tim-es-reading > details.ent-es-bis,
+#matieres-content .tim-es-reading > details.ent-es-bis-l01{
+  border:0!important;
+  border-radius:0!important;
+  background:#fff!important;
+  color:#243448!important;
+  margin:0!important;
+  padding:4px 0 12px!important;
+}
+#matieres-content .tim-es-reading > details.ent-es-bis > div,
+#matieres-content .tim-es-reading > details.ent-es-bis-l01 > div{
+  color:#25344b!important;
+  line-height:1.75!important;
+}
+#matieres-content .tim-es-reading h4{
+  margin-top:22px!important;
+  line-height:1.35;
+}
+#matieres-content details.tim-es-lesson .tim-es-exercises{
+  margin-top:20px;
+  border-top:1px solid #dce6f1;
+}
+#matieres-content details.tim-es-lesson .tim-es-exercises>summary{
+  padding:15px 0!important;
+  color:#264c79!important;
+}
+@media(max-width:600px){
+  #matieres-content details.tim-es-lesson .tim-es-reading{padding:4px 0 10px}
+  #matieres-content details.tim-es-lesson[open]>summary{padding:14px 13px!important}
+}
