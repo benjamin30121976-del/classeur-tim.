@@ -58,13 +58,15 @@
  function playResult(ex,saved){
   const xp=Number(saved?.xp);
   if(!Number.isFinite(xp))return Promise.resolve();
-  if(ex?.kind==='sunday'&&xp===20)return play('sunday');
+  // Animation du dimanche non validée : conserver l'affichage actuel sans nouveau média.
+  if(ex?.kind==='sunday')return Promise.resolve();
   if(ex?.kind!=='daily')return Promise.resolve();
   return play(xp===3?'plus3':xp===2?'plus2':xp===1?'plus1':xp===0?'zero':xp===-1?'minus1':null);
  }
  // Utilisé pour les cartes de défis. Préserve l'ancienne image en cas d'asset manquant.
  function setCardImage(img,key,fallback){
-  if(!img||!files[key])return;
+  // Le dimanche garde son illustration originale tant que la nouvelle est à revoir.
+  if(!img||!files[key]||key==='sundayCard')return;
   img.onerror=()=>{img.onerror=null;img.src=fallback;};
   img.src=url(key);
  }
