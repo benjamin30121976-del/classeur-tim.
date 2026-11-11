@@ -73,3 +73,13 @@
  .math-path .math-chapter-entry span{font-size:12px}
  .math-path #math-quiz .spx-training-question>p{font-size:18px}
 }
+
+
+/* Une explication de secours, au lieu d'une deuxième mosaïque de boutons. */
+.math-path .math-help-page{padding:21px 22px;background:#fff;color:#25394f;line-height:1.7}
+.math-path .math-help-page h3{font-size:18px;color:#244872;margin:8px 0}
+.math-path .math-help-page p{font-size:16px;line-height:1.7;margin:8px 0 20px}
+.math-path .math-help-example{font-weight:700;border-left:3px solid #7c98b8;padding:10px 13px;background:#f7f9fd}
+.math-path .math-help-page details{margin-top:18px;border-top:1px solid #dce6f0;padding-top:14px}
+.math-path .math-help-page details summary{cursor:pointer;font-weight:750;color:#31567e}
+@media(max-width:600px){.math-path .math-help-page{padding:17px 15px}}
