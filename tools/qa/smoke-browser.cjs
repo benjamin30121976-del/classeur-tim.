@@ -43,6 +43,28 @@ async function run(device,browser){
     record('Exercices publics chargés',catalog.exercises.length>0,'Quantité : '+catalog.exercises.length);
     await page.locator('[data-nav="matieres"]:visible').first().click();
     record('Page matières',await page.locator('#matieres.page.active').count()>0);
+    // Le parcours espagnol réellement affiché est TIM_SPANISH_ENT_EXACT,
+    // qui s'appuie sur TIM_SPANISH_SIMPLIFIED (pas sur l'ancien TIM_SPANISH_PATH).
+    const spanish=page.locator('#matieres-content button.matter-espanol');
+    record('Espagnol accessible depuis les matières',await spanish.count()>0&&await spanish.isEnabled());
+    if(await spanish.isEnabled()){
+      await spanish.click();
+      const list=page.locator('#matieres-content details.tim-es-lesson');
+      const amount=await list.count();
+      record('13 leçons espagnoles affichées',amount===13,'Leçons : '+amount);
+      for(let i=0;i<amount;i++){
+        const card=list.nth(i);
+        await card.locator('summary').first().click();
+        await card.locator('.tim-es-reading').waitFor({state:'visible',timeout:10000});
+        const body=(await card.locator('.tim-es-reading').innerText()).trim();
+        const exerciseButtons=await card.locator('.tim-es-exercises button[data-es-training-id]').count();
+        record('Lecture espagnol '+(i+1),body.length>=70,'Texte : '+body.length+' caractères');
+        record('Exercices proposés espagnol '+(i+1),exerciseButtons===3,'Boutons : '+exerciseButtons);
+        if(i===0)await page.screenshot({path:dir+'/'+device+'-espagnol-lecon.png',fullPage:true,animations:'disabled'});
+        await card.locator('button.tim-es-back').click();
+        await list.nth(i).waitFor({state:'visible',timeout:5000});
+      }
+    }
     if(catalog.lessons.length){
       await page.evaluate(id=>window.openLesson(id),catalog.lessons[0].id);
       const title=page.locator('#lesson-detail.active h2');
