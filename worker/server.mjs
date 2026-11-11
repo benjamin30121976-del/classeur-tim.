@@ -196,7 +196,10 @@ export async function importMathPrivateQuiz(db,uid,payload){
  const tx=await db.transaction();
  const existing=await db.get(path,tx);
  if(existing){
-  if(existing.version===MATH_BANK_VERSION&&existing.payloadJson===raw)
+  // The real Firestore reader unwraps payloadJson automatically. Do not reject
+  // an identical re-import of a quiz that was already saved successfully.
+  const stored=typeof existing.payloadJson==='string'?existing.payloadJson:JSON.stringify(existing);
+  if(existing.version===MATH_BANK_VERSION&&stored===raw)
    return {saved:true,id,unchanged:true};
   throw new ApiFault(409,'math-bank-already-installed');
  }

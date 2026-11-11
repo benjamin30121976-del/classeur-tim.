@@ -5,7 +5,7 @@ import assert from 'node:assert/strict';
 import {mathId, mathTask, mathPublicTask, gradeMathTask, MATH_TOTAL} from '../maths-training-curriculum.mjs';
 import {getMathTrainingTask, submitMathTraining, getMathTrainingProgress,importMathPrivateQuiz} from '../server.mjs';
 import {MATH_BANK_VERSION,mathPublicTaskPrivate,gradeMathTaskPrivate} from '../math-private-kv.mjs';
-import {fromFields} from '../firestore.mjs';
+import {fromFields,fromDocument,toFields} from '../firestore.mjs';
 import {TIM_UID, PARENT_UID} from '../auth.mjs';
 
 function allTasks() {
@@ -294,4 +294,29 @@ test('Parent ZIP import is readable from Firestore without KV and safe to retry'
  assert.equal(result.score,10);
  assert.equal(result.xp,1);
  await assert.rejects(()=>importMathPrivateQuiz(db,TIM_UID,{id,fragment}),e=>e.status===403);
+});
+
+test('Production Firestore REST unwrapping: all 23 imported quizzes open without using Tim attempts',async()=>{
+ const db=mockFirestore(),bank=await mathEnv.TIM_MATH_PRIVATE_KV.get(MATH_BANK_VERSION,'json');
+ const originalGet=db.get.bind(db);
+ // In production, Firestore REST fromDocument() parses payloadJson and
+ // returns the underlying fragment, unlike the plain in-memory mock.
+ db.get=async(path,tx)=>{
+  const row=await originalGet(path,tx);
+  return row?fromDocument({fields:toFields(row)}):null;
+ };
+ for(let n=1;n<=23;n++){
+  const id='MT'+String(n).padStart(2,'0');
+  const fragment={id,version:MATH_BANK_VERSION,public:bank.public.quizzes[id],private:bank.private.quizzes[id]};
+  const installed=await importMathPrivateQuiz(db,PARENT_UID,{id,fragment});
+  assert.equal(installed.saved,true);
+  assert.equal((await importMathPrivateQuiz(db,PARENT_UID,{id,fragment})).unchanged,true);
+  const task=await getMathTrainingTask(db,TIM_UID,{id},{});
+  assert.equal(task.completed,false);
+  assert.equal(task.task.questions.length,10);
+  assert.ok(task.task.questions.every(q=>typeof q.prompt==='string'&&q.choices.length===4));
+  assert.equal(JSON.stringify(task.task).includes('correctIndex'),false);
+ }
+ assert.equal(db.data.size,23);
+ assert.equal([...db.data.keys()].filter(x=>x.startsWith('mathTrainingAttempts/')).length,0);
 });

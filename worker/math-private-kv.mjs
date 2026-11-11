@@ -28,11 +28,15 @@ async function loadQuiz(env,db,id){
  }
  if(!db||typeof db.get!=='function')throw Error('math-bank-unavailable');
  const record=await db.get('mathPrivateQuizzes/'+id);
- if(!record||record.version!==MATH_BANK_VERSION||typeof record.payloadJson!=='string')
-  throw Error('math-bank-unavailable');
- let fragment;
- try{fragment=JSON.parse(record.payloadJson);}
- catch{throw Error('math-bank-invalid');}
+ if(!record)throw Error('math-bank-unavailable');
+ // Firestore REST fromDocument() unwraps payloadJson before returning the document.
+ // Mock databases may still return the stored wrapper; both representations are supported.
+ let fragment=record;
+ if(typeof record.payloadJson==='string'){
+  try{fragment=JSON.parse(record.payloadJson);}
+  catch{throw Error('math-bank-invalid');}
+ }
+ if(fragment?.version!==MATH_BANK_VERSION)throw Error('math-bank-unavailable');
  validateMathFragment(fragment,id);
  return extract({public:{quizzes:{[id]:fragment.public}},private:{quizzes:{[id]:fragment.private}}},id);
 }
