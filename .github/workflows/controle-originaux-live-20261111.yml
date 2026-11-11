@@ -2,7 +2,7 @@ name: Verification des originaux Tim sur le site public
 on:
   push:
     branches: [controle-visuel-originaux-20261111]
-    paths: ['.github/workflows/controle-originaux-live-20261111.yml']
+    paths: ['.github/workflows/controle-originaux-live-20261111.yml', 'tools/test/audit-originaux-en-ligne.cjs']
 permissions:
   contents: read
 jobs:
