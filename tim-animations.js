@@ -3,6 +3,7 @@
 (()=>{'use strict';
  const root='./assets/animations/';
  const files={
+  daily:'Tim_Defi_Du_Jour_Valide.gif',
   plus3:'Tim_Animation_3XP_Mouche.mp4',
   plus2:'Tim_Animation_2XP_Grattage.mp4',
   plus1:'Tim_Animation_1XP_Vitre_Embuee.mp4',

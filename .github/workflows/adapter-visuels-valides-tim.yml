@@ -1,0 +1,42 @@
+name: Adapter formats des 2 visuels valides de Tim
+on:
+  push:
+    branches: [corriger-medias-animations-tim-20261111]
+    paths: ['.github/workflows/adapter-visuels-valides-tim.yml']
+permissions:
+  contents: write
+jobs:
+  convertir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: python -m pip install --disable-pip-version-check pillow==11.3.0
+      - name: Conserver visuels et generer GIF/PNG
+        run: python scripts/conserver-animations-gif-png.py
+      - name: Valider animation et jauge sans utilisateur ni note
+        run: |
+          python - <<'PY'
+          from PIL import Image
+          a=Image.open('assets/animations/Tim_Defi_Du_Jour_Valide.gif')
+          b=Image.open('assets/loup-defi-original.webp')
+          c=Image.open('assets/barre-xp-original.png')
+          assert a.n_frames==b.n_frames>=12
+          assert a.size==b.size
+          assert c.size==(1536,512)
+          print('OK formats',a.n_frames,'images,',c.size)
+          PY
+      - name: Publier les medias uniquement sur la branche de travail
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/animations/Tim_Defi_Du_Jour_Valide.gif assets/barre-xp-original.png
+          if ! git diff --cached --quiet; then
+            git commit -m 'Add approved daily-challenge GIF and 0–75 XP PNG'
+            git push origin HEAD:corriger-medias-animations-tim-20261111
+          fi

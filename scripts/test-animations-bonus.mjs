@@ -15,6 +15,7 @@ const checks=[
 ];
 for(const [name,expected,actual] of checks){assert.equal(actual,expected,name);console.log('OK',name);}
 const files=[
+ 'Tim_Defi_Du_Jour_Valide.gif',
  'Tim_Animation_3XP_Mouche.mp4','Tim_Animation_2XP_Grattage.mp4',
  'Tim_Animation_1XP_Vitre_Embuee.mp4','Tim_Animation_0XP_Toc_Toc_Paume.mp4',
  'Tim_Animation_Minus1XP_Tete_Penaude.gif','Tim_Defi_Du_Samedi_10XP.gif',
@@ -26,7 +27,14 @@ for(const file of files){
  assert.ok(src.includes(file),'Référence manquante '+file);
  if(!existsSync('assets/animations/'+file))console.warn('MÉDIA EN ATTENTE : '+file);
 }
+const app=readFileSync('app.js','utf8');
+assert.ok(app.includes("setCardImage?.(wolf,'daily'"),'Animation du défi du jour non branchée');
+assert.ok(app.includes("barre-xp-original.png"),'Barre XP PNG non branchée');
+assert.ok(existsSync('assets/barre-xp-original.png'),'Image PNG originale absente');
+assert.ok(existsSync('assets/loup-intro.gif'),'Introduction du loup absente');
+assert.ok(existsSync('assets/animations/Tim_Defi_Du_Dimanche_20XP_Original.mp4'),'MP4 du dimanche absent');
+assert.ok(existsSync('assets/animations/Tim_Defi_Du_Dimanche_20XP_Original.gif'),'Version GIF du dimanche absente');
 const backend=readFileSync('functions/index.mjs','utf8');
 for(const func of ['assignParentBonus','getParentBonus','submitTimExercise'])
  assert.ok(backend.includes('export const '+func+'=onCall('),'Fonction manquante '+func);
-console.log('10 vérifications XP réussies ;',files.length,'médias attendus.');
+console.log('10 vérifications XP réussies ; 10 animations validées (5 résultats, 4 défis, introduction) et barre PNG.');
