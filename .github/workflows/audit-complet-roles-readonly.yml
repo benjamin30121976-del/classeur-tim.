@@ -1,0 +1,38 @@
+name: Audit complet Parent Tim Visiteur (lecture seule)
+on:
+  push:
+    branches:
+      - audit-complet-classeur-roles-20261111
+    paths:
+      - '.github/workflows/audit-complet-roles-readonly.yml'
+      - 'outils/audit-parcours-trois-espaces.cjs'
+permissions:
+  contents: read
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+      TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
+      TIM_STUDENT_EMAIL: ${{ secrets.TIM_STUDENT_EMAIL }}
+      TIM_STUDENT_PASSWORD: ${{ secrets.TIM_STUDENT_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer Playwright
+        run: |
+          npm install --prefix /tmp/tim-audit --no-audit --no-fund playwright
+          /tmp/tim-audit/node_modules/.bin/playwright install chromium
+      - name: Contrôler les trois comptes en lecture seule
+        env:
+          NODE_PATH: /tmp/tim-audit/node_modules
+        run: node outils/audit-parcours-trois-espaces.cjs
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: bilan-audit-parent-tim-visiteur-sans-donnees-privees
+          path: audit-complet-roles/
+          retention-days: 7
