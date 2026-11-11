@@ -49,10 +49,3 @@
 .math-path .math-topic-group{margin:25px 0}
 .math-path .math-topic-group h3{font-size:18px;color:#e1ebf7;margin:0 0 12px;padding:0 3px}
 .math-path .math-topic-group .math-lesson-list{margin:0}
-
-/* Les actions sont secondaires : la leçon est un document à lire, pas une grille d'options. */
-.math-path details.math-reading-actions{background:#f4f8fc;color:#253e59}
-.math-path details.math-reading-actions>summary{cursor:pointer;font-weight:800;font-size:17px;color:#24547f;padding:3px 0}
-.math-path details.math-reading-actions .math-reading-next{padding-top:12px}
-.math-path .math-reading-return{margin:20px 0}
-.math-path .math-reading-return>.spx-quick-link{display:block;width:100%;background:#f4f8fc!important}

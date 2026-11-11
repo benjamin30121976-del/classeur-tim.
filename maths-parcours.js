@@ -110,7 +110,7 @@ function listPage(id,title,rows,kind){
  back('Retour aux sous-leçons')+
  '<div class="spx-panel"><p>Les fiches restent originales. Plusieurs séances ENT peuvent porter sur la même notion ; choisis celle que tu veux consulter.</p>'+
  (rows.length?rows.map(x=>'<button class="spx-row" type="button" data-math-open-'+kind+'="'+esc(x.id)+'"><span class="spx-chip">▤</span><span><strong>'+esc(x.title)+'</strong><small>'+esc(x.date||x.summary||'Document du professeur')+'</small></span></button>').join(''):'<p>Aucune fiche ENT associée à cette rubrique pour le moment.</p>')+
- '</div><div class="math-reading-return">'+btn('data-math-bis',id,'Revenir à la leçon')+'</div>',()=>category(group));
+ '</div>'+sectionBtns(id),()=>category(group));
  wire();
 }
 function viewEnt(id){listPage(id,'Leçons ENT — '+groupOfId(id).name,entFor(groupOfId(id)),'original');}
@@ -154,10 +154,10 @@ function viewBis(id){
  draw(header(cleanTitle(x.title),'Lis la leçon du début à la fin.')+
  back('Retour à toutes les leçons')+
  '<article class="spx-panel math-reading-lesson">'+blocks(x,'bis')+'</article>'+
- '<details class="math-reading-actions"><summary>Après la leçon : exercices et aide</summary><div class="math-reading-next">'+
+ '<div class="math-reading-actions"><h3>Après la leçon</h3>'+
  btn('data-math-help',id,'Je n’ai pas compris')+
  btn('data-math-train',id,'Faire les 10 questions')+
- '</div></details>'+
+ '</div>'+
  (hasEnt||hasEntEx||id==='MBIS13'?'<details class="math-reading-docs"><summary>Documents et exercices du professeur (ENT)</summary>'+
  (hasEnt?btn('data-math-ent',id,'Voir les cours du professeur'):'')+
  (hasEntEx?btn('data-math-ex',id,'Voir les exercices du professeur'):'')+
@@ -173,7 +173,7 @@ function viewHelp(id){
  '<section class="spx-panel"><h3>Reprendre la méthode</h3><p>Relis chaque étape, puis regarde l’exemple corrigé et l’erreur à éviter.</p></section>'+
  useful.map(b=>b.kind==='bullets'?'<section class="spx-panel"><h3>'+esc(b.h)+'</h3><ol>'+b.items.map(t=>'<li>'+esc(t)+'</li>').join('')+'</ol></section>':
  '<section class="spx-panel"><h3>'+esc(b.h)+'</h3><p>'+esc(b.body||'')+'</p></section>').join('')+
- '<div class="math-reading-return">'+btn('data-math-bis',id,'Revenir à la leçon complète')+'</div>',()=>category(group));
+ '<section class="spx-panel">'+sectionBtns(id)+'</section>',()=>category(group));
  wire();
 }
 async function refreshProgress(){
