@@ -39,23 +39,48 @@ const out=path.join(process.cwd(),'test-espagnol-results');fs.mkdirSync(out,{rec
     let trainingCount=0;
     for(let i=0;i<13;i++){
      const card=cards.nth(i);
-     await card.locator('summary').first().click();
+     await card.locator(':scope > summary').click();
+     if(!await card.evaluate(node=>node.open))throw Error('Leçon '+(i+1)+' ne s’ouvre pas directement');
+     if(!(await card.locator('.tim-es-reading').innerText()).trim())throw Error('Leçon '+(i+1)+' sans contenu affiché');
+     if(await card.locator('.tim-es-exercises').evaluate(el=>el.open))throw Error('Exercices visibles avant la fin du cours');
+     if(await card.getByText('Lire et écouter la leçon').count())throw Error('Bouton de lecture intermédiaire toujours présent');
      const choices=card.locator('[data-es-training-id]');
      if(await choices.count()!==3)throw Error('Trois entraînements manquants pour la leçon '+(i+1));
      trainingCount+=await choices.count();
+     await card.locator('.tim-es-back').click();
+     if(await cards.filter({visible:true}).count()!==13)throw Error('Retour à la liste des 13 leçons impossible');
     }
     if(trainingCount!==39)throw Error('39 exercices espagnols attendus');
     const first=cards.first();
-    await first.locator('button').filter({hasText:'Lire et écouter la leçon'}).first().click();
-    if(!(await first.innerText()).includes('Masquer la leçon'))
-     throw Error('Leçon simplifiée inaccessible');
+    await first.locator(':scope > summary').click();
+    const text=await first.locator('.tim-es-reading').innerText();
+    if(!text.trim()||!text.includes('Comprendre'))throw Error('Leçon simplifiée inaccessible');
     if(await subject.locator('.tim-letter-original').count())
      throw Error('Document personnel privé visible en visiteur');
+    await first.locator('.tim-es-exercises > summary').click();
     await first.locator('[data-es-training-id]').first().click();
     if(!(await first.innerText()).includes('Connexion au suivi impossible'))
      throw Error('Visiteur : la validation doit rester inaccessible');
     if(await first.locator('button[type="submit"]').count())
      throw Error('Visiteur : bouton de validation présent');
+    // Lecture de maths en visiteur, avec les vraies 23 leçons BIS et un faux suivi en mémoire.
+    // Pas d'appel de validation ni d'écriture dans le compte de Tim.
+    await page.evaluate(()=>{
+     const root=document.createElement('div');root.id='test-math-reading';document.body.append(root);
+     window.TIM_MATH_PATH.render(root,{
+      lessons:window.TIM_MATHS_BIS_PACK.lessons,exercises:[],
+      back:()=>{},original:()=>{},exercise:()=>{},
+      progress:async()=>({attempts:[]})
+     });
+    });
+    const math=page.locator('#test-math-reading');
+    if(await math.locator('.math-lesson-entry').count()!==23)throw Error('Mathématiques : les 23 titres ne sont pas proposés directement');
+    await math.locator('.math-lesson-entry').first().click();
+    if(await math.locator('.math-reading-section').count()!==6)throw Error('Mathématiques : cours incomplet ou blocs absents');
+    if(!await math.locator('.math-reading-lesson').isVisible())throw Error('Mathématiques : la leçon ne s’ouvre pas directement');
+    if(await math.locator('.math-reading-actions').count()!==1)throw Error('Mathématiques : exercices absents en fin de leçon');
+    await page.screenshot({path:path.join(out,device+'-mathematiques-lecture.png'),fullPage:true});
+    await math.evaluate(node=>node.remove());
     if(errors.length)throw Error('Erreurs JavaScript : '+errors.join(' / '));
     await page.screenshot({path:path.join(out,device+'-espagnol-13-lecons.png'),fullPage:true});
     console.log('OK '+device+': 13 leçons, 39 exercices, aide, mode visiteur non validant');

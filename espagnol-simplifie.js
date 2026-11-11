@@ -279,11 +279,13 @@ async function render(root,opts={},helpers={}){
  if(typeof opts.back==='function'){back.onclick=opts.back;root.append(back);}
  const heading=el('h2','Espagnol — Mes leçons');heading.style.cssText='margin:18px 0 9px;color:inherit;font-size:24px';
  root.append(heading);
- p(root,'13 leçons, avec 3 exercices d’entraînement chacune. Lis, écoute, réponds puis consulte immédiatement tes corrections.','font-size:16px;color:inherit;line-height:1.6;margin:5px 0 16px');
- const resultSlot=el('div');root.append(resultSlot);
+ p(root,'Choisis une leçon : elle s’ouvre et tu peux la lire directement.','font-size:16px;color:inherit;line-height:1.6;margin:5px 0 16px');
+ const results=el('details');results.className='tim-es-results';
+ const resultsHeading=el('summary','Mes résultats et corrections');results.append(resultsHeading);
+ const resultSlot=el('div');results.append(resultSlot);
  const bridge=window.__TIM_BRIDGE||{};
  let attempts=[],loaded=false;
- const progressStatus=p(root,'Chargement du suivi des exercices…','font-size:13px;color:#96aad1');
+ const progressStatus=p(results,'Chargement du suivi des exercices…','font-size:13px;color:#536987');
  const refresh=async()=>{
   if(window.__TIM_GUEST){
    loaded=false;
@@ -305,26 +307,37 @@ async function render(root,opts={},helpers={}){
    summaryOf(attempts,resultSlot);
   }
  };
+ const lessonCards=[];
+ let activeCard=null;
  LESSONS.forEach(([entId,date,name],li)=>{
   const index=li+1,card=css(el('details',undefined,'tim-es-lesson'),ST.card);
-  const label=css(el('summary','Leçon '+index+' — '+name+' · '+date),ST.summary);
+  const label=css(el('summary','Leçon '+index+' — '+name),ST.summary);
+  label.title='Séance du '+date;
   card.append(label);
-  const inner=css(el('div'),'padding:0 13px 14px');
-  const learn=button('Lire et écouter la leçon');
-  learn.style.marginBottom='8px';
-  const lessonSlot=el('div');lessonSlot.hidden=true;let lessonReady=false;
+  const inner=css(el('div'),'padding:0 13px 18px');
+  const returnToList=button('← Choisir une autre leçon');
+  returnToList.className='tim-es-back';
+  returnToList.style.cssText='margin:7px 0 13px;min-height:40px;background:#eef3fb!important;border:1px solid #bbcce1!important;color:#2d4d77!important;padding:8px 12px;border-radius:9px;font-weight:700';
+  returnToList.onclick=()=>{
+   card.open=false;
+   activeCard=null;
+   lessonCards.forEach(other=>{other.hidden=false;});
+   root.scrollIntoView?.({block:'start'});
+  };
+  const lessonSlot=el('div');lessonSlot.className='tim-es-reading';
+  let lessonReady=false;
   const openLesson=()=>{
    if(!lessonReady){inlineLesson(lessonSlot,entId,helpers.appendL01);lessonReady=true;}
-   lessonSlot.hidden=false;learn.textContent='Masquer la leçon';
-   lessonSlot.scrollIntoView?.({behavior:'smooth',block:'nearest'});
+   lessonSlot.hidden=false;
   };
-  learn.onclick=()=>{
-   if(lessonSlot.hidden)openLesson();
-   else {lessonSlot.hidden=true;learn.textContent='Lire et écouter la leçon';}
-  };
-  inner.append(learn,lessonSlot);
-  const trainer=css(el('h3','Mes 3 exercices'),ST.h);inner.append(trainer);
-  p(inner,'Une seule validation par exercice. Le résultat, les explications et les XP gagnés apparaissent immédiatement après l’envoi.');
+  inner.append(returnToList,lessonSlot);
+  const exerciseSection=el('details');exerciseSection.className='tim-es-exercises';
+  const exerciseHeading=el('summary','Après la leçon — faire les 3 exercices');
+  exerciseHeading.style.cssText='cursor:pointer;font-weight:800;font-size:16px;color:#294a79;padding:11px 5px';
+  exerciseSection.append(exerciseHeading);
+  const exerciseBody=el('div');
+  const trainer=css(el('h3','Mes 3 exercices'),ST.h);exerciseBody.append(trainer);
+  p(exerciseBody,'Une seule validation par exercice. Note et correction après l’envoi.');
   const rows=el('div');rows.style.cssText='display:grid;grid-template-columns:minmax(0,1fr);gap:8px';
   const work=el('div');work.style.cssText='margin-top:13px';
   for(let i=1;i<=3;i++){
@@ -357,9 +370,27 @@ async function render(root,opts={},helpers={}){
    };
    rows.append(b);
   }
-  inner.append(rows,work);card.append(inner);root.append(card);
+  exerciseBody.append(rows,work);exerciseSection.append(exerciseBody);
+  inner.append(exerciseSection);card.append(inner);root.append(card);
+  lessonCards.push(card);
+  // Ouvrir le cours pendant le clic, sans attendre l'événement toggle asynchrone.
+  label.addEventListener('click',()=>{if(!card.open)openLesson();});
+  card.addEventListener('toggle',()=>{
+   if(card.open){
+    activeCard=card;
+    lessonCards.forEach(other=>{if(other!==card){other.open=false;other.hidden=true;}});
+    openLesson();
+   }else if(activeCard===card){
+    activeCard=null;
+    lessonCards.forEach(other=>{other.hidden=false;});
+   }
+  });
   if(opts.openLessonId===entId){card.open=true;openLesson();}
  });
+ if(activeCard)lessonCards.forEach(other=>{if(other!==activeCard)other.hidden=true;});
+ results.style.cssText='margin:20px 0;padding:14px;border:1px solid #b8cce3;border-radius:12px;background:#f3f7fc;color:#253b59';
+ resultsHeading.style.cssText='cursor:pointer;font-size:16px;font-weight:800';
+ root.append(results);
  refresh();
 }
 window.TIM_SPANISH_SIMPLIFIED={render,lessons:LESSONS.map((x,i)=>({id:x[0],num:i+1,name:x[2]}))};
