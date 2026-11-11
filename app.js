@@ -519,6 +519,42 @@ function makeAttachmentAdminPanel(){
  box.append(E('p','small','Matière'),subject,E('p','small','Rattacher à'),target,E('p','small','Titre visible dans le classeur'),label,E('p','small','Fichier'),file,send,state);
  return box;
 }
+// Nouveau défi bonus attribué par le Parent. Les trois bonus ordinaires restent inchangés.
+function parentBonusPanel(){
+ const box=E('section','panel');
+ box.append(E('h3','','Défi bonus personnalisé · +5 XP'),
+  E('p','small','Choisis un exercice de 10 questions minimum. Tim verra le cadeau surprise et pourra valider une seule fois. +5 XP si au moins 85 % des réponses sont justes.'));
+ const current=window.__TIM_BONUS_PARENT,attempt=current&&attemptFor(current.id);
+ if(current)box.append(E('p','note info','Défi actuel : '+current.title+(attempt?' · Terminé · '+Number(attempt.xp||0)+' XP':' · En attente de Tim')));
+ const candidates=DATA.exercises.filter(ex=>!ex.kind&&Array.isArray(ex.questions)&&ex.questions.length>=10&&!attemptFor(ex.id)&&ex.enabled!==false)
+  .sort((a,b)=>(a.subject||'').localeCompare(b.subject||'','fr')||a.title.localeCompare(b.title,'fr'));
+ const select=E('select','attachment-select');select.setAttribute('aria-label','Exercice à offrir en défi bonus');
+ select.append(new Option('Choisir un exercice…',''));
+ for(const ex of candidates)select.append(new Option((ex.subject||'Cours')+' · '+ex.title+' ('+ex.questions.length+' questions)',ex.id));
+ const status=E('p','small','Une nouvelle attribution remplace le défi bonus précédent, sans effacer les notes déjà enregistrées.');
+ const launch=button('Attribuer ce défi bonus à Tim',async()=>{
+  if(!select.value){status.textContent='Choisis un exercice.';return;}
+  if(!confirm('Attribuer ce défi bonus de 5 XP à Tim ?'))return;
+  launch.disabled=true;status.textContent='Attribution sécurisée en cours…';
+  try{await window.__TIM_BRIDGE.assignParentBonus(select.value);renderParent();}
+  catch(error){status.textContent='Attribution impossible : '+(error?.message||error);launch.disabled=false;}
+ },'btn');
+ if(!candidates.length){select.disabled=true;launch.disabled=true;status.textContent='Aucun exercice inédit de 10 questions n’est disponible.';}
+ box.append(select,launch,status);
+ return box;
+}
+function timBonusPanel(){
+ const ex=window.__TIM_BONUS_PARENT,empty=document.createDocumentFragment();
+ if(!ex)return empty;
+ const done=attemptFor(ex.id),box=E('section','panel');
+ box.append(E('h3','','Cadeau surprise · Défi bonus du Parent'),
+  E('p','small',done?'Défi terminé. Tu peux consulter ta note et ton corrigé.':'Un exercice choisi spécialement pour toi · jusqu’à +5 XP · une seule tentative.'));
+ box.append(button(done?'Voir mon défi bonus terminé':'Découvrir mon défi bonus',async()=>{
+  if(!done)await window.TIM_ANIMATIONS?.play?.('bonus');
+  openExercise(ex.id);
+ },'mission-launch'));
+ return box;
+}
 function parentAdminPanels(root){
  if(window.TIM_ENT_PRIVATE_IMPORT?.render&&window.__TIM_BRIDGE?.attachments)root.prepend(window.TIM_ENT_PRIVATE_IMPORT.render({lessons:DATA.lessons,api:window.__TIM_BRIDGE.attachments}));
  if(window.__TIM_BRIDGE?.attachments)root.prepend(makeAttachmentAdminPanel());
@@ -553,6 +589,7 @@ function parentAdminPanels(root){
 function renderParent(){
  const root=clear(document.getElementById('parent-content'));
  if(!window.__TIM_PARENT){root.append(notice('Connexion Parent requise.'));return;}
+ root.append(parentBonusPanel());
  if(window.TIM_PARENT_UNIFIED?.render)window.TIM_PARENT_UNIFIED.render(root);
  else root.append(notice('Le tableau de bord centralisé est momentanément indisponible.'));
  root.append(makeXPPanel(),makeRewardsTile());
@@ -766,7 +803,7 @@ function renderHome(){
  const hero=E('section','mission-hero');
  const copy=E('div','mission-copy');copy.append(E('div','shout','CLASSEUR · 3e'),E('h1','','CHOISIS TA MISSION'),E('p','','Cours, défis et progression. À toi de jouer.'));
  copy.append(button('Choisir une matière →',()=>page('matieres'),'lobo-go'));hero.append(copy);const wolf=E('img','mission-wolf');wolf.src='./assets/loup-accueil.webp';wolf.alt='Le loup jongleur du classeur';hero.append(wolf);// Défis quotidiens rétablis avec les images originales du parent.
- root.append(hero,dailyMissionPanel(),...(window.__TIM_GUEST?[]:[makeXPPanel()]),makeRewardsTile(),makeSoundSettings(),bonusMissionPanel(true),missionCard('weekly'),missionCard('sunday'));
+ root.append(hero,dailyMissionPanel(),...(window.__TIM_GUEST?[]:[makeXPPanel()]),makeRewardsTile(),makeSoundSettings(),bonusMissionPanel(true),window.__TIM_GUEST?document.createDocumentFragment():timBonusPanel(),missionCard('weekly'),missionCard('sunday'));
  root.append(E('h2','home-section-title','Que veux-tu travailler ?'));
  const cards=E('div','home-grid');
  for(const o of [{name:'Matières',sub:'Cours classés par matière',icon:'▦',cls:'cours',dest:'matieres'},
