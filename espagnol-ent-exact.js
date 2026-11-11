@@ -642,7 +642,7 @@ async function render(root,opts={}){
 
 /* Lecture des sources originales, sous la leçon BIS correspondante.
    Les fichiers ENT privés ne sont jamais recopiés dans le dépôt public. */
-async function renderLessonOriginal(root,lessonId){
+async function renderLessonOriginal(root,lessonId,section='course'){
  root.replaceChildren();
  if(window.__TIM_GUEST){root.append($('p','','Cours ENT original : connexion Tim ou Parent nécessaire.'));return;}
  const pack=window.__TIM_DATA?.metadata?.spanishEnt;
@@ -655,6 +655,7 @@ async function renderLessonOriginal(root,lessonId){
  if(!lesson){root.append($('p','','Cette séance n’a pas de texte original retrouvé dans la collecte ENT.'));return;}
  const source=asText(lessonHtml(lesson));
  const translations=pack.translations;
+ if(section!=='exercises'){
  const title=$('h4','', 'Ce que Mme Gonzalez a écrit dans l’ENT');
  root.append(title);
  const copy=$('p','ent-es-source-text',source||'Aucun texte de cours n’a été renseigné pour cette séance.');
@@ -664,18 +665,19 @@ async function renderLessonOriginal(root,lessonId){
   const fr=$('p','ent-es-source-fr',translations.courses[id].fr);
   fr.style.whiteSpace='pre-wrap';root.append(fr);
  }
+ }
  const homeIds=lessonHomeworkIds(lesson);
  const homework=(pack.homework||[]).filter(x=>homeIds.includes(String(x?.data?.id)));
  let metas=[];
  const attachments=window.__TIM_BRIDGE?.attachments;
- if(attachments?.list){
+ if(section==='exercises'&&attachments?.list){
   try{metas=await attachments.list('lesson',TAG);}catch(_){}
  }
  const refs=(pack.index||[]).filter(info=>(info.rattache_a||[]).some(link=>
   (link.type==='cours'&&String(link.id)===id)||
   (link.type==='travail_associe'&&homeIds.includes(String(link.id)))
  ));
- if(homework.length){
+ if(section==='exercises'&&homework.length){
   root.append($('h4','','Exercices demandés par la professeure'));
   homework.forEach(item=>{
    const hid=String(item.data.id);
@@ -690,11 +692,11 @@ async function renderLessonOriginal(root,lessonId){
    root.append(section);
   });
  }
- if(refs.length){
+ if(section==='exercises'&&refs.length){
   root.append($('h4','','Fiches PDF du professeur'));
   appendFileLinks(root,refs,metas,translations);
  }
- if(!homework.length&&!refs.length){
+ if(section==='exercises'&&!homework.length&&!refs.length){
   root.append($('p','ent-es-empty','Aucun devoir ou PDF associé à cette séance dans l’archive.'));
  }
 }
