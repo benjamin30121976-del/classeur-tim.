@@ -50,21 +50,15 @@ async function protectedCall(name,data={}){
 }
 const cloudCallable=name=>data=>protectedCall(name,data);
 
-const ROLE_PREFERENCE_KEY='tim-classeur-role-v1';
+// Toujours proposer les trois espaces à chaque ouverture et reconnexion.
 let selectedRole=null;
-try{
- const preference=localStorage.getItem(ROLE_PREFERENCE_KEY);
- if(preference==='tim'||preference==='parent')selectedRole=preference;
-}catch(_){}
 const roleChoices=document.querySelector('.role-choices');
 const roleLabel=document.getElementById('selected-role-label');
-if(selectedRole){
- roleChoices.hidden=true;form.hidden=false;
- roleLabel.textContent=selectedRole==='tim'?'Connexion de Tim':'Connexion du parent';
-}
+roleChoices.hidden=false;
+form.hidden=true;
+try{localStorage.removeItem('tim-classeur-role-v1');}catch(_){}
 function chooseRole(role){
  selectedRole=role;
- try{localStorage.setItem(ROLE_PREFERENCE_KEY,role);}catch(_){}
  roleChoices.hidden=true;form.hidden=false;
  roleLabel.textContent=role==='tim'?'Connexion de Tim':'Connexion du parent';
  document.getElementById('login-email').focus();
@@ -76,7 +70,7 @@ function chooseRole(role){
 }
 document.getElementById('tim-enter').addEventListener('click',()=>chooseRole('tim'));
 document.getElementById('parent-enter').addEventListener('click',()=>chooseRole('parent'));
-document.getElementById('role-back').addEventListener('click',()=>{selectedRole=null;try{localStorage.removeItem(ROLE_PREFERENCE_KEY);}catch(_){}form.hidden=true;roleChoices.hidden=false;});
+document.getElementById('role-back').addEventListener('click',()=>{selectedRole=null;form.hidden=true;roleChoices.hidden=false;});
 
 const message=(msg,good=false)=>{status.textContent=msg;status.classList.toggle('good',good);};
 // Firestore Standard does not accept an array directly inside another array.
