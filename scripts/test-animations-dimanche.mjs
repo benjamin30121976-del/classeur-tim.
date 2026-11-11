@@ -9,7 +9,7 @@ function animationHarness(){
  const make=tag=>{
   const node={
    tagName:tag.toUpperCase(),children:[],style:{},hidden:false,
-   setAttribute(){},append(...args){this.children.push(...args);},
+   setAttribute(){},removeAttribute(){},append(...args){this.children.push(...args);},
    remove(){this.removed=true;},load(){},pause(){},
    play(){return Promise.resolve();}
   };
