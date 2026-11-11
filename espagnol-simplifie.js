@@ -86,7 +86,7 @@ const FIRST_LESSON={
  conjugations:['llamarse','ser','ir'],
  vocab:[['me llamo','je m’appelle'],['tengo','j’ai'],['años','ans'],['vivo','j’habite']]
 };
-function inlineLesson(holder,entId,renderL01){
+function inlineLesson(holder,entId,renderL01,showExercises){
  holder.replaceChildren();
  const source=window.TIM_SPANISH_ENT_BIS;
  const data=entId==='10099~6400501'?FIRST_LESSON:source?.getLesson?.(entId);
@@ -133,21 +133,26 @@ function inlineLesson(holder,entId,renderL01){
  const originalTitle=el('summary','Cours ENT du professeur et fiches originales');
  const originalSlot=el('div',undefined,'tim-es-ent-original-content');
  original.append(originalTitle,originalSlot);
- let originalReady=false,loading=false;
- original.addEventListener('toggle',async()=>{
-  if(!original.open||originalReady||loading)return;
-  loading=true;
-  originalSlot.replaceChildren();
-  originalSlot.append(el('p','Ouverture du cours original…'));
+ let originalMode=null;
+ const openOriginal=async section=>{
+  originalMode=section;
+  original.hidden=false;
+  original.open=true;
+  originalTitle.textContent=section==='exercises'?'Exercices ENT et fiches du professeur':'Cours original ENT et traduction';
+  originalSlot.replaceChildren(el('p','Chargement du document original…'));
   try{
    if(window.__TIM_GUEST){
     originalSlot.textContent='Les documents originaux sont réservés aux comptes Tim et Parent.';
    }else if(typeof window.TIM_SPANISH_ENT_EXACT?.renderLessonOriginal==='function'){
-    await window.TIM_SPANISH_ENT_EXACT.renderLessonOriginal(originalSlot,entId);
-   }else originalSlot.textContent='Le cours original n’est pas accessible pour le moment.';
-   originalReady=true;
-  }catch(e){originalSlot.textContent='Le document original ne peut pas être chargé actuellement.';}
-  finally{loading=false;}
+    await window.TIM_SPANISH_ENT_EXACT.renderLessonOriginal(originalSlot,entId,section);
+   }else originalSlot.textContent='Le document original est indisponible pour le moment.';
+  }catch(e){
+   originalSlot.textContent='Impossible de charger le document original pour le moment.';
+  }
+  original.scrollIntoView?.({block:'start'});
+ };
+ original.addEventListener('toggle',()=>{
+  if(original.open&&!originalMode)openOriginal('course');
  });
  holder.append(original);
 
@@ -219,6 +224,30 @@ function inlineLesson(holder,entId,renderL01){
   body.append(vocab);
  }
  extra.append(body);holder.append(extra);
+
+ /* Reprise du menu ENT / BIS / aide / exercices des mathématiques. */
+ const menu=el('nav',undefined,'spx-quick-links tim-es-quick-links');
+ menu.setAttribute('aria-label','Cours et exercices de cette leçon');
+ const addChoice=(label,action)=>{
+  const b=el('button',label,'spx-quick-link tim-es-quick-link');
+  b.type='button';b.onclick=action;menu.append(b);
+ };
+ addChoice('1 · Leçon ENT',()=>openOriginal('course'));
+ addChoice('2 · Leçon BIS',()=>{
+  original.open=false;original.hidden=true;
+  help.open=false;help.hidden=true;
+  sheet.scrollIntoView?.({block:'start'});
+ });
+ addChoice('3 · Je n’ai pas compris',()=>{
+  original.open=false;original.hidden=true;
+  help.hidden=false;help.open=true;
+  help.scrollIntoView?.({block:'start'});
+ });
+ addChoice('Exercices ENT du chapitre',()=>openOriginal('exercises'));
+ addChoice('Exercices BIS · 3 séries de 10 questions',()=>showExercises?.());
+ original.hidden=true;
+ help.hidden=true;
+ holder.replaceChildren(sheet,menu,original,help,extra);
 }
 
 function spellingWarning(parent){
@@ -515,7 +544,7 @@ async function render(root,opts={},helpers={}){
   const lessonSlot=el('div');lessonSlot.className='tim-es-reading';
   let lessonReady=false;
   const openLesson=()=>{
-   if(!lessonReady){inlineLesson(lessonSlot,entId,helpers.appendL01);lessonReady=true;}
+   if(!lessonReady){inlineLesson(lessonSlot,entId,helpers.appendL01,()=>{exerciseSection.open=true;exerciseSection.scrollIntoView?.({block:'start'});});lessonReady=true;}
    lessonSlot.hidden=false;
   };
   inner.append(returnToList,lessonSlot);
