@@ -238,7 +238,12 @@ function resultPage(record){
 function readableMathPrompt(value){
  const prompt=String(value||'');
  const m=/^Programme de calcul : (.+?)\. (Quelle .+)$/u.exec(prompt);
- if(!m)return '<p class="math-quiz-question-text">'+esc(prompt)+'</p>';
+ if(!m){
+  const part=/^(.+?\.) ((?:Pour appliquer |L'égalité ).+)$/u.exec(prompt);
+  return part
+   ?'<p class="math-quiz-context">'+esc(part[1])+'</p><p class="math-quiz-question-text">'+esc(part[2])+'</p>'
+   :'<p class="math-quiz-question-text">'+esc(prompt)+'</p>';
+ }
  const steps=m[1].split(/,\s*(?:puis\s+)?/);
  if(steps.length<3)return '<p class="math-quiz-question-text">'+esc(prompt)+'</p>';
  return '<div class="math-quiz-program"><strong>Programme de calcul</strong><ol>'+
