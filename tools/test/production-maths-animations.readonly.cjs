@@ -14,7 +14,9 @@ async function probe(page,p){
  }catch(e){return {status:'error',available:false,error:String(e.message).slice(0,120)};}
 }
 async function main(){
- const browser=await chromium.launch({headless:true});
+ const fsNative=require('node:fs');
+ const chromePath=['/usr/bin/google-chrome','/usr/bin/google-chrome-stable','/usr/bin/chromium','/usr/bin/chromium-browser'].find(p=>fsNative.existsSync(p));
+ const browser=await chromium.launch({headless:true,...(chromePath?{executablePath:chromePath}:{}),args:['--no-sandbox']});
  try{
   const probePage=await browser.newPage();
   for(const file of ['/tim-animations.js','/assets/animations/Tim_Defi_Du_Samedi_10XP.gif','/assets/animations/Tim_Defi_Bonus_5XP.gif','/maths-parcours.js','/maths-bis-data.js']){
