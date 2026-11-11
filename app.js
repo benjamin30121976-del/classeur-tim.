@@ -281,7 +281,7 @@ function renderExerciseIndex(){
 }
 function answerValue(input){if(input.type==='radio'){const chosen=document.querySelector('input[name="'+input.name+'"]:checked');return chosen?chosen.value:'';}return input.value;}
 function freeOrTextAnswer(question,answer){if(question.type==='free')return null;const correct=question.type==='mc'?String(question.right)===String(answer):[question.right,...(question.also||[])].some(x=>norm(x)===norm(answer));return correct;}
-function openExercise(id){const ex=exerciseBy(id);if(!ex)return;const existing=attemptFor(id),completedChallenge=Boolean(existing&&['daily','weekly','sunday'].includes(ex.kind));window.__TIM_OPEN_EXERCISE_ID=id;page('exercices');document.getElementById('exercise-index').classList.add('hide');const root=clear(document.getElementById('exercise-detail'));root.classList.add('active');root.append(button('← Retour aux exercices',()=>{root.classList.remove('active');document.getElementById('exercise-index').classList.remove('hide');renderExerciseIndex();scrollTop();},'plain back'));root.append(badge(ex.level),E('h2','',ex.title),E('p','intro',exerciseDescription(ex)));
+function openExercise(id){const ex=exerciseBy(id);if(!ex)return;const existing=attemptFor(id),completedChallenge=Boolean(existing&&['daily','weekly','sunday','bonus-parent'].includes(ex.kind));window.__TIM_OPEN_EXERCISE_ID=id;page('exercices');document.getElementById('exercise-index').classList.add('hide');const root=clear(document.getElementById('exercise-detail'));root.classList.add('active');root.append(button('← Retour aux exercices',()=>{root.classList.remove('active');document.getElementById('exercise-index').classList.remove('hide');renderExerciseIndex();scrollTop();},'plain back'));root.append(badge(ex.level),E('h2','',ex.title),E('p','intro',exerciseDescription(ex)));
 if(ex.kind==='daily'&&ex.questionBank==='spanish-ent-v1'){
  root.append(E('p','small','Révision de plusieurs leçons d’espagnol : vocabulaire, phrases, traduction et conjugaison.'));
  root.append(button('Revoir les leçons d’espagnol',()=>{page('matieres');renderMatiere('Espagnol');},'plain'));
@@ -359,7 +359,8 @@ if(old){
   // Un défi affiche son BILAN (note, XP, correction) directement, sans alerte XP seule.
   const isChallenge=['daily','weekly','sunday'].includes(ex.kind);
   try{
-   if(!isChallenge)alert('Devoir envoyé. '+(saved.xp>=0?'+':'')+saved.xp+' XP. '+(saved.correctionStatus==='released'?'Correction disponible.':'Correction en attente du parent.'));
+   if(isChallenge)await window.TIM_ANIMATIONS?.playResult?.(ex,saved);
+   else alert('Devoir envoyé. '+(saved.xp>=0?'+':'')+saved.xp+' XP. '+(saved.correctionStatus==='released'?'Correction disponible.':'Correction en attente du parent.'));
    openExercise(id);
   }catch(renderError){
    console.error('Affichage du résultat indisponible :',renderError);
@@ -743,6 +744,9 @@ function missionCard(kind){
  const wolfWrap=E('div','challenge-wolf-scene'),artKind=sunday?'sunday':'weekly';
  const img=E('img','challenge-wolf challenge-wolf-'+artKind);
  img.src='./assets/loup-'+artKind+(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'-statique.webp':'-anime.webp');
+ const previousArt=img.src;
+ if(!sunday)window.TIM_ANIMATIONS?.setCardImage?.(img,'saturday',previousArt);
+ else if(done&&Number(done.xp)===20)window.TIM_ANIMATIONS?.setCardImage?.(img,'sundayCard',previousArt);
  img.alt=sunday?'Loup couronné du grand défi':'Loup victorieux avec une coupe';img.loading='lazy';img.width=126;img.height=100;
  wolfWrap.append(img);body.append(wolfWrap);c.append(body);
  const dow=new Date((meta.today||'2026-11-08')+'T12:00:00Z').getUTCDay(),open=sunday?dow===0:dow===6;
@@ -751,7 +755,7 @@ function missionCard(kind){
  else if(done)actions.append(badge('✓ Déjà validé · '+(done.score===null?'correction en attente':done.score+'/'+done.total),'green'),button('Voir ma validation',()=>openExercise(ex.id),'small-cta'));
  else if(!open)actions.append(badge(sunday?'Disponible dimanche':'Disponible samedi'));
  else if(window.__TIM_GUEST)actions.append(badge('Lecture seule · invité'));
- else actions.append(button(window.__TIM_PARENT?'Prévisualiser le défi':'LANCER LE DÉFI',()=>openExercise(ex.id),'mission-launch'));
+ else actions.append(button(window.__TIM_PARENT?'Prévisualiser le défi':'LANCER LE DÉFI',async()=>{if(!sunday)await window.TIM_ANIMATIONS?.play?.('saturday');openExercise(ex.id);},'mission-launch'));
  c.append(actions);return c;
 }
 function makeSoundSettings(){const zone=E('div','sound-settings');zone.append(E('span','','🔊 Bruit des touches : '));
