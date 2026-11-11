@@ -2,7 +2,9 @@
 const {chromium}=require('playwright');
 const crypto=require('node:crypto');
 (async()=>{
- const b=await chromium.launch({headless:true,args:['--no-sandbox']});
+ const fs=require('node:fs');
+ const chromePath=['/usr/bin/google-chrome','/usr/bin/google-chrome-stable','/usr/bin/chromium'].find(p=>fs.existsSync(p));
+ const b=await chromium.launch({headless:true,...chromePath?{executablePath:chromePath}:{},args:['--no-sandbox']});
  const p=await b.newPage({viewport:{width:390,height:844},serviceWorkers:'block'});
  const base='https://classeur-tim-v16.pages.dev/';
  const assets=[
