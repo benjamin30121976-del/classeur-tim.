@@ -30,7 +30,7 @@ function animationHarness(){
  return {api:window.TIM_ANIMATIONS,overlays,timers};
 }
 
-test('Dimanche: hologramme correct uniquement après gain confirmé de 20 XP',async()=>{
+test('Dimanche: le MP4 original uniquement après gain confirmé de 20 XP',async()=>{
  const {api,overlays}=animationHarness();
  await api.playResult({kind:'sunday'},{xp:0});
  await api.playResult({kind:'sunday'},{xp:10});
@@ -40,14 +40,14 @@ test('Dimanche: hologramme correct uniquement après gain confirmé de 20 XP',as
  assert.equal(overlays.length,1);
  const card=overlays[0].children[0];
  const media=card.children[0];
- assert.equal(media.tagName,'IMG');
- assert.match(media.src,/Tim_Dimanche_Hologramme_20XP_Gagne\.gif$/);
+ assert.equal(media.tagName,'VIDEO');
+ assert.match(media.src,/Tim_Defi_Du_Dimanche_20XP_Original\.mp4$/);
  const skip=card.children.find(x=>x.textContent==='Passer l’animation');
  assert.ok(skip);
  skip.onclick();
  await running;
  assert.equal(overlays[0].removed,true);
- const f=statSync(new URL('../assets/animations/Tim_Dimanche_Hologramme_20XP_Gagne.gif',import.meta.url));
+ const f=statSync(new URL('../assets/animations/Tim_Defi_Du_Dimanche_20XP_Original.mp4',import.meta.url));
  assert.ok(f.size>100000);
 });
 test('Cinq réactions quotidiennes conservées; la minuterie ne ferme pas une future animation',async()=>{
@@ -66,9 +66,9 @@ test('Cinq réactions quotidiennes conservées; la minuterie ne ferme pas une fu
   assert.equal(timers.size,0);
  }
 });
-test('La carte de dimanche ne révèle le hologramme corrigé que sur demande',()=>{
+test('La carte du dimanche utilise le GIF original',()=>{
  const {api}=animationHarness();
  const img={src:'old'};
  api.setCardImage(img,'sundayCard','old');
- assert.match(img.src,/Tim_Dimanche_Hologramme_20XP_Gagne\.gif$/);
+ assert.match(img.src,/Tim_Defi_Du_Dimanche_20XP_Original\.gif$/);
 });
