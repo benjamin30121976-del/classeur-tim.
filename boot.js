@@ -616,6 +616,14 @@ async function startSession(user){
    if(!Array.isArray(r.data?.attempts))throw Error('Archives Parent indisponibles.');
    return r.data;
   },
+  mathBankImport:async(id,fragment)=>{
+   if(activeUser?.uid!==PARENT_UID||window.__TIM_GUEST)throw Error('Import réservé au Parent.');
+   if(!/^MT(?:0[1-9]|1[0-9]|2[0-3])$/.test(id)||!fragment||fragment.id!==id)
+    throw Error('Banque de mathématiques invalide.');
+   const r=await cloudCallable('importMathPrivateQuiz')({id,fragment});
+   if(!r.data?.saved||r.data.id!==id)throw Error('Stockage privé non confirmé.');
+   return r.data;
+  },
   mathTrainingTask:async(id)=>{
    if(!/^MT(?:0[1-9]|1[0-9]|2[0-3])$/.test(id))throw Error('Exercice de mathématiques invalide.');
    const r=await cloudCallable('getMathTrainingTask')({id});
