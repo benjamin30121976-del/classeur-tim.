@@ -255,3 +255,17 @@
  .spx-understand-guide,.spx-extra-conjugations,.spx-micropractice{padding:12px!important}
  .spx-correction-next button{width:100%;margin:5px 0}
 }
+
+
+/* Parcours simple : choix du titre -> lecture intégrale -> exercices facultatifs. */
+#matieres-content .tim-es-lesson{margin:8px 0!important;border:1px solid #cbd7e7!important;border-radius:12px!important;box-shadow:none!important;background:#fff!important}
+#matieres-content .tim-es-lesson>summary{font-size:17px!important;font-weight:750!important;color:#25446c!important;padding:16px!important}
+#matieres-content .tim-es-lesson[open]{margin:14px 0 24px!important;border:1px solid #c8d7e7!important;background:#fff!important}
+#matieres-content .tim-es-reading{color:#233449;background:#fff;font-size:16px;line-height:1.7;padding:5px 2px}
+#matieres-content .tim-es-reading .ent-es-bis{margin:0!important;padding:0!important;border:0!important;background:#fff!important;color:#233449!important}
+#matieres-content .tim-es-reading .ent-es-bis>div{padding:0 2px 14px!important;line-height:1.75!important}
+#matieres-content .tim-es-reading h4{color:#26476c!important;line-height:1.4;margin-top:22px!important}
+#matieres-content .tim-es-reading .ent-bis-example{border:0!important;border-bottom:1px solid #e4e9ef!important;border-radius:0!important;background:#fff!important;padding:11px 3px!important;margin:0!important}
+#matieres-content .tim-es-exercises{margin:25px 0 6px;padding:10px 13px;border:1px solid #b9cee4;border-radius:12px;background:#f3f7fc}
+#matieres-content .tim-es-exercises>summary{color:#254776!important}
+#matieres-content .tim-es-results{margin-bottom:26px}
