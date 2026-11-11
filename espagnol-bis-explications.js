@@ -26,8 +26,8 @@ window.TIM_SPANISH_BIS_EXPLAINED={
     "rule": "Une lettre suit un ordre facile à retrouver : 1. dire bonjour, 2. te présenter, 3. parler de tes goûts, 4. dire quel animal tu préfères et pourquoi, 5. inviter le correspondant à ton anniversaire, 6. terminer la lettre. Utilise des phrases que tu sais expliquer en français.",
     "worked": [
       "Tu veux te présenter et inviter ton correspondant.",
-      "« ¡Hola! Me llamo Ana. Tengo quince años. Me gusta el fútbol. Te invito a mi cumpleaños el veinte de mayo. ¡Hasta pronto! »",
-      "Bonjour ! Je m'appelle Ana. J'ai quinze ans. J'aime le football. Je t'invite à mon anniversaire le 20 mai. À bientôt !"
+      "« ¡Hola! Me llamo Ana. Tengo quince años. Me gusta el fútbol. Mi animal tótem preferido es el lobo porque es inteligente. Te invito a mi cumpleaños el veinte de mayo. ¡Hasta pronto! »",
+      "Bonjour ! Je m'appelle Ana. J'ai quinze ans. J'aime le football. Mon animal totem préféré est le loup parce qu'il est intelligent. Je t'invite à mon anniversaire le 20 mai. À bientôt !"
     ],
     "remember": "Ce travail est une lettre complète, pas une liste de phrases sans rapport. Chaque phrase a sa place."
   },
