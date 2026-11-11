@@ -41,13 +41,16 @@
    media.onerror=()=>{if(active?.media===media)close();};
    const skip=document.createElement('button');skip.type='button';skip.className='tim-anim-skip';
    skip.textContent='Passer l’animation';skip.onclick=close;
-   card.append(media,skip);layer.append(card);document.body.append(layer);
+   const sound=document.createElement('button');sound.type='button';sound.className='tim-anim-skip';
+   sound.textContent='Activer le son';sound.hidden=true;
+   sound.onclick=()=>{if(media.tagName==='VIDEO'){media.muted=false;media.play()?.then(()=>sound.hidden=true).catch(()=>{});}};
+   card.append(media,sound,skip);layer.append(card);document.body.append(layer);
    active={layer,media,resolve,timer:null};
    // Le timer est nettoyé dans close, avant toute nouvelle animation.
    media.src=url(key);
    if(media.tagName==='VIDEO'){
     const attempt=media.play();
-    attempt?.catch?.(()=>{media.muted=true;media.play()?.catch?.(close);});
+    attempt?.catch?.(()=>{media.muted=true;sound.hidden=false;media.play()?.catch?.(close);});
     active.timer=setTimeout(close,16000);
    }
   });
