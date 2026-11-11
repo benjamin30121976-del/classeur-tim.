@@ -9,17 +9,18 @@
   zero:'Tim_Animation_0XP_Toc_Toc_Paume.mp4',
   minus1:'Tim_Animation_Minus1XP_Tete_Penaude.gif',
   saturday:'Tim_Defi_Du_Samedi_10XP.gif',
-  sunday:'Tim_Defi_Du_Dimanche_20XP_Original.mp4',
-  sundayCard:'Tim_Defi_Du_Dimanche_20XP_Original.gif',
+  sunday:'Tim_Dimanche_Hologramme_20XP_Gagne.gif',
+  sundayCard:'Tim_Dimanche_Hologramme_20XP_Gagne.gif',
   bonus:'Tim_Defi_Bonus_5XP.gif'
  };
- const dur={minus1:5000,saturday:6500,bonus:6500};
+ const dur={minus1:5000,saturday:6500,sunday:3400,bonus:6500};
  const url=key=>root+(files[key]||'');
  const motionOK=()=>!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
  let active=null;
  function close(){
   if(!active)return;
-  const {layer,media,resolve}=active;active=null;
+  const {layer,media,resolve,timer}=active;active=null;
+  if(timer!==null)clearTimeout(timer);
   if(media?.tagName==='VIDEO'){media.pause();media.removeAttribute('src');media.load();}
   layer.remove();resolve();
  }
@@ -58,15 +59,14 @@
  function playResult(ex,saved){
   const xp=Number(saved?.xp);
   if(!Number.isFinite(xp))return Promise.resolve();
-  // Animation du dimanche non validée : conserver l'affichage actuel sans nouveau média.
-  if(ex?.kind==='sunday')return Promise.resolve();
+  // Le livre/hologramme n'annonce un gain que si le serveur a confirmé 20 XP.
+  if(ex?.kind==='sunday')return xp===20?play('sunday'):Promise.resolve();
   if(ex?.kind!=='daily')return Promise.resolve();
   return play(xp===3?'plus3':xp===2?'plus2':xp===1?'plus1':xp===0?'zero':xp===-1?'minus1':null);
  }
  // Utilisé pour les cartes de défis. Préserve l'ancienne image en cas d'asset manquant.
  function setCardImage(img,key,fallback){
-  // Le dimanche garde son illustration originale tant que la nouvelle est à revoir.
-  if(!img||!files[key]||key==='sundayCard')return;
+  if(!img||!files[key])return;
   img.onerror=()=>{img.onerror=null;img.src=fallback;};
   img.src=url(key);
  }
