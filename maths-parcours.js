@@ -234,6 +234,17 @@ function resultPage(record){
  '<section class="spx-panel"><h3>Revoir la sous-leçon</h3>'+btn('data-math-bis',id,'2 · Leçon BIS')+btn('data-math-help',id,'3 · Je n’ai pas compris')+'</section>',()=>category(group));
  wire();
 }
+/* Pour les programmes de calcul, présenter l'énoncé en étapes plutôt qu'en une phrase de 160 caractères. */
+function readableMathPrompt(value){
+ const prompt=String(value||'');
+ const m=/^Programme de calcul : (.+?)\. (Quelle .+)$/u.exec(prompt);
+ if(!m)return '<p class="math-quiz-question-text">'+esc(prompt)+'</p>';
+ const steps=m[1].split(/,\s*(?:puis\s+)?/);
+ if(steps.length<3)return '<p class="math-quiz-question-text">'+esc(prompt)+'</p>';
+ return '<div class="math-quiz-program"><strong>Programme de calcul</strong><ol>'+
+  steps.map(step=>'<li>'+esc(step.replace(/^puis\s+/i,''))+'</li>').join('')+
+  '</ol></div><p class="math-quiz-question-text">'+esc(m[2])+'</p>';
+}
 async function viewTraining(id){
  const x=lesson(id);if(!x)return;selected=id;group=groupOfId(id);
  const testId='MT'+suffix(id);
@@ -261,11 +272,11 @@ async function viewTraining(id){
   const embeddedData=/(choisir|choisis|soustraire|soustrais|multiplier|multiplie|ajouter|ajoute|on considère|mesure|longueur|coordonnées|données)/i;
   if(!context&&task.questions.some(q=>dependsOnMissingData.test(q.prompt)&&!embeddedData.test(q.prompt)))
    throw Error('Une question renvoie à un programme ou à une figure dont l’énoncé manque. Exercice suspendu, aucune tentative utilisée.');
-  if(window.__TIM_PARENT){holder.innerHTML='<h3>Aperçu Parent · 10 questions (lecture seule)</h3><p>Ces questions ne sont pas les réponses correctes. Aucune tentative n’est créée lors de cet aperçu.</p>'+task.questions.map((q,i)=>'<section class="spx-training-question"><h4>Question '+(i+1)+' / 10</h4><p>'+esc(q.prompt)+'</p><ul>'+q.choices.map(c=>'<li>'+esc(c)+'</li>').join('')+'</ul></section>').join('');return;}
+  if(window.__TIM_PARENT){holder.innerHTML='<h3>Aperçu Parent · 10 questions (lecture seule)</h3><p>Ces questions ne sont pas les réponses correctes. Aucune tentative n’est créée lors de cet aperçu.</p>'+task.questions.map((q,i)=>'<section class="spx-training-question"><h4>Question '+(i+1)+' / 10</h4>'+readableMathPrompt(q.prompt)+'<ul>'+q.choices.map(c=>'<li>'+esc(c)+'</li>').join('')+'</ul></section>').join('');return;}
   holder.innerHTML='<h3>À toi de jouer</h3>'+
    (context?'<section class="spx-panel"><h3>Énoncé à consulter pour les dix questions</h3><p style="white-space:pre-wrap">'+esc(context)+'</p></section>':'')+
    '<p class="math-one-try">Une seule validation. Tu peux changer tes réponses jusqu’à l’envoi.</p>'+
-   '<form id="math-quiz-form">'+task.questions.map((q,i)=>'<fieldset class="spx-training-question"><legend>Question '+(i+1)+' / '+task.questions.length+'</legend><p>'+esc(q.prompt)+'</p>'+
+   '<form id="math-quiz-form">'+task.questions.map((q,i)=>'<fieldset class="spx-training-question"><legend>Question '+(i+1)+' / '+task.questions.length+'</legend>'+readableMathPrompt(q.prompt)+
     q.choices.map((v,j)=>'<label class="math-choice"><input type="radio" name="mq'+i+'" value="'+j+'"> '+esc(v)+'</label>').join('')+'</fieldset>').join('')+
    '<div class="spx-quiz-navigation"><p id="math-quiz-progress" role="status" aria-live="polite"></p><button type="button" id="math-quiz-prev" class="spx-back">← Question précédente</button> <button type="button" id="math-quiz-next" class="spx-button">Question suivante →</button></div><button type="submit" id="math-quiz-submit" class="spx-button">Valider définitivement les 10 réponses</button><p id="math-quiz-status" role="status" aria-live="polite"></p></form>';
   const form=holder.querySelector('#math-quiz-form');
