@@ -506,6 +506,17 @@ async function startSession(user){
    const notSpanish=x=>!String(x?.subject||'').toLowerCase().includes('espagnol');
    content={...content,lessons:content.lessons.filter(notSpanish),exercises:content.exercises.filter(notSpanish)};
  }
+ // Défi bonus personnalisé : indépendant des trois anciens bonus automatiques.
+ window.__TIM_BONUS_PARENT=null;
+ try{
+  const response=await cloudCallable('getParentBonus')({});
+  const assigned=response.data?.exercise;
+  if(assigned?.kind==='bonus-parent'&&Array.isArray(assigned.questions)){
+   window.__TIM_BONUS_PARENT=assigned;
+   if(!content.exercises.some(x=>x.id===assigned.id))
+    content={...content,exercises:[...content.exercises,assigned]};
+  }
+ }catch(error){console.warn('Défi bonus parent indisponible :',error?.message||error);}
  // Tim never receives answer fields through the application state.
  // Server-side storage/rules must also be migrated before production release.
  if(!isParent){
@@ -647,6 +658,19 @@ async function startSession(user){
    const xp=Number(response.data?.xp||0);
    const released=response.data?.correctionStatus==='released'&&Array.isArray(response.data.answers)&&response.data.answers.length===ex.questions.length;
    return {id,date:new Date().toISOString(),title:ex.title,lesson:ex.lesson,xp,correctionLocked:!released,correctionStatus:released?'released':'pending-parent',answers:released?response.data.answers:[],score:released?Number(response.data.score):null,total:released?Number(response.data.total):null,needsReview:false,policyVersion:18};
+  },
+  assignParentBonus:async sourceId=>{
+   if(activeUser?.uid!==PARENT_UID)throw Error('Réservé au compte Parent.');
+   const response=await cloudCallable('assignParentBonus')({sourceId});
+   if(!response.data?.assigned)throw Error('Attribution non confirmée.');
+   const fresh=await cloudCallable('getParentBonus')({});
+   const assigned=fresh.data?.exercise;
+   if(assigned?.id){
+    window.__TIM_BONUS_PARENT=assigned;
+    const old=window.__TIM_DATA.exercises.filter(x=>x.kind!=='bonus-parent');
+    window.__TIM_DATA.exercises=[...old,assigned];
+   }
+   return response.data;
   },
   refresh:async()=>fetchAttempts(window.__TIM_DATA),
   publish:publishCoursePack,
