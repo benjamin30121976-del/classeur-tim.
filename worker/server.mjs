@@ -7,7 +7,7 @@ import {grade} from '../functions/grading.mjs';
 import {rawPoints,cappedPoints} from '../functions/xp.mjs';
 import {buildMission,isMissionId,isMissionOpen} from '../functions/missions-v18.mjs';
 import {SPANISH_COURSE} from '../functions/spanish-training-curriculum.mjs';
-import {mathId,mathPublicTaskPrivate,gradeMathTaskPrivate,MATH_BANK_VERSION} from './math-private-kv.mjs';
+import {mathId,mathPublicTaskPrivate,gradeMathTaskPrivate,MATH_BANK_VERSION,validateMathFragment} from './math-private-kv.mjs';
 import {spanishEntTrainingId,spanishEntTask,spanishEntPublicTask,gradeSpanishEntTask,isSpanishDailyMissionId,spanishDailyMissionIds,buildSpanishDailyMission,gradeSpanishDailyMission} from './spanish-ent-training.mjs';
 import {spanishLessonXp} from './spanish-lesson-xp.mjs';
 
@@ -182,13 +182,33 @@ async function oldTrainingProgress(db,uid){
 function allowedFamily(uid){
  if(uid!==TIM_UID&&uid!==PARENT_UID)throw new ApiFault(403,'forbidden');
 }
+// Chargement sécurisé des corrigés via le compte Parent, sans secret Cloudflare KV.
+export async function importMathPrivateQuiz(db,uid,payload){
+ permitted(uid,'parent');
+ const id=payload?.id,fragment=payload?.fragment;
+ let raw;
+ try{raw=JSON.stringify(fragment);}
+ catch{throw new ApiFault(400,'invalid-math-bank');}
+ if(!mathId(id)||!raw||raw.length>40000)throw new ApiFault(400,'invalid-math-bank');
+ try{validateMathFragment(fragment,id);}
+ catch{throw new ApiFault(400,'invalid-math-bank');}
+ const path='mathPrivateQuizzes/'+id;
+ const tx=await db.transaction();
+ const existing=await db.get(path,tx);
+ if(existing){
+  if(JSON.stringify(existing)===raw)return {saved:true,id,unchanged:true};
+  throw new ApiFault(409,'math-bank-already-installed');
+ }
+ await db.commit([createWrite(path,{payloadJson:raw,version:MATH_BANK_VERSION})],tx);
+ return {saved:true,id,unchanged:false};
+}
 export async function getMathTrainingTask(db,uid,payload,env){
  allowedFamily(uid);
  const id=payload?.id;
  if(!mathId(id))throw new ApiFault(400,'invalid-exercise');
  const existing=await db.get('mathTrainingAttempts/'+id);
  let task;
- try{task=await mathPublicTaskPrivate(env,id);}
+ try{task=await mathPublicTaskPrivate(env,id,db);}
  catch{throw new ApiFault(503,'math-bank-unavailable');}
  return {task,completed:Boolean(existing&&existing.authorUid===TIM_UID)};
 }
@@ -202,7 +222,7 @@ export async function submitMathTraining(db,uid,payload,env){
  if(payload?.bankVersion!==MATH_BANK_VERSION)throw new ApiFault(409,'stale-bank');
  let result,xp;
  try{
-  result=await gradeMathTaskPrivate(env,id,answers,payload.bankVersion);
+  result=await gradeMathTaskPrivate(env,id,answers,payload.bankVersion,db);
   xp=spanishLessonXp(result.score,result.total);
  }catch{
   // Le refus intervient AVANT toute écriture Firestore ; aucune tentative n'est consommée.
@@ -327,6 +347,7 @@ const ACTIONS={
  submitSpanishEntTraining:submitSpanishEntTraining,
  getSpanishEntTrainingProgress:getSpanishEntTrainingProgress,
  getMathTrainingTask:getMathTrainingTask,
+ importMathPrivateQuiz:importMathPrivateQuiz,
  submitMathTraining:submitMathTraining,
  getMathTrainingProgress:getMathTrainingProgress,
  getParentReport:parentReport,
@@ -360,4 +381,4 @@ export async function handleRequest(request,env){
   return respond({error:code},status);
  }
 }
-export const TESTABLE={sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
+export const TESTABLE={sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
