@@ -20,6 +20,8 @@ jobs:
         run: node tools/qa/check-site.mjs
       - name: Tester les evaluations de mathematiques et les protections des tentatives
         run: node --test worker/test/math-training.test.mjs
+      - name: Vérifier les 39 exercices d'espagnol, leurs corrections et les résultats Parent/Tim
+        run: node --test tools/qa/spanish-exercise.test.mjs
       - name: Installer Chromium et Playwright
         run: |
           mkdir -p /tmp/tim-qa-browser
