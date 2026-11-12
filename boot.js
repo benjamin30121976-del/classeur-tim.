@@ -410,6 +410,7 @@ async function fetchAttempts(content){
    answers:isParent&&Array.isArray(secret?.answers)?secret.answers:[],
    score:isParent&&Number.isFinite(secret?.score)?secret.score:null,
    total:isParent&&Number.isFinite(secret?.total)?secret.total:null,
+   ...(isParent&&Number.isInteger(secret?.translationHelpCount)?{translationHelpCount:secret.translationHelpCount}:{})
    needsReview:isParent?Boolean(secret?.needsReview):false
   });
  });
@@ -796,10 +797,15 @@ async function startSession(user){
     const {nov12Evaluate}=await import('./espagnol-12nov-correction.mjs?v=import-parent-12nov-v1');
     const localReport=nov12Evaluate(id,answers,translationsUsed);
     if(!localReport)throw Error('Les dix réponses sont nécessaires.');
-    const receipt=await cloudCallable('submitTimExercise')({id,answers});
+    const receipt=await cloudCallable('submitTimExercise')({id,answers,translationsUsed});
     if(receipt.data?.submitted!==true||Number(receipt.data?.xp)!==0)
      throw Error('La validation Firebase n’a pas été confirmée. Ne recommence pas avant de vérifier la copie.');
-    const report={...localReport,submitted:true,xp:0};
+    // La version déjà publiée de submitTimExercise peut encore ignorer
+    // translationsUsed. Conserver le compte local sans prétendre qu'il est
+    // synchronisé avec le Parent tant que le serveur ne l'a pas confirmé.
+    const trackingSaved=receipt.data.translationTrackingSaved===true&&
+      receipt.data.translationHelpCount===localReport.translationHelpCount;
+    const report={...localReport,submitted:true,xp:0,translationHelpSyncPending:!trackingSaved};
     window.TIM_ES12_STUDY.remember(id,report);
     try{await fetchAttempts(window.__TIM_DATA);}catch(error){
      console.warn('Résultats du 12 novembre à actualiser.',error?.message||error);
@@ -840,7 +846,8 @@ async function startSession(user){
      const local=activeUser.uid===TIM_UID?window.TIM_ES12_STUDY.saved(a.id):null;
      response.data.attempts.push({id:a.id,lessonId:'10099~6400554',
       score:Number.isFinite(a.score)?a.score:(local?.score??null),total:10,xp:0,
-      submittedAt:a.date,items:a.answers||[],category:'Entraînement du 12 novembre'});
+      submittedAt:a.date,items:a.answers||[],category:'Entraînement du 12 novembre',
+      ...(Number.isInteger(a.translationHelpCount)?{translationHelpCount:a.translationHelpCount}:{})});
     }
     window.__TIM_SPANISH_ENT_XP=response.data.attempts.map(item=>({
      id:item.id,xp:Number(item.xp||0),submittedAt:item.submittedAt||''
