@@ -98,3 +98,30 @@ test('Les réponses invalides et versions périmées ne consomment aucune tentat
  await assert.rejects(()=>TESTABLE.submitPhysicsTraining(db,TIM_UID,{id,answers,bankVersion:'pc-ancienne-version'}),e=>e.status===409);
  assert.equal(db.data.size,0);
 });
+
+test('Le Parent peut faire un exercice blanc et voir sa correction sans modifier les notes de Tim',async()=>{
+ const db=sampleDb(),id='PCQ_L01_01',task=physicsTask(id);
+ const original=await TESTABLE.getPhysicsTrainingTask(db,PARENT_UID,{id});
+ assert.equal(original.completed,false);
+ assert.equal(original.task.questions.length,10);
+ assert.equal(JSON.stringify(original.task).includes('"expected"'),false);
+ const answers=task.questions.map(q=>q.right);
+ const result=await TESTABLE.previewPhysicsTraining(db,PARENT_UID,{id,answers,bankVersion:PHYSICS_BANK_VERSION});
+ assert.equal(result.practice,true);
+ assert.equal(result.submitted,false);
+ assert.equal(result.saved,false);
+ assert.equal(result.xp,0);
+ assert.equal(result.score,10);
+ assert.equal(result.items.length,10);
+ assert.equal(db.data.size,0,'Le compte Parent ne doit effectuer aucune écriture Firestore');
+ assert.equal((await TESTABLE.getPhysicsTrainingTask(db,TIM_UID,{id})).completed,false);
+ assert.equal((await TESTABLE.getPhysicsTrainingProgress(db,PARENT_UID,{})).attempts.length,0);
+ const wrong=task.questions.map(q=>(q.right+1)%4);
+ const second=await TESTABLE.previewPhysicsTraining(db,PARENT_UID,{id,answers:wrong,bankVersion:PHYSICS_BANK_VERSION});
+ assert.equal(second.score,0);
+ assert.equal(db.data.size,0);
+ await assert.rejects(()=>TESTABLE.previewPhysicsTraining(db,TIM_UID,{id,answers,bankVersion:PHYSICS_BANK_VERSION}),e=>e.status===403);
+ await assert.rejects(()=>TESTABLE.previewPhysicsTraining(db,'invité',{id,answers,bankVersion:PHYSICS_BANK_VERSION}),e=>e.status===403);
+ await assert.rejects(()=>TESTABLE.previewPhysicsTraining(db,PARENT_UID,{id,answers:answers.slice(1),bankVersion:PHYSICS_BANK_VERSION}),e=>e.status===400);
+ await assert.rejects(()=>TESTABLE.previewPhysicsTraining(db,PARENT_UID,{id,answers,bankVersion:'ancienne-version'}),e=>e.status===409);
+});
