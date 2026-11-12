@@ -21,6 +21,23 @@ async function check(browser,name,viewport){
    await page.locator('#intro-skip').click({timeout:7000});
    await page.locator('#intro-screen').waitFor({state:'hidden',timeout:15000});
   }
+  // Diagnostic en lecture seule des fonctions déjà déployées pour les exercices.
+  // Aucun appel submit/preview et aucune réponse ou note personnelle affichée.
+  if(name==='ordinateur'){
+   const backend=await page.evaluate(async()=>{
+    const {getApp}=await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js');
+    const {getFunctions,httpsCallable}=await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-functions.js');
+    const api=getFunctions(getApp(),'europe-west1');
+    const check=async(id)=>{
+      try{const res=await httpsCallable(api,'getSpanishEntTrainingTask')({id});
+       return {ok:Boolean(res.data?.task),questions:res.data?.task?.questions?.length||0};
+      }catch(e){return {ok:false,error:String(e?.code||e?.message||e).slice(0,95)};}
+    };
+    return {lessonL14:Boolean(window.__TIM_DATA?.lessons?.find(x=>x.id==='L14')),
+      known:await check('ESE_L13_01'),newLesson:await check('ESE_L14_01')};
+   });
+   console.log('DIAGNOSTIC L14 / fonctions Firebase déjà publiées : '+JSON.stringify(backend));
+  }
   const original=await page.evaluate(async()=>{
    const pdfs=await window.__TIM_BRIDGE.attachments.list('lesson','ENTESP_2026');
    return {teacherPdf:pdfs.some(x=>x.fileName==='4 EECEno empiezo las clases en septiembre.pdf')};
