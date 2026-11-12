@@ -107,28 +107,42 @@ function originalPanel(slot,id,mode){
  slot.replaceChildren();
  const docs=entOf(id),work=dueOf(id);
  if(mode==='course'){
-  slot.append(E('h4','','Ce que le professeur a écrit dans l’ENT'));
-  if(!docs.length)slot.append(E('p','','Aucun cours ENT rattaché dans cette collecte.'));
+  slot.append(E('h3','','Le PDF original du professeur'));
+  slot.append(E('p','', 'Pour lire le document complet, utilise le bouton « Ouvrir le PDF du professeur » ci-dessous. Les exercices interactifs de Tim se font dans le menu « Exercices », pas dans le PDF.'));
+ }else{
+  slot.append(E('h3','','Exercices du professeur (ENT)'));
+  slot.append(E('p','', 'Les PDF du professeur sont des documents à consulter ou à imprimer : ils ne sont pas des questionnaires à remplir sur le téléphone.'));
+  const go=button('Faire les exercices interactifs de physique-chimie',()=>{
+   const section=root?.querySelector('.tim-es-lesson[open] .tim-es-exercises');
+   if(section){section.open=true;section.scrollIntoView({block:'start'});}
+  },'spx-quick-link tim-es-quick-link');
+  go.style.cssText='display:block;width:100%;margin:12px 0 18px;text-align:center';
+  slot.append(go);
+ }
+ const docArea=E('section','pc-lesson-files');
+ docArea.append(E('h4','','Documents originaux disponibles'));
+ slot.append(docArea);
+ if(window.TIM_PHYSICS_DOCUMENTS?.lessonFiles)window.TIM_PHYSICS_DOCUMENTS.lessonFiles(id,docArea);
+ else docArea.append(E('p','','Le lecteur des pièces jointes n’est pas disponible.'));
+ if(mode==='course'){
+  slot.append(E('h4','','Texte du cahier de textes ENT'));
+  if(!docs.length)slot.append(E('p','','Aucun texte du professeur rattaché à cette séance.'));
   for(const d of docs){
    slot.append(E('h4','',readable(d.date)+' — '+d.title));
    const raw=d.blocks?.find(b=>b.h==='Cahier de textes ENT — professeur')?.body||d.summary||'Aucun texte de cours publié.';
    slot.append(E('p','ent-es-source-text',raw));
   }
  }else{
-  slot.append(E('h4','','Devoirs et exercices du professeur'));
+  slot.append(E('h4','','Consignes des devoirs ENT'));
   if(!work.length)slot.append(E('p','','Aucune consigne de devoir récupérée pour ce sujet.'));
   work.forEach(d=>{
-   slot.append(E('h4','', 'Pour le '+readable(d.date)));
+   slot.append(E('h4','','Pour le '+readable(d.date)));
    slot.append(E('p','ent-es-source-text',d.text));
   });
-  slot.append(E('p','','Les pages exactes du manuel ne sont pas dans cette archive : ne pas les reconstituer.'));
+  slot.append(E('p','','Les exercices du manuel ne sont pas reconstitués sans leurs énoncés originaux.'));
  }
- const docArea=E('section','pc-lesson-files');
- docArea.append(E('h4','','Fichiers originaux du professeur'));
- slot.append(docArea);
- if(window.TIM_PHYSICS_DOCUMENTS?.lessonFiles)window.TIM_PHYSICS_DOCUMENTS.lessonFiles(id,docArea);
- else docArea.append(E('p','','Le lecteur des pièces jointes n’est pas disponible.'));
 }
+
 function showCard(id,scroll=true){
  activeId=id;cards.forEach(c=>{
   const yes=c.dataset.pcLesson===id;
