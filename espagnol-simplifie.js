@@ -661,11 +661,44 @@ async function render(root,opts={},helpers={}){
   });
   if(opts.openLessonId===entId){card.open=true;openLesson();}
  });
+ /* Les nouvelles séances validées par l'ENT rejoignent le classeur, dans l'ordre,
+    sans renuméroter les 13 séries d'exercices déjà notées. Le cours vedette
+    est seulement un raccourci vers la dernière de ces vraies leçons. */
+ const additional=Array.isArray(window.TIM_SPANISH_COURS_SUPPLEMENTAIRES)
+  ?window.TIM_SPANISH_COURS_SUPPLEMENTAIRES.slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)))
+  :[];
+ for(const [extraIndex,extra] of additional.entries()){
+  if(typeof extra.renderCard!=='function')continue;
+  const card=extra.renderCard(LESSONS.length+extraIndex+1);
+  if(!card)continue;
+  const backButton=card.querySelector('.tim-es-back');
+  if(backButton)backButton.addEventListener('click',()=>{
+   card.open=false;activeCard=null;lessonCards.forEach(other=>{other.hidden=false;});
+   root.scrollIntoView?.({block:'start'});
+  });
+  root.append(card);lessonCards.push(card);
+  card.addEventListener('toggle',()=>{
+   if(card.open){
+    activeCard=card;
+    lessonCards.forEach(other=>{if(other!==card){other.open=false;other.hidden=true;}});
+   }else if(activeCard===card){
+    activeCard=null;
+    lessonCards.forEach(other=>{other.hidden=false;});
+   }
+  });
+  if(opts.openLessonId===extra.id)card.open=true;
+ }
  if(activeCard)lessonCards.forEach(other=>{if(other!==activeCard)other.hidden=true;});
  results.style.cssText='margin:20px 0;padding:14px;border:1px solid #b8cce3;border-radius:12px;background:#f3f7fc;color:#253b59';
  resultsHeading.style.cssText='cursor:pointer;font-size:16px;font-weight:800';
  root.append(results);
  refresh();
 }
-window.TIM_SPANISH_SIMPLIFIED={render,lessons:LESSONS.map((x,i)=>({id:x[0],num:i+1,name:x[2]}))};
+window.TIM_SPANISH_SIMPLIFIED={render,
+ get lessons(){
+  const base=LESSONS.map((x,i)=>({id:x[0],num:i+1,name:x[2]}));
+  const added=(window.TIM_SPANISH_COURS_SUPPLEMENTAIRES||[]).slice().sort((a,b)=>String(a.date).localeCompare(String(b.date)));
+  return base.concat(added.map((x,i)=>({id:x.id,num:LESSONS.length+i+1,name:x.name})));
+ }
+};
 })();
