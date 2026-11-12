@@ -1128,7 +1128,7 @@ async function startSession(user){
  document.getElementById('account-name').textContent=isParent?'Espace parent — compte connecté':'Espace Tim — compte connecté';
  document.querySelectorAll('[data-nav="parent"]').forEach(el=>el.hidden=!isParent);
  document.getElementById('logout-button').onclick=()=>signOut(auth);
- const sc=document.createElement('script');sc.src='./app.js?v=physique-ents-menu-20261112-v5';sc.onerror=()=>{stopApp();message('Le module pédagogique du classeur n’a pas chargé.');};
+ const sc=document.createElement('script');sc.src='./app.js?v=maths-ent-menu-20261112-v6';sc.onerror=()=>{stopApp();message('Le module pédagogique du classeur n’a pas chargé.');};
  sc.addEventListener('load',()=>{try{if(document.querySelector('.mission-hero'))window.TIM_INTRO_SHOW?.();}catch(e){console.warn('Animation d’ouverture indisponible :',e);}});
  document.body.append(sc);appLoaded=true;
 }
