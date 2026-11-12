@@ -513,7 +513,11 @@ async function startSession(user){
  // Les anciennes notes restent archivées dans Firestore pour le parent.
  if(window.TIM_SPANISH_ENT_EXACT){
    const notSpanish=x=>!String(x?.subject||'').toLowerCase().includes('espagnol');
-   content={...content,lessons:content.lessons.filter(notSpanish),exercises:content.exercises.filter(notSpanish)};
+   // Conserver les trois exercices de la séance du 12 novembre, importés
+   // via le compte Parent. Le reste de l'espagnol garde son parcours ENT V16.
+   const nov12=x=>/^ESE_L14_0[1-3]$/.test(String(x?.id||''));
+   content={...content,lessons:content.lessons.filter(x=>notSpanish(x)||x.id==='L14'),
+     exercises:content.exercises.filter(x=>notSpanish(x)||nov12(x))};
  }
  // Défi bonus personnalisé : indépendant des trois anciens bonus automatiques.
  window.__TIM_BONUS_PARENT=null;
