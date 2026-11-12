@@ -14,6 +14,7 @@ on:
       - 'tim-inline-ent-documents.js'
       - 'espagnol-ent-exact.js'
       - 'espagnol-simplifie.js'
+      - 'worker/test/spanish-parent-preview.test.mjs'
       - 'guest-access.js'
       - 'worker/test/physics-training.test.mjs'
       - 'worker/server.mjs'
@@ -50,7 +51,7 @@ jobs:
           node --check boot.js
           node --check parent-unified-results.js
       - name: Tester 21 questionnaires et sécurité de la validation
-        run: node --test worker/test/physics-training.test.mjs worker/test/math-ent-training.test.mjs
+        run: node --test worker/test/physics-training.test.mjs worker/test/math-ent-training.test.mjs worker/test/spanish-parent-preview.test.mjs
       - name: Installer Chromium Playwright pour un test visiteur, sans compte
         run: |
           mkdir -p /tmp/tim-physique
