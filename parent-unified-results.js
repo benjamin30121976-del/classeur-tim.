@@ -51,7 +51,7 @@ function questionItems(raw){
   category:a.category||''
  }));
 }
-function perfect(r,items){return isExact(r.score)&&isExact(r.total)&&Number(r.total)>0&&Number(r.score)===Number(r.total)&&items.length===Number(r.total);}
+function perfect(r,items){return isExact(r.score)&&isExact(r.total)&&Number(r.total)>0&&Number(r.score)===Number(r.total)&&items.length>0&&items.every(x=>x.correct===true);}
 function makeRecord(raw,kind){
  const id=String(raw?.id||'');if(!id)return null;
  const ex=window.__TIM_DATA?.exercises?.find(e=>e.id===id);
