@@ -155,7 +155,9 @@ async function verify(browser,device,viewport){
    {label:'Cours ENT 12 novembre',button:'[data-math-open-original="TIM_ENT_20261112"]'},
    {label:'Leçon BIS reciproque de Thales',button:'[data-math-reciproque]'}
   ]){
-   await page.evaluate(()=>window.TIM_PEDAGOGY_NAVIGATE('Mathématiques'));
+   await page.evaluate(()=>window.TIM_PEDAGOGY_NAVIGATE('Mathématiques','MBIS14'));
+   await page.locator('#matieres-content article.math-reading-lesson').first().waitFor({state:'visible',timeout:15000});
+   await page.locator('#matieres-content .spx-back').first().click();
    const row=page.locator('#matieres-content '+target.button).first();
    await row.waitFor({state:'visible',timeout:15000});
    await row.click({timeout:12000});
