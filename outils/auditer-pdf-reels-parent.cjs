@@ -66,7 +66,7 @@ async function verify(browser,device,viewport){
    ' PDF, math '+result.mathPdf+' PDF lies a '+result.mathCours+' cours, physique '+result.physicsPresent+'/'+result.physicsExpected+' PDF.');
   assert(result.spanishExpected>0,'Inventaire des PDF espagnols absent');
   assert(result.spanishPresent===result.spanishExpected,'Un ou plusieurs PDF espagnols manquent dans le stockage prive');
-  assert(result.mathPdf>0,'Aucun PDF de maths rattache a une lecon ENT');
+  assert(result.mathPdf>=19,'L’import des 18 rattachements maths n’est pas visible en entier');
   assert(result.physicsPresent>0,'Aucun PDF de physique-chimie rattache a une lecon ENT');
   // Parse each actual PDF; never extract, log, upload or reproduce its contents.
   const parse=await page.evaluate(async()=>{
@@ -103,7 +103,8 @@ async function verify(browser,device,viewport){
   for(const subject of ['spanish','math','physics']){
    const info=await page.evaluate(async subject=>{
     const docs=window.__PDF_PARENT_READONLY,available=docs[subject].filter(x=>x.meta);
-    const chosen=subject==='spanish'?(available.find(x=>x.lesson)||available[0]):available[0];
+    const chosen=subject==='spanish'?(available.find(x=>x.lesson)||available[0]):
+     subject==='math'?available.find(x=>x.target==='M26S0921'&&x.name==='Leçon Pythagore à compléter.pdf'):available[0];
     if(!chosen)return {available:false};
     const host=document.createElement('section');
     host.id='tim-real-pdf-audit-'+subject;
