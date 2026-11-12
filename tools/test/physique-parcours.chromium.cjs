@@ -92,8 +92,12 @@ async function main(){
   await physicsTile.waitFor({state:'visible',timeout:15000});
   report.checks.physicsInGeneralExercises=true;
   report.checks.physicsCounter=await physicsTile.textContent();
-  assert.ok(/21 exercice/.test(report.checks.physicsCounter),'Le menu général doit annoncer 21 exercices');
+  assert.ok(/23 exercice/.test(report.checks.physicsCounter),'Le menu général doit annoncer 23 exercices (2 ENT + 21 BIS)');
   await physicsTile.click();
+  const officialCards=page.locator('#exercise-list .pc-ent-official-card');
+  await officialCards.first().waitFor({state:'visible',timeout:10000});
+  report.checks.originalEntExercises=await officialCards.count();
+  assert.equal(report.checks.originalEntExercises,2,'Deux fiches ENT originales doivent apparaître avant les BIS');
   const lessonBoxes=page.locator('#exercise-list .pc-exercise-lesson');
   await lessonBoxes.first().waitFor({state:'visible',timeout:15000});
   report.checks.exerciseLessonGroups=await lessonBoxes.count();
@@ -192,6 +196,46 @@ async function main(){
   assert.equal(audit.written,false,'Aucune écriture de tentative sur le compte Tim');
   report.checks.parentSeesAndAnswersTenQuestions=true;
   report.checks.parentSimulationNoWrite=true;
+
+  // Fiche ENT reproduite en DOM avec un pont d'essai local : aucun compte privé.
+  await page.evaluate(async()=>{
+   const fields=Array.from({length:10},(_,i)=>({
+    id:'question'+i,kind:'text',group:i<6?i+1:Math.min(8,i),label:'Question originale '+(i+1),
+    placeholder:'Écris la réponse'
+   }));
+   window.__PC_ENT_AUDIT={calls:0,submitted:false};
+   window.__TIM_BRIDGE.physicsEntTask=async()=>({
+    completed:false,
+    task:{id:'PC_ENT_CTRL1',type:'formative',title:'Préparation au contrôle — test technique',
+     source:'Reproduction de test sans document privé',date:'2026-09-29',bankVersion:'pc-ent-test',scale:'10 réponses.',
+     document:{target:'PCENT6390168',fileName:'Eval formative controle 2 el.pdf',page:1},
+     fields}
+   });
+   window.__TIM_BRIDGE.physicsEntPreviewSubmit=async(id,answers)=>{
+    window.__PC_ENT_AUDIT.calls++;
+    if(id!=='PC_ENT_CTRL1'||answers.length!==10)throw new Error('Fiche incorrecte');
+    return {id,practice:true,saved:false,submitted:false,xp:0,score:10,total:10,
+     correctFields:10,fieldCount:10,scale:'10 réponses.',
+     items:answers.map((response,i)=>({prompt:'Question de contrôle '+(i+1),
+      response,expected:'test',correct:true,kind:'text',explanation:'Réponse vérifiée dans la simulation.'}))};
+   };
+   const slot=document.createElement('div');slot.id='pc-ent-test';document.body.append(slot);
+   await window.TIM_PHYSICS_ENT.mount('PC_ENT_CTRL1',slot);
+  });
+  const entHost=page.locator('#pc-ent-test');
+  await entHost.getByText(/Mode essai Parent/).waitFor({state:'visible',timeout:15000});
+  const entInputs=entHost.locator('textarea');
+  assert.equal(await entInputs.count(),10,'Les dix réponses de la fiche ENT doivent être saisissables');
+  for(let i=0;i<10;i++)await entInputs.nth(i).fill('réponse de test');
+  await entHost.locator('input[type=checkbox]').check();
+  await entHost.getByRole('button',{name:/Corriger mon essai ENT/}).click();
+  await entHost.getByText(/10 \/ 10/).waitFor({state:'visible',timeout:15000});
+  const entAudit=await page.evaluate(()=>window.__PC_ENT_AUDIT);
+  assert.equal(entAudit.calls,1);
+  assert.equal(entAudit.submitted,false);
+  report.checks.entTeacherQuestionsFillableParent=true;
+  report.checks.entParentNoSavedAttempt=true;
+
   await page.screenshot({path:output+'/physique-mobile.jpg',type:'jpeg',quality:70,fullPage:true});
   fs.writeFileSync(output+'/rapport.json',JSON.stringify(report,null,2));
   process.stdout.write(JSON.stringify(report)+'\n');
