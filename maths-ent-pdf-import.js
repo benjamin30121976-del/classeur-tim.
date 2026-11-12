@@ -54,7 +54,7 @@ async function inspect(file){
   items.push({name,targetId:item.targetId,kind:item.kind,sha256:item.sha256,
    file:new File([bytes],name,{type:mime(item.kind)})});
  }
- if(seen.size!==EXPECTED.size||names.some(n=>n!=='manifest.json'&&!seen.has(n.replace(/^documents\//,''))||!n.startsWith('documents/')))
+ if(seen.size!==EXPECTED.size||names.some(n=>n!=='manifest.json'&&(!n.startsWith('documents/')||!seen.has(n.slice('documents/'.length)))))
   throw Error('L’archive contient des documents inattendus.');
  const lessons=window.__TIM_DATA?.lessons||[];
  for(const id of FAMILY_LESSONS)
