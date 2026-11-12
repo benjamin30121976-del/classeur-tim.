@@ -94,11 +94,7 @@ function bonusMissionPanel(onHome=false,subject=''){
   wolf.src=window.TIM_ANIMATIONS?.url?.('bonus')||'./assets/animations/Tim_Defi_Bonus_5XP.gif';
   wolf.alt='Loup animé avec casque, assis devant une fenêtre';
   wolf.width=307;wolf.height=309;
-  const present=E('div','bonus-present');
-  present.setAttribute('role','img');
-  present.setAttribute('aria-label','Cadeau noir entouré d’un ruban bleu');
-  present.append(E('span','bonus-present-bow'),E('span','bonus-present-lid'),E('span','bonus-present-box'));
-  scene.append(wolf,present);box.append(scene);
+  scene.append(wolf);box.append(scene);
  }
  if(!available.length){
   box.append(E('p','bonus-empty','Aucun exercice pour le moment.'));
@@ -288,7 +284,7 @@ function renderExerciseIndex(){
 }
 function answerValue(input){if(input.type==='radio'){const chosen=document.querySelector('input[name="'+input.name+'"]:checked');return chosen?chosen.value:'';}return input.value;}
 function freeOrTextAnswer(question,answer){if(question.type==='free')return null;const correct=question.type==='mc'?String(question.right)===String(answer):[question.right,...(question.also||[])].some(x=>norm(x)===norm(answer));return correct;}
-function openExercise(id){const ex=exerciseBy(id);if(!ex)return;const existing=attemptFor(id),completedChallenge=Boolean(existing&&['daily','weekly','sunday','bonus-parent'].includes(ex.kind));window.__TIM_OPEN_EXERCISE_ID=id;page('exercices');document.getElementById('exercise-index').classList.add('hide');const root=clear(document.getElementById('exercise-detail'));root.classList.add('active');root.append(button('← Retour aux exercices',()=>{root.classList.remove('active');document.getElementById('exercise-index').classList.remove('hide');renderExerciseIndex();scrollTop();},'plain back'));root.append(badge(ex.level),E('h2','',ex.title),E('p','intro',exerciseDescription(ex)));
+function openExercise(id){const ex=exerciseBy(id);if(!ex)return;const existing=attemptFor(id),completedChallenge=Boolean(existing&&['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind));window.__TIM_OPEN_EXERCISE_ID=id;page('exercices');document.getElementById('exercise-index').classList.add('hide');const root=clear(document.getElementById('exercise-detail'));root.classList.add('active');root.append(button('← Retour aux exercices',()=>{root.classList.remove('active');document.getElementById('exercise-index').classList.remove('hide');renderExerciseIndex();scrollTop();},'plain back'));root.append(badge(ex.level),E('h2','',ex.title),E('p','intro',exerciseDescription(ex)));
 if(ex.kind==='daily'&&ex.questionBank==='spanish-ent-v1'){
  root.append(E('p','small','Révision de plusieurs leçons d’espagnol : vocabulaire, phrases, traduction et conjugaison.'));
  root.append(button('Revoir les leçons d’espagnol',()=>{page('matieres');renderMatiere('Espagnol');},'plain'));
@@ -308,7 +304,7 @@ ex.questions.forEach((question,i)=>{const row=E('div','q');row.append(E('div','q
 function values(){return controls.map(c=>c.kind==='mc'?(document.querySelector('input[name="'+c.name+'"]:checked')?.value??''):c.node.value.trim());}
 function saveDraft(){if(old)return;const d=drafts();d[id]=values();save(DRAFT_KEY,d);}
 if(old){
- const challenge=['daily','weekly','sunday','bonus-parent'].includes(ex.kind);
+ const challenge=['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind);
  if(challenge){
   const summary=E('section','panel challenge-result-summary');summary.id='challenge-result-summary';
   summary.style.cssText='margin:12px 0;padding:18px;border:2px solid #dfbc61;border-radius:16px;line-height:1.6';
@@ -364,7 +360,7 @@ if(old){
   if(notification?.catch)notification.catch(()=>{});
   const d=drafts();delete d[id];save(DRAFT_KEY,d);v7NewAttempt(saved);
   // Un défi affiche son BILAN (note, XP, correction) directement, sans alerte XP seule.
-  const isChallenge=['daily','weekly','sunday','bonus-parent'].includes(ex.kind);
+  const isChallenge=['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind);
   try{
    if(isChallenge)await window.TIM_ANIMATIONS?.playResult?.(ex,saved);
    else alert('Devoir envoyé. '+(saved.xp>=0?'+':'')+saved.xp+' XP. '+(saved.correctionStatus==='released'?'Correction disponible.':'Correction en attente du parent.'));
@@ -392,12 +388,14 @@ if(!old && !window.__TIM_PARENT && controls.length>1){
  }
 scrollTop();}
 function renderFeedback(ex,t,root){
- const isChallenge=['daily','weekly','sunday','bonus-parent'].includes(ex.kind);
+ const isChallenge=['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind);
+ const isBonusDay=ex.kind==='bonus-day';
  const box=E('section','result'+(t.needsReview?' waiting':''));
  const perfect=!t.needsReview&&Number(t.score)===Number(t.total)&&Number(t.total)>0&&
   Array.isArray(t.answers)&&t.answers.length===Number(t.total)&&t.answers.every(a=>a.correct===true);
  if(isChallenge)box.id='challenge-detailed-correction';
- box.append(E('h3','',perfect?'Toutes les réponses sont correctes — aucune correction nécessaire.':
+ box.append(E('h3','',isBonusDay?(perfect?'Aucune erreur à corriger.':'Voir mes erreurs corrigées'):
+  perfect?'Toutes les réponses sont correctes — aucune correction nécessaire.':
   t.needsReview?'Rédaction enregistrée — à revoir':'Correction détaillée : '+t.score+'/'+t.total));
  box.append(E('p','subtle','Validé le '+new Date(t.date).toLocaleString('fr-FR')+'. Les réponses sont verrouillées sur tous les appareils.'));
  // Questions et réponses toujours relisibles, sans expliquer les réponses déjà correctes.
@@ -409,9 +407,9 @@ function renderFeedback(ex,t,root){
   row.append(E('strong','',(i+1)+'. '+safe(a.question||q.q||'Question')),E('p','','Ma réponse : '+safe(given)));
   review.append(row);
  }
- box.append(review);
+ if(!isBonusDay)box.append(review);
  for(const [i,a] of (perfect?[]:t.answers).entries()){
-  if(a.correct===true)continue;
+  if(a.correct===true||(isBonusDay&&a.correct!==false))continue;
   const q=ex.questions[i]||{},p=E('div','feedback');
   const given=q.type==='mc'?(q.options?.[Number(a.response)]??a.response):a.response;
   p.append(E('strong','',(i+1)+'. '+safe(a.question||q.q||'Question')),E('p','','Ta réponse : '+safe(given)));
@@ -436,7 +434,12 @@ function renderFeedback(ex,t,root){
   box.append(p);
  }
  if(isChallenge){
-  root.append(box,v7Feedback(ex,t));
+  root.append(box);
+  if(isBonusDay){
+   review.querySelector('summary').textContent='Relire mon exercice — toutes mes réponses';
+   root.append(review);
+  }
+  root.append(v7Feedback(ex,t));
  }else root.append(v7Feedback(ex,t),box);
  if(t.answers.some(a=>a.correct===false))root.append(button('Voir mon carnet des difficultés',()=>page('difficultes'),'plain'));
 }
