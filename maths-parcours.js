@@ -74,7 +74,7 @@ function groupOfEnt(lesson){
  return null;
 }
 function entFor(g){return mathEntList().filter(x=>groupOfEnt(x)===g);}
-function exFor(g){const ids=new Set(entFor(g).map(x=>x.id));return exercises.filter(x=>x.subject==='Mathématiques'&&ids.has(x.lesson)&&x.category!=='bonus');}
+function exFor(g){const ids=new Set([...entFor(g),...ent.filter(x=>groupOfEnt(x)===g)].map(x=>x.id));return exercises.filter(x=>x.subject==='Mathématiques'&&ids.has(x.lesson)&&x.category!=='bonus');}
 function header(title,sub){return '<header class="spx-hero"><span class="spx-kicker">MATHÉMATIQUES · CLASSEUR DE TIM</span><h2>'+esc(title)+'</h2><p>'+esc(sub)+'</p></header>';}
 function back(label){return '<button type="button" class="spx-back" data-math-back>← '+esc(label)+'</button>';}
 function draw(html,backFn){if(!root)return;root.innerHTML='<div class="spx math-path">'+html+'</div>';const b=root.querySelector('[data-math-back]');if(b)b.onclick=backFn;try{root.scrollIntoView({block:'start'});}catch(e){}}
