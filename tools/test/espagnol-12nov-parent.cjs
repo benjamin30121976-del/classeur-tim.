@@ -39,6 +39,7 @@ async function check(browser,name,viewport){
   assert.match(await card.locator('summary').textContent(),/12 novembre/);
   await card.locator('summary').evaluate(el=>el.click());
   await card.getByText('Texte de Mme Gonzalez dans l’ENT').waitFor({state:'visible',timeout:10000});
+  await card.getByText('Devoir pour mardi 17 novembre').waitFor({state:'visible',timeout:15000});
   assert((await card.textContent()).includes('terminar la fotocopia'));
   assert((await card.textContent()).includes('no… sino'));
   const viewer=card.locator('.pc-inline-pdf');
