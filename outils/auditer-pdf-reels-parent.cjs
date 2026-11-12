@@ -77,9 +77,9 @@ async function verify(browser,device,viewport){
       const task=lib.getDocument({data:new Uint8Array(await blob.arrayBuffer()),isEvalSupported:false});
       const pdf=await task.promise;
       r.pages+=pdf.numPages;
-      await task.destroy();
       r.parsed++;
-     }catch(e){r.failed++;}
+      try{await task.destroy();}catch{}
+     }catch(e){r.failed++;r.lastError=String(e?.name||'Erreur')+': '+String(e?.message||'Inconnue').slice(0,150);}
     }
     groups[name]=r;
    }
@@ -87,7 +87,7 @@ async function verify(browser,device,viewport){
   });
   report[device].parsed=parse;
   for(const [subject,s] of Object.entries(parse)){
-   console.log(device+' '+subject+' : '+s.parsed+'/'+s.present+' PDF ouverts, '+s.pages+' pages reconnues.');
+   console.log(device+' '+subject+' : '+s.parsed+'/'+s.present+' PDF ouverts, '+s.pages+' pages reconnues.'+(s.lastError?' Type erreur : '+s.lastError:''));
    assert(s.parsed===s.present,device+' '+subject+' : certains PDF reels ne peuvent pas etre ouverts');
   }
   // Render an actual PDF in each lesson's same-page component.
