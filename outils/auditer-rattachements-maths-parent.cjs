@@ -37,6 +37,8 @@ const dates=['2026-09-17','2026-09-21','2026-10-01','2026-10-02','2026-10-09','2
    return {total:datesReport.length,registeredMaths:list.filter(x=>x.subject==='Mathématiques'&&/^M26S/.test(x.id||'')).length,
     datesReport};
   },dates);
+  const catalogue=await page.evaluate(()=>(window.__TIM_DATA?.lessons||[]).filter(l=>l.subject==='Mathématiques'&&l.kind!=='bis'&&l.category!=='bis').map(l=>({id:l.id,date:l.date,kind:l.kind,category:l.category})).slice(0,25));
+  console.log('Identifiants des cours de mathématiques (sans contenu ni réponses) : '+JSON.stringify(catalogue));
   for(const x of result.datesReport)console.log(x.date+': '+(x.found?'cours et stockage Firebase identifiés ; PDF présents='+x.documents:'non trouvé')+
     (x.error?'; '+x.error:''));
   assert(result.datesReport.every(x=>x.found&&x.existsInMaths),'Une ou plusieurs séances ENT ne peuvent pas recevoir leurs PDF');
