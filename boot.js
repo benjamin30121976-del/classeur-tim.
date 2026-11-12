@@ -723,7 +723,25 @@ async function startSession(user){
       translationsUsed.some(v=>typeof v!=='boolean')||
       answers.some(v=>!((Number.isInteger(v)&&v>=0&&v<=3)||(typeof v==='string'&&v.trim().length>0&&v.length<=200))))
       throw Error('Réponses incomplètes.');
-   const r=await cloudCallable(/^ESE_L14_/.test(id)?'submitSpanishNov12Training':'submitSpanishEntTraining')({id,answers,translationsUsed});
+   if(window.TIM_ES12_STUDY?.isId(id)){
+    const exercise=window.__TIM_DATA?.exercises?.find(x=>x.id===id);
+    if(exercise?.questions?.length!==10)throw Error('L’exercice du 12 novembre est absent de Firestore.');
+    // Précharger la correction avant la soumission pour éviter un échec d'affichage
+    // après une validation serveur déjà irréversible.
+    const {nov12Evaluate}=await import('./espagnol-12nov-correction.mjs?v=import-parent-12nov-v1');
+    const localReport=nov12Evaluate(id,answers,translationsUsed);
+    if(!localReport)throw Error('Les dix réponses sont nécessaires.');
+    const receipt=await cloudCallable('submitTimExercise')({id,answers});
+    if(receipt.data?.submitted!==true||Number(receipt.data?.xp)!==0)
+     throw Error('La validation Firebase n’a pas été confirmée. Ne recommence pas avant de vérifier la copie.');
+    const report={...localReport,submitted:true,xp:0};
+    window.TIM_ES12_STUDY.remember(id,report);
+    try{await fetchAttempts(window.__TIM_DATA);}catch(error){
+     console.warn('Résultats du 12 novembre à actualiser.',error?.message||error);
+    }
+    return report;
+   }
+   const r=await cloudCallable('submitSpanishEntTraining')({id,answers,translationsUsed});
    if(!r.data?.submitted||!Number.isFinite(r.data.score)||r.data.score<0||r.data.score>10||
       ![0,0.5,1].includes(r.data.xp)||
       !Array.isArray(r.data.items)||r.data.items.length!==10||
