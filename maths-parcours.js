@@ -122,8 +122,12 @@ function home(){
  btn('data-math-all-ent','all','Consulter les '+mathEntList().length+' cours originaux')+'</details>',options.back);
  wire();
  const importHost=root.querySelector('#math-ent-import-mount');
- if(importHost&&window.__TIM_PARENT&&!window.__TIM_GUEST&&window.TIM_MATH_ENT_PDF_IMPORT?.render)
-  importHost.append(window.TIM_MATH_ENT_PDF_IMPORT.render());
+ if(importHost&&window.__TIM_PARENT&&!window.__TIM_GUEST){
+  // Archive complète des 17 PDF, y compris les premières séances de septembre.
+  if(window.TIM_MATH_PDF_BULK_IMPORT?.render)importHost.append(window.TIM_MATH_PDF_BULK_IMPORT.render());
+  // Import historique des neuf documents dont les présentations ODP originales.
+  if(window.TIM_MATH_ENT_PDF_IMPORT?.render)importHost.append(window.TIM_MATH_ENT_PDF_IMPORT.render());
+ }
  const area=root.querySelector('#math-ent-home-directory');
  if(area&&window.TIM_MATH_ENT?.renderDirectory)window.TIM_MATH_ENT.renderDirectory(area);
  else if(area)area.textContent='Les exercices ENT interactifs ne sont pas encore disponibles.';
