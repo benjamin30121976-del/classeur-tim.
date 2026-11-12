@@ -64,7 +64,7 @@ async function check(browser,name,viewport){
    assert.equal(check.present,3,'Les trois exercices importés sont masqués dans la version V16.');
    assert.equal(check.taskLength,10,'L’exercice 14 ne se charge pas depuis Firestore.');
    assert.equal(check.noOriginalAnswers,true,'La lecture publique de la fiche contient des réponses.');
-   const {nov12ForParentImport}=await import('../functions/spanish-nov12-training.mjs');
+   const {nov12ForParentImport}=await import('../../functions/spanish-nov12-training.mjs');
    const answers=nov12ForParentImport()[0].questions.map(q=>q.type==='mc'?Number(q.right):String(q.right));
    const report=await page.evaluate(async answers=>
     window.__TIM_BRIDGE.spanishEntTrainingPreview('ESE_L14_01',answers,Array(10).fill(false)),answers);
