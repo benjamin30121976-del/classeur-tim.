@@ -123,7 +123,11 @@ function originalPanel(slot,id,mode){
   });
   slot.append(E('p','','Les pages exactes du manuel ne sont pas dans cette archive : ne pas les reconstituer.'));
  }
- slot.append(E('p','','Les PDF et le PowerPoint sont conservés dans la bibliothèque scolaire privée. Leur lecteur n’est pas encore connecté à cette matière.'));
+ const docArea=E('section','pc-lesson-files');
+ docArea.append(E('h4','','Fichiers originaux du professeur'));
+ slot.append(docArea);
+ if(window.TIM_PHYSICS_DOCUMENTS?.lessonFiles)window.TIM_PHYSICS_DOCUMENTS.lessonFiles(id,docArea);
+ else docArea.append(E('p','','Le lecteur des pièces jointes n’est pas disponible.'));
 }
 function showCard(id,scroll=true){
  activeId=id;cards.forEach(c=>{
@@ -318,6 +322,7 @@ function archives(){
  inside.append(E('h3','','Pièces jointes d’origine classées dans la bibliothèque scolaire'));
  FILES.forEach(name=>inside.append(E('p','',name)));
  inside.append(E('p','','Ces fichiers sont dans la bibliothèque privée de Tim. Aucun faux lien de téléchargement n’est affiché ici.'));
+ if(window.TIM_PHYSICS_DOCUMENTS?.parentImport)inside.append(window.TIM_PHYSICS_DOCUMENTS.parentImport());
  a.append(inside);return a;
 }
 function render(container,options={}){
