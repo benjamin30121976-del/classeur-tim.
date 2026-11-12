@@ -24,19 +24,19 @@ const url=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
   await page.locator('#login-password').fill(password);
   await page.locator('#login-button').click();
   await page.waitForFunction(()=>window.__TIM_PARENT===true&&document.body.classList.contains('ready')&&typeof window.__TIM_BRIDGE?.publish==='function',null,{timeout:45000});
-  const plan=await page.evaluate(rows=>{
-   const pack=window.__TIM_DATA||{};
-   const lessons=new Set((pack.lessons||[]).map(x=>x.id));
-   const existing=new Map((pack.exercises||[]).map(x=>[x.id,x]));
-   if(!lessons.has('L14'))throw Error('Leçon L14 absente : aucun import effectué.');
-   for(const q of rows){
-    if(existing.has(q.id)){
-     const old=existing.get(q.id);
-     if(old.questions?.length!==10||old.lesson!=='L14')
-      throw Error('Un identifiant existe avec une autre structure : aucun écrasement.');
-    }
+  const plan=await page.evaluate(async rows=>{
+   const {getApp}=await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js');
+   const {getFirestore,doc,getDoc}=await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js');
+   const db=getFirestore(getApp());
+   const saved=await Promise.all(rows.map(x=>getDoc(doc(db,'exercises',x.id))));
+   const existing=saved.filter(x=>x.exists());
+   for(const snap of existing){
+    const raw=snap.data();
+    const item=raw.payloadJson?JSON.parse(raw.payloadJson):raw;
+    if(item.id!==snap.id||item.lesson!=='L14'||item.questions?.length!==10)
+      throw Error('Exercice déjà présent avec une structure différente : aucun écrasement.');
    }
-   return {ids:rows.filter(x=>!existing.has(x.id)).map(x=>x.id),found:rows.length-rows.filter(x=>!existing.has(x.id)).length};
+   return {ids:rows.filter((_,i)=>!saved[i].exists()).map(x=>x.id),found:existing.length};
   },exercises);
   console.log('Exercices du 12 novembre déjà présents : '+plan.found+' / 3.');
   if(plan.ids.length){
@@ -55,9 +55,12 @@ const url=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
    }
   }
   await page.waitForFunction(()=>window.__TIM_PARENT===true&&document.body.classList.contains('ready'),null,{timeout:45000});
-  const verify=await page.evaluate(ids=>{
-   const docs=window.__TIM_DATA?.exercises||[];
-   return ids.filter(id=>docs.some(x=>x.id===id&&x.questions?.length===10)).length;
+  const verify=await page.evaluate(async ids=>{
+   const {getApp}=await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js');
+   const {getFirestore,doc,getDoc}=await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js');
+   const db=getFirestore(getApp());
+   const snapshots=await Promise.all(ids.map(id=>getDoc(doc(db,'exercises',id))));
+   return snapshots.filter(s=>s.exists()&&JSON.parse(s.data().payloadJson||'{}').questions?.length===10).length;
   },exercises.map(x=>x.id));
   assert.equal(verify,3,'La relecture de Firebase ne confirme pas les 3 exercices.');
   console.log('CONFIRMÉ : 3 exercices de 10 questions relus dans Firestore avec le compte Parent. Aucun résultat de Tim modifié.');
