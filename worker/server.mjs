@@ -59,6 +59,11 @@ async function resolveExercise(db,id){
  }
  const extra=await db.get('exercises/'+id);
  let raw=extra;
+ // Les exercices ajoutés au classeur sont stockés avec leur payloadJson privé.
+ if(raw&&typeof raw.payloadJson==='string'){
+  try{const parsed=JSON.parse(raw.payloadJson);if(parsed.id!==id)throw Error('ID mismatch');raw=parsed;}
+  catch{throw new ApiFault(409,'exercise-invalid');}
+ }
  if(!raw){
   const pub=await db.get('publicExercises/'+id);
   const key=await db.get('answerKeys/'+id);
