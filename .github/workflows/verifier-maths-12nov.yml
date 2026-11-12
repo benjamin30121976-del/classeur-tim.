@@ -1,0 +1,46 @@
+name: Vérifier Maths 12 novembre sur comptes Parent et Tim
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/test/maths-12nov-parent-tim.cjs'
+      - 'maths-12nov-training.mjs'
+      - 'maths-12nov-ui.js'
+      - 'maths-parcours.js'
+      - 'boot.js'
+      - 'index.html'
+      - '.github/workflows/verifier-maths-12nov.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  controle:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+      TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
+      TIM_STUDENT_EMAIL: ${{ secrets.TIM_STUDENT_EMAIL }}
+      TIM_STUDENT_PASSWORD: ${{ secrets.TIM_STUDENT_PASSWORD }}
+      TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier la syntaxe et la banque de 30 QCM
+        run: |
+          node --check maths-parcours.js
+          node --check maths-12nov-ui.js
+          node --check boot.js
+          node --check tools/test/maths-12nov-parent-tim.cjs
+          node --test tools/test/maths-12nov-training.test.mjs
+      - name: Préparer le navigateur Chromium
+        run: |
+          mkdir -p /tmp/tim-maths12-test
+          npm install --prefix /tmp/tim-maths12-test --no-audit --no-fund playwright
+          /tmp/tim-maths12-test/node_modules/.bin/playwright install --with-deps chromium
+      - name: Vérifier les comptes Parent et Tim, sans envoyer de réponses
+        env:
+          NODE_PATH: /tmp/tim-maths12-test/node_modules
+        run: node tools/test/maths-12nov-parent-tim.cjs
