@@ -44,6 +44,10 @@ async function main(){
   await page.locator('#guest-enter').waitFor({state:'visible',timeout:30000});
   await page.locator('#guest-enter').click();
   await page.locator('body.guest-mode').waitFor({timeout:30000});
+  // La cinématique d'accueil est indépendante des questionnaires à auditer.
+  // L'écarter uniquement dans ce navigateur de test, jamais dans le vrai site.
+  await page.addStyleTag({content:'#intro-screen{display:none!important;pointer-events:none!important}'});
+
   const intro=page.locator('#intro-screen');
   if(await intro.isVisible()){
    const skip=page.locator('#intro-skip');
