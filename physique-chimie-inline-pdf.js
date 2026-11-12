@@ -51,7 +51,7 @@ async function load(ref){
   if(!window.pdfjsLib)throw Error('Le moteur de lecture PDF n’a pas été chargé.');
   window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.2.146/build/pdf.worker.min.js';
   const data=new Uint8Array(await blob.arrayBuffer());
-  const pdf=await window.pdfjsLib.getDocument({data}).promise;
+  const pdf=await window.pdfjsLib.getDocument({data,isEvalSupported:false,enableXfa:false}).promise;
   return {pdf,meta};
  })();
  cache.set(k,p);
