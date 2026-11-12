@@ -35,9 +35,9 @@ function viewTimEnt(id){
  back('Retour à tous les cours ENT')+
  '<article class="spx-panel math-reading-lesson">'+
  '<section class="math-reading-section"><h3>En classe — texte du professeur</h3><p>'+esc(x.teacher)+'</p></section>'+
+ (isThales?'<section data-tim-thales-original-pdf class="math-reading-section"></section>':'')+
  '<section class="math-reading-section"><h3>Travail demandé — texte ENT</h3><p>'+esc(x.work)+'</p></section>'+
  '<section class="math-reading-section"><h3>Source et limites</h3><p>'+esc(x.source)+'. '+esc(x.note)+'</p></section></article>'+
- (isThales?'<section data-tim-thales-original-pdf class="math-reading-section"></section>':'')+
  '<div class="math-reading-actions"><h3>'+(isThales?'Comprendre la réciproque de Thalès':'Comprendre la factorisation')+'</h3>'+
  (isThales?btn('data-math-reciproque','lesson','Lire la leçon BIS expliquée'):btn('data-math-factor','lesson','Lire la leçon simplifiée'))+
  '</div>',viewEntChronology);
@@ -49,7 +49,7 @@ function mountTimThalesSource(){
  if(host&&window.TIM_INLINE_ENT_DOCUMENTS?.mount){
   window.TIM_INLINE_ENT_DOCUMENTS.mount(host,['M26S1009'],{
    title:'Support du professeur du 9 octobre : théorème de Thalès (déjà archivé, non joint au cours du 12 novembre)',
-   filenamePattern:/leçon.*théorème.*thalès\.pdf/i,limit:1,auto:false
+   filenamePattern:/leçon.*théorème.*thalès\.pdf/i,limit:1,auto:true
   }).catch(()=>{host.textContent='Le PDF de Thalès du 9 octobre est momentanément indisponible.';});
  }
 }
@@ -58,7 +58,8 @@ function viewTimReciproqueThales(){
  draw(header('Leçon BIS · La réciproque de Thalès','Explication pédagogique du cours du jeudi 12 novembre, distincte du texte officiel du professeur.')+
  back('Retour au chapitre Thalès')+
  '<article class="spx-panel math-reading-lesson">'+
- '<section class="math-reading-section"><h3>1 · Comprendre à quoi ça sert</h3><p>La réciproque de Thalès sert à <strong>prouver que deux droites sont parallèles</strong>, à partir de longueurs connues. Le théorème de Thalès fait l’inverse : si les droites sont parallèles, il permet d’écrire des rapports égaux.</p></section>'+
+ '<section class="math-reading-section"><h3>1 · Comprendre à quoi ça sert</h3><p>La réciproque de Thalès sert à <strong>prouver que deux droites sont parallèles</strong>, à partir de longueurs connues. Le théorème de Thalès fait l’inverse : si les droites sont parallèles, il permet d’écrire des rapports égaux.</p></section>'+ 
+ '<section data-tim-thales-original-pdf class="math-reading-section"></section>'+
  '<section class="math-reading-section"><h3>2 · Regarder les alignements</h3><p>Dans le triangle ABC, les points A, D, B sont alignés dans cet ordre et les points A, E, C sont alignés dans cet ordre. On veut savoir si les droites (DE) et (BC) sont parallèles.</p>'+
  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 270" role="img" aria-label="Triangle ABC avec D sur AB, E sur AC et le segment DE" style="display:block;max-width:420px;width:100%;height:auto;margin:12px auto;background:#f5f9fc;border-radius:9px"><path d="M200 25 L55 235 L345 235 Z" fill="none" stroke="#25415f" stroke-width="3"/><line x1="143" y1="108" x2="257" y2="108" stroke="#137a88" stroke-width="4"/><g fill="#25415f" font-size="17" font-weight="700" font-family="Arial, sans-serif"><text x="190" y="19">A</text><text x="35" y="255">B</text><text x="346" y="255">C</text><text x="119" y="101">D</text><text x="269" y="105">E</text></g></svg>'+
  '<p>Le dessin aide à se repérer, mais ce sont les calculs qui prouvent le parallélisme.</p></section>'+
@@ -68,7 +69,6 @@ function viewTimReciproqueThales(){
  '<section class="math-reading-section"><h3>6 · Et si les rapports sont différents ?</h3><p>Par exemple : 3 / 5 = 0,6 mais 5 / 7 ≈ 0,714. Les rapports ne sont pas égaux ; si les points sont bien alignés, <strong>(DE) n’est pas parallèle à (BC)</strong> (contraposée de Thalès).</p></section>'+
  '<section class="math-reading-section"><h3>Devoir donné pour vendredi 13 novembre</h3><p><strong>Finir l’exercice 25 p.253.</strong> L’énoncé du manuel n’est pas présent dans l’archive ENT ; il n’est pas reproduit ici.</p></section>'+
  '</article>'+
- '<section data-tim-thales-original-pdf class="math-reading-section"></section>'+
  '<div class="math-reading-actions">'+btn('data-math-open-original','TIM_ENT_20261112','Relire le texte exact du cours ENT du 12 novembre')+'</div>',()=>category(GROUPS[3]));
  wire();
  mountTimThalesSource();
