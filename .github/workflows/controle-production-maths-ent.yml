@@ -1,0 +1,64 @@
+name: Contrôle production — Exercices ENT Mathématiques
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/controle-production-maths-ent.yml'
+      - 'maths-ent-exercices.js'
+      - 'maths-parcours.js'
+      - 'app.js'
+      - 'boot.js'
+      - 'guest-access.js'
+      - 'index.html'
+      - 'parent-unified-results.js'
+      - 'worker/server.mjs'
+      - 'worker/math-ent-training.mjs'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  controler:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Vérifier les deux devoirs ENT maths réellement publiés
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://classeur-tim-v16.pages.dev"
+          success=0
+          for essai in $(seq 1 24); do
+            curl -fsSL --max-time 20 "$BASE/" -o /tmp/index.html || true
+            curl -fsSL --max-time 20 "$BASE/maths-ent-exercices.js?v=ent-maths-interactif-20261112-v2" -o /tmp/math-ent.js || true
+            curl -fsSL --max-time 20 "$BASE/maths-parcours.js?v=maths-ent-menus-20261112-v4" -o /tmp/math-parcours.js || true
+            curl -fsSL --max-time 20 "$BASE/boot.js?v=maths-ent-20261112-v4" -o /tmp/boot.js || true
+            curl -fsSL --max-time 20 "$BASE/app.js?v=maths-ent-menu-20261112-v6" -o /tmp/app.js || true
+            curl -fsSL --max-time 20 "$BASE/parent-unified-results.js?v=maths-ent-parents-20261112-v3" -o /tmp/parent.js || true
+            curl -fsSL --max-time 20 "$BASE/api/status" -o /tmp/status.json || true
+            if grep -q 'maths-ent-exercices.js?v=ent-maths-interactif-20261112-v2' /tmp/index.html 2>/dev/null &&
+               grep -q 'ME_ENT_PROGRAMMES' /tmp/math-ent.js 2>/dev/null &&
+               grep -q 'ME_ENT_THALES3' /tmp/math-ent.js 2>/dev/null &&
+               grep -q "parent()?'Essayer cette fiche" /tmp/math-ent.js 2>/dev/null &&
+               grep -q 'TIM_MATH_ENT.renderDirectory' /tmp/math-parcours.js 2>/dev/null &&
+               grep -q 'mathEntPreviewSubmit' /tmp/boot.js 2>/dev/null &&
+               grep -q 'renderMathOfficialExercises' /tmp/app.js 2>/dev/null &&
+               grep -q 'mathEntProgress' /tmp/parent.js 2>/dev/null &&
+               grep -q '"mathEntInteractive":true' /tmp/status.json 2>/dev/null &&
+               grep -q '"mathEntOriginalTasks":2' /tmp/status.json 2>/dev/null; then
+              success=1
+              break
+            fi
+            sleep 10
+          done
+          test "$success" = 1
+          echo "Mathématiques : 2 fiches ENT, mode Parent et correction sécurisée sont publiés."
+      - name: Vérifier la non-publication du corrigé et du stockage privé
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://classeur-tim-v16.pages.dev"
+          for path in /worker/math-ent-training.mjs /worker/physics-ent-training.mjs; do
+            code=$(curl -sS -o /tmp/private-file -w '%{http_code}' --max-time 20 "$BASE$path")
+            test "$code" = "404"
+          done
+          echo "Les corrigés restent côté Worker et ne sont pas accessibles par URL."
