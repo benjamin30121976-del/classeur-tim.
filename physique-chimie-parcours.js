@@ -201,8 +201,9 @@ function drawing(id){
  const svg=PC_DRAWINGS[id];if(!svg)return null;
  const fig=E('figure','pc-learning-drawing');
  fig.style.cssText='margin:15px 0 23px;padding:14px 9px 10px;background:#f7faff;border:1px solid #d4e0ee;border-radius:12px;overflow:auto';
- const holder=E('div');holder.style.cssText='max-width:670px;margin:auto';holder.innerHTML=svg;
- const legend=E('figcaption','','Dessin simplifié pour comprendre ; les figures du professeur restent dans les documents ENT.');
+ const holder=E('div');holder.style.cssText='width:100%;min-width:510px;max-width:670px;margin:auto';holder.innerHTML=svg;
+ const graphic=holder.querySelector('svg');if(graphic){graphic.style.width='100%';graphic.style.height='auto';graphic.style.display='block';}
+ const legend=E('figcaption','','Dessin simplifié pour comprendre ; sur téléphone, fais glisser horizontalement si besoin. Les figures du professeur restent dans les documents ENT.');
  legend.style.cssText='font-size:13px;line-height:1.5;color:#445c76;margin-top:8px;text-align:center';
  fig.append(holder,legend);return fig;
 }
