@@ -48,7 +48,16 @@ function showCorrection(slot,report){
   box.append(E('p','', 'Pourquoi : '+(item.explanation||item.feedback||'Relire la leçon.')));
   slot.append(box);
  });
- slot.append(E('p','',parentPractice?'Vous pouvez recommencer cet essai depuis le menu, sans toucher aux résultats de Tim.':'Pour revoir la notion, clique sur « 2 · Leçon BIS » ou « 3 · Je n’ai pas compris » au-dessus.'));
+ slot.append(E('p','',parentPractice?'Vous pouvez recommencer cet essai sans toucher aux résultats de Tim.':'L’exercice n’est plus rejouable. Revois la méthode avant la prochaine activité.'));
+ const lessonId=/^PC_BIS0[1-7]$/.test(String(report.lessonId||''))?report.lessonId:
+  /^PCQ_L0[1-7]_0[1-3]$/.test(String(report.id||''))?'PC_BIS'+String(report.id).slice(5,7):null;
+ if(lessonId){
+  const reviser=button('Revoir la leçon BIS pour comprendre les erreurs',()=>{
+   window.TIM_PEDAGOGY_NAVIGATE?.('Physique-chimie',lessonId);
+  },'spx-quick-link');
+  reviser.style.cssText='display:block;width:100%;min-height:47px;margin:12px 0;padding:10px;font-weight:800';
+  slot.append(reviser);
+ }
 }
 async function loadSaved(slot,id){
  try{
