@@ -1,0 +1,58 @@
+name: Vérifier Physique-chimie, notation et parcours Chromium
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'worker/physics-*.mjs'
+      - 'worker/test/physics-training.test.mjs'
+      - 'worker/server.mjs'
+      - 'physique-chimie-*.js'
+      - 'tools/test/physique-parcours.chromium.cjs'
+      - '.github/workflows/verifier-physique-chimie.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  physique:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier la syntaxe des cours et du serveur
+        run: |
+          node --check worker/physics-training.mjs
+          for f in worker/physics-quiz-0*.mjs; do node --check "$f"; done
+          node --check worker/server.mjs
+          node --check physique-chimie-exercices.js
+          node --check physique-chimie-documents.js
+          node --check physique-chimie-parcours.js
+          node --check boot.js
+          node --check parent-unified-results.js
+      - name: Tester 21 questionnaires et sécurité de la validation
+        run: node --test worker/test/physics-training.test.mjs
+      - name: Installer Chromium Playwright pour un test visiteur, sans compte
+        run: |
+          mkdir -p /tmp/tim-physique
+          npm install --prefix /tmp/tim-physique --no-audit --no-fund playwright
+          if ! command -v google-chrome >/dev/null 2>&1 && ! command -v chromium >/dev/null 2>&1; then
+            /tmp/tim-physique/node_modules/.bin/playwright install --with-deps chromium
+          fi
+      - name: Tester localement les sept leçons et trois exercices par leçon dans Chromium
+        env:
+          NODE_PATH: /tmp/tim-physique/node_modules
+          TIM_SITE_URL: http://127.0.0.1:8779/
+        run: |
+          python3 -m http.server 8779 --bind 127.0.0.1 >/tmp/tim-physique-http.log 2>&1 &
+          sleep 3
+          node tools/test/physique-parcours.chromium.cjs
+      - name: Archiver le résultat du test sans aucune donnée de Tim
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: audit-physique-chimie
+          path: audit-physique/
+          if-no-files-found: warn
+          retention-days: 7
