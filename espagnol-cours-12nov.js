@@ -44,7 +44,7 @@ function render(){
  });
  return root;
 }
-async function build(slot){
+async function build(slot,mode='full'){
  slot.replaceChildren();
  const origin=section(slot,'1 · Texte de Mme Gonzalez dans l’ENT');
  const exact=e('p','Jueves 12 /11 : evaluación de conjugación\n-CE ”no empiezo en septiembre” grupo A (no… sino;nunca , nada; hemisferio sur) , plickers');
@@ -117,6 +117,7 @@ async function build(slot){
   }catch(_){st.textContent='Fiche momentanément inaccessible dans le stockage privé.';}
  }
 
+ if(mode==='full'){
  const bis=section(slot,'4 · Leçon BIS : comprendre les négations');
  para(bis,'En français, on dit « je ne commence pas en septembre, mais en mars ». En espagnol, « no… sino… » corrige la première idée : on remplace septembre par un autre mois.');
  const examples=e('ul');[
@@ -129,12 +130,17 @@ async function build(slot){
  para(help,'Pour « no… sino », repère ce qui est refusé après « no » et ce qui le remplace après « sino ». « Nunca » indique jamais ; « nada » signifie rien. Lis d’abord la phrase entière, puis traduis les mots difficiles.');
  para(help,'Exemple guidé : « No estudio el lunes, sino el martes » signifie « Je n’étudie pas le lundi, mais le mardi ». Attention : on ne traduit pas « sino » isolément comme un verbe.');
 
- const homework=section(slot,'6 · Devoir pour mardi 17 novembre');
+ }
+ const homework=section(slot,mode==='exercises'?'Devoir ENT pour mardi 17 novembre':'6 · Devoir pour mardi 17 novembre');
  const due=e('p','« Para el martes 17/11 : terminar la fotocopia grupo A “no empiezo en septiembre”. »');
  due.lang='es';homework.append(due);
  para(homework,'Traduction : terminer la photocopie du groupe A « Je ne commence pas en septembre ». Le cahier de textes indique aussi une évaluation de conjugaison concernant Tim.');
  const cite=e('p','Source ENT : cours 10099~6400554, contenu 10099~214865, devoir 10099~214866. Aucune nouvelle évaluation interactive, note ou tentative ajoutée.');
  cite.style.cssText=style.caption;homework.append(cite);
 }
-window.TIM_SPANISH_NOV12={render,ENT_ID,HOMEWORK_ID,PDF_NAME};
+async function renderOriginal(root,mode='course'){
+ root.replaceChildren();
+ await build(root,mode);
+}
+window.TIM_SPANISH_NOV12={render,renderOriginal,ENT_ID,HOMEWORK_ID,PDF_NAME};
 })();
