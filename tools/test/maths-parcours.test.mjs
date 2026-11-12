@@ -155,7 +155,9 @@ test('Mathématiques : choisir une leçon ouvre son cours complet avant les exer
  assert.doesNotMatch(category,/sectionBtns/);
  assert.match(reading,/math-reading-lesson/);
  assert.match(reading,/blocks\(x,'bis'\)/);
- assert.match(reading,/Après la leçon/);
+ assert.match(reading,/Étape 3 · Je m’exerce/);
+ assert.match(reading,/Étape 1 · Consulter ici les documents ENT du chapitre/);
+ assert.match(src,/data-math-method/);
  assert.match(reading,/Documents et exercices du professeur/);
  assert.doesNotMatch(reading,/sectionBtns/);
 });

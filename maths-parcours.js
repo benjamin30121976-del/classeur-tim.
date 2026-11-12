@@ -98,6 +98,7 @@ function wire(){
  root.querySelectorAll('[data-math-ent]').forEach(b=>b.onclick=()=>viewEnt(b.dataset.mathEnt));
  root.querySelectorAll('[data-math-bis]').forEach(b=>b.onclick=()=>viewBis(b.dataset.mathBis));
  root.querySelectorAll('[data-math-help]').forEach(b=>b.onclick=()=>viewHelp(b.dataset.mathHelp));
+ root.querySelectorAll('[data-math-method]').forEach(b=>b.onclick=()=>viewMathMethod(b.dataset.mathMethod));
  root.querySelectorAll('[data-math-ex]').forEach(b=>b.onclick=()=>viewEntExercises(b.dataset.mathEx));
  root.querySelectorAll('[data-math-ent-interactive]').forEach(b=>b.onclick=()=>viewEntExercises(b.dataset.mathEntInteractive));
  root.querySelectorAll('[data-math-programs]').forEach(b=>b.onclick=()=>viewProgramsOriginal());
@@ -214,13 +215,18 @@ function viewProgramsOriginal(){
   ()=>category(g));
  wire();
 }
+function viewMathMethod(id){
+ viewBis(id);
+ const method=[...(root?.querySelectorAll('.math-reading-section h3')||[])].find(h=>h.textContent==='Méthode étape par étape');
+ (method||root?.querySelector('.math-reading-lesson'))?.scrollIntoView?.({block:'start',behavior:'auto'});
+}
 function viewBis(id){
  selected=id;group=groupOfId(id);const x=lesson(id);if(!x)return;
  const g=group,hasEnt=entFor(g).length>0,hasEntEx=exFor(g).length>0;
- draw(header(cleanTitle(x.title),'Lis la leçon du début à la fin.')+
+ draw(header(cleanTitle(x.title),'Parcours conseillé : document ENT, méthode simplifiée, exemple, exercice puis correction expliquée.')+
  back('Retour à toutes les leçons')+
  '<article class="spx-panel math-reading-lesson">'+blocks(x,'bis')+'</article>'+
- '<div class="math-reading-actions"><h3>Après la leçon</h3>'+
+ '<div class="math-reading-actions"><h3>Étape 3 · Je m’exerce après avoir compris la leçon</h3>'+
  btn('data-math-help',id,'Je n’ai pas compris')+
  btn('data-math-train',id,'Faire les 10 questions')+
  '</div>'+
@@ -231,16 +237,23 @@ function viewBis(id){
  '</details>':''),
  home);
  wire();
- // Les documents du professeur restent dans cette leçon, sous la méthode BIS.
+ // Les PDF originaux disponibles restent sur cette page, avant la leçon BIS.
  // L'archive privée est interrogée seulement à l'ouverture du volet.
  const article=root.querySelector('.math-reading-lesson');
+ if(article){
+  const guide=document.createElement('p');
+  guide.className='math-bis-study-step';
+  guide.textContent='Étape 2 · Je comprends la règle, je suis la méthode et je lis les exemples corrigés.';
+  guide.style.cssText='font-weight:800;color:#294a75;line-height:1.55;margin:5px 0 15px';
+  article.prepend(guide);
+ }
  if(article&&window.TIM_INLINE_ENT_DOCUMENTS?.mount){
   const ids=entFor(g).map(e=>String(e.id||'')).filter(Boolean);
   if(ids.length){
    const details=document.createElement('details');details.className='math-inline-ent-sources';
    details.style.cssText='padding:12px;margin:16px 0;border:1px solid #bdd0e2;border-radius:12px;background:#edf5fd;color:#223c59';
    const summary=document.createElement('summary');
-   summary.textContent='Lire les PDF et schémas ENT dans cette leçon (sans changer de page)';
+   summary.textContent='Étape 1 · Consulter ici les documents ENT du chapitre (PDF et schémas)';
    summary.style.cssText='cursor:pointer;font-weight:800;line-height:1.5;min-height:40px';
    const slot=document.createElement('div');details.append(summary,slot);
    let mounted=false;
@@ -251,7 +264,7 @@ function viewBis(id){
      title:'Documents originaux du chapitre '+g.name,limit:10
     }).catch(err=>{slot.textContent='Lecture des PDF indisponible : '+String(err.message||err);});
    });
-   article.append(details);
+   article.prepend(details);
   }
  }
 }
@@ -324,7 +337,7 @@ function resultPage(record){
  (hasCorrection&&!perfect?record.items.map((a,i)=>({a,i})).filter(x=>!x.a.correct):[]).map(({a,i})=>'<section class="spx-panel math-correction incorrect"><h3>Question '+(i+1)+' : À revoir</h3><p><strong>'+esc(a.prompt)+'</strong></p><p>Réponse de Tim : '+esc(a.response)+'</p>'+ 
  (!a.correct?'<p>Réponse attendue : <strong>'+esc(a.expected)+'</strong></p>':'')+
  '<p>'+esc(a.explanation)+'</p>'+(a.entReference?.title?'<p>Document ENT à revoir : '+esc(a.entReference.title)+' · page(s) '+esc((a.entReference.pages||[]).join(', '))+'</p>':'')+'</section>').join('')+
- '<section class="spx-panel"><h3>Revoir la sous-leçon</h3>'+btn('data-math-bis',id,'2 · Leçon BIS')+btn('data-math-help',id,'3 · Je n’ai pas compris')+'</section>',()=>category(group));
+ '<section class="spx-panel"><h3>Revoir la sous-leçon</h3>'+btn('data-math-method',id,'Revoir la méthode étape par étape')+btn('data-math-bis',id,'Lire la leçon BIS complète')+btn('data-math-help',id,'Je n’ai pas compris')+'</section>',()=>category(group));
  wire();
 }
 /* Pour les programmes de calcul, présenter l'énoncé en étapes plutôt qu'en une phrase de 160 caractères. */

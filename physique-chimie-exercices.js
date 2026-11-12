@@ -36,7 +36,7 @@ function showCorrection(slot,report){
  heading.append(E('h3','', (parentPractice?'Simulation Parent — ':'Résultat de Tim — ')+report.score+' / 10'));
  heading.append(E('p','',parentPractice?'Mode essai Parent : 0 XP, aucune tentative ni note enregistrée.':Number(report.xp||0)+' XP · Validation unique · Correction conservée'));
  const count=report.items.filter(i=>!i.correct).length;
- heading.append(E('p','',count?count+' erreur(s) : relire la leçon BIS pour comprendre les réponses.':'Toutes les réponses sont correctes.'));
+ heading.append(E('p','',count?count+' erreur(s) : pour chacune, compare ta réponse, la réponse attendue et le raisonnement expliqué ci-dessous.':'Toutes les réponses sont correctes.'));
  slot.append(heading);
  report.items.forEach((item,i)=>{
   const box=E('section','tim-es-training-result-item');
@@ -51,7 +51,14 @@ function showCorrection(slot,report){
  slot.append(E('p','',parentPractice?'Vous pouvez recommencer cet essai sans toucher aux résultats de Tim.':'L’exercice n’est plus rejouable. Revois la méthode avant la prochaine activité.'));
  const lessonId=/^PC_BIS0[1-7]$/.test(String(report.lessonId||''))?report.lessonId:
   /^PCQ_L0[1-7]_0[1-3]$/.test(String(report.id||''))?'PC_BIS'+String(report.id).slice(5,7):null;
+ const reviewTitles={
+  PC_BIS01:'Comprendre les lettres Z, A et N',PC_BIS02:'Les ions positifs et négatifs',
+  PC_BIS03:'Lire les petits chiffres des formules',PC_BIS04:'Les axes et les échelles',
+  PC_BIS05:'La méthode des tests d’identification',PC_BIS06:'Les réactifs et les produits',
+  PC_BIS07:'Compter les atomes de chaque côté de la flèche'
+ };
  if(lessonId){
+  if(count)slot.append(E('p','','Partie conseillée à revoir : '+(reviewTitles[lessonId]||'la règle et les exemples')+'.'));
   const reviser=button('Revoir la leçon BIS pour comprendre les erreurs',()=>{
    window.TIM_PEDAGOGY_NAVIGATE?.('Physique-chimie',lessonId);
   },'spx-quick-link');

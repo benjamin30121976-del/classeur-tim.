@@ -94,7 +94,13 @@ function inlineLesson(holder,entId,renderL01,showExercises){
  const explained=window.TIM_SPANISH_BIS_EXPLAINED?.[entId]||null;
  const sheet=el('article',undefined,'tim-es-course-sheet');
  sheet.setAttribute('aria-label','Leçon BIS, expliquée pour Tim');
- const h=(title)=>sheet.append(el('h3',title));
+ const h=(title)=>{
+  const heading=el('h3',title);
+  if(title==='Comprendre la règle')heading.dataset.timReviewPart='rule';
+  if(title==='Comment faire')heading.dataset.timReviewPart='method';
+  if(title==='Un exemple corrigé, pas à pas')heading.dataset.timReviewPart='example';
+  sheet.append(heading);
+ };
  const para=(text,cls)=>sheet.append(el('p',text,cls));
  const example=(parent,item)=>{
   if(!Array.isArray(item)||item.length<2)return;
@@ -247,7 +253,9 @@ function inlineLesson(holder,entId,renderL01,showExercises){
  addChoice('Exercices BIS · 3 séries de 10 questions',()=>showExercises?.());
  original.hidden=true;
  help.hidden=true;
- holder.replaceChildren(sheet,menu,original,help,extra);
+ const route=el('p','Parcours conseillé : 1. lire le cours ENT et ses PDF ; 2. comprendre la leçon BIS et son exemple ; 3. faire les exercices ; 4. comprendre sa correction.','tim-es-study-route');
+ route.style.cssText='padding:10px 12px;margin:9px 0;border-left:3px solid #5378b8;background:#f1f5fb;color:#213f66;line-height:1.55';
+ holder.replaceChildren(route,menu,original,sheet,help,extra);
 }
 
 function spellingWarning(parent){
@@ -308,6 +316,22 @@ function drawCorrection(slot,report,lessonNumber,ensureLesson){
     card.append(rule);
     p(card,item.explanation,'font-size:14px;color:#495975;line-height:1.6;margin:5px 0 9px');
    }
+   const category=String(item.category||'');
+   const part=/(conjugaison|accord|construction|accent|ponctuation|grammaire)/i.test(category)?'method':
+    /(vocabulaire|traduction)/i.test(category)?'rule':'example';
+   const partName=part==='rule'?'Comprendre la règle':part==='method'?'Comment faire':'Un exemple corrigé, pas à pas';
+   p(card,'Partie à revoir dans la leçon : « '+partName+' ».','font-size:14px;font-weight:850;color:#294a79;margin:9px 0');
+   const go=button('Revoir cette partie de la leçon');
+   go.type='button';
+   go.onclick=()=>{
+    ensureLesson();
+    const lesson=slot.closest('.tim-es-lesson');
+    const anchor=lesson?.querySelector('[data-tim-review-part="'+part+'"]')||
+     lesson?.querySelector('[data-tim-review-part="rule"]')||
+     lesson?.querySelector('.tim-es-course-sheet');
+    anchor?.scrollIntoView?.({block:'start',behavior:'auto'});
+   };
+   card.append(go);
    wrapper.append(card);
   }
   const back=button('Revoir la leçon pour comprendre mes erreurs');
