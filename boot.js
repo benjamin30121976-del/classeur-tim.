@@ -410,7 +410,7 @@ async function fetchAttempts(content){
    answers:isParent&&Array.isArray(secret?.answers)?secret.answers:[],
    score:isParent&&Number.isFinite(secret?.score)?secret.score:null,
    total:isParent&&Number.isFinite(secret?.total)?secret.total:null,
-   ...(isParent&&Number.isInteger(secret?.translationHelpCount)?{translationHelpCount:secret.translationHelpCount}:{})
+   ...(isParent&&Number.isInteger(secret?.translationHelpCount)?{translationHelpCount:secret.translationHelpCount}:{}),
    needsReview:isParent?Boolean(secret?.needsReview):false
   });
  });
