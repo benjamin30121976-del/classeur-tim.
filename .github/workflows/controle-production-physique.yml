@@ -42,7 +42,7 @@ jobs:
                grep -q 'TIM_PHYSICS_TRAINING' /tmp/pc-parcours.js 2>/dev/null &&
                grep -q 'physicsTrainingPreviewSubmit' /tmp/pc-boot.js 2>/dev/null &&
                grep -q 'renderPhysicsExerciseDirectory' /tmp/pc-app.js 2>/dev/null &&
-               grep -q 'Mode essai Parent' /tmp/pc-parcours.js 2>/dev/null &&
+               grep -q 'Compte Parent' /tmp/pc-parcours.js 2>/dev/null &&
                grep -q 'TIM_PHYSICS_INLINE_PDF.originalFiles' /tmp/pc-documents.js 2>/dev/null &&
                grep -q 'Le PDF original du professeur' /tmp/pc-parcours.js 2>/dev/null; then
                ok=1
