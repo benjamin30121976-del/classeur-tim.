@@ -31,13 +31,22 @@ async function check(browser,name,viewport){
   console.log(name+' : cours espagnols originaux dans Firebase='+inv.lessons+
     ', seance 12 novembre deja presente='+inv.has1211+
     ', PDF groupe A deja present='+inv.teacherPdf);
+  await page.addScriptTag({content:readFileSync('espagnol-simplifie.js','utf8')});
   await page.addScriptTag({content:readFileSync('espagnol-cours-12nov.js','utf8')});
   await page.addScriptTag({content:readFileSync('espagnol-ent-exact.js','utf8')});
   await page.evaluate(()=>window.TIM_PEDAGOGY_NAVIGATE('Espagnol','10099~6400554'));
-  const card=page.locator('#matieres-content .tim-es-nov12');
-  await card.waitFor({state:'visible',timeout:16000});
-  assert.match(await card.locator('summary').textContent(),/12 novembre/);
-  await card.locator('summary').evaluate(el=>el.click());
+  const cards=page.locator('#matieres-content details.tim-es-lesson');
+  assert.equal(await cards.count(),14,name+' : les 13 anciennes et la leçon 14 doivent être dans la liste');
+  const count=await page.evaluate(()=>window.TIM_SPANISH_SIMPLIFIED?.lessons?.length);
+  assert.equal(count,14,name+' : le compteur des leçons doit suivre les nouvelles séances');
+  assert.equal(await page.locator('#matieres-content [data-es-training-id]').count(),39,
+   name+' : les 39 exercices précédents ne doivent pas être recréés ou renumérotés');
+  const feature=page.locator('#matieres-content .tim-es-latest-course');
+  await feature.waitFor({state:'visible',timeout:16000});
+  assert.match(await feature.textContent(),/Dernier cours ENT · Jeudi 12 novembre/);
+  const card=page.locator('#matieres-content details.tim-es-nov12-lesson');
+  assert.match(await card.locator('summary').textContent(),/Leçon 14/);
+  await feature.getByRole('button',{name:/Ouvrir la leçon 14/}).click();
   await card.getByText('Texte de Mme Gonzalez dans l’ENT').waitFor({state:'visible',timeout:10000});
   await card.getByText('Devoir pour mardi 17 novembre').waitFor({state:'visible',timeout:15000});
   assert((await card.textContent()).includes('terminar la fotocopia'));
@@ -48,7 +57,7 @@ async function check(browser,name,viewport){
    assert.equal(await viewer.getByRole('button',{name:'Afficher ici le document du professeur'}).count(),0);
    await viewer.scrollIntoViewIfNeeded();
    const ok=await page.waitForFunction(()=>{
-    const node=document.querySelector('#matieres-content .tim-es-nov12 .pc-inline-pdf');
+    const node=document.querySelector('#matieres-content .tim-es-nov12-lesson .pc-inline-pdf');
     const canvas=node?.querySelector('canvas'),status=node?.querySelector('.pc-pdf-toolbar span')?.textContent||'';
     return Boolean(canvas?.width>0&&canvas?.height>0&&/^Page \d+ \/ \d+$/.test(status));
    },null,{timeout:30000}).then(()=>true).catch(()=>false);
