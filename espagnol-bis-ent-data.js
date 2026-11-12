@@ -97,5 +97,40 @@ function render(panel,id){
  glossary(body,entry);
  bis.append(body);panel.append(bis);return true;
 }
+/* Leçon BIS du 12/11 — aide pédagogique, sans reproduction de la photocopie. */
+verbs.empezar={meaning:'commencer (e devient ie sauf nous et vous)',forms:['empiezo','empiezas','empieza','empezamos','empezáis','empiezan']};
+lessons['10099~6400554']={
+ id:'10099~6400554',
+ title:'12 novembre — No empiezo en septiembre : négations et saisons',
+ goal:'Comprendre la consigne de compréhension écrite, les négations no… sino, nunca, nada et le décalage des saisons entre hémisphères.',
+ steps:[
+  'Lis la phrase complète : « No empiezo las clases en septiembre, sino en marzo ». Le mois rejeté est septembre ; le mois correct est mars.',
+  'Avec « no… sino… », on corrige une information : « non pas A, mais B ».',
+  '« Nunca » veut dire « jamais » ; « nada » veut dire « rien ». Dans « No veo nada », no et nada vont ensemble.',
+  'Dans l’hémisphère sud, les saisons sont décalées d’environ six mois : quand c’est l’été en France, c’est l’hiver au sud.',
+  'Pour commencer, le verbe empezar se conjugue empiezo, empiezas, empieza, empezamos, empezáis, empiezan.'
+ ],
+ learn:[
+  'Différencier no… sino… de nunca et nada.',
+  'Repérer si une phrase parle de septembre ou d’un mois qui le remplace.',
+  'Comprendre le sens de hemisferio sur et le décalage des saisons.',
+  'Conjuguer empezar au présent et relire la consigne avant de répondre.'
+ ],
+ examples:[
+  ['No empiezo las clases en septiembre, sino en marzo.','Je ne commence pas les cours en septembre, mais en mars.'],
+  ['Nunca empiezo en septiembre.','Je ne commence jamais en septembre.'],
+  ['No veo nada.','Je ne vois rien.'],
+  ['En agosto es invierno en el hemisferio sur.','En août, c’est l’hiver dans l’hémisphère sud.'],
+  ['Yo empiezo en marzo y nosotros empezamos en septiembre.','Je commence en mars et nous commençons en septembre.']
+ ],
+ vocab:[
+  ['no… sino…','non pas… mais plutôt…'],['nunca','jamais'],['nada','rien'],
+  ['empezar','commencer'],['empiezo','je commence'],['empiezas','tu commences'],
+  ['el hemisferio sur','l’hémisphère sud'],['septiembre','septembre'],['marzo','mars'],
+  ['el invierno','l’hiver'],['el verano','l’été'],['las estaciones','les saisons'],
+  ['la comprensión escrita','la compréhension écrite'],['la evaluación','l’évaluation']
+ ],
+ conjugations:['empezar']
+};
 window.TIM_SPANISH_ENT_BIS={render,getLesson:id=>lessons[String(id)]||null,getVerb:id=>verbs[String(id)]||null,lessonIds:Object.keys(lessons),emptyIds:Object.keys(missing)};
 })();
