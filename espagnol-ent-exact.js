@@ -795,5 +795,5 @@ async function renderLessonOriginal(root,lessonId,section='course'){
  }
 }
 
-window.TIM_SPANISH_ENT_EXACT={render,renderLessonOriginal,parse:readTwoZips,validate,validateTranslations,TAG};
+window.TIM_SPANISH_ENT_EXACT={render,renderLessonOriginal,parse:readTwoZips,validate,validateTranslations,TAG,lessonCount:()=>window.__TIM_GUEST?13:14+lateSpanishLessons(window.__TIM_DATA?.metadata?.spanishEnt).length};
 })();
