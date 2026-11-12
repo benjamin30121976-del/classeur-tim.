@@ -462,6 +462,56 @@ async function main(){
    throw new Error('Lien vers BIS maths non ouvert : '+JSON.stringify(mathState));
   assert.match(await page.locator('#matieres-content .spx-hero h2').innerText(),/Programmes de calcul/);
   report.checks.mathFeedbackDeepLinkToLesson=true;
+  // Espagnol : vérifier le même mode essai Parent que pour maths et physique.
+  // Questions fictives et aucune API de validation/écriture réelle.
+  await page.evaluate(async()=>{
+   window.__TIM_PARENT=true;window.__TIM_GUEST=false;
+   window.__SPANISH_PARENT_AUDIT={previewCalls:0,realSubmitCalls:0};
+   window.__TIM_BRIDGE.spanishEntTrainingProgress=async id=>
+    id?{attempt:null}:{attempts:[]};
+   window.__TIM_BRIDGE.spanishEntTrainingTask=async id=>({completed:false,task:{
+    id,title:'Espagnol — essai Parent de démonstration',
+    questions:Array.from({length:10},(_,i)=>({
+     kind:'qcm',instructionEs:'Elige la respuesta '+(i+1),
+     instructionFr:'Choisis la réponse '+(i+1),
+     choices:['Respuesta A','Respuesta B','Respuesta C','Respuesta D']
+    }))
+   }});
+   window.__TIM_BRIDGE.spanishEntTrainingSubmit=async()=>{
+    window.__SPANISH_PARENT_AUDIT.realSubmitCalls++;
+    throw new Error('Aucune soumission réelle attendue');
+   };
+   window.__TIM_BRIDGE.spanishEntTrainingPreview=async(id,answers,helpers)=>{
+    window.__SPANISH_PARENT_AUDIT.previewCalls++;
+    if(answers.length!==10||helpers.length!==10)throw Error('Dix réponses requises');
+    return {id,score:10,total:10,xp:0,practice:true,saved:false,submitted:false,
+     errorCounts:{},translationHelpCount:helpers.filter(Boolean).length,
+     items:answers.map((a,i)=>({points:1,correct:true,prompt:'Question '+(i+1),
+      response:'Respuesta A',expected:'Respuesta A',
+      explanation:'Exemple de règle expliqué pour la simulation.'}))};
+   };
+   const host=document.createElement('div');host.id='spanish-parent-audit';
+   host.style.cssText='background:#fff;color:#213a5b;padding:15px;margin-top:50px';
+   document.body.append(host);
+   await window.TIM_SPANISH_SIMPLIFIED.render(host,{back:()=>{}},{});
+  });
+  const spanishParent=page.locator('#spanish-parent-audit');
+  await spanishParent.locator('.tim-es-lesson').first().locator('summary').first().click();
+  const parentExercises=spanishParent.locator('.tim-es-lesson').first().locator('.tim-es-exercises');
+  await parentExercises.locator('summary').first().click();
+  await parentExercises.locator('button[data-es-training-id]').first().click();
+  const spanishQ=spanishParent.locator('.tim-es-question-page');
+  await spanishQ.first().waitFor({state:'visible',timeout:15000});
+  for(let i=0;i<10;i++){
+   await spanishQ.nth(i).locator('input[type=radio]').first().check();
+   if(i<9)await spanishParent.getByRole('button',{name:'Suivante →'}).click();
+  }
+  await spanishParent.getByRole('button',{name:/Corriger mon essai Parent/}).click();
+  await spanishParent.locator('.tim-es-training-result').getByText(/Simulation Parent — 10 \/ 10 points/).waitFor({state:'visible',timeout:12000});
+  const parentSpanishCalls=await page.evaluate(()=>window.__SPANISH_PARENT_AUDIT);
+  assert.equal(parentSpanishCalls.previewCalls,1,'Une seule correction espagnole simulée');
+  assert.equal(parentSpanishCalls.realSubmitCalls,0,'Aucune soumission de Tim pendant un essai Parent');
+  report.checks.spanishParentTenQuestionsAndNoWrite=true;
   await page.screenshot({path:output+'/physique-mobile.jpg',type:'jpeg',quality:70,fullPage:true});
   fs.writeFileSync(output+'/rapport.json',JSON.stringify(report,null,2));
   process.stdout.write(JSON.stringify(report)+'\n');
