@@ -12,6 +12,7 @@ import {spanishEntTrainingId,spanishEntTask,spanishEntPublicTask,gradeSpanishEnt
 import {spanishLessonXp} from './spanish-lesson-xp.mjs';
 import {physicsTrainingId,physicsPublicTask,gradePhysicsTask,PHYSICS_BANK_VERSION} from './physics-training.mjs';
 import {PHYSICS_ENT_VERSION,physicsEntId,physicsEntPublicTask,physicsEntGrade} from './physics-ent-training.mjs';
+import {MATH_ENT_VERSION,mathEntId,mathEntPublicTask,gradeMathEnt} from './math-ent-training.mjs';
 
 const PRIVATE_FIELDS=new Set(['right','also','why','expected','answer','answers','answerKey','answerKeys','solution','solutions','correction','corrections','explanation','rubric']);
 function sanitize(value){
@@ -380,6 +381,69 @@ async function getPhysicsTrainingProgress(db,uid,payload){
   .sort((a,b)=>String(b.submittedAt||'').localeCompare(String(a.submittedAt||'')))};
 }
 
+/* Mathématiques : deux fiches ENT dont les énoncés sont réellement disponibles.
+   La note est calculée au serveur, aucune bonne réponse n’est envoyée avant
+   la validation unique ; le compte Parent ne peut faire que des essais sans note. */
+async function getMathEntTask(db,uid,payload){
+ allowedFamily(uid);
+ const id=payload?.id;
+ if(!mathEntId(id))throw new ApiFault(400,'invalid-math-ent-id');
+ const old=await db.get('mathEntAttempts/'+id);
+ return {task:mathEntPublicTask(id),completed:Boolean(old?.authorUid===TIM_UID)};
+}
+async function submitMathEntTask(db,uid,payload){
+ permitted(uid,'tim');
+ const id=payload?.id,answers=payload?.answers;
+ if(!mathEntId(id)||!Array.isArray(answers)||answers.length>20)throw new ApiFault(400,'invalid-math-ent-answers');
+ if(payload?.bankVersion!==MATH_ENT_VERSION)throw new ApiFault(409,'stale-math-ent-bank');
+ let result,xp;
+ try{result=gradeMathEnt(id,answers,payload.bankVersion);xp=spanishLessonXp(result.score,result.total);}
+ catch{throw new ApiFault(400,'invalid-math-ent-answers');}
+ const tx=await db.transaction();
+ const [old,xpState]=await Promise.all([db.get('mathEntAttempts/'+id,tx),db.get('xpState/tim',tx)]);
+ if(old)throw new ApiFault(409,'already-exists');
+ const today=parisDate(new Date()),week=mondayOf(today),state=xpState||{};
+ const current=state.date===today?state:{earned:0,lost:0,bonus:0};
+ const weekEarned=state.week===week?Number(state.weekEarned||0):0;
+ const weekXp=state.week===week?Number(state.weekXp??state.weekEarned??0):0;
+ const nextXP={
+  date:today,week,earned:Number(current.earned||0)+xp,
+  lost:Number(current.lost||0),bonus:Number(current.bonus||0),
+  weekEarned:weekEarned+xp,weekXp:Math.max(0,weekXp+xp),policyVersion:18
+ };
+ await db.commit([
+  createWrite('mathEntAttempts/'+id,{...result,xp,authorUid:uid,answers,version:1},NOW),
+  upsertWrite('xpState/tim',nextXP,[{fieldPath:'updatedAt',setToServerValue:'REQUEST_TIME'}])
+ ],tx);
+ return {...result,xp,submitted:true,submittedAt:new Date().toISOString()};
+}
+async function previewMathEntTask(db,uid,payload){
+ permitted(uid,'parent');
+ const id=payload?.id,answers=payload?.answers;
+ if(!mathEntId(id)||!Array.isArray(answers)||answers.length>20)throw new ApiFault(400,'invalid-math-ent-answers');
+ if(payload?.bankVersion!==MATH_ENT_VERSION)throw new ApiFault(409,'stale-math-ent-bank');
+ let result;
+ try{result=gradeMathEnt(id,answers,payload.bankVersion);}
+ catch{throw new ApiFault(400,'invalid-math-ent-answers');}
+ return {...result,xp:0,practice:true,submitted:false,saved:false,
+  message:'Essai Parent non enregistré, aucun résultat de Tim modifié.'};
+}
+async function getMathEntProgress(db,uid,payload){
+ allowedFamily(uid);
+ const id=payload?.id;
+ if(id!==undefined&&id!==null){
+  if(!mathEntId(id))throw new ApiFault(400,'invalid-math-ent-id');
+  const doc=await db.get('mathEntAttempts/'+id);
+  return {attempt:doc?.authorUid===TIM_UID?{...doc,id,xp:Number(doc.xp||0)}:null};
+ }
+ const records=await db.list('mathEntAttempts',50);
+ return {attempts:records.filter(x=>mathEntId(x.id)&&x.data?.authorUid===TIM_UID).map(x=>({
+  id:x.id,lessonId:x.data.lessonId,title:x.data.title,subject:'Mathématiques',
+  score:x.data.score,total:10,source:x.data.source,
+  correctFields:x.data.correctFields,fieldCount:x.data.fieldCount,
+  xp:Number(x.data.xp||0),submittedAt:x.data.submittedAt||'',errorCounts:x.data.errorCounts||{}
+ }))};
+}
 /* Exercice ENT original : même discipline de sécurité que l’Espagnol / Maths.
    Tim valide une fois ; son Parent peut faire des essais non enregistrés.
    Les bonnes réponses restent dans worker/physics-ent-training.mjs uniquement. */
@@ -536,6 +600,10 @@ async function getSpanishDailyMissions(db,uid){
 }
 
 const ACTIONS={
+ getMathEntTask:getMathEntTask,
+ submitMathEntTask:submitMathEntTask,
+ previewMathEntTask:previewMathEntTask,
+ getMathEntProgress:getMathEntProgress,
  getPhysicsEntTask:getPhysicsEntTask,
  submitPhysicsEntTask:submitPhysicsEntTask,
  previewPhysicsEntTask:previewPhysicsEntTask,
@@ -583,4 +651,4 @@ export async function handleRequest(request,env){
   return respond({error:code},status);
  }
 }
-export const TESTABLE={getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
+export const TESTABLE={getMathEntTask,submitMathEntTask,previewMathEntTask,getMathEntProgress,getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
