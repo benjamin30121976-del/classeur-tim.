@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'maths-12nov-training.mjs'
+      - 'tools/test/maths-12nov-training.test.mjs'
       - 'outils/publier-maths-12nov-via-parent.cjs'
       - '.github/workflows/importer-maths-12nov-via-parent.yml'
   workflow_dispatch:
