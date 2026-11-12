@@ -1,4 +1,4 @@
-name: Contrôle production — Exercices ENT Mathématiques
+name: Contrôle production — Mathématiques et Espagnol pédagogiques
 on:
   push:
     branches: [main]
@@ -13,6 +13,9 @@ on:
       - 'parent-unified-results.js'
       - 'worker/server.mjs'
       - 'worker/math-ent-training.mjs'
+      - 'espagnol-simplifie.js'
+      - 'espagnol-ent-exact.js'
+      - 'tim-inline-ent-documents.js'
       - 'tim-inline-ent-documents.js'
   workflow_dispatch:
 permissions:
@@ -32,28 +35,38 @@ jobs:
             curl -fsSL --max-time 20 "$BASE/" -o /tmp/index.html || true
             curl -fsSL --max-time 20 "$BASE/maths-ent-exercices.js?v=ent-maths-correction-pedago-20261112-v4" -o /tmp/math-ent.js || true
             curl -fsSL --max-time 20 "$BASE/maths-parcours.js?v=maths-docs-et-renvois-20261112-v6" -o /tmp/math-parcours.js || true
-            curl -fsSL --max-time 20 "$BASE/boot.js?v=maths-ent-20261112-v4" -o /tmp/boot.js || true
+            curl -fsSL --max-time 20 "$BASE/boot.js?v=essai-espagnol-parent-20261112-v5" -o /tmp/boot.js || true
             curl -fsSL --max-time 20 "$BASE/app.js?v=trois-matieres-pedago-20261112-v8" -o /tmp/app.js || true
             curl -fsSL --max-time 20 "$BASE/parent-unified-results.js?v=maths-ent-parents-20261112-v3" -o /tmp/parent.js || true
             curl -fsSL --max-time 20 "$BASE/api/status" -o /tmp/status.json || true
+            curl -fsSL --max-time 20 "$BASE/espagnol-simplifie.js?v=essai-parent-pedago-20261112-v2" -o /tmp/spanish-bis.js || true
+            curl -fsSL --max-time 20 "$BASE/espagnol-ent-exact.js?v=pdf-en-lecon-20261112-v2" -o /tmp/spanish-ent.js || true
+            curl -fsSL --max-time 20 "$BASE/tim-inline-ent-documents.js?v=20261112-trois-matieres-v1" -o /tmp/inline-reader.js || true
             if grep -q 'maths-ent-exercices.js?v=ent-maths-correction-pedago-20261112-v4' /tmp/index.html 2>/dev/null &&
                grep -q 'ME_ENT_PROGRAMMES' /tmp/math-ent.js 2>/dev/null &&
                grep -q 'ME_ENT_THALES3' /tmp/math-ent.js 2>/dev/null &&
                grep -q "parent()?'Essayer cette fiche" /tmp/math-ent.js 2>/dev/null &&
                grep -q 'TIM_MATH_ENT.renderDirectory' /tmp/math-parcours.js 2>/dev/null &&
                grep -q 'mathEntPreviewSubmit' /tmp/boot.js 2>/dev/null &&
+               grep -q 'spanishEntTrainingPreview' /tmp/boot.js 2>/dev/null &&
+               grep -q 'spanishEntTrainingPreview' /tmp/spanish-bis.js 2>/dev/null &&
+               grep -q 'TIM_PHYSICS_INLINE_PDF' /tmp/spanish-ent.js 2>/dev/null &&
+               grep -q 'TIM_INLINE_ENT_DOCUMENTS' /tmp/inline-reader.js 2>/dev/null &&
+               grep -q 'espagnol-simplifie.js?v=essai-parent-pedago-20261112-v2' /tmp/index.html 2>/dev/null &&
+               grep -q 'tim-inline-ent-documents.js?v=20261112-trois-matieres-v1' /tmp/index.html 2>/dev/null &&
                grep -q 'renderMathOfficialExercises' /tmp/app.js 2>/dev/null &&
                grep -q 'mathEntProgress' /tmp/parent.js 2>/dev/null &&
                grep -q 'TIM_INLINE_ENT_DOCUMENTS' /tmp/math-parcours.js 2>/dev/null &&
                grep -q '"mathEntInteractive":true' /tmp/status.json 2>/dev/null &&
-               grep -q '"mathEntOriginalTasks":2' /tmp/status.json 2>/dev/null; then
+               grep -q '"mathEntOriginalTasks":2' /tmp/status.json 2>/dev/null &&
+               grep -q '"spanishParentPreview":true' /tmp/status.json 2>/dev/null; then
               success=1
               break
             fi
             sleep 10
           done
           test "$success" = 1
-          echo "Mathématiques : 2 fiches ENT, mode Parent et correction sécurisée sont publiés."
+          echo "Mathématiques et espagnol : PDF intégrés, fiches ENT et essai Parent publiés."
       - name: Vérifier la non-publication du corrigé et du stockage privé
         shell: bash
         run: |
