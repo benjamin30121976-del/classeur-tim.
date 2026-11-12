@@ -1,9 +1,9 @@
 /* Animations validées avec le parent — aucune modification des règles de notation.
    Les médias se trouvent dans assets/animations/. Si un fichier manque, le cours reste accessible. */
 (()=>{'use strict';
- const root='./assets/animations/';
+ const root='./assets/animations/'; // Le visuel quotidien réutilise l'animation WebP originale du loup.
  const files={
-  daily:'Tim_Defi_Du_Jour_Valide.gif',
+  daily:'../loup-defi-original.webp',
   plus3:'Tim_Animation_3XP_Mouche.mp4',
   plus2:'Tim_Animation_2XP_Grattage.mp4',
   plus1:'Tim_Animation_1XP_Vitre_Embuee.mp4',

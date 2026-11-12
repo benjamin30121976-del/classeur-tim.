@@ -705,7 +705,7 @@ function dailyMissionPanel(){
  const dailyFallback='./assets/loup-defi-original.webp';
  wolf.src=dailyFallback;
  if(!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)window.TIM_ANIMATIONS?.setCardImage?.(wolf,'daily',dailyFallback);
- wolf.width=358;wolf.height=356;wolf.alt='Loup animateur du défi du jour devant son échiquier, présentant la mission.';
+ wolf.width=358;wolf.height=267;wolf.alt='Loup au casque assis dans sa bibliothèque, présentant le défi du jour.';
  wolf.loading='eager';wolf.decoding='async';
  imageBox.append(wolf);section.append(imageBox);
  const content=E('div','daily-loup-content');
