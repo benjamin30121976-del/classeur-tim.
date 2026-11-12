@@ -259,10 +259,25 @@ function buildLesson(id){
  }
  help.append(choices,answer);
  const exerciseSection=E('details','tim-es-exercises');
- exerciseSection.append(E('summary','','Après la leçon — exercices BIS (en préparation)'));
+ exerciseSection.append(E('summary','','Après la leçon — faire les 3 exercices'));
  const exerciseBody=E('div');
- exerciseBody.append(E('h3','','Exercices BIS : 3 séries de 10 questions'),E('p','','Les questionnaires notés de physique-chimie ne sont pas encore publiés. Aucune note, tentative ni XP n’est enregistrée ici en attendant le suivi sécurisé et les corrections expliquées.'));
- exerciseSection.append(exerciseBody);
+ exerciseBody.append(E('h3','','Mes trois exercices de dix questions'));
+ exerciseBody.append(E('p','','Une seule tentative par exercice. Après validation : note, réponses détaillées, corrections et bilan Parent.'));
+ const options=E('div');
+ options.style.cssText='display:grid;gap:9px;margin:14px 0';
+ const work=E('div','pc-exercise-work');
+ let activeTask='';
+ ['Je comprends les mots','J’applique la leçon','Je réponds seul'].forEach((name,index)=>{
+  const exid='PCQ_L'+id.slice(-2)+'_0'+(index+1);
+  const b=button('Exercice '+(index+1)+' — '+name,async()=>{
+   activeTask=exid;work.replaceChildren(E('p','','Ouverture de l’exercice…'));
+   if(!window.TIM_PHYSICS_TRAINING?.mount){work.textContent='Service des exercices de physique indisponible.';return;}
+   await window.TIM_PHYSICS_TRAINING.mount(exid,work);
+  },'spx-quick-link tim-es-quick-link');
+  b.style.cssText='display:block;width:100%;min-height:51px;font-size:15px!important;text-align:left';
+  options.append(b);
+ });
+ exerciseBody.append(options,work);exerciseSection.append(exerciseBody);
  const showExercises=()=>{exerciseSection.open=true;exerciseSection.scrollIntoView?.({block:'start'});};
  const actions=[
   ['1 · Leçon ENT',()=>openOriginal('course')],
@@ -330,8 +345,13 @@ function render(container,options={}){
  const results=E('details','tim-es-results');
  results.append(E('summary','','Mes résultats et corrections'));
  const stat=E('div');stat.style.cssText='padding:12px;color:#293d59;line-height:1.6;background:#fff';
- stat.append(E('p','','Aucun exercice BIS de physique-chimie n’a encore été publié. Les notes et corrections apparaîtront ici dès que les exercices seront activés avec le suivi sécurisé.'));
- results.append(stat);root.append(results);
+ stat.append(E('p','','Ouvre ce panneau pour consulter les notes et corrections de physique-chimie.'));
+ results.append(stat);
+ results.addEventListener('toggle',()=>{if(results.open){
+  if(window.TIM_PHYSICS_TRAINING?.renderProgress)window.TIM_PHYSICS_TRAINING.renderProgress(stat);
+  else stat.textContent='Le suivi des résultats n’est pas disponible.';
+ }});
+ root.append(results);
  if(window.__TIM_PARENT&&!window.__TIM_GUEST)root.append(archives());
  if(options.openLessonId){
   const target=/^PC_BIS/.test(options.openLessonId)?options.openLessonId:ORDER.find(id=>(ASSOCIATED[id]||[]).includes(options.openLessonId));
