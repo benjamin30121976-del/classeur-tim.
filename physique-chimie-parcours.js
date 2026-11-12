@@ -283,7 +283,7 @@ function buildLesson(id){
  exerciseSection.append(E('summary','','Après la leçon — faire les 3 exercices'));
  const exerciseBody=E('div');
  exerciseBody.append(E('h3','','Mes trois exercices de dix questions'));
- exerciseBody.append(E('p','','Une seule tentative par exercice. Après validation : note, réponses détaillées, corrections et bilan Parent.'));
+ exerciseBody.append(E('p','',window.__TIM_PARENT?'Compte Parent : vous pouvez répondre aux dix questions et obtenir une correction d’essai, sans enregistrer de note ni d’XP pour Tim.':'Compte Tim : une seule tentative par exercice, puis note et corrections expliquées.'));
  const options=E('div');
  options.style.cssText='display:grid;gap:9px;margin:14px 0';
  const work=E('div','pc-exercise-work');
@@ -304,8 +304,8 @@ function buildLesson(id){
   ['1 · Leçon ENT',()=>openOriginal('course')],
   ['2 · Leçon BIS',()=>{original.open=false;original.hidden=true;help.open=false;help.hidden=true;sheet.scrollIntoView?.({block:'start'});}],
   ['3 · Je n’ai pas compris',()=>{original.open=false;original.hidden=true;help.hidden=false;help.open=true;help.scrollIntoView?.({block:'start'});}],
-  ['Exercices ENT du chapitre',()=>openOriginal('exercises')],
-  ['Exercices BIS · 3 séries de 10 questions',showExercises]
+  ['Exercices ENT · fiches du professeur (à consulter)',()=>openOriginal('exercises')],
+  ['Exercices BIS interactifs · 3 séries de 10',showExercises]
  ];
  for(const [label,fn] of actions)menu.append(button(label,fn,'spx-quick-link tim-es-quick-link'));
  layout.append(menu,original,help);
@@ -352,6 +352,21 @@ function render(container,options={}){
  root.append(heading);
  const intro=E('p','','Choisis une leçon : elle s’ouvre et tu peux la lire directement.');
  intro.style.cssText='font-size:16px;color:inherit;line-height:1.6;margin:5px 0 16px';root.append(intro);
+ const explain=E('p','pc-quiz-intro',window.__TIM_PARENT
+  ?'Compte Parent : les 21 exercices BIS sont consultables et réalisables en mode essai, avec correction, sans toucher aux notes ni aux XP de Tim.'
+  :'Exercices BIS interactifs : 21 exercices, avec saisie des réponses directement dans le classeur. Les PDF du professeur restent des documents à consulter.');
+ explain.style.cssText='font-size:15px;line-height:1.6;margin:8px 0 10px;padding:12px;border:1px solid #bed1e5;background:#eff5fc;color:#233f61;border-radius:12px';
+ root.append(explain);
+ const access=button('Voir les 21 exercices interactifs de physique-chimie',()=>{
+  const nav=document.querySelector('[data-nav="exercices"]');
+  if(!nav)return;
+  nav.click();
+  const options=[...document.querySelectorAll('#exercise-list button.matter-card')];
+  const target=options.find(x=>x.textContent?.includes('Physique-chimie'));
+  if(target)target.click();
+ },'spx-quick-link tim-es-quick-link');
+ access.style.cssText='display:block;width:100%;margin:8px 0 17px;padding:13px;min-height:51px;text-align:center';
+ root.append(access);
  for(const [i,id] of ORDER.entries()){
   const l=byId(id);if(!l)continue;
   const card=E('details','tim-es-lesson');
