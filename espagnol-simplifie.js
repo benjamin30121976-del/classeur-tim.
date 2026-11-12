@@ -651,6 +651,36 @@ async function render(root,opts={},helpers={}){
    };
    rows.append(b);
   }
+  if(index===14){
+   // Aucun résultat de Tim n'est écrit lors de cette vérification.
+   // Tant que la fonction privée n'est pas déployée, éviter un questionnaire
+   // impossible à valider ou une erreur technique après dix réponses.
+   const state=p(exerciseBody,'Vérification de l’activation sécurisée des exercices…',
+     'font-size:14px;font-weight:750;color:#4b6180;margin:10px 0');
+   state.setAttribute('role','status');
+   const controls=[...rows.querySelectorAll('button[data-es-training-id]')];
+   controls.forEach(control=>{control.disabled=true;control.title='Activation Firebase à vérifier';});
+   const retry=button('Vérifier l’activation des exercices du 12 novembre');
+   retry.style.cssText=ST.button+';margin:5px 0 11px;background:#edf2fc!important;color:#263d83!important';
+   const checkActivation=async()=>{
+    retry.disabled=true;state.textContent='Vérification du serveur de correction…';
+    try{
+     if(!isParent()&&!isTim())throw Error('Connexion privée nécessaire');
+     const answer=await bridge.spanishEntTrainingTask(taskId(14,1));
+     if(!answer?.task||answer.task.questions?.length!==10)throw Error('Fonction indisponible');
+     controls.forEach(control=>{control.disabled=false;control.title='';});
+     state.textContent='Exercices disponibles : dix questions, une seule validation pour Tim, correction et suivi Parent.';
+     retry.hidden=true;
+    }catch(_){
+     controls.forEach(control=>{control.disabled=true;});
+     state.textContent='Les exercices sont préparés, mais la correction Firebase du 12 novembre n’est pas encore activée. Aucun résultat de Tim n’est modifié.';
+    }finally{retry.disabled=false;}
+   };
+   retry.onclick=checkActivation;
+   exerciseBody.insertBefore(state,rows);
+   exerciseBody.insertBefore(retry,rows);
+   checkActivation();
+  }
   exerciseBody.append(rows,work);exerciseSection.append(exerciseBody);
   inner.append(exerciseSection);card.append(inner);root.append(card);
   lessonCards.push(card);
