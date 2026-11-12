@@ -52,6 +52,15 @@ async function check(browser,name,viewport){
   assert.equal(await card.locator('.tim-es-course-help').getAttribute('open'),'');
   await card.locator('.tim-es-exercises > summary').click();
   assert.equal(await card.locator('button[data-es-training-id]').count(),3);
+  await page.waitForFunction(()=>{
+   const node=[...document.querySelectorAll('#matieres-content .tim-es-lesson')]
+    .find(x=>x.textContent.includes('Leçon 14'));
+   const state=node?.querySelector('.tim-es-exercises [role="status"]');
+   return state&&(/Exercices disponibles|n’est pas encore activée/.test(state.textContent));
+  },null,{timeout:18000});
+  const activation=await card.locator('.tim-es-exercises [role="status"]').textContent();
+  const disabled=await card.locator('button[data-es-training-id]').evaluateAll(xs=>xs.every(x=>x.disabled));
+  assert(disabled ? /n’est pas encore activée/.test(activation) : /Exercices disponibles/.test(activation));
   if(original.teacherPdf){
    await card.getByRole('button',{name:'1 · Leçon ENT'}).click();
    await card.locator('.pc-inline-pdf').first().waitFor({state:'visible',timeout:20000});
