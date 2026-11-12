@@ -28,20 +28,28 @@ jobs:
           for essai in $(seq 1 24); do
             curl -fsSL --max-time 20 "$BASE/" -o /tmp/pc-index.html || true
             curl -fsSL --max-time 20 "$BASE/physique-chimie-exercices.js?v=20261112-parent-essai-v3" -o /tmp/pc-exercises.js || true
-            curl -fsSL --max-time 20 "$BASE/physique-chimie-parcours.js?v=20261112-parent-essai-v6" -o /tmp/pc-parcours.js || true
-            curl -fsSL --max-time 20 "$BASE/boot.js?v=physique-parent-essai-20261112-v2" -o /tmp/pc-boot.js || true
-            curl -fsSL --max-time 20 "$BASE/app.js?v=physique-parent-essai-menu-20261112-v4" -o /tmp/pc-app.js || true
+            curl -fsSL --max-time 20 "$BASE/physique-chimie-parcours.js?v=20261112-ent-interactif-v7" -o /tmp/pc-parcours.js || true
+            curl -fsSL --max-time 20 "$BASE/boot.js?v=physique-ents-20261112-v3" -o /tmp/pc-boot.js || true
+            curl -fsSL --max-time 20 "$BASE/app.js?v=physique-ents-menu-20261112-v5" -o /tmp/pc-app.js || true
             curl -fsSL --max-time 20 "$BASE/physique-chimie-documents.js?v=20261112-inline-pdf-ent-v3" -o /tmp/pc-documents.js || true
             curl -fsSL --max-time 20 "$BASE/physique-chimie-inline-pdf.js?v=20261112-inline-pdf-securise-v2" -o /tmp/pc-inline.js || true
             curl -fsSL --max-time 20 "$BASE/assets/vendor/pdfjs-3.2.146.min.js?v=physique-pdf-local-v1" -o /tmp/pc-pdfjs.js || true
-            if grep -q 'physique-chimie-documents.js?v=20261112-inline-pdf-ent-v3' /tmp/pc-index.html 2>/dev/null &&
+            curl -fsSL --max-time 20 "$BASE/physique-chimie-ent-exercices.js?v=20261112-vrais-exercices-ent-v1" -o /tmp/pc-ent-exercises.js || true
+            curl -fsSL --max-time 20 "$BASE/parent-unified-results.js?v=physique-ents-parents-20261112-v2" -o /tmp/pc-parent.js || true
+            if grep -q 'physique-chimie-ent-exercices.js?v=20261112-vrais-exercices-ent-v1' /tmp/pc-index.html 2>/dev/null &&
+               grep -q 'physique-chimie-documents.js?v=20261112-inline-pdf-ent-v3' /tmp/pc-index.html 2>/dev/null &&
                grep -q 'physique-chimie-inline-pdf.js?v=20261112-inline-pdf-securise-v2' /tmp/pc-index.html 2>/dev/null &&
                grep -q 'isEvalSupported:false' /tmp/pc-inline.js 2>/dev/null &&
                test $(wc -c </tmp/pc-pdfjs.js) -gt 200000 &&
                grep -q 'physicsTrainingPreviewSubmit' /tmp/pc-exercises.js 2>/dev/null &&
-               grep -q 'TIM_PHYSICS_TRAINING' /tmp/pc-parcours.js 2>/dev/null &&
+               grep -q 'TIM_PHYSICS_ENT.renderDirectory' /tmp/pc-parcours.js 2>/dev/null &&
+               grep -q 'physicsEntPreviewSubmit' /tmp/pc-ent-exercises.js 2>/dev/null &&
+               grep -q 'physicsEntProgress' /tmp/pc-boot.js 2>/dev/null &&
+               grep -q 'physicsEntProgress' /tmp/pc-parent.js 2>/dev/null &&
                grep -q 'physicsTrainingPreviewSubmit' /tmp/pc-boot.js 2>/dev/null &&
                grep -q 'renderPhysicsExerciseDirectory' /tmp/pc-app.js 2>/dev/null &&
+               grep -q 'PC_ENT_CTRL1' /tmp/pc-ent-exercises.js 2>/dev/null &&
+               grep -q 'PC_ENT_MOLECULES' /tmp/pc-ent-exercises.js 2>/dev/null &&
                grep -q 'Compte Parent' /tmp/pc-parcours.js 2>/dev/null &&
                grep -q 'TIM_PHYSICS_INLINE_PDF.originalFiles' /tmp/pc-documents.js 2>/dev/null &&
                grep -q 'Le PDF original du professeur' /tmp/pc-parcours.js 2>/dev/null; then
@@ -61,6 +69,12 @@ jobs:
           grep -q '"platform":"cloudflare-pages"' /tmp/pc-status.json
           grep -q '"available":true' /tmp/pc-status.json
           grep -q '"physicsParentPreview":true' /tmp/pc-status.json
+          grep -q '"physicsEntInteractive":true' /tmp/pc-status.json
+          grep -q '"physicsEntOriginalTasks":2' /tmp/pc-status.json
           code=$(curl -sS -o /tmp/pc-secret -w '%{http_code}' --max-time 20 "$BASE/worker/physics-quiz-01.mjs")
           test "$code" = "404"
-          echo "Serveur disponible et banque de réponses inaccessible par URL publique."
+          for path in /worker/physics-ent-training.mjs /worker/physics-quiz-01.mjs; do
+            code=$(curl -sS -o /tmp/pc-secret -w '%{http_code}' --max-time 20 "$BASE$path")
+            test "$code" = "404"
+          done
+          echo "Serveur disponible et banques de réponses ENT/BIS inaccessibles par URL publique."
