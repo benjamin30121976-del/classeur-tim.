@@ -111,13 +111,22 @@ function originalPanel(slot,id,mode){
   slot.append(E('p','', 'Les pages utiles du PDF figurent désormais directement dans la leçon BIS. Le document complet peut aussi être affiché ci-dessous, sans changer d’onglet. Pour répondre, utilise les exercices interactifs, pas le PDF.'));
  }else{
   slot.append(E('h3','','Exercices du professeur (ENT)'));
-  slot.append(E('p','', 'Les PDF du professeur sont des documents à consulter ou à imprimer : ils ne sont pas des questionnaires à remplir sur le téléphone.'));
+  slot.append(E('p','', 'Les exercices ENT fidèlement recopiés à partir des PDF sont réalisables directement ci-dessous. Le document original reste visible pour vérifier l’énoncé.'));
   const go=button('Faire les exercices interactifs de physique-chimie',()=>{
    const section=root?.querySelector('.tim-es-lesson[open] .tim-es-exercises');
    if(section){section.open=true;section.scrollIntoView({block:'start'});}
   },'spx-quick-link tim-es-quick-link');
   go.style.cssText='display:block;width:100%;margin:12px 0 18px;text-align:center';
   slot.append(go);
+ }
+ if(mode==='exercises'){
+  if(['PC_BIS01','PC_BIS02','PC_BIS03'].includes(id)&&window.TIM_PHYSICS_ENT?.renderDirectory){
+   const realEnt=E('section','pc-ent-lesson-directory');
+   slot.append(realEnt);
+   window.TIM_PHYSICS_ENT.renderDirectory(realEnt,{showUnavailable:false});
+  }else{
+   slot.append(E('p','','Aucun énoncé complet d’exercice ENT n’a été retrouvé pour cette sous-leçon. Les exercices manquants du manuel ne sont pas inventés.'));
+  }
  }
  const docArea=E('section','pc-lesson-files');
  docArea.append(E('h4','','Documents originaux disponibles'));
@@ -304,7 +313,7 @@ function buildLesson(id){
   ['1 · Leçon ENT',()=>openOriginal('course')],
   ['2 · Leçon BIS',()=>{original.open=false;original.hidden=true;help.open=false;help.hidden=true;sheet.scrollIntoView?.({block:'start'});}],
   ['3 · Je n’ai pas compris',()=>{original.open=false;original.hidden=true;help.hidden=false;help.open=true;help.scrollIntoView?.({block:'start'});}],
-  ['Exercices ENT · fiches du professeur (à consulter)',()=>openOriginal('exercises')],
+  ['Exercices ENT · remplir la fiche du professeur',()=>openOriginal('exercises')],
   ['Exercices BIS interactifs · 3 séries de 10',showExercises]
  ];
  for(const [label,fn] of actions)menu.append(button(label,fn,'spx-quick-link tim-es-quick-link'));
@@ -367,6 +376,15 @@ function render(container,options={}){
  },'spx-quick-link tim-es-quick-link');
  access.style.cssText='display:block;width:100%;margin:8px 0 17px;padding:13px;min-height:51px;text-align:center';
  root.append(access);
+ const entSection=E('section','pc-ent-main');
+ entSection.style.cssText='border:1px solid #b7c8df;border-radius:13px;background:#eef4fb;color:#213c60;padding:13px;margin:17px 0';
+ entSection.append(E('h3','','Exercices ENT originaux · 2 fiches à remplir'));
+ const entArea=E('div','pc-ent-main-directory');
+ if(window.TIM_PHYSICS_ENT?.renderDirectory)window.TIM_PHYSICS_ENT.renderDirectory(entArea);
+ else entArea.append(E('p','','Les exercices ENT interactifs ne sont pas disponibles.'));
+ entSection.append(entArea);
+ root.append(entSection);
+
  for(const [i,id] of ORDER.entries()){
   const l=byId(id);if(!l)continue;
   const card=E('details','tim-es-lesson');
