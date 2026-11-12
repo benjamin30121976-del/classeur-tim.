@@ -4,6 +4,13 @@ on:
     branches: [main]
     paths:
       - 'worker/physics-*.mjs'
+      - 'worker/math-ent-training.mjs'
+      - 'worker/test/math-ent-training.test.mjs'
+      - 'maths-ent-exercices.js'
+      - 'maths-parcours.js'
+      - 'app.js'
+      - 'boot.js'
+      - 'index.html'
       - 'worker/test/physics-training.test.mjs'
       - 'worker/server.mjs'
       - 'physique-chimie-*.js'
@@ -26,13 +33,16 @@ jobs:
           node --check worker/physics-training.mjs
           for f in worker/physics-quiz-0*.mjs; do node --check "$f"; done
           node --check worker/server.mjs
+          node --check worker/math-ent-training.mjs
+          node --check maths-ent-exercices.js
+          node --check maths-parcours.js
           node --check physique-chimie-exercices.js
           node --check physique-chimie-documents.js
           node --check physique-chimie-parcours.js
           node --check boot.js
           node --check parent-unified-results.js
       - name: Tester 21 questionnaires et sécurité de la validation
-        run: node --test worker/test/physics-training.test.mjs
+        run: node --test worker/test/physics-training.test.mjs worker/test/math-ent-training.test.mjs
       - name: Installer Chromium Playwright pour un test visiteur, sans compte
         run: |
           mkdir -p /tmp/tim-physique
