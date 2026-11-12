@@ -38,6 +38,8 @@ async function check(browser,name,viewport){
   const card=page.locator('#matieres-content .tim-es-lesson').filter({hasText:'Leçon 14'}).first();
   await card.waitFor({state:'visible',timeout:16000});
   assert.match(await card.locator('summary').first().textContent(),/12 novembre/);
+  if(!await card.evaluate(node=>node.open))await card.locator('summary').first().click();
+  await card.locator('.tim-es-quick-links').waitFor({state:'visible',timeout:16000});
   await card.getByRole('button',{name:'1 · Leçon ENT'}).click();
   await card.getByText('Texte de Mme Gonzalez dans l’ENT').waitFor({state:'visible',timeout:15000});
   assert((await card.textContent()).includes('terminar la fotocopia'));
@@ -62,4 +64,4 @@ async function check(browser,name,viewport){
  try{await check(browser,'ordinateur',{width:1280,height:840});
      await check(browser,'telephone',{width:390,height:844});}
  finally{await browser.close();}
-})().catch(e=>{console.error('ECHEC AUDIT ESPAGNOL 14 : '+String(e?.message||e).slice(0,230));process.exitCode=1;});
+})().catch(e=>{console.error('ECHEC AUDIT ESPAGNOL 14 : '+String(e?.message||e).slice(0,1200));process.exitCode=1;});
