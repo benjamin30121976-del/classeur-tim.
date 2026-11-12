@@ -273,6 +273,26 @@ function renderPhysicsExerciseDirectory(root,toolbar){
   section.append(list);root.append(section);
  }
 }
+function renderMathOfficialExercises(root,toolbar){
+ const finder=document.getElementById('exercise-search').closest('.toolrow');
+ finder.classList.add('hide');root.className='clicklist';
+ toolbar.append(button('← Toutes les matières',()=>{
+  exerciseSubject='';exerciseMode='';exerciseGroup='';
+  renderExerciseIndex();scrollTop();
+ },'group-back'),E('h3','','Mathématiques — exercices ENT du professeur'));
+ document.getElementById('exercise-count').textContent='Mathématiques · 2 fiches ENT interactives · note sur 10 et XP';
+ const intro=E('p','exercise-type-prompt',window.__TIM_PARENT
+  ?'Compte Parent : remplissez les exercices originaux en mode essai, avec correction sans toucher aux notes ni aux XP de Tim.'
+  :'Compte Tim : deux vraies fiches de Mme Pialet à remplir ici, avec une seule validation, note, correction et XP.');
+ root.append(intro);
+ const directory=E('section','math-ent-main-directory');directory.style.cssText='margin:12px 0';
+ if(window.TIM_MATH_ENT?.renderDirectory)window.TIM_MATH_ENT.renderDirectory(directory);
+ else directory.append(E('p','','Les formulaires originaux de maths sont momentanément indisponibles.'));
+ root.append(directory);
+ root.append(button('Voir les leçons et évaluations BIS de mathématiques',()=>{
+  page('matieres');renderMatiere('Mathématiques');
+ },'plain'));
+}
 function renderExerciseIndex(){
  const root=clear(document.getElementById('exercise-list')),q=norm(document.getElementById('exercise-search').value),topic=document.getElementById('exercise-topic').value;
  const toolbar=clear(document.getElementById('exercise-subject-toolbar'));
@@ -280,6 +300,7 @@ function renderExerciseIndex(){
  const extras=clear(document.getElementById('recommended-extra'));
  const bases=DATA.exercises.filter(e=>!window.TIM_EXERCISE.challenge(e));
  if(exerciseSubject==='Physique-chimie'){renderPhysicsExerciseDirectory(root,toolbar);return;}
+ if(exerciseSubject==='Mathématiques'){renderMathOfficialExercises(root,toolbar);return;}
  if(!exerciseSubject){
   finder.classList.add('hide');root.className='matter-grid';
   if(exerciseMode==='school-all'){
@@ -298,7 +319,7 @@ function renderExerciseIndex(){
   overview.append(button('📚 DEVOIRS DE L’ÉCOLE · 0 XP',()=>{exerciseSubject='';exerciseMode='school-all';renderExerciseIndex();},'exercise-v12-overview-button school'));
   root.append(overview,bonusMissionPanel(false));
   const icons=['🇪🇸','∑','⚗','EN','📖','🌍','⚖','🌱','⚙'];
-  SCHOOL_SUBJECTS.forEach((name,i)=>{const count=name==='Physique-chimie'?23:bases.filter(e=>(e.subject||'Espagnol')===name).length;
+  SCHOOL_SUBJECTS.forEach((name,i)=>{const count=name==='Physique-chimie'?23:name==='Mathématiques'?2+bases.filter(e=>(e.subject||'Espagnol')===name).length:bases.filter(e=>(e.subject||'Espagnol')===name).length;
     const b=E('button','matter-card'+(name==='Espagnol'?' matter-espanol':''));b.type='button';
     b.append(E('span','ico',icons[i]||'▤'),E('strong','',name),E('small','',count?count+' exercice(s) disponible(s)':'À compléter avec les cours de Tim'));
     if(count)b.addEventListener('click',()=>{exerciseSubject=name;exerciseGroup='';exerciseMode='';document.getElementById('exercise-search').value='';renderExerciseIndex();scrollTop();});
@@ -874,7 +895,7 @@ function renderMatieres(){
  const wrap=E('div','matter-grid');
  const icons=['🇪🇸','∑','⚗','EN','📖','🌍','⚖','🌱','⚙'];
  for(let i=0;i<SCHOOL_SUBJECTS.length;i++){
-  const name=SCHOOL_SUBJECTS[i],n=name==='Espagnol'&&window.TIM_SPANISH_SIMPLIFIED?13:name==='Espagnol'?(DATA.metadata?.spanishEnt?.lessons?.length||0):DATA.lessons.filter(x=>(x.subject||'Espagnol')===name).length,ex=name==='Physique-chimie'?23:name==='Espagnol'&&window.TIM_SPANISH_SIMPLIFIED?39:DATA.exercises.filter(x=>(x.subject||'Espagnol')===name).length;
+  const name=SCHOOL_SUBJECTS[i],n=name==='Espagnol'&&window.TIM_SPANISH_SIMPLIFIED?13:name==='Espagnol'?(DATA.metadata?.spanishEnt?.lessons?.length||0):DATA.lessons.filter(x=>(x.subject||'Espagnol')===name).length,ex=name==='Physique-chimie'?23:name==='Mathématiques'?2+DATA.exercises.filter(x=>(x.subject||'Espagnol')===name).length:name==='Espagnol'&&window.TIM_SPANISH_SIMPLIFIED?39:DATA.exercises.filter(x=>(x.subject||'Espagnol')===name).length;
   const b=E('button','matter-card'+(name==='Espagnol'?' matter-espanol':''));b.type='button';b.append(E('span','ico',icons[i]||'▤'),E('strong','',name),E('small','',n+' leçon(s) · '+ex+' exercice(s)'+(!n?' · Cours ENT à ajouter':'') ));
   if(n||(name==='Espagnol'&&window.__TIM_PARENT&&window.TIM_SPANISH_ENT_EXACT))b.addEventListener('click',()=>renderMatiere(name));else{b.title='Les vrais cours de Tim ne sont pas encore ajoutés';b.disabled=true;b.style.opacity='.55';}
   wrap.append(b);
