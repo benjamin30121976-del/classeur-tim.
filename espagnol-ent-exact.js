@@ -669,18 +669,11 @@ function appendChronologicalSpanish(root){
  const next=incoming.length&&incoming[incoming.length-1].date>'2026-11-12'?incoming.pop():null;
  const container=$('section','tim-es-chronological');
  const chronology=$('div','tim-es-chronological-lessons');
- const nov12=window.TIM_SPANISH_NOV12?.render?.();
- let seq=14;
- const records=incoming.map(x=>({type:'import',date:x.date,id:x.id,item:x}));
- if(nov12)records.push({type:'nov12',date:'2026-11-12',id:'10099~6400554'});
- records.sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
+ let seq=window.TIM_SPANISH_SIMPLIFIED?.lessons?.length||14;
+ const records=incoming.map(x=>({type:'import',date:x.date,id:x.id,item:x})).sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
  for(const item of records){
-  if(item.type==='nov12'){
-   nov12.querySelector('summary').textContent='Leçon '+seq+' — 12 novembre — Conjugaison et « No empiezo en septiembre »';
-   nov12.classList.add('tim-es-lesson');
-   chronology.append(nov12);
-  }else chronology.append(createSpanishSession(item.item,'Leçon '+seq));
   seq++;
+  chronology.append(createSpanishSession(item.item,'Leçon '+seq));
  }
  if(chronology.childElementCount){
   const title=$('h3','','Suite des leçons ENT — par date');
