@@ -116,10 +116,14 @@ function home(){
   if(!lessons.length)return '';
   return '<button type="button" class="math-chapter-entry" data-math-group="'+i+'"><strong>'+esc(g.name)+'</strong><span>'+(lessons.length+(g===GROUPS[2]?1:0))+' leçon'+(lessons.length>1?'s':'')+' à lire</span></button>';
  }).join('')+'</div>'+
+ '<div id="math-ent-import-mount"></div>'+ 
  '<section class="math-ent-home" style="margin:15px 0;padding:13px;border:1px solid #bad0e7;border-radius:13px;background:#eff6ff;color:#233d5e"><div id="math-ent-home-directory"></div></section>'+
  '<details class="math-reading-docs"><summary>Voir les cours du professeur (ENT)</summary>'+
  btn('data-math-all-ent','all','Consulter les '+mathEntList().length+' cours originaux')+'</details>',options.back);
  wire();
+ const importHost=root.querySelector('#math-ent-import-mount');
+ if(importHost&&window.__TIM_PARENT&&!window.__TIM_GUEST&&window.TIM_MATH_ENT_PDF_IMPORT?.render)
+  importHost.append(window.TIM_MATH_ENT_PDF_IMPORT.render());
  const area=root.querySelector('#math-ent-home-directory');
  if(area&&window.TIM_MATH_ENT?.renderDirectory)window.TIM_MATH_ENT.renderDirectory(area);
  else if(area)area.textContent='Les exercices ENT interactifs ne sont pas encore disponibles.';
