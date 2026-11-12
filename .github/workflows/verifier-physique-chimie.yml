@@ -11,6 +11,10 @@ on:
       - 'app.js'
       - 'boot.js'
       - 'index.html'
+      - 'tim-inline-ent-documents.js'
+      - 'espagnol-ent-exact.js'
+      - 'espagnol-simplifie.js'
+      - 'guest-access.js'
       - 'worker/test/physics-training.test.mjs'
       - 'worker/server.mjs'
       - 'physique-chimie-*.js'
@@ -36,6 +40,10 @@ jobs:
           node --check worker/math-ent-training.mjs
           node --check maths-ent-exercices.js
           node --check maths-parcours.js
+          node --check tim-inline-ent-documents.js
+          node --check espagnol-ent-exact.js
+          node --check espagnol-simplifie.js
+          node --check app.js
           node --check physique-chimie-exercices.js
           node --check physique-chimie-documents.js
           node --check physique-chimie-parcours.js
@@ -50,7 +58,7 @@ jobs:
           if ! command -v google-chrome >/dev/null 2>&1 && ! command -v chromium >/dev/null 2>&1; then
             /tmp/tim-physique/node_modules/.bin/playwright install --with-deps chromium
           fi
-      - name: Tester localement les sept leçons et trois exercices par leçon dans Chromium
+      - name: Tester les trois matières, PDF intégrés et exercices dans Chromium
         env:
           NODE_PATH: /tmp/tim-physique/node_modules
           TIM_SITE_URL: http://127.0.0.1:8779/
