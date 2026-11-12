@@ -10,6 +10,7 @@ import {SPANISH_COURSE} from '../functions/spanish-training-curriculum.mjs';
 import {mathId,mathPublicTaskPrivate,gradeMathTaskPrivate,MATH_BANK_VERSION,validateMathFragment} from './math-private-kv.mjs';
 import {spanishEntTrainingId,spanishEntTask,spanishEntPublicTask,gradeSpanishEntTask,isSpanishDailyMissionId,spanishDailyMissionIds,buildSpanishDailyMission,gradeSpanishDailyMission} from './spanish-ent-training.mjs';
 import {spanishLessonXp} from './spanish-lesson-xp.mjs';
+import {physicsTrainingId,physicsPublicTask,gradePhysicsTask,PHYSICS_BANK_VERSION} from './physics-training.mjs';
 
 const PRIVATE_FIELDS=new Set(['right','also','why','expected','answer','answers','answerKey','answerKeys','solution','solutions','correction','corrections','explanation','rubric']);
 function sanitize(value){
@@ -294,6 +295,75 @@ export async function getMathTrainingProgress(db,uid){
   .sort((a,b)=>String(b.submittedAt||'').localeCompare(String(a.submittedAt||'')))};
 }
 
+/* Physique-chimie : même contrat de validation que l’espagnol.
+   L’énoncé ne contient aucune clé ; seule la transaction enregistrée révèle la correction.
+   Une seule tentative par exercice, 21 exercices indépendants.
+   Les résultats complets sont accessibles à Tim et au Parent seulement. */
+async function getPhysicsTrainingTask(db,uid,payload){
+ allowedFamily(uid);
+ const id=payload?.id;
+ if(!physicsTrainingId(id))throw new ApiFault(400,'invalid-physics-exercise');
+ const task=physicsPublicTask(id);
+ const old=await db.get('physicsTrainingAttempts/'+id);
+ return {task,completed:Boolean(old&&old.authorUid===TIM_UID)};
+}
+async function submitPhysicsTraining(db,uid,payload){
+ permitted(uid,'tim');
+ const id=payload?.id,answers=payload?.answers;
+ if(!physicsTrainingId(id)||!Array.isArray(answers)||answers.length!==10)
+  throw new ApiFault(400,'invalid-physics-answers');
+ if(payload?.bankVersion!==PHYSICS_BANK_VERSION)
+  throw new ApiFault(409,'stale-physics-bank');
+ let result,xp;
+ try{
+  result=gradePhysicsTask(id,answers,payload.bankVersion);
+  xp=spanishLessonXp(result.score,result.total);
+ }catch{throw new ApiFault(400,'invalid-physics-answers');}
+ // Les réponses ne sont jamais écrites hors transaction : pas de note en double.
+ const tx=await db.transaction();
+ const [old,xpRecord]=await Promise.all([
+  db.get('physicsTrainingAttempts/'+id,tx),
+  db.get('xpState/tim',tx)
+ ]);
+ if(old)throw new ApiFault(409,'already-exists');
+ const today=parisDate(new Date()),week=mondayOf(today),state=xpRecord||{};
+ const current=state.date===today?state:{earned:0,lost:0,bonus:0};
+ const weekEarned=state.week===week?Number(state.weekEarned||0):0;
+ const weekXp=state.week===week?Number(state.weekXp??state.weekEarned??0):0;
+ const nextXP={
+  date:today,week,
+  earned:Number(current.earned||0)+xp,
+  lost:Number(current.lost||0),
+  bonus:Number(current.bonus||0),
+  weekEarned:weekEarned+xp,
+  weekXp:Math.max(0,weekXp+xp),
+  policyVersion:18
+ };
+ await db.commit([
+  createWrite('physicsTrainingAttempts/'+id,{
+   ...result,xp,authorUid:uid,subject:'Physique-chimie',
+   answers,version:1
+  },NOW),
+  upsertWrite('xpState/tim',nextXP,[{fieldPath:'updatedAt',setToServerValue:'REQUEST_TIME'}])
+ ],tx);
+ return {...result,xp,submitted:true,submittedAt:new Date().toISOString()};
+}
+async function getPhysicsTrainingProgress(db,uid,payload){
+ allowedFamily(uid);
+ const id=payload?.id;
+ if(id!==undefined&&id!==null){
+  if(!physicsTrainingId(id))throw new ApiFault(400,'invalid-physics-exercise');
+  const old=await db.get('physicsTrainingAttempts/'+id);
+  return {attempt:old?.authorUid===TIM_UID?{...old,id,xp:Number(old.xp||0)}:null};
+ }
+ const docs=await db.list('physicsTrainingAttempts',100);
+ return {attempts:docs.filter(x=>physicsTrainingId(x.id)&&x.data?.authorUid===TIM_UID)
+  .map(x=>({id:x.id,lessonId:x.data.lessonId,series:x.data.series,title:x.data.title,
+   score:x.data.score,total:x.data.total,xp:Number(x.data.xp||0),
+   errorCounts:x.data.errorCounts||{},submittedAt:x.data.submittedAt||''}))
+  .sort((a,b)=>String(b.submittedAt||'').localeCompare(String(a.submittedAt||'')))};
+}
+
 /* Parcours Espagnol : résultats immédiats, zéro XP et tentative unique.
    Les questions sont publiques seulement après authentification, les clés
    de correction restent dans le serveur et ne sont renvoyées qu'après
@@ -371,6 +441,9 @@ async function getSpanishDailyMissions(db,uid){
 }
 
 const ACTIONS={
+ getPhysicsTrainingTask:getPhysicsTrainingTask,
+ submitPhysicsTraining:submitPhysicsTraining,
+ getPhysicsTrainingProgress:getPhysicsTrainingProgress,
  getSpanishDailyMissions:getSpanishDailyMissions,
  getSpanishEntTrainingTask:getSpanishEntTrainingTask,
  submitSpanishEntTraining:submitSpanishEntTraining,
@@ -410,4 +483,4 @@ export async function handleRequest(request,env){
   return respond({error:code},status);
  }
 }
-export const TESTABLE={sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
+export const TESTABLE={getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
