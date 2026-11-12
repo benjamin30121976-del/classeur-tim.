@@ -613,15 +613,102 @@ async function renderArchive(root,opts={}){
  });
  uploader.append(act,status);root.append(uploader);
 }
-/* Présentation élève : seule la leçon réorganisée + 3 exercices.
-   Parent : mêmes leçons et résultats, plus archive ENT originale intacte
-   (incluant les dates vides, devoirs et PDF) accessible en un clic. */
+/* Suivi chronologique espagnol : conserver la séance vérifiée du 12 novembre
+   dans les leçons, puis faire progresser automatiquement le dernier cours importé.
+   Lecture seule : jamais de modification des notes, XP ni fichiers privés. */
+function frenchDate(iso){
+ const day=String(iso||'').slice(0,10);
+ if(!/^20\d{2}-\d{2}-\d{2}$/.test(day))return String(iso||'date non précisée');
+ const value=new Date(day+'T12:00:00Z');
+ if(Number.isNaN(value.getTime()))return day;
+ return new Intl.DateTimeFormat('fr-FR',{day:'numeric',month:'long',year:'numeric',timeZone:'UTC'}).format(value);
+}
+function lateSpanishLessons(pack){
+ if(!pack?.lessons||!pack?.dates)return [];
+ const known=new Set(window.TIM_SPANISH_SIMPLIFIED?.lessons?.map(x=>String(x.id))||[]);
+ known.add(String(window.TIM_SPANISH_NOV12?.ENT_ID||'10099~6400554'));
+ return pack.lessons.map(doc=>{
+  const id=String(doc?.data?.id||''),date=String(pack.dates[id]||'').slice(0,10);
+  return {id,date,doc};
+ }).filter(item=>item.id&&!known.has(item.id)&&/^20\d{2}-\d{2}-\d{2}$/.test(item.date)&&
+     item.date>'2026-11-05'&&(asText(lessonHtml(item.doc))||lessonHomeworkIds(item.doc).length))
+   .sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
+}
+function createSpanishSession(item,label){
+ const card=$('details','tim-es-lesson ent-es-followup');
+ card.style.cssText='border:1px solid #c6d1e8;border-radius:14px;margin:12px 0;background:#f7f9ff;color:#273448;overflow:hidden';
+ const heading=$('summary','',label+' — '+frenchDate(item.date)+' — '+courseTitle(item.doc));
+ heading.style.cssText='display:block;cursor:pointer;font-weight:850;line-height:1.55;padding:17px 14px;color:#263a83;font-size:17px;overflow-wrap:anywhere';
+ card.append(heading);
+ const body=$('div');body.style.cssText='padding:4px 13px 18px;color:#26344b';
+ card.append(body);
+ let ready=false,loading=false;
+ card.addEventListener('toggle',async()=>{
+  if(!card.open||ready||loading)return;
+  loading=true;body.textContent='Ouverture de la leçon ENT et de ses documents…';
+  try{
+   const lesson=$('section');body.replaceChildren(lesson);
+   await renderLessonOriginal(lesson,item.id,'all');
+   if(!window.TIM_SPANISH_ENT_BIS?.render(body,item.id)){
+    const note=$('p','','Leçon BIS à préparer : le cours original et ses consignes restent disponibles ci-dessus.');
+    note.style.cssText='font-size:14px;color:#425571;padding:10px 0';
+    body.append(note);
+   }
+   ready=true;
+  }catch(error){body.textContent='Cours indisponible : '+String(error?.message||error);}
+  finally{loading=false;}
+ });
+ return card;
+}
+function appendChronologicalSpanish(root){
+ if(window.__TIM_GUEST)return;
+ const pack=window.__TIM_DATA?.metadata?.spanishEnt;
+ const incoming=lateSpanishLessons(pack);
+ // Une séance n'est annoncée comme nouvelle que si son contenu figure vraiment
+ // dans la dernière collecte ENT ; aucune date ni cours ne sont inventés.
+ const next=incoming.length&&incoming[incoming.length-1].date>'2026-11-12'?incoming.pop():null;
+ const container=$('section','tim-es-chronological');
+ const chronology=$('div','tim-es-chronological-lessons');
+ const nov12=window.TIM_SPANISH_NOV12?.render?.();
+ let seq=14;
+ const records=incoming.map(x=>({type:'import',date:x.date,id:x.id,item:x}));
+ if(nov12)records.push({type:'nov12',date:'2026-11-12',id:'10099~6400554'});
+ records.sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
+ for(const item of records){
+  if(item.type==='nov12'){
+   nov12.querySelector('summary').textContent='Leçon '+seq+' — 12 novembre — Conjugaison et « No empiezo en septiembre »';
+   nov12.classList.add('tim-es-lesson');
+   chronology.append(nov12);
+  }else chronology.append(createSpanishSession(item.item,'Leçon '+seq));
+  seq++;
+ }
+ if(chronology.childElementCount){
+  const title=$('h3','','Suite des leçons ENT — par date');
+  title.style.cssText='margin:21px 0 10px;font-size:19px';
+  container.append(title,chronology);
+ }
+ const notice=$('section','tim-es-upcoming');
+ notice.style.cssText='margin:18px 0;padding:13px 14px;border:1px solid #8cabc7;border-radius:12px;background:#edf5ff;color:#243d5e';
+ if(next){
+  const head=$('h3','','Nouveau cours ENT — '+frenchDate(next.date));
+  head.style.cssText='font-size:17px;color:#243d5e;margin:0 0 7px';
+  notice.append(head,$('p','','La dernière séance importée est présentée ici. À la prochaine actualisation de l’ENT, elle rejoindra automatiquement la liste chronologique.'));
+  notice.append(createSpanishSession(next,'Ouvrir le nouveau cours ENT'));
+ }else{
+  notice.append($('h3','','Prochain cours ENT : en attente'));
+  notice.append($('p','','Le cours du 12 novembre est maintenant classé avec les leçons. Le prochain cours apparaîtra ici seulement après l’importation de nouveaux documents ENT.'));
+ }
+ container.append(notice);
+ const results=root.querySelector('.tim-es-results');
+ if(results)root.insertBefore(container,results);else root.append(container);
+}
+/* Présentation élève : leçons d'origine, séance du 12 novembre classée
+   et nouvelle séance après un import vérifié. Archives détaillées pour Parent. */
 async function render(root,opts={}){
  const app=window.TIM_SPANISH_SIMPLIFIED;
  if(!app)return renderArchive(root,opts);
  await app.render(root,opts,{appendL01:appendBisL01});
- const today=window.TIM_SPANISH_NOV12?.render?.();
- if(today){const heading=root.querySelector('h2');if(heading)heading.after(today);else root.prepend(today);}
+ appendChronologicalSpanish(root);
 
  if(window.__TIM_PARENT&&!window.__TIM_GUEST){
   const archive=$('details','ent-es-archive-parent');
@@ -684,7 +771,7 @@ async function renderLessonOriginal(root,lessonId,section='course'){
   root.append($('p','','Lis le cours et la traduction, puis affiche ici les PDF associés sans changer de page.'));
   appendFileLinks(root,refs,metas,translations);
  }
- if(section==='exercises'&&homework.length){
+ if((section==='exercises'||section==='all')&&homework.length){
   root.append($('h4','','Exercices demandés par la professeure'));
   homework.forEach(item=>{
    const hid=String(item.data.id);
