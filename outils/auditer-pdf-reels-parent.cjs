@@ -148,6 +148,8 @@ async function verify(browser,device,viewport){
    console.log('OK '+device+' : PDF '+subject+' affiche dans la lecon (canvas).');
    await page.locator('#tim-real-pdf-audit-'+subject).evaluate(node=>node.remove());
   }
+  // La production Cloudflare utilise main : charger le script du commit testé pour simuler l'interface corrigée.
+  await page.addScriptTag({content:require('node:fs').readFileSync('maths-parcours.js','utf8')});
   // Vérifier LES VRAIES PAGES du classeur, pas un lecteur créé séparément dans le test.
   assert(await page.evaluate(()=>typeof window.TIM_PEDAGOGY_NAVIGATE==='function'),
     'La navigation vers les matieres est indisponible');
