@@ -1,0 +1,42 @@
+name: Importer les 3 exercices espagnols du 12 novembre par le compte Parent
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'outils/publier-espagnol-12nov-via-parent.cjs'
+      - 'functions/spanish-nov12-training.mjs'
+      - '.github/workflows/importer-espagnol-12nov-via-parent.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  import-parent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+      TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
+      TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier la structure des exercices (sans connexion à Firebase)
+        run: |
+          node --check outils/publier-espagnol-12nov-via-parent.cjs
+          node --check functions/spanish-nov12-training.mjs
+          node --test functions/test/spanish-nov12-training.test.mjs
+      - name: Vérifier la connexion Parent existante
+        run: |
+          test -n "$TIM_PARENT_EMAIL" || { echo "::error::Compte Parent absent"; exit 1; }
+          test -n "$TIM_PARENT_PASSWORD" || { echo "::error::Mot de passe Parent absent"; exit 1; }
+      - name: Installer Chromium (sans TinyFish)
+        run: |
+          mkdir -p /tmp/tim-es12
+          npm install --prefix /tmp/tim-es12 --no-audit --no-fund playwright
+          /tmp/tim-es12/node_modules/.bin/playwright install --with-deps chromium
+      - name: Ajouter uniquement les 3 exercices manquants dans Firebase
+        env:
+          NODE_PATH: /tmp/tim-es12/node_modules
+        run: node outils/publier-espagnol-12nov-via-parent.cjs
