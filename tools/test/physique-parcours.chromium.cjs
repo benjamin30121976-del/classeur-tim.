@@ -374,6 +374,67 @@ async function main(){
   assert.equal(mathAudit.saved,false);
   report.checks.mathsEntThalesThreeCasesFillable=true;
   report.checks.mathsEntParentNoWrite=true;
+  // Espagnol : la vraie fiche PDF de la séance reste à côté du cours et de sa
+  // traduction, même lorsque le lecteur n'a jamais ouvert un onglet supplémentaire.
+  await page.evaluate(async pdfBase64=>{
+   const bytes=Uint8Array.from(atob(pdfBase64),ch=>ch.charCodeAt(0));
+   const blob=new Blob([bytes],{type:'application/pdf'});
+   window.__TIM_PARENT=true;window.__TIM_GUEST=false;
+   window.__TEST_NEW_TABS=0;
+   window.open=()=>{window.__TEST_NEW_TABS++;throw new Error('Nouvel onglet interdit');};
+   window.__TIM_DATA.metadata=window.__TIM_DATA.metadata||{};
+   window.__TIM_DATA.metadata.spanishEnt={
+    lessons:[{data:{id:'DEMO-ESP'},included:[{type:'lessonContent',attributes:{html:'<p>Se présenter en espagnol</p>'}}]}],
+    homework:[],
+    index:[{id:'fiche-demo',nom_ENT:'Fiche de cours du professeur',nom_dans_archive:'fiche-demo.pdf',
+      rattache_a:[{type:'cours',id:'DEMO-ESP'}]}],
+    translations:{courses:{'DEMO-ESP':{fr:'Se présenter en français'}},attachments:{}}
+   };
+   window.__TIM_BRIDGE.attachments={
+    list:async(type,id)=>id==='ENTESP_2026'
+      ?[{id:'spanish-pdf-demo',fileName:'fiche-demo.pdf',size:blob.size}]:[],
+    read:async()=>blob
+   };
+   const mount=document.createElement('div');mount.id='spanish-inline-pdf-test';
+   document.body.append(mount);
+   await window.TIM_SPANISH_ENT_EXACT.renderLessonOriginal(mount,'DEMO-ESP','course');
+  },makeSyntheticPdf());
+  const spanish=page.locator('#spanish-inline-pdf-test');
+  await spanish.getByText('Traduction en français').waitFor({state:'visible',timeout:12000});
+  assert.equal(await spanish.locator('.pc-inline-pdf').count(),1,'Le PDF espagnol doit être dans la leçon');
+  await spanish.getByRole('button',{name:/Afficher ici le document/}).click();
+  await spanish.locator('.pc-pdf-toolbar span').getByText('Page 1 / 1').waitFor({state:'visible',timeout:30000});
+  report.checks.spanishPdfInlineWithTranslation=true;
+  assert.equal(await page.evaluate(()=>window.__TEST_NEW_TABS),0,'Aucun onglet nouveau en espagnol');
+
+  // Maths : un PDF enregistré dans le cours ENT se lit directement ici.
+  await page.evaluate(async pdfBase64=>{
+   const bytes=Uint8Array.from(atob(pdfBase64),ch=>ch.charCodeAt(0));
+   const blob=new Blob([bytes],{type:'application/pdf'});
+   window.__TIM_BRIDGE.attachments={
+    list:async(type,id)=>id==='MATH-COURSE-DEMO'
+      ?[{id:'math-pdf-demo',fileName:'2026-11-02 programmes calcul maths.pdf',size:blob.size}]:[],
+    read:async()=>blob
+   };
+   const host=document.createElement('div');host.id='math-inline-pdf-test';
+   document.body.append(host);
+   await window.TIM_INLINE_ENT_DOCUMENTS.mount(host,['MATH-COURSE-DEMO'],{
+    filenamePattern:/programme.*maths/i,limit:2
+   });
+  },makeSyntheticPdf());
+  const mathDoc=page.locator('#math-inline-pdf-test');
+  await mathDoc.getByText('1 document(s) original(aux)').waitFor({state:'visible',timeout:15000});
+  assert.equal(await mathDoc.locator('.pc-inline-pdf').count(),1);
+  await mathDoc.getByRole('button',{name:/Afficher ici le document/}).click();
+  await mathDoc.locator('.pc-pdf-toolbar span').getByText('Page 1 / 1').waitFor({state:'visible',timeout:30000});
+  report.checks.mathPdfInlineNoOtherPage=true;
+  assert.equal(await page.evaluate(()=>window.__TEST_NEW_TABS),0,'Aucun onglet nouveau en maths');
+
+  // La correction doit permettre de revenir à la vraie sous-leçon BIS.
+  await page.evaluate(()=>window.TIM_PEDAGOGY_NAVIGATE('Mathématiques','MBIS13'));
+  await page.locator('#matieres-content .math-reading-lesson').waitFor({state:'visible',timeout:15000});
+  assert.ok((await page.locator('#matieres-content .spx-hero h2').innerText()).length>4);
+  report.checks.mathFeedbackDeepLinkToLesson=true;
   await page.screenshot({path:output+'/physique-mobile.jpg',type:'jpeg',quality:70,fullPage:true});
   fs.writeFileSync(output+'/rapport.json',JSON.stringify(report,null,2));
   process.stdout.write(JSON.stringify(report)+'\n');
