@@ -13,27 +13,65 @@ const GROUPS=[
  {name:'Révisions et évaluations',start:22,end:23,keywords:/evaluation|controle|revisio|correction/}
 ];
 
-/* Compléments de l'ENT du 10/11/2026 : lecture seule, sans notes ni XP. */
+/* Compléments ENT vérifiés jusqu'au 12/11/2026 : lecture seule, sans notes ni XP. */
 const TIM_ENT_NEW=[
  {id:'TIM_ENT_20261106',date:'2026-11-06',title:'6 novembre — Automatismes 5 et factorisation',chapter:'Calcul littéral',teacher:'Test 5 sur les automatismes Leçon : factoriser une expression littérale',work:'Finir de corriger son évaluation',source:'Séance ENT 10099~6402971 ; devoir ENT 10099~214457',note:'Ces informations figuraient dans l’export ENT du 10 novembre, après les premières captures prises pendant la séance.'},
- {id:'TIM_ENT_20261109',date:'2026-11-09',title:'9 novembre — Correction et factorisation',chapter:'Calcul littéral',teacher:'Correction du test 5 sur les automatismes Correction ex 35 p.77 Exercices sur la factorisation : n°36 et 37 p.77',work:'Faire exercice n°35 p.77',source:'Séance ENT 10099~6402906 ; devoir ENT 10099~214606',note:'Les énoncés et corrigés officiels de la page 77 ne sont pas disponibles.'}
+ {id:'TIM_ENT_20261109',date:'2026-11-09',title:'9 novembre — Correction et factorisation',chapter:'Calcul littéral',teacher:'Correction du test 5 sur les automatismes Correction ex 35 p.77 Exercices sur la factorisation : n°36 et 37 p.77',work:'Faire exercice n°35 p.77',source:'Séance ENT 10099~6402906 ; devoir ENT 10099~214606',note:'Les énoncés et corrigés officiels de la page 77 ne sont pas disponibles.'},
+ {id:'TIM_ENT_20261112',date:'2026-11-12',title:'12 novembre — La réciproque de Thalès',chapter:'Thalès',
+  teacher:'Leçon : la réciproque de Thalès',
+  work:'Pour vendredi 13 novembre : Finir l’exercice 25 p.253.',
+  source:'Séance ENT 10099~6402938 ; contenu 10099~215177 ; devoir ENT 10099~215178',
+  note:'Aucun PDF joint à cette séance. L’énoncé de l’exercice 25 p.253 n’est pas fourni dans l’export ENT ; seul le numéro est attesté.'}
 ];
 function mathEntList(){
- const old=ent.filter(e=>!TIM_ENT_NEW.some(v=>String(e.id)===v.id || String(e.date||'').includes(v.date) || String(e.id)==='M26S'+v.date.slice(2).replace(/-/g,'')));
+ const old=ent.filter(e=>!TIM_ENT_NEW.some(v=>String(e.id)===v.id || String(e.date||'').includes(v.date) || String(e.id)==='M26S'+v.date.slice(5,7)+v.date.slice(8,10)));
  return [...old,...TIM_ENT_NEW];
 }
 function viewTimEnt(id){
  const x=TIM_ENT_NEW.find(v=>v.id===id);if(!x)return;
- selected=id;group=GROUPS[2];
- draw(header('Cours ENT · '+x.title,'Retranscription exacte du cahier de textes de Mme Pialet.')+
+ const isThales=x.id==='TIM_ENT_20261112';
+ selected=id;group=isThales?GROUPS[3]:GROUPS[2];
+ draw(header('Cours ENT · '+x.title,'Texte authentique du cahier de textes de Mme Pialet, séparé des explications BIS.')+
  back('Retour à tous les cours ENT')+
  '<article class="spx-panel math-reading-lesson">'+
  '<section class="math-reading-section"><h3>En classe — texte du professeur</h3><p>'+esc(x.teacher)+'</p></section>'+
  '<section class="math-reading-section"><h3>Travail demandé — texte ENT</h3><p>'+esc(x.work)+'</p></section>'+
  '<section class="math-reading-section"><h3>Source et limites</h3><p>'+esc(x.source)+'. '+esc(x.note)+'</p></section></article>'+
- '<div class="math-reading-actions"><h3>Comprendre la factorisation</h3>'+
- btn('data-math-factor','lesson','Lire la leçon simplifiée')+'</div>',viewEntChronology);
+ (isThales?'<section data-tim-thales-original-pdf class="math-reading-section"></section>':'')+
+ '<div class="math-reading-actions"><h3>'+(isThales?'Comprendre la réciproque de Thalès':'Comprendre la factorisation')+'</h3>'+
+ (isThales?btn('data-math-reciproque','lesson','Lire la leçon BIS expliquée'):btn('data-math-factor','lesson','Lire la leçon simplifiée'))+
+ '</div>',viewEntChronology);
  wire();
+ if(isThales)mountTimThalesSource();
+}
+function mountTimThalesSource(){
+ const host=root?.querySelector('[data-tim-thales-original-pdf]');
+ if(host&&window.TIM_INLINE_ENT_DOCUMENTS?.mount){
+  window.TIM_INLINE_ENT_DOCUMENTS.mount(host,['M26S1009'],{
+   title:'Support du professeur du 9 octobre : théorème de Thalès (déjà archivé, non joint au cours du 12 novembre)',
+   filenamePattern:/leçon.*théorème.*thalès\\.pdf/i,limit:1,auto:false
+  }).catch(()=>{host.textContent='Le PDF de Thalès du 9 octobre est momentanément indisponible.';});
+ }
+}
+function viewTimReciproqueThales(){
+ selected='TIM_RECIPROQUE_THALES_BIS';group=GROUPS[3];
+ draw(header('Leçon BIS · La réciproque de Thalès','Explication pédagogique du cours du jeudi 12 novembre, distincte du texte officiel du professeur.')+
+ back('Retour au chapitre Thalès')+
+ '<article class="spx-panel math-reading-lesson">'+
+ '<section class="math-reading-section"><h3>1 · Comprendre à quoi ça sert</h3><p>La réciproque de Thalès sert à <strong>prouver que deux droites sont parallèles</strong>, à partir de longueurs connues. Le théorème de Thalès fait l’inverse : si les droites sont parallèles, il permet d’écrire des rapports égaux.</p></section>'+
+ '<section class="math-reading-section"><h3>2 · Regarder les alignements</h3><p>Dans le triangle ABC, les points A, D, B sont alignés dans cet ordre et les points A, E, C sont alignés dans cet ordre. On veut savoir si les droites (DE) et (BC) sont parallèles.</p>'+
+ '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 270" role="img" aria-label="Triangle ABC avec D sur AB, E sur AC et le segment DE" style="display:block;max-width:420px;width:100%;height:auto;margin:12px auto;background:#f5f9fc;border-radius:9px"><path d="M200 25 L55 235 L345 235 Z" fill="none" stroke="#25415f" stroke-width="3"/><line x1="143" y1="108" x2="257" y2="108" stroke="#137a88" stroke-width="4"/><g fill="#25415f" font-size="17" font-weight="700" font-family="Arial, sans-serif"><text x="190" y="19">A</text><text x="35" y="255">B</text><text x="346" y="255">C</text><text x="119" y="101">D</text><text x="269" y="105">E</text></g></svg>'+
+ '<p>Le dessin aide à se repérer, mais ce sont les calculs qui prouvent le parallélisme.</p></section>'+
+ '<section class="math-reading-section"><h3>3 · Méthode en quatre étapes</h3><ol><li>Vérifier que A, D, B sont alignés et que A, E, C sont alignés <strong>dans le même ordre</strong>.</li><li>Calculer <strong>AD / AB</strong>.</li><li>Calculer <strong>AE / AC</strong>.</li><li>Si les deux rapports sont égaux, conclure : <strong>(DE) est parallèle à (BC)</strong> grâce à la réciproque du théorème de Thalès.</li></ol></section>'+
+ '<section class="math-reading-section"><h3>4 · Exemple corrigé</h3><p>AD = 3 cm, AB = 5 cm, AE = 4,2 cm et AC = 7 cm.</p><ol><li>AD / AB = 3 / 5 = <strong>0,6</strong>.</li><li>AE / AC = 4,2 / 7 = <strong>0,6</strong>.</li><li>Les rapports sont égaux et les points sont alignés dans le même ordre. Donc <strong>(DE) // (BC)</strong>.</li></ol></section>'+
+ '<section class="math-reading-section"><h3>5 · Je n’ai pas compris</h3><p>Imagine deux côtés d’un triangle. Tu compares la proportion parcourue sur chacun : 3 sur 5 d’un côté, 4,2 sur 7 de l’autre. Les deux représentent 60 % : la petite barre DE est alors parallèle à la base BC, si les points sont correctement alignés.</p><p><strong>Erreur à éviter :</strong> ne pas comparer AD / AC avec AE / AB. Les côtés doivent se correspondre. Ne pas conclure à partir du dessin seul.</p></section>'+
+ '<section class="math-reading-section"><h3>6 · Et si les rapports sont différents ?</h3><p>Par exemple : 3 / 5 = 0,6 mais 5 / 7 ≈ 0,714. Les rapports ne sont pas égaux ; si les points sont bien alignés, <strong>(DE) n’est pas parallèle à (BC)</strong> (contraposée de Thalès).</p></section>'+
+ '<section class="math-reading-section"><h3>Devoir donné pour vendredi 13 novembre</h3><p><strong>Finir l’exercice 25 p.253.</strong> L’énoncé du manuel n’est pas présent dans l’archive ENT ; il n’est pas reproduit ici.</p></section>'+
+ '</article>'+
+ '<section data-tim-thales-original-pdf class="math-reading-section"></section>'+
+ '<div class="math-reading-actions">'+btn('data-math-open-original','TIM_ENT_20261112','Relire le texte exact du cours ENT du 12 novembre')+'</div>',()=>category(GROUPS[3]));
+ wire();
+ mountTimThalesSource();
 }
 function viewTimFactorisation(){
  selected='TIM_FACTORISATION_BIS';group=GROUPS[2];
@@ -61,7 +99,7 @@ function groupOfId(id){
  const n=Number(suffix(id));return GROUPS.find(g=>n>=g.start&&n<=g.end)||GROUPS[0];
 }
 function groupOfEnt(lesson){
- if(TIM_ENT_NEW.some(x=>x.id===lesson.id))return GROUPS[2];
+ if(TIM_ENT_NEW.some(x=>x.id===lesson.id))return GROUPS.find(g=>g.name===lesson.chapter)||GROUPS[2];
  const text=nrm([lesson.chapter,lesson.topic,lesson.title].join(' '));
  // Reconnaître la finalité de la séance avant les notions qu'elle révise.
  if(/automatism/.test(text))return GROUPS[5];
@@ -105,6 +143,7 @@ function wire(){
  root.querySelectorAll('[data-math-train]').forEach(b=>b.onclick=()=>viewTraining(b.dataset.mathTrain));
  root.querySelectorAll('[data-math-open-original]').forEach(b=>b.onclick=()=>TIM_ENT_NEW.some(x=>x.id===b.dataset.mathOpenOriginal)?viewTimEnt(b.dataset.mathOpenOriginal):options.original(b.dataset.mathOpenOriginal));
  root.querySelectorAll('[data-math-factor]').forEach(b=>b.onclick=()=>viewTimFactorisation());
+ root.querySelectorAll('[data-math-reciproque]').forEach(b=>b.onclick=()=>viewTimReciproqueThales());
  root.querySelectorAll('[data-math-open-exercise]').forEach(b=>b.onclick=()=>options.exercise(b.dataset.mathOpenExercise));
 }
 function home(){
@@ -114,7 +153,7 @@ function home(){
  '<div class="math-chapter-list">'+GROUPS.map((g,i)=>{
   const lessons=bis.filter(x=>groupOfId(x.id)===g);
   if(!lessons.length)return '';
-  return '<button type="button" class="math-chapter-entry" data-math-group="'+i+'"><strong>'+esc(g.name)+'</strong><span>'+(lessons.length+(g===GROUPS[2]?1:0))+' leçon'+(lessons.length>1?'s':'')+' à lire</span></button>';
+  return '<button type="button" class="math-chapter-entry" data-math-group="'+i+'"><strong>'+esc(g.name)+'</strong><span>'+(lessons.length+([GROUPS[2],GROUPS[3]].includes(g)?1:0))+' leçon'+(lessons.length>1?'s':'')+' à lire</span></button>';
  }).join('')+'</div>'+
  '<div id="math-ent-import-mount"></div>'+ 
  '<section class="math-ent-home" style="margin:15px 0;padding:13px;border:1px solid #bad0e7;border-radius:13px;background:#eff6ff;color:#233d5e"><div id="math-ent-home-directory"></div></section>'+
@@ -137,7 +176,7 @@ function viewEntChronology(){
  const lessons=mathEntList().slice().sort((a,b)=>String(a.date||a.id).localeCompare(String(b.date||b.id),'fr'));
  draw(header('Cours ENT de mathématiques · Chronologie','Les cours originaux de Mme Pialet, sans ajout ni remplacement du contenu officiel.')+
  back('Retour aux chapitres')+
- '<section class="spx-panel"><h3>'+lessons.length+' séances ENT conservées</h3><p>Cours d’origine et compléments des 6 et 9 novembre 2026 récupérés dans l’export ENT du 10 novembre. Les énoncés de la page 77 restent manquants.</p>'+
+ '<section class="spx-panel"><h3>'+lessons.length+' séances ENT conservées</h3><p>Cours d’origine et mises à jour jusqu’au 12 novembre 2026. Aujourd’hui : réciproque de Thalès ; devoir du 13 novembre : exercice 25 p.253. Les énoncés du manuel ne figurent pas dans l’export.</p>'+
  (lessons.length?lessons.map((x,i)=>'<button class="spx-row" type="button" data-math-open-original="'+esc(x.id)+'"><span class="spx-chip">'+(i+1)+'</span><span><strong>'+esc(x.title)+'</strong><small>'+esc(x.date||x.summary||'Cours ENT')+'</small></span></button>').join(''):'<p>Aucun cours ENT retrouvé.</p>')+
  '</section>',home);
  wire();
@@ -153,7 +192,10 @@ function category(g){
    '<span class="math-lesson-open">'+(done?'Lire la leçon · Évaluation déjà faite':'Lire la leçon')+' →</span></button>';
  }).join('');
  draw(header(g.name,'Choisis une leçon pour la lire.')+back('Tous les chapitres')+
- '<div class="math-lesson-list">'+rows+(g===GROUPS[2]?'<button type="button" class="math-lesson-entry" data-math-factor="lesson"><strong>Factoriser une expression littérale · 6 et 9 novembre</strong><span class="math-lesson-description">Méthode expliquée et exemples corrigés</span><span class="math-lesson-open">Lire la leçon →</span></button>':'')+'</div>',home);
+ '<div class="math-lesson-list">'+rows+
+ (g===GROUPS[2]?'<button type="button" class="math-lesson-entry" data-math-factor="lesson"><strong>Factoriser une expression littérale · 6 et 9 novembre</strong><span class="math-lesson-description">Méthode expliquée et exemples corrigés</span><span class="math-lesson-open">Lire la leçon →</span></button>':'')+
+ (g===GROUPS[3]?'<button type="button" class="math-lesson-entry" data-math-reciproque="lesson"><strong>La réciproque de Thalès · 12 novembre</strong><span class="math-lesson-description">Leçon BIS, dessin, méthode, exemples corrigés et devoir du 13 novembre</span><span class="math-lesson-open">Lire la leçon →</span></button>':'')+
+ '</div>',home);
  wire();
 }
 function listPage(id,title,rows,kind){
