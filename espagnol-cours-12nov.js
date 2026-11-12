@@ -27,21 +27,57 @@ const section=(parent,heading)=>{
  const box=e('section',undefined,'tim-es-nov12-section');box.style.cssText=style.section;
  title(box,heading);parent.append(box);return box;
 };
-function render(){
+/* Le cadre « Dernier cours » est une porte d'entrée, pas une deuxième copie de la leçon. */
+function renderFeatured(number=14){
  if(window.__TIM_GUEST)return null;
- const root=e('details',undefined,'tim-es-nov12');root.style.cssText=style.panel;
- const summary=e('summary','Dernier cours ENT · Jeudi 12 novembre — « No empiezo en septiembre »');
- summary.style.cssText=style.summary;root.append(summary);
- const slot=e('div');
- root.append(slot);
- let loaded=false;
- root.addEventListener('toggle',()=>{
-  if(!root.open||loaded)return;
-  loaded=true;
-  build(slot).catch(err=>{
-   slot.append(e('p','La fiche PDF n’est pas disponible : '+String(err?.message||err)));
-  });
+ const root=e('section',undefined,'tim-es-nov12 tim-es-latest-course');
+ root.style.cssText=style.panel;
+ root.dataset.courseDate='2026-11-12';
+ const heading=e('h3','Dernier cours ENT · Jeudi 12 novembre');
+ heading.style.cssText='font-size:17px;font-weight:850;margin:3px 0 8px;color:#233f70';
+ const intro=e('p','No empiezo en septiembre · Compréhension écrite, négations, hémisphère sud et conjugaison.');
+ intro.style.cssText='font-size:15px;line-height:1.55;margin:6px 0';
+ const button=e('button','Ouvrir la leçon '+number+' dans le classeur');
+ button.type='button';
+ button.style.cssText='font-size:15px;font-weight:850;min-height:44px;padding:9px 12px;background:#274b85;color:#fff;border:0;border-radius:8px;cursor:pointer';
+ button.addEventListener('click',()=>{
+  const lesson=document.getElementById('tim-es-lesson-20261112');
+  if(!lesson)return;
+  lesson.hidden=false;
+  lesson.open=true;
+  lesson.scrollIntoView?.({block:'start',behavior:'smooth'});
  });
+ root.append(heading,intro,button);
+ return root;
+}
+function renderLessonCard(number=14){
+ if(window.__TIM_GUEST)return null;
+ const root=e('details',undefined,'tim-es-lesson tim-es-nov12-lesson');
+ root.id='tim-es-lesson-20261112';
+ root.dataset.entId=ENT_ID;
+ root.style.cssText='border:1px solid #c6d1e8;border-radius:14px;margin:12px 0;background:#f7f9ff;color:#273448;overflow:hidden';
+ const label=e('summary','Leçon '+number+' — No empiezo en septiembre : négations et conjugaison');
+ label.title='Séance du jeudi 12 novembre 2026';
+ label.style.cssText='display:block;cursor:pointer;font-weight:850;line-height:1.55;padding:17px 14px;color:#263a83;font-size:17px;overflow-wrap:anywhere';
+ const inner=e('div');inner.style.cssText='padding:0 13px 18px';
+ const back=e('button','← Choisir une autre leçon','tim-es-back');
+ back.type='button';
+ back.style.cssText='margin:7px 0 13px;min-height:40px;background:#eef3fb;border:1px solid #bbcce1;color:#2d4d77;padding:8px 12px;border-radius:9px;font-weight:700';
+ const info=e('p','Cours original ENT, traduction française, leçon BIS, fiche du groupe A et devoir du 17 novembre.','tim-es-course-intro');
+ info.style.cssText='font-size:14px;color:#526077;line-height:1.5';
+ const slot=e('div');slot.className='tim-es-reading';
+ let loaded=false,loading=false;
+ const ensure=()=>{
+  if(loaded||loading)return;
+  loading=true;
+  build(slot).then(()=>{loaded=true;}).catch(err=>{
+   slot.append(e('p','Le cours est momentanément inaccessible : '+String(err?.message||err)));
+  }).finally(()=>{loading=false;});
+ };
+ label.addEventListener('click',()=>{if(!root.open)ensure();});
+ root.addEventListener('toggle',()=>{if(root.open)ensure();});
+ inner.append(back,info,slot);
+ root.append(label,inner);
  return root;
 }
 async function build(slot){
@@ -136,5 +172,11 @@ async function build(slot){
  const cite=e('p','Source ENT : cours 10099~6400554, contenu 10099~214865, devoir 10099~214866. Aucune nouvelle évaluation interactive, note ou tentative ajoutée.');
  cite.style.cssText=style.caption;homework.append(cite);
 }
-window.TIM_SPANISH_NOV12={render,ENT_ID,HOMEWORK_ID,PDF_NAME};
+window.TIM_SPANISH_NOV12={render:renderFeatured,renderFeatured,renderLessonCard,ENT_ID,HOMEWORK_ID,PDF_NAME};
+const registry=Array.isArray(window.TIM_SPANISH_COURS_SUPPLEMENTAIRES)?window.TIM_SPANISH_COURS_SUPPLEMENTAIRES:[];
+if(!registry.some(x=>x.id===ENT_ID))registry.push({
+ id:ENT_ID,date:'2026-11-12',name:'No empiezo en septiembre : négations et conjugaison',
+ renderCard:renderLessonCard,renderFeatured
+});
+window.TIM_SPANISH_COURS_SUPPLEMENTAIRES=registry;
 })();
