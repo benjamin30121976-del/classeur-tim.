@@ -112,12 +112,6 @@ function originalPanel(slot,id,mode){
  }else{
   slot.append(E('h3','','Exercices du professeur (ENT)'));
   slot.append(E('p','', 'Les exercices ENT fidèlement recopiés à partir des PDF sont réalisables directement ci-dessous. Le document original reste visible pour vérifier l’énoncé.'));
-  const go=button('Faire les exercices interactifs de physique-chimie',()=>{
-   const section=root?.querySelector('.tim-es-lesson[open] .tim-es-exercises');
-   if(section){section.open=true;section.scrollIntoView({block:'start'});}
-  },'spx-quick-link tim-es-quick-link');
-  go.style.cssText='display:block;width:100%;margin:12px 0 18px;text-align:center';
-  slot.append(go);
  }
  if(mode==='exercises'){
   if(['PC_BIS01','PC_BIS02','PC_BIS03'].includes(id)&&window.TIM_PHYSICS_ENT?.renderDirectory){
@@ -407,6 +401,18 @@ function render(container,options={}){
   else stat.textContent='Le suivi des résultats n’est pas disponible.';
  }});
  root.append(results);
+ const entResults=E('details','pc-ent-results');
+ entResults.append(E('summary','','Mes résultats et corrections — exercices ENT du professeur'));
+ const entSlot=E('div','pc-ent-saved-copies');
+ entSlot.append(E('p','','Ouvre cette partie pour consulter les copies ENT validées par Tim.'));
+ entResults.append(entSlot);
+ entResults.addEventListener('toggle',()=>{
+  if(entResults.open){
+   if(window.TIM_PHYSICS_ENT?.renderProgress)window.TIM_PHYSICS_ENT.renderProgress(entSlot);
+   else entSlot.textContent='Suivi des exercices ENT momentanément indisponible.';
+  }
+ });
+ root.append(entResults);
  if(window.__TIM_PARENT&&!window.__TIM_GUEST)root.append(archives());
  if(options.openLessonId){
   const target=/^PC_BIS/.test(options.openLessonId)?options.openLessonId:ORDER.find(id=>(ASSOCIATED[id]||[]).includes(options.openLessonId));
