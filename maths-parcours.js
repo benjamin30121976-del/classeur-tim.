@@ -88,6 +88,7 @@ function sectionBtns(id){
  btn('data-math-help',id,'3 · Je n’ai pas compris')+
  (ex?btn('data-math-ex',id,'Exercices ENT du chapitre ('+ex+')'):'')+
  (id==='MBIS13'?btn('data-math-programs',id,'Fiche originale · Programmes A et B'):'')+
+ (g===GROUPS[2]||g===GROUPS[3]?btn('data-math-ent-interactive',id,'Exercices ENT interactifs · note /10 et XP'):'')+
  btn('data-math-train',id,'Évaluation BIS · 10 questions · une seule fois · jusqu’à +1 XP')+
  '</div>';
 }
@@ -98,6 +99,7 @@ function wire(){
  root.querySelectorAll('[data-math-bis]').forEach(b=>b.onclick=()=>viewBis(b.dataset.mathBis));
  root.querySelectorAll('[data-math-help]').forEach(b=>b.onclick=()=>viewHelp(b.dataset.mathHelp));
  root.querySelectorAll('[data-math-ex]').forEach(b=>b.onclick=()=>viewEntExercises(b.dataset.mathEx));
+ root.querySelectorAll('[data-math-ent-interactive]').forEach(b=>b.onclick=()=>viewEntExercises(b.dataset.mathEntInteractive));
  root.querySelectorAll('[data-math-programs]').forEach(b=>b.onclick=()=>viewProgramsOriginal());
  root.querySelectorAll('[data-math-train]').forEach(b=>b.onclick=()=>viewTraining(b.dataset.mathTrain));
  root.querySelectorAll('[data-math-open-original]').forEach(b=>b.onclick=()=>TIM_ENT_NEW.some(x=>x.id===b.dataset.mathOpenOriginal)?viewTimEnt(b.dataset.mathOpenOriginal):options.original(b.dataset.mathOpenOriginal));
@@ -113,9 +115,13 @@ function home(){
   if(!lessons.length)return '';
   return '<button type="button" class="math-chapter-entry" data-math-group="'+i+'"><strong>'+esc(g.name)+'</strong><span>'+(lessons.length+(g===GROUPS[2]?1:0))+' leçon'+(lessons.length>1?'s':'')+' à lire</span></button>';
  }).join('')+'</div>'+
+ '<section class="math-ent-home" style="margin:15px 0;padding:13px;border:1px solid #bad0e7;border-radius:13px;background:#eff6ff;color:#233d5e"><div id="math-ent-home-directory"></div></section>'+
  '<details class="math-reading-docs"><summary>Voir les cours du professeur (ENT)</summary>'+
  btn('data-math-all-ent','all','Consulter les '+mathEntList().length+' cours originaux')+'</details>',options.back);
  wire();
+ const area=root.querySelector('#math-ent-home-directory');
+ if(area&&window.TIM_MATH_ENT?.renderDirectory)window.TIM_MATH_ENT.renderDirectory(area);
+ else if(area)area.textContent='Les exercices ENT interactifs ne sont pas encore disponibles.';
 }
 function viewEntChronology(){
  selected=null;group=null;
@@ -151,7 +157,18 @@ function listPage(id,title,rows,kind){
  wire();
 }
 function viewEnt(id){listPage(id,'Leçons ENT — '+groupOfId(id).name,entFor(groupOfId(id)),'original');}
-function viewEntExercises(id){listPage(id,'Exercices ENT du chapitre — '+groupOfId(id).name,exFor(groupOfId(id)),'exercise');}
+function viewEntExercises(id){
+ const g=groupOfId(id);
+ listPage(id,'Exercices ENT du chapitre — '+g.name,exFor(g),'exercise');
+ const ids=g===GROUPS[2]?['ME_ENT_PROGRAMMES']:g===GROUPS[3]?['ME_ENT_THALES3']:[];
+ if(ids.length&&window.TIM_MATH_ENT?.renderDirectory){
+  const panel=document.createElement('section');
+  panel.className='math-ent-embedded';
+  panel.style.cssText='background:#edf5fd;border:1px solid #bad0e7;border-radius:13px;padding:13px;margin:15px 0';
+  root.querySelector('.spx.math-path')?.insertBefore(panel,root.querySelector('.spx.math-path')?.children[2]||null);
+  window.TIM_MATH_ENT.renderDirectory(panel,{showUnavailable:false,onlyIds:ids});
+ }
+}
 function blocks(lesson,mode){
  const content=(lesson?.blocks||[]).filter(b=>!/^Question d[’']entraînement\s*[12]$/iu.test(b.h||'')&&(mode==='bis'||['Comprendre','Méthode étape par étape','Exemples corrigés','Erreur fréquente','Objectif'].includes(b.h)));
  return content.map(b=>{
