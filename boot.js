@@ -702,7 +702,13 @@ async function startSession(user){
       answers.some(v=>!((Number.isInteger(v)&&v>=0&&v<=3)||
         (typeof v==='string'&&v.trim().length>0&&v.length<=200))))
     throw Error('Les dix réponses espagnoles sont nécessaires.');
-   const r=await cloudCallable(/^ESE_L14_/.test(id)?'previewSpanishNov12Training':'previewSpanishEntTraining')({id,answers,translationsUsed});
+   if(window.TIM_ES12_STUDY?.isId(id)){
+    const {nov12Evaluate}=await import('./espagnol-12nov-correction.mjs?v=import-parent-12nov-v1');
+    const report=nov12Evaluate(id,answers,translationsUsed);
+    if(!report)throw Error('Les dix réponses sont nécessaires pour vérifier l’essai Parent.');
+    return {...report,practice:true,saved:false,xp:0};
+   }
+   const r=await cloudCallable('previewSpanishEntTraining')({id,answers,translationsUsed});
    if(r.data?.practice!==true||r.data?.saved!==false||r.data?.xp!==0||
       !Number.isFinite(r.data.score)||r.data.score<0||r.data.score>10||
       !Array.isArray(r.data.items)||r.data.items.length!==10)
