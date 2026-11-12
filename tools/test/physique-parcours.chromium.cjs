@@ -435,6 +435,20 @@ async function main(){
   assert.equal(await page.evaluate(()=>window.__TEST_NEW_TABS),0,'Aucun onglet nouveau en maths');
 
   // La correction doit permettre de revenir à la vraie sous-leçon BIS.
+  // Le compte Invité du test ne possède pas les BIS privées.
+  // Créer une unique leçon fictive dans ce navigateur de test uniquement.
+  await page.evaluate(()=>{
+   window.__TIM_DATA.lessons=window.__TIM_DATA.lessons||[];
+   if(!window.__TIM_DATA.lessons.some(x=>x.id==='MBIS13'))
+    window.__TIM_DATA.lessons.push({
+     id:'MBIS13',subject:'Mathématiques',title:'Programmes de calcul — démonstration locale',
+     summary:'Leçon fictive de contrôle de navigation, sans données d’élève.',
+     category:'bis',blocks:[
+      {h:'Comprendre',kind:'note',body:'Pour traduire un programme, on pose x puis on écrit chaque étape.'},
+      {h:'Exemples corrigés',kind:'note',body:'2(x+3)=2x+6.'}
+     ]
+    });
+  });
   await page.evaluate(()=>window.TIM_PEDAGOGY_NAVIGATE('Mathématiques','MBIS13'));
   const mathState=await page.evaluate(()=>({
    active:document.querySelector('#matieres')?.className,
@@ -443,14 +457,11 @@ async function main(){
    hasReader:!!window.TIM_MATH_PATH,hasNavigate:!!window.TIM_PEDAGOGY_NAVIGATE
   }));
   report.checks.mathNavigationDiagnostic=mathState;
-  if(mathState.lessons>0){
-   if(!await page.locator('#matieres-content .math-reading-lesson').isVisible())
-    throw new Error('Lien vers BIS maths non ouvert : '+JSON.stringify(mathState));
-   assert.ok((await page.locator('#matieres-content .spx-hero h2').innerText()).length>4);
-   report.checks.mathFeedbackDeepLinkToLesson=true;
-  }else{
-   report.checks.mathFeedbackDeepLinkToLesson='Le visiteur ne dispose pas des leçons BIS privées : navigation vérifiée sans copie réelle';
-  }
+  assert.equal(mathState.lessons,1,'Le navigateur de démonstration doit contenir une leçon BIS fictive');
+  if(!await page.locator('#matieres-content .math-reading-lesson').isVisible())
+   throw new Error('Lien vers BIS maths non ouvert : '+JSON.stringify(mathState));
+  assert.match(await page.locator('#matieres-content .spx-hero h2').innerText(),/Programmes de calcul/);
+  report.checks.mathFeedbackDeepLinkToLesson=true;
   await page.screenshot({path:output+'/physique-mobile.jpg',type:'jpeg',quality:70,fullPage:true});
   fs.writeFileSync(output+'/rapport.json',JSON.stringify(report,null,2));
   process.stdout.write(JSON.stringify(report)+'\n');
