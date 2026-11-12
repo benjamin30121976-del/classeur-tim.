@@ -148,6 +148,38 @@ async function verify(browser,device,viewport){
    console.log('OK '+device+' : PDF '+subject+' affiche dans la lecon (canvas).');
    await page.locator('#tim-real-pdf-audit-'+subject).evaluate(node=>node.remove());
   }
+  // La production Cloudflare utilise main : charger le script du commit testé pour simuler l'interface corrigée.
+  await page.addScriptTag({content:require('node:fs').readFileSync('maths-parcours.js','utf8')});
+  // Vérifier LES VRAIES PAGES du classeur, pas un lecteur créé séparément dans le test.
+  assert(await page.evaluate(()=>typeof window.TIM_PEDAGOGY_NAVIGATE==='function'),
+    'La navigation vers les matieres est indisponible');
+  for(const target of [
+   {label:'Cours ENT 12 novembre',button:'[data-math-open-original="TIM_ENT_20261112"]'},
+   {label:'Leçon BIS reciproque de Thales',button:'[data-math-reciproque]'}
+  ]){
+   await page.evaluate(()=>window.TIM_PEDAGOGY_NAVIGATE('Mathématiques','MBIS14'));
+   await page.locator('#matieres-content article.math-reading-lesson').first().waitFor({state:'visible',timeout:15000});
+   await page.locator('#matieres-content .spx-back').first().click();
+   const row=page.locator('#matieres-content '+target.button).first();
+   await row.waitFor({state:'visible',timeout:15000});
+   await row.click({timeout:12000});
+   const viewer=page.locator('#matieres-content article.math-reading-lesson [data-tim-thales-original-pdf] .pc-inline-pdf').first();
+   await viewer.waitFor({state:'visible',timeout:20000});
+   assert(!(await viewer.getByRole('button',{name:'Afficher ici le document du professeur'}).count()),
+     device+' '+target.label+' : le PDF attend un clic manuel');
+   assert((await viewer.locator('h4').first().textContent()).includes('Le document original'),
+     device+' '+target.label+' : le lecteur PDF ne porte pas sa reference');
+   const fileName=await page.locator('#matieres-content article.math-reading-lesson [data-tim-thales-original-pdf] .tim-inline-ent-file h4').first().textContent();
+   assert(/Thalès/i.test(fileName),device+' '+target.label+' : PDF de Thales manquant');
+   await viewer.scrollIntoViewIfNeeded({timeout:12000});
+   const rendered=await page.waitForFunction(()=>{
+      const root=document.querySelector('#matieres-content article.math-reading-lesson [data-tim-thales-original-pdf]');
+      const canvas=root?.querySelector('canvas'),label=root?.querySelector('.pc-pdf-toolbar span')?.textContent||'';
+      return !!canvas&&canvas.width>0&&canvas.height>0&&/^Page \d+ \/ \d+$/.test(label);
+    },undefined,{timeout:35000}).then(()=>true).catch(()=>false);
+   assert(rendered,device+' '+target.label+' : le PDF d origine ne s affiche pas automatiquement dans la lecon');
+   console.log('OK '+device+' : '+target.label+' affiche automatiquement le PDF de Thales dans le corps du cours.');
+  }
   assert(popupCount===0,'Le lecteur a ouvert un onglet exterieur');
   console.log('OK '+device+' : aucune nouvelle fenetre ou onglet.');
  }finally{
