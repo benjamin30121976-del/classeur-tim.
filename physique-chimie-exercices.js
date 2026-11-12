@@ -76,7 +76,7 @@ async function mount(id,where){
  catch(err){setStatus(where,'Impossible de charger les questions. Aucune tentative n’est consommée. '+(err.message||''));return;}
  const task=result?.task;
  if(!task||task.questions?.length!==10){setStatus(where,'Questionnaire incomplet : aucune validation possible.');return;}
- if(result.completed){await loadSaved(where,id);return;}
+ if(result.completed&&!window.__TIM_PARENT){await loadSaved(where,id);return;}
  const isParentPractice=Boolean(window.__TIM_PARENT&&!window.__TIM_GUEST);
  if(!userIsTim()&&!isParentPractice){
   setStatus(where,'Ce questionnaire est réservé aux comptes Tim et Parent.');
@@ -89,6 +89,14 @@ async function mount(id,where){
  where.replaceChildren(head,details);
  head.append(E('h3','',task.title));
  head.append(E('p','',isParentPractice?'Mode essai Parent · 10 questions · aucun XP, aucune tentative ni note enregistrée pour Tim.':'10 questions · une seule tentative pour Tim · note et corrections immédiates après validation.'));
+ if(isParentPractice&&result.completed){
+  const completed=E('div','pc-parent-saved');
+  completed.style.cssText='border:1px solid #a7c0d9;background:#f0f6fb;padding:11px;margin:12px 0;border-radius:10px';
+  completed.append(E('p','','Tim a déjà validé cet exercice. Vous pouvez consulter sa copie et réaliser votre propre essai sans modifier ses résultats.'));
+  const savedSlot=E('div','pc-parent-saved-slot');
+  completed.append(button('Voir la copie et les corrections de Tim',()=>loadSaved(savedSlot,id),'spx-quick-link tim-es-quick-link'),savedSlot);
+  head.append(completed);
+ }
  const feedback=E('p','');
  feedback.style.cssText='font-size:14px;color:#47617e;margin:8px 0';
  head.append(feedback);
