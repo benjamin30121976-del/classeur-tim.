@@ -226,7 +226,7 @@ function openPhysicsTrainingFromExercises(id,lessonId,lessonName){
  },'plain back'));
  root.append(E('p','lesson-type-label bis','PHYSIQUE-CHIMIE · EXERCICE BIS INTERACTIF'));
  root.append(E('h2','',lessonName));
- root.append(E('p','intro','Dix questions, une seule tentative. La note et les explications apparaissent immédiatement après validation. Le compte Parent conserve la copie.'));
+ root.append(E('p','intro',window.__TIM_PARENT?'Mode essai Parent : répondez aux dix questions et obtenez les corrections sans enregistrer de note ni d’XP pour Tim.':'Dix questions, une seule tentative pour Tim. La note et les explications apparaissent après validation et sont visibles sur le compte Parent.'));
  root.append(button('Revoir la leçon avant de répondre',()=>{page('matieres');renderMatiere('Physique-chimie',lessonId);},'plain'));
  const slot=E('div','pc-global-training-slot');root.append(slot);
  window.TIM_PHYSICS_TRAINING.mount(id,slot).catch(e=>{
@@ -243,7 +243,7 @@ function renderPhysicsExerciseDirectory(root,toolbar){
   renderExerciseIndex();scrollTop();
  },'group-back'),E('h3','','Physique-chimie'));
  document.getElementById('exercise-count').textContent='Physique-chimie · 21 exercices interactifs · 7 leçons';
- root.append(E('p','exercise-type-prompt','Choisis une leçon puis un exercice. Réponds directement sur le site : aucun PDF à remplir. Une seule validation, correction et note immédiates.'));
+ root.append(E('p','exercise-type-prompt',window.__TIM_PARENT?'Compte Parent : choisissez une leçon et réalisez un essai des dix questions. Vous verrez la correction sans modifier le score, les XP ni la tentative de Tim.':'Choisis une leçon puis un exercice. Réponds directement sur le site : aucun PDF à remplir. Une seule validation, correction et note immédiates.'));
  for(let i=1;i<=7;i++){
   const num=String(i).padStart(2,'0'),lessonId='PC_BIS'+num;
   const l=lessonBy(lessonId);
@@ -257,7 +257,7 @@ function renderPhysicsExerciseDirectory(root,toolbar){
   for(let series=1;series<=3;series++){
    const id='PCQ_L'+num+'_0'+series;
    list.append(cardAction('Exercice '+series+' — '+names[series-1],
-    '10 questions · correction immédiate · une tentative',
+    window.__TIM_PARENT?'10 questions · essai Parent sans note ni XP':'10 questions · correction immédiate · une tentative',
     series===3?'Réponses courtes à écrire directement dans le classeur.':'Questions à choix multiples, directement dans le classeur.',
     ()=>openPhysicsTrainingFromExercises(id,lessonId,l.title)));
   }
