@@ -293,6 +293,87 @@ async function main(){
   report.checks.entMoleculeModelsFillable=true;
 
 
+  // Vérifier aussi les nouvelles fiches originales ENT de maths en profil Parent simulé.
+  // Aucune connexion et aucun appel au serveur réel.
+  await page.evaluate(async()=>{
+   const names=[
+    'Choisis un nombre, soustrais 9, multiplie par 2 et ajoute son triple.',
+    'Multiplie par −3, ajoute le carré du nombre puis 2.',
+    'Ajoute 5, multiplie par le nombre de départ puis soustrais 8.',
+    'Multiplie par 2, ajoute 3, multiplie par −4 et ajoute 4.',
+    'Ajoute 7, multiplie par 3 puis ajoute le cube du nombre.',
+    'Ajoute 1, mets le résultat au carré, puis soustrais son double.'
+   ];
+   window.__TIM_PARENT=true;window.__TIM_GUEST=false;
+   window.__MATH_ENT_AUDIT={calls:0,saved:false};
+   window.__TIM_BRIDGE.mathEntTask=async id=>{
+    if(id==='ME_ENT_PROGRAMMES')return {completed:false,task:{
+     id,kind:'programmes',title:'Fiche ENT — six programmes',
+     source:'Fiche ENT',date:'2026-11-02',due:'2026-11-05',bankVersion:'math-ent-test',
+     total:10,scale:'6 réponses.',
+     fields:names.map((name,i)=>({id:'P'+(i+1),group:i+1,kind:'expression',
+      label:'Programme n°'+(i+1)+' — expression associée',
+      steps:[name],placeholder:'Expression littérale'}))}};
+    const cases=[
+     {id:'T1',title:'Case 1 — triangles emboîtés',first:'(AC) et (AB)',parallel:'(NM) et (CB)',given:'AN=2 AC=5 AB=6 MN=3,5'},
+     {id:'T2',title:'Case 2 — triangles emboîtés',first:'(EG) et (EF)',parallel:'(IJ) et (GF)',given:'EJ=4 EG=10 EI=3 FG=8'},
+     {id:'T3',title:'Case 3 — papillon',first:'(RV) et (SU)',parallel:'(RS) et (UV)',given:'TU=3 UV=4 TV=5 RS=6'}
+    ];
+    return {completed:false,task:{id,kind:'thales',title:'Fiche ENT — Thalès',
+      source:'Fiche ENT de démonstration',date:'2026-10-09',due:'2026-10-12',
+      bankVersion:'math-ent-test',total:10,scale:'15 réponses.',
+      cases,fields:cases.flatMap((c,i)=>[
+       {id:'T'+(i+1)+'_inter',group:i+1,kind:'point',label:'Intersection ?'},
+       {id:'T'+(i+1)+'_para',group:i+1,kind:'parallel',label:'Parallèles ?'},
+       {id:'T'+(i+1)+'_ratio',group:i+1,kind:'ratios',label:'Rapports ?'},
+       {id:'T'+(i+1)+'_a',group:i+1,kind:'number',label:'Longueur 1 ?'},
+       {id:'T'+(i+1)+'_b',group:i+1,kind:'number',label:'Longueur 2 ?'}
+      ])}};
+   };
+   window.__TIM_BRIDGE.mathEntPreviewSubmit=async(id,answers)=>{
+    window.__MATH_ENT_AUDIT.calls++;
+    if(!['ME_ENT_PROGRAMMES','ME_ENT_THALES3'].includes(id))throw Error('incorrect ID');
+    if(answers.length!==(id==='ME_ENT_PROGRAMMES'?6:15))throw Error('wrong number of answers');
+    return {id,practice:true,saved:false,submitted:false,xp:0,score:10,total:10,
+     correctFields:answers.length,fieldCount:answers.length,scale:'Essai.',
+     items:answers.map((response,i)=>({prompt:'Question '+(i+1),response,
+      expected:'résultat correct',explanation:'Explication pour l’essai.',correct:true}))};
+   };
+   const host=document.createElement('div');host.id='maths-ent-audit';
+   host.style.cssText='padding:22px;background:#fff;color:#213a5b;margin-top:40px';
+   document.body.append(host);
+   const directory=document.createElement('div');directory.id='maths-ent-directory';host.append(directory);
+   window.TIM_MATH_ENT.renderDirectory(directory,{showUnavailable:false});
+   const program=document.createElement('div');program.id='maths-ent-program';host.append(program);
+   await window.TIM_MATH_ENT.mount('ME_ENT_PROGRAMMES',program);
+  });
+  assert.equal(await page.locator('#maths-ent-directory .math-ent-entry').count(),2,
+   'Deux vraies fiches maths ENT accessibles dans le menu');
+  const prog=page.locator('#maths-ent-program');
+  assert.equal(await prog.locator('input[type=text]').count(),6,'Six programmes à compléter');
+  for(let i=0;i<6;i++)await prog.locator('input[type=text]').nth(i).fill('5x-18');
+  await prog.locator('input[type=checkbox]').check();
+  await prog.getByRole('button',{name:/Corriger mon essai ENT/}).click();
+  await prog.locator('.math-ent-results-header').getByText(/10\/10/).waitFor({state:'visible',timeout:12000});
+  report.checks.mathsEntProgrammesParentFillable=true;
+  await page.evaluate(async()=>{
+   const host=document.querySelector('#maths-ent-audit');
+   const thales=document.createElement('div');thales.id='maths-ent-thales';
+   host.append(thales);
+   await window.TIM_MATH_ENT.mount('ME_ENT_THALES3',thales);
+  });
+  const thales=page.locator('#maths-ent-thales');
+  assert.equal(await thales.locator('input[type=text]').count(),15,'Quinze cases Thalès attendues');
+  assert.equal(await thales.locator('svg').count(),3,'Trois schémas Thalès attendus');
+  for(let i=0;i<15;i++)await thales.locator('input[type=text]').nth(i).fill('réponse essai');
+  await thales.locator('input[type=checkbox]').check();
+  await thales.getByRole('button',{name:/Corriger mon essai ENT/}).click();
+  await thales.locator('.math-ent-results-header').getByText(/10\/10/).waitFor({state:'visible',timeout:12000});
+  const mathAudit=await page.evaluate(()=>window.__MATH_ENT_AUDIT);
+  assert.equal(mathAudit.calls,2);
+  assert.equal(mathAudit.saved,false);
+  report.checks.mathsEntThalesThreeCasesFillable=true;
+  report.checks.mathsEntParentNoWrite=true;
   await page.screenshot({path:output+'/physique-mobile.jpg',type:'jpeg',quality:70,fullPage:true});
   fs.writeFileSync(output+'/rapport.json',JSON.stringify(report,null,2));
   process.stdout.write(JSON.stringify(report)+'\n');
