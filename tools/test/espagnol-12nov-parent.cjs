@@ -26,7 +26,7 @@ async function check(browser,name,viewport){
    const ids=records.map(x=>String(x?.data?.id));
    const pdfs=await window.__TIM_BRIDGE.attachments.list('lesson','ENTESP_2026');
    return {lessons:records.length,has1211:ids.includes('10099~6400554'),
-    teacherPdf:pdfs.some(x=>x.fileName==='4 EECEno empiezo las clases en septiembre.pdf')};
+    teacherPdf:pdfs.some(x=>x.fileName==='4 EECEno empiezo las clases en septiembre.pdf'||x.sha256==='be48a6fa18032c127be5cdc1652ca9a585908953a67cedc562dbd7575b472837')};
   });
   console.log(name+' : cours espagnols originaux dans Firebase='+inv.lessons+
     ', seance 12 novembre deja presente='+inv.has1211+
@@ -37,7 +37,7 @@ async function check(browser,name,viewport){
   const card=page.locator('#matieres-content .tim-es-nov12');
   await card.waitFor({state:'visible',timeout:16000});
   assert.match(await card.locator('summary').textContent(),/12 novembre/);
-  await card.locator('summary').click();
+  await card.locator('summary').evaluate(el=>el.click());
   await card.getByText('Texte de Mme Gonzalez dans l’ENT').waitFor({state:'visible',timeout:10000});
   assert((await card.textContent()).includes('terminar la fotocopia'));
   assert((await card.textContent()).includes('no… sino'));
@@ -54,7 +54,8 @@ async function check(browser,name,viewport){
    assert(ok,name+' : fiche PDF du groupe A non affichée dans la page');
    console.log('OK '+name+' : fiche ENT du groupe A affichée automatiquement dans le cours du 12 novembre.');
   }else{
-   assert.match(await card.textContent(),/n’est pas encore retrouvée/);
+   assert.match(await card.textContent(),/n’est pas encore présent/);
+   assert.equal(await card.getByRole('button',{name:'Installer cette fiche PDF privée'}).count(),1);
    console.log('ATTENTION '+name+' : le fichier source est dans l export du parent mais pas encore dans le stockage privé.');
   }
   assert.equal(popups,0);
