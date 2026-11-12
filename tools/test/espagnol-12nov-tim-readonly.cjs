@@ -33,6 +33,24 @@ const url=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
   assert.equal(result.count,3,'Trois exercices manquants chez Tim');
   assert.equal(result.keyLeaked,false,'Corrigés exposés dans les questions de Tim');
   assert.equal(result.questionCount,10,'Questions non accessibles chez Tim');
+  await page.evaluate(()=>document.getElementById('intro-skip')?.click());
+  await page.locator('#intro-screen').waitFor({state:'hidden',timeout:16000});
+  await page.evaluate(()=>window.TIM_PEDAGOGY_NAVIGATE('Espagnol','10099~6400554'));
+  const card=page.locator('#matieres-content .tim-es-lesson').filter({hasText:'Leçon 14'}).first();
+  await card.waitFor({state:'visible',timeout:16000});
+  if(!await card.evaluate(el=>el.open))await card.locator('summary').first().click();
+  await card.locator('.tim-es-exercises > summary').click();
+  await card.locator('button[data-es-training-id="ESE_L14_01"]').waitFor({state:'visible',timeout:16000});
+  await page.waitForFunction(()=>{
+   const b=document.querySelector('#matieres-content button[data-es-training-id="ESE_L14_01"]');
+   return b&&!b.disabled;
+  },null,{timeout:20000});
+  await card.locator('button[data-es-training-id="ESE_L14_01"]').click();
+  await card.locator('.tim-es-question-page').first().waitFor({state:'visible',timeout:12000});
+  assert.equal(await card.locator('.tim-es-question-page').count(),10);
+  assert.equal(await card.locator('.tim-es-question-page input[type="radio"]').count(),40);
+  assert.equal(await card.locator('.tim-es-training-result').count(),0);
+  console.log('PASS Tim interface : 10 questions QCM visibles, aucune soumission effectuée.');
   console.log('PASS Tim lecture seule : 3 exercices, questions sans corrigés. Suivi : '+JSON.stringify(result.progress));
  }finally{await browser.close();}
 })().catch(e=>{console.error('ÉCHEC lecture Tim : '+String(e?.message||e).slice(0,400));process.exitCode=1;});
