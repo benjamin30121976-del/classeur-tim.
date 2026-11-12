@@ -65,14 +65,16 @@ async function check(browser,name,viewport){
    assert.equal(check.taskLength,10,'L’exercice 14 ne se charge pas depuis Firestore.');
    assert.equal(check.noOriginalAnswers,true,'La lecture publique de la fiche contient des réponses.');
    const {nov12ForParentImport}=await import('../../functions/spanish-nov12-training.mjs');
-   const answers=nov12ForParentImport()[0].questions.map(q=>q.type==='mc'?Number(q.right):String(q.right));
-   const report=await page.evaluate(async answers=>
-    window.__TIM_BRIDGE.spanishEntTrainingPreview('ESE_L14_01',answers,Array(10).fill(false)),answers);
-   assert.equal(report.practice,true);
-   assert.equal(report.saved,false);
-   assert.equal(report.score,10);
-   assert.equal(report.items?.length,10);
-   console.log('PASS Parent : 3 exercices du 12 novembre visibles, questions sans réponses, essai 10/10 sans note ni XP enregistrés.');
+   for(const exercise of nov12ForParentImport()){
+    const answers=exercise.questions.map(q=>q.type==='mc'?Number(q.right):String(q.right));
+    const report=await page.evaluate(async ({id,answers})=>
+     window.__TIM_BRIDGE.spanishEntTrainingPreview(id,answers,Array(10).fill(false)),{id:exercise.id,answers});
+    assert.equal(report.practice,true);
+    assert.equal(report.saved,false);
+    assert.equal(report.score,10);
+    assert.equal(report.items?.length,10);
+   }
+   console.log('PASS Parent : 3 exercices du 12 novembre visibles, 30 corrections 10/10 simulées, aucune note ni XP enregistrés.');
   }
   // Passer complètement l'animation AVANT de naviguer vers la matière,
   // car le bouton "Passer" peut lui-même renvoyer à l'accueil.
