@@ -209,12 +209,68 @@ document.getElementById('lesson-search').addEventListener('input',renderLessonIn
 function renderRevisions(){const root=clear(document.getElementById('revisions-content'));if(EXAM&&EXAM.date){const box=E('div','panel');box.append(badge('Contrôle confirmé'),E('h3','',EXAM.title+' — '+EXAM.date),E('p','',EXAM.topics||''));root.append(box);}else root.append(notice('Aucun prochain contrôle n’est actuellement renseigné. Dès qu’une date et un programme seront confirmés dans l’ENT, le parent pourra demander une mise à jour du classeur.','notice'));
 let grid=E('div','clicklist');for(const l of DATA.lessons){const small=l.blocks.find(b=>b.kind==='table');grid.append(cardAction('Fiche '+l.id.slice(1)+' · '+l.title,l.date,small?small.rows.slice(0,2).map(r=>r[0]).join(' · '):l.summary,()=>openLesson(l.id)));}root.append(grid);}
 function getRelevantRemedials(){const a=attempts(),miss=new Set();for(const t of a){if(!(t.correctionStatus==='released'&&Array.isArray(t.answers)&&t.answers.length>0))continue;t.answers.forEach((x,i)=>{if(x.correct===false){const skill=exerciseBy(t.id)?.questions[i]?.skill;if(skill&&DATA.skillToRemedy[skill])miss.add(DATA.skillToRemedy[skill]);}});}return [...miss].filter(id=>!attemptFor(id)).map(exerciseBy).filter(Boolean);}
+/* Physique-chimie : les 21 exercices sécurisés utilisent leur banque serveur.
+   Ils sont affichés dans le menu commun Exercices, sans fabriquer de faux DATA.exercises
+   ni exposer les corrigés au navigateur. */
+function openPhysicsTrainingFromExercises(id,lessonId,lessonName){
+ if(!/^PCQ_L0[1-7]_0[1-3]$/.test(id)||!window.TIM_PHYSICS_TRAINING?.mount){
+  alert('Le questionnaire sécurisé de physique-chimie est indisponible.');return;
+ }
+ page('exercices');
+ const index=document.getElementById('exercise-index'),detail=document.getElementById('exercise-detail');
+ index.classList.add('hide');
+ const root=clear(detail);root.classList.add('active');
+ root.append(button('← Retour aux exercices de physique-chimie',()=>{
+  detail.classList.remove('active');index.classList.remove('hide');
+  renderExerciseIndex();scrollTop();
+ },'plain back'));
+ root.append(E('p','lesson-type-label bis','PHYSIQUE-CHIMIE · EXERCICE BIS INTERACTIF'));
+ root.append(E('h2','',lessonName));
+ root.append(E('p','intro','Dix questions, une seule tentative. La note et les explications apparaissent immédiatement après validation. Le compte Parent conserve la copie.'));
+ root.append(button('Revoir la leçon avant de répondre',()=>{page('matieres');renderMatiere('Physique-chimie',lessonId);},'plain'));
+ const slot=E('div','pc-global-training-slot');root.append(slot);
+ window.TIM_PHYSICS_TRAINING.mount(id,slot).catch(e=>{
+  slot.replaceChildren(notice('Questionnaire indisponible : '+String(e?.message||e)));
+ });
+ scrollTop();
+}
+function renderPhysicsExerciseDirectory(root,toolbar){
+ document.getElementById('exercise-search').closest('.toolrow').classList.add('hide');
+ root.className='clicklist';
+ const names=['Je comprends les mots','J’applique la leçon','Je réponds seul'];
+ toolbar.append(button('← Toutes les matières',()=>{
+  exerciseSubject='';exerciseGroup='';exerciseMode='';
+  renderExerciseIndex();scrollTop();
+ },'group-back'),E('h3','','Physique-chimie'));
+ document.getElementById('exercise-count').textContent='Physique-chimie · 21 exercices interactifs · 7 leçons';
+ root.append(E('p','exercise-type-prompt','Choisis une leçon puis un exercice. Réponds directement sur le site : aucun PDF à remplir. Une seule validation, correction et note immédiates.'));
+ for(let i=1;i<=7;i++){
+  const num=String(i).padStart(2,'0'),lessonId='PC_BIS'+num;
+  const l=lessonBy(lessonId);
+  if(!l)continue;
+  const section=E('section','pc-exercise-lesson');
+  section.style.cssText='margin:14px 0 20px;padding:16px 13px;background:#f8faff;color:#253d60;border:1px solid #cbd8e7;border-radius:15px';
+  section.append(E('h3','', 'Leçon '+i+' — '+l.title));
+  section.append(button('Revoir cette leçon',()=>{page('matieres');renderMatiere('Physique-chimie',lessonId);},'plain'));
+  const list=E('div','clicklist');
+  list.style.cssText='display:grid;gap:10px;margin-top:12px';
+  for(let series=1;series<=3;series++){
+   const id='PCQ_L'+num+'_0'+series;
+   list.append(cardAction('Exercice '+series+' — '+names[series-1],
+    '10 questions · correction immédiate · une tentative',
+    series===3?'Réponses courtes à écrire directement dans le classeur.':'Questions à choix multiples, directement dans le classeur.',
+    ()=>openPhysicsTrainingFromExercises(id,lessonId,l.title)));
+  }
+  section.append(list);root.append(section);
+ }
+}
 function renderExerciseIndex(){
  const root=clear(document.getElementById('exercise-list')),q=norm(document.getElementById('exercise-search').value),topic=document.getElementById('exercise-topic').value;
  const toolbar=clear(document.getElementById('exercise-subject-toolbar'));
  const finder=document.getElementById('exercise-search').closest('.toolrow');
  const extras=clear(document.getElementById('recommended-extra'));
  const bases=DATA.exercises.filter(e=>!window.TIM_EXERCISE.challenge(e));
+ if(exerciseSubject==='Physique-chimie'){renderPhysicsExerciseDirectory(root,toolbar);return;}
  if(!exerciseSubject){
   finder.classList.add('hide');root.className='matter-grid';
   if(exerciseMode==='school-all'){
@@ -233,7 +289,7 @@ function renderExerciseIndex(){
   overview.append(button('📚 DEVOIRS DE L’ÉCOLE · 0 XP',()=>{exerciseSubject='';exerciseMode='school-all';renderExerciseIndex();},'exercise-v12-overview-button school'));
   root.append(overview,bonusMissionPanel(false));
   const icons=['🇪🇸','∑','⚗','EN','📖','🌍','⚖','🌱','⚙'];
-  SCHOOL_SUBJECTS.forEach((name,i)=>{const count=bases.filter(e=>(e.subject||'Espagnol')===name).length;
+  SCHOOL_SUBJECTS.forEach((name,i)=>{const count=name==='Physique-chimie'?21:bases.filter(e=>(e.subject||'Espagnol')===name).length;
     const b=E('button','matter-card'+(name==='Espagnol'?' matter-espanol':''));b.type='button';
     b.append(E('span','ico',icons[i]||'▤'),E('strong','',name),E('small','',count?count+' exercice(s) disponible(s)':'À compléter avec les cours de Tim'));
     if(count)b.addEventListener('click',()=>{exerciseSubject=name;exerciseGroup='';exerciseMode='';document.getElementById('exercise-search').value='';renderExerciseIndex();scrollTop();});
@@ -809,7 +865,7 @@ function renderMatieres(){
  const wrap=E('div','matter-grid');
  const icons=['🇪🇸','∑','⚗','EN','📖','🌍','⚖','🌱','⚙'];
  for(let i=0;i<SCHOOL_SUBJECTS.length;i++){
-  const name=SCHOOL_SUBJECTS[i],n=name==='Espagnol'&&window.TIM_SPANISH_SIMPLIFIED?13:name==='Espagnol'?(DATA.metadata?.spanishEnt?.lessons?.length||0):DATA.lessons.filter(x=>(x.subject||'Espagnol')===name).length,ex=name==='Espagnol'&&window.TIM_SPANISH_SIMPLIFIED?39:DATA.exercises.filter(x=>(x.subject||'Espagnol')===name).length;
+  const name=SCHOOL_SUBJECTS[i],n=name==='Espagnol'&&window.TIM_SPANISH_SIMPLIFIED?13:name==='Espagnol'?(DATA.metadata?.spanishEnt?.lessons?.length||0):DATA.lessons.filter(x=>(x.subject||'Espagnol')===name).length,ex=name==='Physique-chimie'?21:name==='Espagnol'&&window.TIM_SPANISH_SIMPLIFIED?39:DATA.exercises.filter(x=>(x.subject||'Espagnol')===name).length;
   const b=E('button','matter-card'+(name==='Espagnol'?' matter-espanol':''));b.type='button';b.append(E('span','ico',icons[i]||'▤'),E('strong','',name),E('small','',n+' leçon(s) · '+ex+' exercice(s)'+(!n?' · Cours ENT à ajouter':'') ));
   if(n||(name==='Espagnol'&&window.__TIM_PARENT&&window.TIM_SPANISH_ENT_EXACT))b.addEventListener('click',()=>renderMatiere(name));else{b.title='Les vrais cours de Tim ne sont pas encore ajoutés';b.disabled=true;b.style.opacity='.55';}
   wrap.append(b);
