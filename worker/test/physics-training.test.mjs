@@ -4,6 +4,7 @@ import {PHYSICS_BANK_VERSION,PHYSICS_BANK_TEST,physicsTask,physicsPublicTask,gra
  from '../physics-training.mjs';
 import {TESTABLE} from '../server.mjs';
 import {TIM_UID,PARENT_UID} from '../auth.mjs';
+import {PHYSICS_ENT_IDS,PHYSICS_ENT_VERSION,physicsEntPublicTask,physicsEntGrade} from '../physics-ent-training.mjs';
 import {fromFields} from '../firestore.mjs';
 
 function sampleDb(){
@@ -124,4 +125,76 @@ test('Le Parent peut faire un exercice blanc et voir sa correction sans modifier
  await assert.rejects(()=>TESTABLE.previewPhysicsTraining(db,'invité',{id,answers,bankVersion:PHYSICS_BANK_VERSION}),e=>e.status===403);
  await assert.rejects(()=>TESTABLE.previewPhysicsTraining(db,PARENT_UID,{id,answers:answers.slice(1),bankVersion:PHYSICS_BANK_VERSION}),e=>e.status===400);
  await assert.rejects(()=>TESTABLE.previewPhysicsTraining(db,PARENT_UID,{id,answers,bankVersion:'ancienne-version'}),e=>e.status===409);
+});
+
+const entFormAnswers=['protons et neutrons','négative','11','¹²₆C','il gagne un électron',
+ 'il a perdu deux électrons','10','carbone, hydrogène et oxygène','CO₂','H₂O'];
+const entMoleculeAnswers=['H2O','H,H,O','O2','O,O','N2','N,N','H2','H,H','CO2','C,O,O','C,H,H,H,H','N2O'];
+test('Deux vraies fiches ENT : 8 questions originales décomposées en 10 réponses, 7 molécules et 12 cases',()=>{
+ assert.deepEqual(PHYSICS_ENT_IDS,['PC_ENT_CTRL1','PC_ENT_MOLECULES']);
+ const ctrl=physicsEntPublicTask('PC_ENT_CTRL1'),table=physicsEntPublicTask('PC_ENT_MOLECULES');
+ assert.equal(ctrl.fields.length,10);
+ assert.equal(table.fields.length,12);
+ assert.equal(new Set(ctrl.fields.map(q=>q.group)).size,8);
+ assert.equal(table.molecules.length,7);
+ assert.equal(table.molecules.find(x=>x.id==='methane').printedFormula,'CH₄');
+ assert.equal(table.molecules.find(x=>x.id==='protoxyde_azote').printedModel,'2 N (bleu) + 1 O (rouge)');
+ for(const task of [ctrl,table]){
+  assert.equal(task.bankVersion,PHYSICS_ENT_VERSION);
+  assert.ok(task.document.fileName.endsWith('.pdf'));
+  const json=JSON.stringify(task);
+  assert.equal(json.includes('"expected"'),false);
+  assert.equal(json.includes('"correct"'),false);
+  assert.equal(json.includes('"explanation"'),false);
+ }
+ assert.equal(physicsEntPublicTask('PC_ENT_ILLISIBLE'),null);
+});
+test('Correction des deux fiches originales : 10/10, 0/10 et toutes les explications présentes',()=>{
+ const cases=[['PC_ENT_CTRL1',entFormAnswers],['PC_ENT_MOLECULES',entMoleculeAnswers]];
+ for(const [id,answers] of cases){
+  const perfect=physicsEntGrade(id,answers,PHYSICS_ENT_VERSION);
+  assert.equal(perfect.score,10,id);
+  assert.equal(perfect.total,10);
+  assert.equal(perfect.correctFields,answers.length);
+  assert.equal(perfect.items.length,answers.length);
+  assert.ok(perfect.items.every(x=>x.correct===true&&x.explanation.length>10));
+  const wrong=physicsEntGrade(id,answers.map(()=>'zzz'),PHYSICS_ENT_VERSION);
+  assert.equal(wrong.score,0,id);
+  assert.ok(wrong.items.every(x=>!x.correct));
+ }
+ assert.equal(physicsEntGrade('PC_ENT_CTRL1',['protons et neutrons','négative','11','A=12,Z=6,C','gagne un electron','a perdu 2 electrons','10','C H O','co2','h2o'],PHYSICS_ENT_VERSION).score,10);
+});
+test('ENT : Tim valide une fois, note et XP sauvegardés, Parent voit toutes les réponses corrigées',async()=>{
+ const db=sampleDb(),id='PC_ENT_CTRL1',answers=entFormAnswers;
+ const task=await TESTABLE.getPhysicsEntTask(db,TIM_UID,{id});
+ assert.equal(task.completed,false);
+ assert.equal(JSON.stringify(task).includes('"expected"'),false);
+ const result=await TESTABLE.submitPhysicsEntTask(db,TIM_UID,{id,answers,bankVersion:PHYSICS_ENT_VERSION});
+ assert.equal(result.submitted,true);
+ assert.equal(result.score,10);
+ assert.equal(result.xp,1);
+ assert.equal((await TESTABLE.getPhysicsEntTask(db,TIM_UID,{id})).completed,true);
+ const parent=await TESTABLE.getPhysicsEntProgress(db,PARENT_UID,{id});
+ assert.equal(parent.attempt.items.length,10);
+ assert.equal(parent.attempt.items[0].prompt,'Quelles sont les particules présentes dans le noyau de l’atome ?');
+ const list=await TESTABLE.getPhysicsEntProgress(db,PARENT_UID,{});
+ assert.equal(list.attempts.length,1);
+ assert.equal(list.attempts[0].score,10);
+ assert.equal(list.attempts[0].xp,1);
+ await assert.rejects(()=>TESTABLE.submitPhysicsEntTask(db,TIM_UID,{id,answers,bankVersion:PHYSICS_ENT_VERSION}),e=>e.status===409);
+ await assert.rejects(()=>TESTABLE.submitPhysicsEntTask(db,PARENT_UID,{id:'PC_ENT_MOLECULES',answers:entMoleculeAnswers,bankVersion:PHYSICS_ENT_VERSION}),e=>e.status===403);
+});
+test('ENT : essais Parent corrigés sans XP, résultat ni tentative enregistrés',async()=>{
+ const db=sampleDb();
+ for(const [id,answers] of [['PC_ENT_CTRL1',entFormAnswers],['PC_ENT_MOLECULES',entMoleculeAnswers]]){
+  const parent=await TESTABLE.getPhysicsEntTask(db,PARENT_UID,{id});
+  assert.equal(parent.completed,false);
+  const result=await TESTABLE.previewPhysicsEntTask(db,PARENT_UID,{id,answers,bankVersion:PHYSICS_ENT_VERSION});
+  assert.equal(result.practice,true);assert.equal(result.saved,false);assert.equal(result.submitted,false);
+  assert.equal(result.xp,0);assert.equal(result.score,10);
+  assert.equal(db.data.size,0);
+  assert.equal((await TESTABLE.getPhysicsEntTask(db,TIM_UID,{id})).completed,false);
+  await assert.rejects(()=>TESTABLE.previewPhysicsEntTask(db,TIM_UID,{id,answers,bankVersion:PHYSICS_ENT_VERSION}),e=>e.status===403);
+  await assert.rejects(()=>TESTABLE.previewPhysicsEntTask(db,PARENT_UID,{id,answers:answers.slice(1),bankVersion:PHYSICS_ENT_VERSION}),e=>e.status===400);
+ }
 });
