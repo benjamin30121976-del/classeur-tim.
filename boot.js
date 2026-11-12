@@ -585,6 +585,38 @@ async function startSession(user){
   return window.__TIM_SPANISH_PROGRESS;
  };
  window.__TIM_BRIDGE={
+  physicsTrainingTask:async(id)=>{
+   if(!/^PCQ_L0[1-7]_0[1-3]$/.test(String(id||'')))throw Error('Exercice de physique inconnu.');
+   const r=await cloudCallable('getPhysicsTrainingTask')({id});
+   if(!r.data?.task||r.data.task.questions?.length!==10||
+      r.data.task.questions.some(q=>!['qcm','text'].includes(q.kind)))
+    throw Error('Les dix questions de physique ne sont pas disponibles.');
+   return r.data;
+  },
+  physicsTrainingSubmit:async(id,answers,bankVersion)=>{
+   if(activeUser?.uid!==TIM_UID)throw Error('Seul Tim peut valider un exercice.');
+   if(!/^PCQ_L0[1-7]_0[1-3]$/.test(String(id||''))||
+      !Array.isArray(answers)||answers.length!==10||
+      answers.some(x=>!((Number.isInteger(x)&&x>=0&&x<=3)||
+        (typeof x==='string'&&x.trim()&&x.length<=80))))
+    throw Error('Les dix réponses sont obligatoires.');
+   if(typeof bankVersion!=='string'||!bankVersion.startsWith('pc-'))
+    throw Error('Questionnaire périmé, recharge la page.');
+   const r=await cloudCallable('submitPhysicsTraining')({id,answers,bankVersion});
+   if(!r.data?.submitted||!Number.isInteger(r.data?.score)||r.data.score<0||r.data.score>10||
+      !Array.isArray(r.data.items)||r.data.items.length!==10||
+      ![0,0.5,1].includes(r.data.xp)||r.data.bankVersion!==bankVersion)
+    throw Error('La note et la correction n’ont pas été confirmées.');
+   return r.data;
+  },
+  physicsTrainingProgress:async(id)=>{
+   if(activeUser?.uid!==TIM_UID&&activeUser?.uid!==PARENT_UID)
+    throw Error('Accès aux notes réservé à Tim et au Parent.');
+   const r=await cloudCallable('getPhysicsTrainingProgress')(id?{id}:{});
+   if(id){if(!('attempt' in (r.data||{})))throw Error('Copie indisponible.');}
+   else if(!Array.isArray(r.data?.attempts))throw Error('Résultats de physique indisponibles.');
+   return r.data;
+  },
   spanishEntTrainingTask:async(id)=>{
    if(!/^ESE_L(?:0[1-9]|1[0-3])_0[1-3]$/.test(String(id||'')))throw Error('Exercice espagnol inconnu.');
    const r=await cloudCallable('getSpanishEntTrainingTask')({id});
