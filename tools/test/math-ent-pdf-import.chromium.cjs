@@ -20,6 +20,7 @@ const files=[
  const browser=await chromium.launch({headless:true,...(chrome?{executablePath:chrome}:{}),args:['--no-sandbox']});
  try{
   const page=await browser.newPage({viewport:{width:390,height:844}});
+  await page.goto('http://127.0.0.1:8779/__tim_import_pdf_test__.html',{waitUntil:'domcontentloaded'});
   await page.setContent('<!doctype html><html lang="fr"><body></body></html>');
   await page.addScriptTag({path:path.resolve('jszip.min.js')});
   await page.addScriptTag({path:path.resolve('maths-ent-pdf-import.js')});
