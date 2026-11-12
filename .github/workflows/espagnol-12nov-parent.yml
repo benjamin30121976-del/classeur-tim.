@@ -1,9 +1,20 @@
 name: Contrôle dernier cours espagnol 12 novembre
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'espagnol-cours-12nov.js'
+      - 'espagnol-ent-exact.js'
+      - 'espagnol-simplifie.js'
+      - 'espagnol-bis-ent-data.js'
+      - 'tools/test/espagnol-12nov-parent.cjs'
+      - '.github/workflows/espagnol-12nov-parent.yml'
   pull_request:
     paths:
       - 'espagnol-cours-12nov.js'
       - 'espagnol-ent-exact.js'
+      - 'espagnol-simplifie.js'
+      - 'espagnol-bis-ent-data.js'
       - 'tools/test/espagnol-12nov-parent.cjs'
       - '.github/workflows/espagnol-12nov-parent.yml'
   workflow_dispatch:
@@ -26,6 +37,8 @@ jobs:
         run: |
           node --check espagnol-cours-12nov.js
           node --check espagnol-ent-exact.js
+          node --check espagnol-simplifie.js
+          node --check espagnol-bis-ent-data.js
           node --check tools/test/espagnol-12nov-parent.cjs
       - name: Installer Chromium
         run: |
