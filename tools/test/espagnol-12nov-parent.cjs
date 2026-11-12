@@ -35,6 +35,9 @@ async function check(browser,name,viewport){
   assert.equal(structure.total,14);
   assert.equal(structure.bis,true);
   await page.evaluate(()=>window.TIM_PEDAGOGY_NAVIGATE('Espagnol', '10099~6400554'));
+  // L'animation d'accueil peut réapparaître après la connexion, et masquer les commandes.
+  await page.evaluate(()=>document.getElementById('intro-skip')?.click());
+  await page.locator('#intro-screen').waitFor({state:'hidden',timeout:16000});
   const card=page.locator('#matieres-content .tim-es-lesson').filter({hasText:'Leçon 14'}).first();
   await card.waitFor({state:'visible',timeout:16000});
   assert.match(await card.locator('summary').first().textContent(),/12 novembre/);
