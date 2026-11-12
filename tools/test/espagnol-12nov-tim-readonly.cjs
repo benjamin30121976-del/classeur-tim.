@@ -2,12 +2,14 @@
 /* Test strictement en lecture seule : aucune tentative Tim ni note modifiée. */
 const {chromium}=require('playwright');
 const assert=require('node:assert/strict');
+const {existsSync}=require('node:fs');
 const email=process.env.TIM_STUDENT_EMAIL||'';
 const password=process.env.TIM_STUDENT_PASSWORD||'';
 const url=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
 (async()=>{
  assert(email&&password,'Connexion de test Tim absente');
- const browser=await chromium.launch({headless:true});
+ const chrome=['/usr/bin/google-chrome','/usr/bin/google-chrome-stable','/usr/bin/chromium'].find(existsSync);
+ const browser=await chromium.launch({headless:true,...(chrome?{executablePath:chrome}:{})});
  try{
   const page=await browser.newPage({viewport:{width:390,height:844},locale:'fr-FR'});
   await page.goto(url,{waitUntil:'domcontentloaded',timeout:45000});
