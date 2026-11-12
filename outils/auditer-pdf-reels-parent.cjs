@@ -125,7 +125,12 @@ async function verify(browser,device,viewport){
    assert(info.available,device+' '+subject+' : pas de PDF disponible');
    assert(info.embedded,device+' '+subject+' : aucun lecteur PDF dans le corps de la lecon');
    const box=page.locator('#tim-real-pdf-audit-'+subject+' .pc-inline-pdf').first();
-   await box.getByRole('button',{name:'Afficher ici le document du professeur'}).click();
+   // Le popup d'accueil peut apparaitre apres le chargement de la session Parent.
+   if(await page.locator('#intro-screen').isVisible()){
+     await page.locator('#intro-skip').click({timeout:10000});
+     await page.locator('#intro-screen').waitFor({state:'hidden',timeout:15000});
+   }
+   await box.getByRole('button',{name:'Afficher ici le document du professeur'}).click({timeout:12000});
    const ok=await page.waitForFunction(subject=>{
       const root=document.getElementById('tim-real-pdf-audit-'+subject);
       const text=root?.querySelector('.pc-pdf-toolbar span')?.textContent||'';
