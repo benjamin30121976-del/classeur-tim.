@@ -44,7 +44,7 @@ function viewTimFactorisation(){
  '<section class="math-reading-section"><h3>La méthode</h3><ol><li>Dans 6x + 15, repère le facteur commun : 3.</li><li>Écris 6x = 3 × 2x et 15 = 3 × 5.</li><li>Place le facteur devant la parenthèse : <strong>6x + 15 = 3(2x + 5)</strong>.</li><li>Vérifie en développant : 3 × 2x + 3 × 5 = 6x + 15.</li></ol></section>'+
  '<section class="math-reading-section"><h3>Trois exemples corrigés</h3><p>5x² + 10x = <strong>5x(x + 2)</strong>.</p><p>8x − 12 = <strong>4(2x − 3)</strong>.</p><p>7(x + 2) + 3(x + 2) = <strong>10(x + 2)</strong>.</p></section>'+
  '<section class="math-reading-section"><h3>Attention aux signes</h3><p>4x − 8 = 4(x − 2), et non 4(x + 2). Développe pour vérifier.</p></section>'+
- '<section class="math-reading-section"><h3>Deux vérifications sans note</h3><p>Factorise 9x + 18 : <strong>9(x + 2)</strong>.</p><p>Factorise 12x − 8 : <strong>4(3x − 2)</strong>.</p><p>Ces exemples ne sont pas les exercices 35, 36 et 37 du manuel, dont les énoncés restent manquants.</p></section>'+
+ '<section class="math-reading-section"><h3>Deux exemples supplémentaires corrigés</h3><p>Factorise 9x + 18 : <strong>9(x + 2)</strong>.</p><p>Factorise 12x − 8 : <strong>4(3x − 2)</strong>.</p><p>Ces exemples ne sont pas les exercices 35, 36 et 37 du manuel, dont les énoncés restent manquants.</p></section>'+
  '</article><details class="math-reading-docs"><summary>Cours originaux du professeur (ENT)</summary>'+
  TIM_ENT_NEW.map(x=>btn('data-math-open-original',x.id,x.title)).join('')+
  '</details><p class="small">Aucune nouvelle évaluation, note ou tentative créée.</p>',()=>category(GROUPS[2]));
@@ -262,7 +262,7 @@ const MATH_RESCUE={
  MBIS02:['Deux fractions ne peuvent s’additionner que si leurs parts ont la même taille. Transforme-les d’abord au même dénominateur.','1/3 + 1/6 = 2/6 + 1/6 = 3/6 = 1/2.'],
  MBIS03:['Une puissance est une multiplication répétée. Le petit chiffre ne veut pas dire « multiplier par ce chiffre ».','3⁴ = 3 × 3 × 3 × 3 = 81, et non 12.'],
  MBIS04:['En écriture scientifique, le premier nombre est toujours entre 1 et 10. Puis une puissance de dix indique la taille du nombre.','4 520 = 4,52 × 10³ ; on a déplacé la virgule de trois rangs.'],
- MBIS05:['Cherche d’abord l’angle droit, marqué par un petit carré. Le côté en face de cet angle est l’hypoténuse.','Si ABC est rectangle en A, le côté BC est l’hypoténuse.'],
+ MBIS05:['Cherche d’abord l’angle droit indiqué dans l’énoncé ; sur une figure, un petit carré peut le signaler. Le côté opposé est l’hypoténuse.','Si ABC est rectangle en A, le côté BC est l’hypoténuse.'],
  MBIS06:['Pour trouver la diagonale (hypoténuse), additionne les carrés. Pour trouver un autre côté, soustrais les carrés.','13² − 5² = 169 − 25 = 144 ; la longueur cherchée vaut 12.'],
  MBIS07:['Tu connais déjà les trois côtés : tu vérifies si les deux petits carrés additionnés donnent le carré du plus long.','Avec 3, 4 et 5 : 3² + 4² = 9 + 16 = 25 = 5² ; le triangle est rectangle.'],
  MBIS08:['Même vérification, autre résultat : si les carrés ne sont pas égaux, le triangle n’est pas rectangle.','4² + 5² = 41, mais 6² = 36. Ce triangle n’est pas rectangle.'],
