@@ -762,8 +762,8 @@ function missionCard(kind){
  img.src='./assets/loup-'+artKind+(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches?'-statique.webp':'-anime.webp');
  const previousArt=img.src;
  if(!sunday)window.TIM_ANIMATIONS?.setCardImage?.(img,'saturday',previousArt);
- else if(done&&Number(done.xp)===20)window.TIM_ANIMATIONS?.setCardImage?.(img,'sundayCard',previousArt);
- img.alt=sunday?'Loup couronné du grand défi':'Loup victorieux avec une coupe';img.loading='lazy';img.width=126;img.height=100;
+ else window.TIM_ANIMATIONS?.setCardImage?.(img,'sundayCard',previousArt);
+ img.alt=sunday?'Loup animé au casque dans son bureau pour le défi du dimanche':'Loup victorieux avec une coupe';img.loading='lazy';img.width=sunday?356:126;img.height=sunday?358:100;
  wolfWrap.append(img);body.append(wolfWrap);c.append(body);
  const dow=new Date((meta.today||'2026-11-08')+'T12:00:00Z').getUTCDay(),open=sunday?dow===0:dow===6;
  const actions=E('div','challenge-card-actions');

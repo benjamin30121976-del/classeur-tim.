@@ -27,7 +27,7 @@ go.addEventListener('click',async()=>{
  document.querySelectorAll('[data-nav="parent"]').forEach(b=>b.hidden=true);
  document.getElementById('logout-button').textContent='Quitter la visite';
  document.getElementById('logout-button').onclick=()=>location.reload();
- const script=document.createElement('script');script.src='./app.js?v=nouveau-loup-defi-jour-20261112';script.onerror=()=>{document.body.classList.remove('ready');document.getElementById('access').hidden=false;document.getElementById('access-status').textContent='Impossible de charger la visite.';};
+ const script=document.createElement('script');script.src='./app.js?v=dimanche-grand-gif-20261112';script.onerror=()=>{document.body.classList.remove('ready');document.getElementById('access').hidden=false;document.getElementById('access-status').textContent='Impossible de charger la visite.';};
  script.onload=()=>window.TIM_INTRO_SHOW?.();document.body.append(script);
 });
 })();

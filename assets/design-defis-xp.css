@@ -140,3 +140,56 @@
  .game-challenge.weekly-card .challenge-wolf-scene{padding:10px 7px}
  .game-challenge.weekly-card .challenge-wolf{width:min(100%,300px);max-width:300px}
 }
+
+/* Défi du dimanche : grand GIF original, même présentation que le bonus et le samedi.
+   Ne modifie ni les autres défis ni leurs règles de notation. */
+.game-challenge.sunday-card .challenge-main{
+ display:flex;
+ flex-direction:column;
+ align-items:stretch;
+ gap:14px;
+ margin:14px 0 16px;
+ min-height:0;
+}
+.game-challenge.sunday-card .challenge-wolf-scene{
+ order:0;
+ display:flex;
+ align-items:center;
+ justify-content:center;
+ align-self:stretch;
+ justify-self:stretch;
+ box-sizing:border-box;
+ width:100%;
+ max-width:none;
+ margin:0;
+ padding:12px;
+ border-radius:17px;
+ background:linear-gradient(125deg,#091324,#19304e 70%,#0d1a2f);
+ border:1px solid #345677;
+ filter:none;
+ overflow:hidden;
+}
+.game-challenge.sunday-card .challenge-wolf{
+ display:block;
+ box-sizing:border-box;
+ width:min(100%,350px);
+ max-width:350px;
+ height:auto;
+ aspect-ratio:356 / 358;
+ object-fit:contain;
+ object-position:center center;
+ border:2px solid #e6b8ff;
+ border-radius:13px;
+ box-shadow:0 8px 30px #0008;
+ animation:none;
+ transform:none;
+ will-change:auto;
+}
+.game-challenge.sunday-card .challenge-main-copy{
+ order:1;
+ width:100%;
+}
+@media(max-width:390px){
+ .game-challenge.sunday-card .challenge-wolf-scene{padding:10px 7px}
+ .game-challenge.sunday-card .challenge-wolf{width:min(100%,300px);max-width:300px}
+}
