@@ -6,6 +6,27 @@ const {chromium}=require('playwright');
 const fs=require('node:fs');
 const target=process.env.TIM_SITE_URL||'http://127.0.0.1:8779/';
 const output='audit-physique';
+function makeSyntheticPdf(){
+ const operations='BT /F1 24 Tf 65 690 Td (Document de controle - non prive) Tj ET';
+ const objs=[
+  '<< /Type /Catalog /Pages 2 0 R >>',
+  '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+  '<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>',
+  '<< /Length '+Buffer.byteLength(operations,'latin1')+' >>\nstream\n'+operations+'\nendstream',
+  '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>'
+ ];
+ let body='%PDF-1.4\n',offsets=[0];
+ for(let i=0;i<objs.length;i++){
+  offsets.push(Buffer.byteLength(body,'latin1'));
+  body+=(i+1)+' 0 obj\n'+objs[i]+'\nendobj\n';
+ }
+ const xref=Buffer.byteLength(body,'latin1');
+ body+='xref\n0 '+(objs.length+1)+'\n0000000000 65535 f \n';
+ for(let i=1;i<offsets.length;i++)body+=String(offsets[i]).padStart(10,'0')+' 00000 n \n';
+ body+='trailer\n<< /Root 1 0 R /Size '+(objs.length+1)+' >>\nstartxref\n'+xref+'\n%%EOF\n';
+ return Buffer.from(body,'latin1').toString('base64');
+}
+
 async function main(){
  fs.mkdirSync(output,{recursive:true});
  const path=['/usr/bin/google-chrome','/usr/bin/chromium'].find(p=>fs.existsSync(p));
@@ -88,6 +109,36 @@ async function main(){
   const backExercise=page.locator('#exercise-detail button').filter({hasText:'Retour aux exercices de physique-chimie'});
   await backExercise.click();
   assert.equal(await interactiveTiles.count(),21,'La navigation retour doit conserver les exercices');
+  // Test du PDF intégré avec un DOCUMENT SYNTHÉTIQUE, jamais avec ceux de Tim.
+  await page.evaluate(b64=>{
+   window.__TIM_GUEST=false;
+   const bytes=Uint8Array.from(atob(b64),c=>c.charCodeAt(0));
+   const blob=new Blob([bytes],{type:'application/pdf'});
+   window.__TIM_BRIDGE={attachments:{
+    list:async()=>[{id:'pdf-factice',targetKind:'lesson',targetId:'PCENT6390167',fileName:'Chapitre 1 Atomes molécules et ions 3eme.pdf',size:blob.size}],
+    read:async()=>blob
+   }};
+   const host=document.createElement('div');host.id='pc-test-in-page';
+   host.style.cssText='padding:20px;max-width:600px;margin:auto;background:white';
+   document.body.append(host);
+   const example=window.TIM_PHYSICS_INLINE_PDF.createInline(
+    {target:'PCENT6390167',fileName:'Chapitre 1 Atomes molécules et ions 3eme.pdf'},
+    1,'Test privé simulé — rester dans la même page'
+   );
+   host.append(example);
+  },makeSyntheticPdf());
+  await page.locator('#pc-test-in-page').scrollIntoViewIfNeeded();
+  await page.waitForFunction(()=>{
+   const card=document.querySelector('#pc-test-in-page .pc-inline-pdf');
+   const cv=card?.querySelector('canvas');
+   return Boolean(card&&cv&&cv.width>100&&cv.height>100&&!card.textContent.includes('Affichage impossible'));
+  },{timeout:45000});
+  const pageLabel=await page.locator('#pc-test-in-page .pc-pdf-toolbar span').innerText();
+  assert.equal(pageLabel,'Page 1 / 1');
+  report.checks.privatePdfInsideLesson=true;
+  report.checks.pdfCanvasRendered=true;
+  report.checks.openedTabs=0;
+  await page.locator('#pc-test-in-page').screenshot({path:output+'/pdf-integre-demonstration.jpg',type:'jpeg',quality:75});
   await page.screenshot({path:output+'/physique-mobile.jpg',type:'jpeg',quality:70,fullPage:true});
   fs.writeFileSync(output+'/rapport.json',JSON.stringify(report,null,2));
   process.stdout.write(JSON.stringify(report)+'\n');
