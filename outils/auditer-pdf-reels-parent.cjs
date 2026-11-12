@@ -140,7 +140,8 @@ async function verify(browser,device,viewport){
  }
 }
 (async()=>{
- const browser=await chromium.launch({headless:true});
+ const installed=['/usr/bin/google-chrome','/usr/bin/google-chrome-stable','/usr/bin/chromium'].find(p=>require('node:fs').existsSync(p));
+ const browser=await chromium.launch({headless:true,...(installed?{executablePath:installed}:{})});
  try{
   await verify(browser,'ordinateur',{width:1280,height:840});
   await verify(browser,'telephone',{width:390,height:844});
