@@ -11,6 +11,10 @@ go.addEventListener('click',async()=>{
  const plan=setupMissions(source,new Date(),window.TIM_SPANISH_EDU);window.__TIM_CHALLENGES=plan.meta;
  const base=window.TIM_APPLY_SPANISH_NOV05?.(source)||source;
  window.__TIM_DATA={...base,exercises:[...base.exercises,...plan.exercises]};window.__CLOUD_ATTEMPTS=[];
+ if(Array.isArray(window.TIM_PHYSIQUE_PACK?.lessons)){
+  const existing=new Set(window.__TIM_DATA.lessons.map(x=>x.id));
+  window.__TIM_DATA={...window.__TIM_DATA,lessons:[...window.__TIM_DATA.lessons,...window.TIM_PHYSIQUE_PACK.lessons.filter(x=>!existing.has(x.id))]};
+ }
  // Defense in depth: optional exercise packs must never expose answer keys to guests.
  const hidden=new Set(['right','also','why','expected','answer','answers','answerKey','answerKeys','solution','solutions','correction','corrections','explanation','rubric']);
  const strip=value=>Array.isArray(value)?value.map(strip):value&&typeof value==='object'?Object.fromEntries(Object.entries(value).filter(([key])=>!hidden.has(key)).map(([key,item])=>[key,strip(item)])):value;
