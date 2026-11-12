@@ -734,6 +734,10 @@ async function render(root,opts={}){
 async function renderLessonOriginal(root,lessonId,section='course'){
  root.replaceChildren();
  if(window.__TIM_GUEST){root.append($('p','','Cours ENT original : connexion Tim ou Parent nécessaire.'));return;}
+ if(String(lessonId)==='10099~6400554'&&window.TIM_SPANISH_NOV12?.renderOriginal){
+  await window.TIM_SPANISH_NOV12.renderOriginal(root,section);
+  return;
+ }
  const pack=window.__TIM_DATA?.metadata?.spanishEnt;
  if(!pack?.lessons){
   root.append($('p','','Les documents originaux ENT ne sont pas encore disponibles dans cette session. La leçon BIS reste accessible.'));
