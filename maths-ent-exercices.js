@@ -111,6 +111,17 @@ async function mount(id,host){
   ?'Mode essai Parent : note et correction d’entraînement, aucune écriture dans les résultats ni XP de Tim.'
   :'Compte Tim : une seule validation pour cette fiche, note /10, correction immédiate et XP selon le barème commun.');
  intro.style.cssText=style.note;host.append(intro);
+ // Énoncé PDF original à côté des réponses ; la fiche reste toujours sur la même page.
+ // Le lecteur consulte seulement les fichiers déjà autorisés dans Firebase.
+ const official=E('div','','math-ent-source-document');
+ official.style.cssText='margin:12px 0';
+ host.append(official);
+ if(window.TIM_INLINE_ENT_DOCUMENTS?.forMathExercise)
+  window.TIM_INLINE_ENT_DOCUMENTS.forMathExercise(official,id).catch(err=>{
+   setStatus(official,'Fiche PDF non disponible : '+String(err.message||err));
+  });
+ else setStatus(official,'Le lecteur intégré des documents originaux est indisponible.');
+
  if(fetched.completed&&!p){
   const report=E('div');host.append(report);await savedCopy(report,id);return;
  }
