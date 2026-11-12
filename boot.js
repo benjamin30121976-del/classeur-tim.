@@ -532,6 +532,11 @@ async function startSession(user){
   const hiddenFields=new Set(['right','also','why','expected','answer','answers','answerKey','answerKeys','solution','solutions','correction','corrections','explanation','rubric']);
   content={...content,exercises:content.exercises.map(ex=>({...ex,questions:(ex.questions||[]).map(q=>Object.fromEntries(Object.entries(q).filter(([key])=>!hiddenFields.has(key))))}))};
  }
+ // Physique-chimie : cours non notés, ajout sans altérer notes ou évaluations.
+ if(Array.isArray(window.TIM_PHYSIQUE_PACK?.lessons)){
+  const present=new Set(content.lessons.map(x=>x.id));
+  content={...content,lessons:[...content.lessons,...window.TIM_PHYSIQUE_PACK.lessons.filter(x=>!present.has(x.id))]};
+ }
  window.__TIM_DATA=content;window.__TIM_PARENT=isParent;
  window.__CLOUD_ATTEMPTS=[];window.__TIM_SPANISH_PROGRESS={status:'loading',attempts:[]};
  try{await fetchAttempts(content);}catch(e){message('Impossible de lire les résultats. Les règles Firestore sont à vérifier.');return;}
