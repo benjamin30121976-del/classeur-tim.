@@ -102,7 +102,7 @@ function help(id){
  '<article class="spx-panel math-reading-lesson">'+
  '<section class="math-reading-section"><h3>Une autre façon de comprendre</h3><p>'+esc(h.simple||l.summary||'Relis le début de la leçon.')+'</p></section>'+
  '<section class="math-reading-section"><h3>Un exemple pas à pas</h3>'+((h.steps||[]).map(t=>'<p>'+esc(t)+'</p>').join(''))+'</section>'+
- '<section class="math-reading-section"><h3>L’erreur à éviter</h3><p>'+esc(h.example||'Vérifie chaque étape.')+'</p></section>'+
+ '<section class="math-reading-section"><h3>À retenir</h3><p>'+esc(h.example||'Vérifie chaque étape.')+'</p></section>'+
  '</article><div class="math-reading-actions">'+btn('data-pc-bis',id,'Revenir à la leçon complète')+'</div>',
  ()=>lesson(id));
 }
