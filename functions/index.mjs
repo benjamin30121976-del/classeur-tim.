@@ -7,6 +7,7 @@ import {buildMission,isMissionId,isMissionOpen} from './missions-v18.mjs';
 import {spanishNov05Exercises} from './spanish-nov05-private.mjs';
 import {SPANISH_COURSE} from './spanish-training-curriculum.mjs';
 import {buildSpanishTasks,evaluateSpanishTask} from './spanish-training-engine.mjs';
+import {nov12IdValid,nov12TaskPublic,nov12Evaluate,nov12TaskIds} from './spanish-nov12-training.mjs';
 initializeApp();
 const db=getFirestore();
 const timUid=process.env.TIM_STUDENT_UID||'uqZI3Up97YWzKvWhssWQidn4TJO2',parentUid=process.env.TIM_PARENT_UID||'BPEuNAhHVyX8ewQ2I54s56m11vj1';
@@ -214,4 +215,61 @@ export const getSpanishTrainingProgress=onCall({region:'europe-west1',enforceApp
     items:Array.isArray(data.items)?data.items:[]};
  }).filter(record=>Boolean(buildSpanishTasks(record.id,SPANISH_COURSE)));
  return {attempts};
+});
+
+
+/* Leçon 14 du 12 novembre : trois séries de 10 questions.
+   Fonctions séparées des 13 leçons existantes pour préserver leurs corrections,
+   tentatives, comptes et anciens résultats. */
+function nov12Family(request){
+ const uid=request.auth?.uid;
+ if(uid!==timUid&&uid!==parentUid)throw new HttpsError('permission-denied','Accès réservé à Tim et au parent.');
+}
+function requireNov12Id(id){
+ if(!nov12IdValid(id))throw new HttpsError('invalid-argument','Exercice du 12 novembre inconnu.');
+ return String(id);
+}
+export const getSpanishNov12TrainingTask=onCall({region:'europe-west1',enforceAppCheck:true},async request=>{
+ nov12Family(request);
+ const id=requireNov12Id(request.data?.id);
+ const snap=await db.doc('spanishNov12Attempts/'+id).get();
+ return {task:nov12TaskPublic(id),completed:snap.exists};
+});
+export const previewSpanishNov12Training=onCall({region:'europe-west1',enforceAppCheck:true},async request=>{
+ role(request,'parent');
+ const id=requireNov12Id(request.data?.id);
+ const result=nov12Evaluate(id,request.data?.answers,request.data?.translationsUsed);
+ if(!result)throw new HttpsError('invalid-argument','Les dix réponses sont requises.');
+ return {...result,practice:true,saved:false,xp:0};
+});
+export const submitSpanishNov12Training=onCall({region:'europe-west1',enforceAppCheck:true},async request=>{
+ role(request,'tim');
+ const id=requireNov12Id(request.data?.id);
+ const evaluated=nov12Evaluate(id,request.data?.answers,request.data?.translationsUsed);
+ if(!evaluated)throw new HttpsError('invalid-argument','Les dix réponses sont nécessaires.');
+ const ref=db.doc('spanishNov12Attempts/'+id);
+ try{
+  return await db.runTransaction(async tx=>{
+   const prior=await tx.get(ref);
+   if(prior.exists)throw new HttpsError('already-exists','Exercice déjà validé. Consulte ta correction.');
+   tx.create(ref,{...evaluated,authorUid:request.auth.uid,submittedAt:FieldValue.serverTimestamp(),policy:'one-attempt-v1',lessonId:'10099~6400554'});
+   return {...evaluated,submitted:true};
+  });
+ }catch(error){
+  if(error instanceof HttpsError)throw error;
+  throw new HttpsError('internal','Validation non confirmée : consulte ton résultat avant de réessayer.');
+ }
+});
+export const getSpanishNov12TrainingProgress=onCall({region:'europe-west1',enforceAppCheck:true},async request=>{
+ nov12Family(request);
+ const id=request.data?.id;
+ if(id!==undefined&&id!==null)requireNov12Id(id);
+ const ids=id?[String(id)]:nov12TaskIds();
+ const snapshots=await Promise.all(ids.map(x=>db.doc('spanishNov12Attempts/'+x).get()));
+ const reports=snapshots.filter(x=>x.exists).map(x=>{
+  const d=x.data(),timestamp=d.submittedAt?.toDate?.()?.toISOString()||'';
+  return {id:x.id,score:d.score,total:10,xp:d.xp||0,items:d.items||[],errorCounts:d.errorCounts||{},
+   translationHelpCount:d.translationHelpCount||0,lessonId:'10099~6400554',submittedAt:timestamp};
+ });
+ return id?{attempt:reports[0]||null}:{attempts:reports};
 });
