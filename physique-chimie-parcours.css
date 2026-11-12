@@ -1,0 +1,17 @@
+
+/* Physique-chimie : exactement le parcours de lecture mathématiques, sans mosaïque. */
+.math-path .pc-vocabulary dl{margin:12px 0 6px;padding:0}
+.math-path .pc-vocabulary dt{font-size:16px;line-height:1.7;font-weight:850;color:#224c72;display:inline}
+.math-path .pc-vocabulary dt::after{content:" : "}
+.math-path .pc-vocabulary dd{display:inline;margin:0;font-size:16px;line-height:1.7;color:#293b50}
+.math-path .pc-vocabulary dd::after{content:"";display:block;margin-bottom:6px}
+.math-path .pc-illustration{margin:18px auto 24px;padding:6px 0 18px;max-width:680px;border-bottom:1px solid #e3e8ed}
+.math-path .pc-illustration svg{display:block;width:100%;height:auto;max-width:640px;margin:0 auto}
+.math-path .pc-illustration figcaption{font-size:13px;color:#506981;text-align:center;line-height:1.5;margin:8px 0 0}
+.math-path .math-reading-lesson p{font-size:17px;line-height:1.85}
+.math-path .math-reading-lesson h3{font-size:19px;line-height:1.4}
+@media(max-width:620px){
+ .math-path .math-reading-lesson p,.math-path .pc-vocabulary dt,.math-path .pc-vocabulary dd{font-size:16px;line-height:1.72}
+ .math-path .pc-illustration{margin:13px auto 17px}
+ .math-path .pc-illustration figcaption{font-size:12px}
+}
