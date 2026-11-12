@@ -30,10 +30,11 @@ function showCorrection(slot,report){
  if(!report||!Array.isArray(report.items)||report.items.length!==10){
   setStatus(slot,'La copie corrigée est momentanément indisponible. Aucune nouvelle tentative ne sera lancée.');return;
  }
+ const parentPractice=report.practice===true;
  const heading=E('section','tim-es-training-result');
  heading.style.cssText='padding:15px;border-radius:12px;border:1px solid #b8cbe0;background:#f6f9fe;margin:12px 0';
- heading.append(E('h3','', 'Résultat de l’exercice — '+report.score+' / 10'));
- heading.append(E('p','',Number(report.xp||0)+' XP · Validation unique · Correction conservée'));
+ heading.append(E('h3','', (parentPractice?'Simulation Parent — ':'Résultat de Tim — ')+report.score+' / 10'));
+ heading.append(E('p','',parentPractice?'Mode essai Parent : 0 XP, aucune tentative ni note enregistrée.':Number(report.xp||0)+' XP · Validation unique · Correction conservée'));
  const count=report.items.filter(i=>!i.correct).length;
  heading.append(E('p','',count?count+' erreur(s) : relire la leçon BIS pour comprendre les réponses.':'Toutes les réponses sont correctes.'));
  slot.append(heading);
@@ -42,12 +43,12 @@ function showCorrection(slot,report){
   box.style.cssText=st.group+';border-left:4px solid '+(item.correct?'#397b56':'#bb664e');
   box.append(E('h4','', 'Question '+(i+1)+' — '+(item.correct?'Réussie':'À revoir')));
   box.append(E('p','',item.prompt));
-  box.append(E('p','', 'Réponse de Tim : '+item.response));
+  box.append(E('p','', (parentPractice?'Votre réponse : ':'Réponse de Tim : ')+item.response));
   box.append(E('p','', 'Bonne réponse : '+item.expected));
   box.append(E('p','', 'Pourquoi : '+(item.explanation||item.feedback||'Relire la leçon.')));
   slot.append(box);
  });
- slot.append(E('p','', 'Pour revoir la notion, clique sur « 2 · Leçon BIS » ou « 3 · Je n’ai pas compris » au-dessus.'));
+ slot.append(E('p','',parentPractice?'Vous pouvez recommencer cet essai depuis le menu, sans toucher aux résultats de Tim.':'Pour revoir la notion, clique sur « 2 · Leçon BIS » ou « 3 · Je n’ai pas compris » au-dessus.'));
 }
 async function loadSaved(slot,id){
  try{
@@ -76,8 +77,9 @@ async function mount(id,where){
  const task=result?.task;
  if(!task||task.questions?.length!==10){setStatus(where,'Questionnaire incomplet : aucune validation possible.');return;}
  if(result.completed){await loadSaved(where,id);return;}
- if(!userIsTim()){
-  setStatus(where,'Les exercices sont prêts mais seule la session de Tim peut les valider. Aucune tentative n’est consommée sur le compte Parent.');
+ const isParentPractice=Boolean(window.__TIM_PARENT&&!window.__TIM_GUEST);
+ if(!userIsTim()&&!isParentPractice){
+  setStatus(where,'Ce questionnaire est réservé aux comptes Tim et Parent.');
   return;
  }
  const answers=Array(10).fill(null);
@@ -86,7 +88,7 @@ async function mount(id,where){
  const details=E('div','');
  where.replaceChildren(head,details);
  head.append(E('h3','',task.title));
- head.append(E('p','', '10 questions · une seule tentative · note et corrections immédiates après validation.'));
+ head.append(E('p','',isParentPractice?'Mode essai Parent · 10 questions · aucun XP, aucune tentative ni note enregistrée pour Tim.':'10 questions · une seule tentative pour Tim · note et corrections immédiates après validation.'));
  const feedback=E('p','');
  feedback.style.cssText='font-size:14px;color:#47617e;margin:8px 0';
  head.append(feedback);
@@ -126,21 +128,27 @@ async function mount(id,where){
    info.style.cssText=st.warning;nav.append(info);
    const confirm=E('label','pc-confirm');
    const box=E('input');box.type='checkbox';box.style.cssText='width:21px;height:21px;margin-right:8px;vertical-align:middle';
-   confirm.append(box,E('span','','Je confirme : c’est ma seule tentative pour cet exercice.'));
+   confirm.append(box,E('span','',isParentPractice?'Je confirme : corriger cet essai sans rien enregistrer pour Tim.':'Je confirme : c’est ma seule tentative pour cet exercice.'));
    confirm.style.cssText='display:block;width:100%;font-weight:700;color:#273f5a;padding:8px 0';
    nav.append(confirm);
-   const submit=button('Valider définitivement les 10 réponses',async()=>{
+   const submit=button(isParentPractice?'Corriger mon essai (0 XP, sans enregistrement)':'Valider définitivement les 10 réponses',async()=>{
     if(pending||!filled()||!box.checked)return;
-    pending=true;submit.disabled=true;setStatus(details,'Enregistrement de la copie et de la correction…');
+    pending=true;submit.disabled=true;setStatus(details,isParentPractice?'Correction de votre simulation, sans enregistrement…':'Enregistrement de la copie et de la correction…');
     try{
-     const graded=await bridge().physicsTrainingSubmit(id,answers,task.bankVersion);
+     const graded=isParentPractice
+      ?await bridge().physicsTrainingPreviewSubmit(id,answers,task.bankVersion)
+      :await bridge().physicsTrainingSubmit(id,answers,task.bankVersion);
      showCorrection(details,graded);
-     document.dispatchEvent(new Event('tim-physics-training-saved'));
+     if(!isParentPractice)document.dispatchEvent(new Event('tim-physics-training-saved'));
     }catch(error){
-     // Une réponse HTTP perdue ne doit jamais provoquer une deuxième tentative.
-     await loadSaved(details,id);
-     const note=E('p','', 'Si aucune copie n’apparaît, la validation n’a pas pu être confirmée : '+(error.message||'Erreur réseau'));
-     note.style.cssText=st.warning;details.prepend(note);
+     if(isParentPractice){
+      setStatus(details,'Essai Parent non enregistré : '+(error.message||'Service momentanément indisponible'));
+     }else{
+      // Une réponse HTTP perdue ne doit jamais provoquer une deuxième tentative de Tim.
+      await loadSaved(details,id);
+      const note=E('p','', 'Si aucune copie n’apparaît, la validation n’a pas pu être confirmée : '+(error.message||'Erreur réseau'));
+      note.style.cssText=st.warning;details.prepend(note);
+     }
     }
    });submit.style.cssText=st.primary;submit.disabled=!filled;
    refreshLast=()=>{
