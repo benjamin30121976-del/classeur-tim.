@@ -82,7 +82,14 @@ function resultSheet(slot,r){
    E('p','Bonne réponse : '+item.expected),E('p','Explication : '+item.explanation));
   slot.append(row);
  }
- slot.append(E('p','Pour revoir les erreurs, consulte la leçon BIS associée dans les mathématiques.'));
+ const advice=E('p',r.score===10?'Tu maîtrises les réponses de cette fiche.':'Pour comprendre chaque erreur, revois la méthode de la leçon BIS puis relis les explications ci-dessus.');
+ advice.style.cssText=style.note;slot.append(advice);
+ if(/^MBIS\d\d$/.test(String(r.lessonId||''))){
+  const link=B('Revoir la leçon BIS correspondante',()=>{
+   window.TIM_PEDAGOGY_NAVIGATE?.('Mathématiques',r.lessonId);
+  });
+  link.className='math-ent-review-lesson';link.style.cssText=style.button;slot.append(link);
+ }
 }
 async function savedCopy(slot,id){
  setStatus(slot,'Lecture de la copie validée par Tim…');
