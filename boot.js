@@ -609,6 +609,23 @@ async function startSession(user){
     throw Error('La note et la correction n’ont pas été confirmées.');
    return r.data;
   },
+  /* Un essai sur le compte Parent ne crée aucun résultat dans le dossier de Tim. */
+  physicsTrainingPreviewSubmit:async(id,answers,bankVersion)=>{
+   if(activeUser?.uid!==PARENT_UID)throw Error('Mode essai réservé au compte Parent.');
+   if(!/^PCQ_L0[1-7]_0[1-3]$/.test(String(id||''))||
+      !Array.isArray(answers)||answers.length!==10||
+      answers.some(x=>!((Number.isInteger(x)&&x>=0&&x<=3)||
+        (typeof x==='string'&&x.trim()&&x.length<=80))))
+    throw Error('Les dix réponses sont obligatoires.');
+   if(typeof bankVersion!=='string'||!bankVersion.startsWith('pc-'))
+    throw Error('Questionnaire périmé, recharge la page.');
+   const r=await cloudCallable('previewPhysicsTraining')({id,answers,bankVersion});
+   if(r.data?.practice!==true||r.data.saved!==false||r.data?.xp!==0||
+      !Number.isInteger(r.data.score)||r.data.score<0||r.data.score>10||
+      !Array.isArray(r.data.items)||r.data.items.length!==10)
+    throw Error('La correction de simulation Parent est indisponible.');
+   return r.data;
+  },
   physicsTrainingProgress:async(id)=>{
    if(activeUser?.uid!==TIM_UID&&activeUser?.uid!==PARENT_UID)
     throw Error('Accès aux notes réservé à Tim et au Parent.');
