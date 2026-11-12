@@ -1,9 +1,11 @@
-name: Déployer les exercices privés espagnol du 12 novembre
+name: Vérifier et publier le suivi des traductions espagnoles du 12 novembre
 on:
   push:
     branches: [main]
     paths:
       - 'functions/spanish-nov12-training.mjs'
+      - 'functions/spanish-nov12-translation-count.mjs'
+      - 'functions/test/spanish-nov12-translation-count.test.mjs'
       - 'functions/index.mjs'
       - 'functions/test/spanish-nov12-training.test.mjs'
       - '.github/workflows/deployer-espagnol-12nov.yml'
@@ -22,11 +24,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Vérifier le moteur et les 30 questions
+      - name: Vérifier le compteur de traductions et la notation du 12 novembre
         run: |
           node --check functions/index.mjs
           node --check functions/spanish-nov12-training.mjs
-          node --test functions/test/spanish-nov12-training.test.mjs
+          node --check functions/spanish-nov12-translation-count.mjs
+          node --test functions/test/spanish-nov12-training.test.mjs functions/test/spanish-nov12-translation-count.test.mjs
       - name: Vérifier les identifiants Firebase sans révéler de secret
         id: auth
         shell: bash
@@ -44,12 +47,12 @@ jobs:
         run: |
           npm install --prefix functions --ignore-scripts --no-audit --no-fund
           npm install --no-save --no-audit --no-fund firebase-tools
-      - name: Déployer seulement les 4 fonctions du 12 novembre
+      - name: Mettre à jour les 2 fonctions Firebase déjà utilisées pour les copies et le rapport Parent
         if: steps.auth.outputs.method != 'none'
         shell: bash
         run: |
           set -euo pipefail
-          DEPLOY="functions:getSpanishNov12TrainingTask,functions:previewSpanishNov12Training,functions:submitSpanishNov12Training,functions:getSpanishNov12TrainingProgress"
+          DEPLOY="functions:submitTimExercise,functions:getParentReport"
           if [ "${{ steps.auth.outputs.method }}" = "service" ]; then
             KEY="$RUNNER_TEMP/firebase-tim-12nov.json"
             trap 'rm -f "$KEY"' EXIT
