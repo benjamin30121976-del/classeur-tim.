@@ -7,6 +7,7 @@ const ENT_ID='10099~6400554';
 const HOMEWORK_ID='10099~214866';
 const PDF_NAME='4 EECEno empiezo las clases en septiembre.pdf';
 const PDF_TARGET='ENTESP_2026';
+const PDF_SHA='be48a6fa18032c127be5cdc1652ca9a585908953a67cedc562dbd7575b472837';
 const e=(tag,content,cls)=>{
  const el=document.createElement(tag);
  if(cls)el.className=cls;
@@ -62,13 +63,46 @@ async function build(slot){
  }else{
   try{
    const files=await api.list('lesson',PDF_TARGET);
-   const meta=(files||[]).find(x=>x.fileName===PDF_NAME);
-   if(meta){
+   const meta=(files||[]).find(x=>x.fileName===PDF_NAME||x.sha256===PDF_SHA);
+   const showPdf=found=>{
     st.textContent='Fiche originale associée au travail du 17 novembre : « No empiezo las clases en septiembre ». Elle n’est pas présentée comme un PDF publié le 12 novembre.';
-    pdf.append(window.TIM_PHYSICS_INLINE_PDF.createInline({target:PDF_TARGET,fileName:PDF_NAME},1,
+    pdf.append(window.TIM_PHYSICS_INLINE_PDF.createInline({target:PDF_TARGET,fileName:found.fileName},1,
        'Fiche originale du groupe A — No empiezo las clases en septiembre',{manual:false}));
-   }else{
-    st.textContent='La fiche figure dans l’export ENT, mais n’est pas encore retrouvée dans le stockage privé du classeur. Le cours et les explications restent accessibles.';
+   };
+   if(meta){showPdf(meta);}
+   else{
+    st.textContent='Le PDF figure dans l’export ENT, mais n’est pas encore présent dans le stockage privé du classeur.';
+    if(window.__TIM_PARENT&&!window.__TIM_GUEST&&api.upload){
+     const help=e('p','Parent : télécharge le PDF du groupe A depuis cette conversation, puis sélectionne-le ici. Aucun autre document ne sera modifié.');
+     help.style.cssText=style.caption;
+     const picker=e('input');picker.type='file';picker.accept='.pdf,application/pdf';picker.setAttribute('aria-label','Fiche PDF espagnol groupe A');
+     picker.style.cssText='display:block;max-width:100%;margin:10px 0';
+     const upload=e('button','Installer cette fiche PDF privée');upload.type='button';
+     upload.style.cssText='min-height:44px;padding:9px 12px;border:1px solid #7692bc;border-radius:9px;background:#244575;color:white;font-size:15px;font-weight:800';
+     upload.addEventListener('click',async()=>{
+      if(!picker.files?.[0]){st.textContent='Choisir d’abord le PDF dans tes téléchargements.';return;}
+      upload.disabled=true;
+      try{
+       const src=picker.files[0],bytes=new Uint8Array(await src.arrayBuffer());
+       if(bytes.length<20||bytes.length>4194304||String.fromCharCode(...bytes.slice(0,5))!=='%PDF-')throw Error('PDF invalide.');
+       const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),
+        b=>b.toString(16).padStart(2,'0')).join('');
+       if(digest!==PDF_SHA)throw Error('Ce fichier ne correspond pas à la photocopie ENT du groupe A.');
+       const latest=await api.list('lesson',PDF_TARGET);
+       let found=latest.find(x=>x.fileName===PDF_NAME||x.sha256===PDF_SHA);
+       if(!found){
+        const original=new File([bytes],PDF_NAME,{type:'application/pdf'});
+        await api.upload('lesson',PDF_TARGET,original,'Photocopie originale ENT — Groupe A, 17 novembre',n=>{st.textContent='Importation privée du PDF : '+n+' %';});
+        found=(await api.list('lesson',PDF_TARGET)).find(x=>x.fileName===PDF_NAME&&x.sha256===PDF_SHA);
+       }
+       if(!found)throw Error('Enregistrement non confirmé dans Firebase.');
+       help.remove();picker.remove();upload.remove();
+       showPdf(found);
+      }catch(err){st.textContent='Aucun autre fichier modifié. '+String(err?.message||err);}
+      finally{upload.disabled=false;}
+     });
+     pdf.append(help,picker,upload);
+    }
    }
   }catch(_){st.textContent='Fiche momentanément inaccessible dans le stockage privé.';}
  }
