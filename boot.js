@@ -151,8 +151,13 @@ async function publishCoursePack(pack){
   if(!v||typeof v.id!=='string'||!/^[A-Za-z][A-Za-z0-9_-]{1,35}$/.test(v.id)||typeof v.title!=='string'||!v.title.trim()||v.title.length>200)throw Error('Identifiant ou titre incorrect.');
   if(ids.has(v.id)||seen.has(v.id))throw Error('Le contenu '+v.id+' existe déjà. Aucun écrasement autorisé.');
   if(type==='lessons'&&(!Array.isArray(v.blocks)||!v.help))throw Error('Structure de leçon invalide : '+v.id);
-  if(type==='exercises'&&(!Array.isArray(v.questions)||v.questions.length<1||v.questions.length>15||v.questions.some(q=>!['mc','text','free'].includes(q.type)||!q.q||q.right===undefined||(q.type==='free'&&q.rubric!=='letter'))))throw Error('Questions invalides : '+v.id);
+  if(type==='exercises'&&(!Array.isArray(v.questions)||v.questions.length<1||v.questions.length>(v.kind==='bonus-day'?20:15)||v.questions.some(q=>!['mc','text','free'].includes(q.type)||!q.q||q.right===undefined||(q.type==='free'&&q.rubric!=='letter'))))throw Error('Questions invalides : '+v.id);
   if(type==='exercises'&&!['school','bonus'].includes(v.category))throw Error('Précise category: "school" (devoir ENT, 0 XP) ou "bonus" (entraînement avec XP) pour '+v.id+'.');
+  if(type==='exercises'&&v.kind==='bonus-day'&&(
+   v.category!=='bonus'||v.questions.length<10||
+   v.questions.some(q=>!['mc','text'].includes(q.type)||typeof q.why!=='string'||!q.why.trim()||
+    (q.type==='mc'&&(!Array.isArray(q.options)||q.options.length!==4||!Number.isInteger(Number(q.right))||Number(q.right)<0||Number(q.right)>3)))
+  ))throw Error('Défi bonus : 10 à 20 questions avec bonne réponse et explication pour chacune.');
   seen.add(v.id);
  }
  const supportedLessons=new Set([...window.__TIM_DATA.lessons.map(x=>x.id),...(pack.lessons||[]).map(x=>x.id)]);
