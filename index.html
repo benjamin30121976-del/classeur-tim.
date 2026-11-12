@@ -587,10 +587,10 @@ body.intro-open{overflow:hidden}
 </section>
 <section id="access" aria-label="Connexion privée"><div class="access-mark">CLASSEUR · 3e</div>
 <h1>Accède à tes missions</h1><p>Connecte-toi ou visite le classeur sans compte.</p>
-<div class="role-choices" aria-label="Choisir un espace"><button class="guest-enter" id="guest-enter" type="button"><span aria-hidden="true">👁</span> INVITÉ <small>Consulter les leçons publiques</small></button><button class="role-enter" id="tim-enter" type="button">TIM <small>Exercices et progression</small></button><button class="role-enter" id="parent-enter" type="button">PARENT <small>Suivi et gestion</small></button></div><div class="guest-divider">Choisis ton espace</div><form id="login-form" hidden><button type="button" id="role-back">← Retour aux trois espaces</button><p id="selected-role-label"></p><label for="login-email">Adresse e-mail</label>
-<input id="login-email" type="email" required autocomplete="username" placeholder="Adresse e-mail">
+<div class="role-choices" aria-label="Choisir un espace"><button class="guest-enter" id="guest-enter" type="button"><span aria-hidden="true">👁</span> INVITÉ <small>Consulter les leçons publiques</small></button><button class="role-enter" id="tim-enter" type="button">TIM <small>Exercices et progression</small></button><button class="role-enter" id="parent-enter" type="button">PARENT <small>Suivi et gestion</small></button></div><div class="guest-divider">Choisis ton espace</div><form id="login-form" name="classeur-login" autocomplete="on" hidden><button type="button" id="role-back">← Retour aux trois espaces</button><p id="selected-role-label"></p><label for="login-email">Adresse e-mail</label>
+<input id="login-email" name="username" type="email" required autocomplete="username" inputmode="email" autocapitalize="none" autocorrect="off" spellcheck="false" placeholder="Adresse e-mail">
 <label for="login-password">Mot de passe</label>
-<input id="login-password" type="password" required autocomplete="current-password" placeholder="Mot de passe">
+<input id="login-password" name="password" type="password" required autocomplete="current-password" placeholder="Mot de passe">
 <button type="submit" id="login-button">Se connecter</button></form>
 <div class="status" id="access-status" role="status" aria-live="polite">Connexion à Firebase…</div>
 </section><div id="account-strip"><span id="account-name"></span><button id="logout-button" type="button">Se déconnecter</button></div>
