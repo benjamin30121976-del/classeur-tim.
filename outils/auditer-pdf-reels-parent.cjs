@@ -21,6 +21,13 @@ async function verify(browser,device,viewport){
   await page.locator('#login-button').click();
   await page.waitForFunction(()=>document.body.classList.contains('ready')&&window.__TIM_PARENT===true,undefined,{timeout:40000});
   await page.waitForFunction(()=>!!window.__TIM_BRIDGE?.attachments?.read&&!!window.TIM_PHYSICS_INLINE_PDF?.createInline&&!!window.pdfjsLib,undefined,{timeout:15000});
+  // L'animation d'accueil est superposee aux lecons apres connexion.
+  // La fermer par son controle officiel, sans desactiver ses fonctions.
+  const intro=page.locator('#intro-screen');
+  if(await intro.isVisible()){
+    await page.locator('#intro-silent').click({timeout:8000});
+    await intro.waitFor({state:'hidden',timeout:15000});
+  }
   const result=await page.evaluate(async()=>{
    const api=window.__TIM_BRIDGE.attachments;
    const pack=window.__TIM_DATA?.metadata?.spanishEnt;
