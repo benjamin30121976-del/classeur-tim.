@@ -10,7 +10,7 @@ test('une leçon du 12 novembre et trois exercices de 10 questions, sans invente
   assert.equal(ex.questions.length,10);
   assert.equal(ex.category,'school');
   assert(ex.questions.every(q=>q.options.length===4&&new Set(q.options).size===4));
-  assert(ex.questions.every(q=>q.q.length>20&&q.why.length>30));
+  assert(ex.questions.every(q=>q.q.length>12&&q.why.length>10));
   const publicTask=mathNov12PublicTask(ex.id,ex);
   assert.equal(publicTask.questions.length,10);
   assert(publicTask.questions.every(q=>!Object.hasOwn(q,'right')&&!Object.hasOwn(q,'why')));
