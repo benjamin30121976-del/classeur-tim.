@@ -46,6 +46,7 @@ async function check(browser,name,viewport){
   await card.locator('.tim-es-quick-links').waitFor({state:'visible',timeout:16000});
   await card.getByRole('button',{name:'1 · Leçon ENT'}).click();
   await card.getByText('Texte de Mme Gonzalez dans l’ENT').waitFor({state:'visible',timeout:15000});
+  await card.getByText('Devoir pour mardi 17 novembre',{exact:false}).waitFor({state:'visible',timeout:20000});
   assert((await card.textContent()).includes('terminar la fotocopia'));
   await card.getByRole('button',{name:'3 · Je n’ai pas compris'}).click();
   assert.equal(await card.locator('.tim-es-course-help').getAttribute('open'),'');
