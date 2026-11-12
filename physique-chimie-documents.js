@@ -29,17 +29,41 @@ const E=(tag,cls,text)=>{
 };
 const bridge=()=>window.__TIM_BRIDGE?.attachments;
 function message(parent,text){parent.append(E('p','',text))}
-async function openFile(file,button){
- const a=bridge();if(!a){throw Error('Lecteur privé indisponible.');}
+/* Un PDF s'affiche dans un nouvel onglet si Android le permet.
+   Le téléchargement reste possible séparément pour un manuel ou un PowerPoint.
+   Le lien de secours est visible lorsqu'une fenêtre est bloquée. */
+async function openFile(file,button,kind='view',row=null){
+ const api=bridge();if(!api)throw Error('Lecteur privé indisponible.');
+ const isPdf=(file.mime||'').includes('pdf')||/\\.pdf$/i.test(file.fileName||'');
+ let tab=null;
+ if(kind==='view'&&isPdf){
+  try{tab=window.open('about:blank','_blank');}catch(_){}
+ }
  button.disabled=true;
- const old=button.textContent;button.textContent='Lecture du document…';
+ const old=button.textContent;
+ button.textContent=kind==='download'?'Préparation du téléchargement…':'Ouverture du PDF…';
  try{
-  const blob=await a.read(file),url=URL.createObjectURL(blob);
-  const link=E('a');link.href=url;link.download=file.fileName||'document.pdf';
-  document.body.append(link);link.click();link.remove();
-  // Ne pas révoquer l’URL immédiatement pendant le téléchargement Android.
-  setTimeout(()=>URL.revokeObjectURL(url),60000);
- }finally{button.disabled=false;button.textContent=old}
+  const blob=await api.read(file);
+  const url=URL.createObjectURL(blob);
+  if(kind==='view'&&isPdf){
+   if(tab){
+    try{tab.location.replace(url);}
+    catch(_){try{tab.location.href=url;}catch(__){}}
+   }else if(row){
+    const link=E('a','pc-pdf-fallback','Appuyer ici pour afficher le PDF');
+    link.href=url;link.target='_blank';link.rel='noopener noreferrer';
+    link.style.cssText='display:block;margin:8px 0;color:#244d89;text-decoration:underline;font-weight:800;line-height:1.5';
+    row.append(link);
+   }
+  }else{
+   const link=E('a');link.href=url;link.download=file.fileName||'document.pdf';
+   document.body.append(link);link.click();link.remove();
+  }
+  setTimeout(()=>URL.revokeObjectURL(url),180000);
+ }catch(e){
+  try{if(tab&&!tab.closed)tab.close();}catch(_){}
+  throw e;
+ }finally{button.disabled=false;button.textContent=old;}
 }
 async function lessonFiles(id,slot){
  slot.replaceChildren();
@@ -53,13 +77,24 @@ async function lessonFiles(id,slot){
   slot.replaceChildren();
   if(!files.length){message(slot,'Les documents ENT sont récupérés, mais pas encore importés dans le lecteur privé. Le compte Parent peut les importer depuis son archive ZIP.');return;}
   for(const file of files){
-   const row=E('div','pc-doc-row');row.style.cssText='padding:11px 0;border-bottom:1px solid #d9e2ed';
-   row.append(E('strong','',file.title||file.fileName));
-   const btn=E('button','spx-quick-link','Ouvrir / télécharger le document');
-   btn.style.cssText='display:block;margin:8px 0;min-height:43px';
+   const isPdf=(file.mime||'').includes('pdf')||/\\.pdf$/i.test(file.fileName||'');
+   const row=E('div','pc-doc-row');
+   row.style.cssText='padding:15px 13px;margin:10px 0;border:1px solid #c3d1e3;border-radius:12px;background:#f7faff;color:#253c60';
+   const title=isPdf?'PDF du professeur : ':'Document PowerPoint : ';
+   row.append(E('strong','',title+(file.title||file.fileName)));
    const err=E('p');err.style.cssText='color:#a34c42;font-size:13px';
-   btn.type='button';btn.onclick=()=>openFile(file,btn).catch(e=>{err.textContent='Ouverture impossible : '+(e.message||e)});
-   row.append(btn,err);slot.append(row);
+   if(isPdf){
+    const btn=E('button','spx-quick-link','Ouvrir le PDF du professeur');
+    btn.style.cssText='display:block;width:100%;margin:10px 0 4px;min-height:47px;text-align:center;font-weight:800';
+    btn.type='button';
+    btn.onclick=()=>openFile(file,btn,'view',row).catch(e=>{err.textContent='Ouverture impossible : '+(e.message||e)});
+    row.append(btn);
+   }
+   const download=E('button','plain',isPdf?'Télécharger ce PDF':'Télécharger le PowerPoint');
+   download.style.cssText='display:block;margin:6px 0;min-height:41px;font-size:14px';
+   download.type='button';
+   download.onclick=()=>openFile(file,download,'download',row).catch(e=>{err.textContent='Téléchargement impossible : '+(e.message||e)});
+   row.append(download,err);slot.append(row);
   }
  }catch(e){slot.replaceChildren();message(slot,'Lecture privée indisponible : '+(e.message||''));}
 }
