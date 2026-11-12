@@ -9,6 +9,7 @@ on:
       - 'guest-access.js'
       - 'index.html'
       - 'physique-chimie-*.js'
+      - 'assets/vendor/pdfjs-3.2.146.min.js'
   workflow_dispatch:
 permissions:
   contents: read
@@ -26,16 +27,21 @@ jobs:
           for essai in $(seq 1 24); do
             curl -fsSL --max-time 20 "$BASE/" -o /tmp/pc-index.html || true
             curl -fsSL --max-time 20 "$BASE/physique-chimie-exercices.js?v=20261112-exercices-210-v2" -o /tmp/pc-exercises.js || true
-            curl -fsSL --max-time 20 "$BASE/physique-chimie-parcours.js?v=20261112-pdf-en-tete-v4" -o /tmp/pc-parcours.js || true
+            curl -fsSL --max-time 20 "$BASE/physique-chimie-parcours.js?v=20261112-extraits-en-lecon-v5" -o /tmp/pc-parcours.js || true
             curl -fsSL --max-time 20 "$BASE/boot.js?v=physique-exercices-210-20261112-v1" -o /tmp/pc-boot.js || true
             curl -fsSL --max-time 20 "$BASE/app.js?v=physique-exercices-menu-20261112-v3" -o /tmp/pc-app.js || true
-            curl -fsSL --max-time 20 "$BASE/physique-chimie-documents.js?v=20261112-ouverture-pdf-v2" -o /tmp/pc-documents.js || true
-            if grep -q 'physique-chimie-documents.js?v=20261112-ouverture-pdf-v2' /tmp/pc-index.html 2>/dev/null &&
+            curl -fsSL --max-time 20 "$BASE/physique-chimie-documents.js?v=20261112-inline-pdf-ent-v3" -o /tmp/pc-documents.js || true
+            curl -fsSL --max-time 20 "$BASE/physique-chimie-inline-pdf.js?v=20261112-inline-pdf-securise-v2" -o /tmp/pc-inline.js || true
+            curl -fsSL --max-time 20 "$BASE/assets/vendor/pdfjs-3.2.146.min.js?v=physique-pdf-local-v1" -o /tmp/pc-pdfjs.js || true
+            if grep -q 'physique-chimie-documents.js?v=20261112-inline-pdf-ent-v3' /tmp/pc-index.html 2>/dev/null &&
+               grep -q 'physique-chimie-inline-pdf.js?v=20261112-inline-pdf-securise-v2' /tmp/pc-index.html 2>/dev/null &&
+               grep -q 'isEvalSupported:false' /tmp/pc-inline.js 2>/dev/null &&
+               test $(wc -c </tmp/pc-pdfjs.js) -gt 200000 &&
                grep -q 'physicsTrainingSubmit' /tmp/pc-exercises.js 2>/dev/null &&
                grep -q 'TIM_PHYSICS_TRAINING' /tmp/pc-parcours.js 2>/dev/null &&
                grep -q 'physicsTrainingProgress' /tmp/pc-boot.js 2>/dev/null &&
                grep -q 'renderPhysicsExerciseDirectory' /tmp/pc-app.js 2>/dev/null &&
-               grep -q 'Ouvrir le PDF du professeur' /tmp/pc-documents.js 2>/dev/null &&
+               grep -q 'TIM_PHYSICS_INLINE_PDF.originalFiles' /tmp/pc-documents.js 2>/dev/null &&
                grep -q 'Le PDF original du professeur' /tmp/pc-parcours.js 2>/dev/null; then
                ok=1
                break
