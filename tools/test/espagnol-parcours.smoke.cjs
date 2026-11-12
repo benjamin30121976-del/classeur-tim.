@@ -85,7 +85,9 @@ const out=path.join(process.cwd(),'test-espagnol-results');fs.mkdirSync(out,{rec
     let mathCount=0;
     for(let g=0;g<7;g++){
      await chapterButtons.nth(g).click();
-     mathCount+=await math.locator('.math-lesson-entry').count();
+     mathCount+=await math.locator('.math-lesson-entry[data-math-bis]').count();
+     if(g===2 && await math.locator('[data-math-factor]').count()!==1)
+      throw Error('Mathématiques : la leçon de factorisation des 6 et 9 novembre est absente');
      await math.locator('[data-math-back]').first().click();
     }
     if(mathCount!==23)throw Error('Mathématiques : les sous-leçons ne sont pas toutes accessibles');
