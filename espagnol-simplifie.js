@@ -16,7 +16,8 @@ const LESSONS=[
  ['10099~6400553','15 octobre','Questions et possessifs'],
  ['10099~6400536','3 novembre','Tutoiement, politesse et contrôle'],
  ['10099~6400506','4 novembre','Réviser la conjugaison'],
- ['10099~6400487','5 novembre','Dix verbes au présent']
+ ['10099~6400487','5 novembre','Dix verbes au présent'],
+ ['10099~6400554','12 novembre','No empiezo en septiembre — négations et saisons']
 ];
 const titles=['Je comprends les mots','Je complète les phrases','J’écris seul'];
 const ST={
