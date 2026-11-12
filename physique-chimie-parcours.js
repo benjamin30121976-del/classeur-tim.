@@ -238,10 +238,12 @@ function buildLesson(id){
  section(sheet,'À quoi sert cette leçon ?',t.why);
  const fig=drawing(id);if(fig)sheet.append(fig);
  section(sheet,'Comprendre la règle',t.rule);
+ if(window.TIM_PHYSICS_INLINE_PDF)window.TIM_PHYSICS_INLINE_PDF.insertLesson(id,'afterRule',sheet);
  sheet.append(E('h3','','Comment faire'));
  const steps=E('ol','tim-es-course-steps');
  for(const step of t.steps||[])steps.append(E('li','',step.replace(/^\d+\.\s*/,'')));
  sheet.append(steps);
+ if(window.TIM_PHYSICS_INLINE_PDF)window.TIM_PHYSICS_INLINE_PDF.insertLesson(id,'beforeWorked',sheet);
  sheet.append(E('h3','','Un exemple corrigé, pas à pas'));
  const worked=E('div','tim-es-worked');
  for(const [index,line] of (t.worked||[]).entries())
@@ -252,6 +254,7 @@ function buildLesson(id){
   const p=E('p','tim-es-course-example');
   p.append(E('strong','',title),E('span','',explanation));sheet.append(p);
  }
+ if(window.TIM_PHYSICS_INLINE_PDF)window.TIM_PHYSICS_INLINE_PDF.insertLesson(id,'afterExamples',sheet);
  const take=E('p','tim-es-course-remember');
  take.append(E('strong','','À retenir : '),document.createTextNode(t.remember));sheet.append(take);
  layout.append(sheet);
