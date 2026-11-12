@@ -45,6 +45,7 @@ async function verify(browser,user){
   }
   await page.evaluate(()=>document.getElementById('intro-skip')?.click());
   await page.locator('#intro-screen').waitFor({state:'hidden',timeout:15000});
+  await page.waitForFunction(()=>typeof window.TIM_PEDAGOGY_NAVIGATE==='function',null,{timeout:16000});
   await page.evaluate(()=>window.TIM_PEDAGOGY_NAVIGATE('Mathématiques',''));
   const first=page.locator('#matieres-content [data-math-reciproque]').first();
   await first.waitFor({state:'visible',timeout:20000});
