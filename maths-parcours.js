@@ -19,7 +19,7 @@ const TIM_ENT_NEW=[
  {id:'TIM_ENT_20261109',date:'2026-11-09',title:'9 novembre — Correction et factorisation',chapter:'Calcul littéral',teacher:'Correction du test 5 sur les automatismes Correction ex 35 p.77 Exercices sur la factorisation : n°36 et 37 p.77',work:'Faire exercice n°35 p.77',source:'Séance ENT 10099~6402906 ; devoir ENT 10099~214606',note:'Les énoncés et corrigés officiels de la page 77 ne sont pas disponibles.'}
 ];
 function mathEntList(){
- const old=ent.filter(e=>!TIM_ENT_NEW.some(v=>String(e.id)===v.id));
+ const old=ent.filter(e=>!TIM_ENT_NEW.some(v=>String(e.id)===v.id || String(e.date||'').includes(v.date) || String(e.id)==='M26S'+v.date.slice(2).replace(/-/g,'')));
  return [...old,...TIM_ENT_NEW];
 }
 function viewTimEnt(id){
@@ -61,6 +61,7 @@ function groupOfId(id){
  const n=Number(suffix(id));return GROUPS.find(g=>n>=g.start&&n<=g.end)||GROUPS[0];
 }
 function groupOfEnt(lesson){
+ if(TIM_ENT_NEW.some(x=>x.id===lesson.id))return GROUPS[2];
  const text=nrm([lesson.chapter,lesson.topic,lesson.title].join(' '));
  // Reconnaître la finalité de la séance avant les notions qu'elle révise.
  if(/automatism/.test(text))return GROUPS[5];
