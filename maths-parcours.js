@@ -69,6 +69,11 @@ function viewTimReciproqueThales(){
  '<section class="math-reading-section"><h3>6 · Et si les rapports sont différents ?</h3><p>Par exemple : 3 / 5 = 0,6 mais 5 / 7 ≈ 0,714. Les rapports ne sont pas égaux ; si les points sont bien alignés, <strong>(DE) n’est pas parallèle à (BC)</strong> (contraposée de Thalès).</p></section>'+
  '<section class="math-reading-section"><h3>Devoir donné pour vendredi 13 novembre</h3><p><strong>Finir l’exercice 25 p.253.</strong> L’énoncé du manuel n’est pas présent dans l’archive ENT ; il n’est pas reproduit ici.</p></section>'+
  '</article>'+
+ '<section class="spx-panel math12-exercises"><h3>Mes 3 exercices BIS — 12 novembre</h3><p>10 questions chacun, une seule validation, note sur 10 et correction. Ces exercices d’entraînement ne remplacent pas le devoir 25 p.253 du manuel (énoncé absent de l’ENT).</p><div class="spx-quick-links">'+
+ btn('data-math-nov12-ex','MTH12_01','Exercice 1 — Comprendre la méthode')+
+ btn('data-math-nov12-ex','MTH12_02','Exercice 2 — Calculer les rapports')+
+ btn('data-math-nov12-ex','MTH12_03','Exercice 3 — Rédiger et conclure')+
+ '</div></section>'+
  '<div class="math-reading-actions">'+btn('data-math-open-original','TIM_ENT_20261112','Relire le texte exact du cours ENT du 12 novembre')+'</div>',()=>category(GROUPS[3]));
  wire();
  mountTimThalesSource();
@@ -144,6 +149,7 @@ function wire(){
  root.querySelectorAll('[data-math-open-original]').forEach(b=>b.onclick=()=>TIM_ENT_NEW.some(x=>x.id===b.dataset.mathOpenOriginal)?viewTimEnt(b.dataset.mathOpenOriginal):options.original(b.dataset.mathOpenOriginal));
  root.querySelectorAll('[data-math-factor]').forEach(b=>b.onclick=()=>viewTimFactorisation());
  root.querySelectorAll('[data-math-reciproque]').forEach(b=>b.onclick=()=>viewTimReciproqueThales());
+ root.querySelectorAll('[data-math-nov12-ex]').forEach(b=>b.onclick=()=>viewTimMathNov12Exercise(b.dataset.mathNov12Ex));
  root.querySelectorAll('[data-math-open-exercise]').forEach(b=>b.onclick=()=>options.exercise(b.dataset.mathOpenExercise));
 }
 function home(){
