@@ -147,7 +147,7 @@ async function mount(id,host){
   const label=E('label',f.label);
   label.style.cssText='font-size:15px;font-weight:700;line-height:1.45;color:#263e5d;display:block';
   const field=E('input');field.type='text';field.maxLength=160;field.autocomplete='off';field.spellcheck=false;
-  field.placeholder=task.kind==='programmes'?'Exemple : 2(x+3)-4x':f.kind==='ratios'?'Exemple : AB/AC = AD/AE = BD/CE':f.kind==='number'?'Résultat en cm':'Ta réponse';
+  field.placeholder=task.kind==='programmes'?'Exemple : 2(x+3)-4x':f.kind==='ratios'?'Trois fractions égales, séparées par =':f.kind==='number'?'Résultat numérique (virgule possible)':'Ta réponse';
   field.setAttribute('aria-label',f.label);
   field.style.cssText=style.input;
   field.addEventListener('input',()=>{answers[i]=field.value.trim();update();onChange();});
@@ -185,14 +185,14 @@ async function mount(id,host){
 }
 function renderDirectory(host,{showUnavailable=true,onlyIds=IDS}={}){
  host.replaceChildren();
- host.append(E('h3','Deux exercices ENT originaux remplissables'));
+ host.append(E('h3','Exercices ENT originaux à remplir'));
  host.append(E('p','Ces deux fiches proviennent des documents réellement donnés par Mme Pialet, et non d’exercices inventés.'));
  for(const id of onlyIds.filter(x=>IDS.includes(x))){
   const row=E('section','','math-ent-entry');row.style.cssText=style.panel;
   row.append(E('h4',TITLES[id]));
   row.append(E('p',id==='ME_ENT_PROGRAMMES'?'Six programmes de calcul, six expressions à écrire.':'Thalès : trois figures, 15 cases à compléter et des longueurs à calculer.'));
   const content=E('div','','math-ent-open-content');
-  const open=B(p?'Essayer cette fiche ENT sans XP':'Faire cette fiche ENT',()=>mount(id,content));
+  const open=B(parent()?'Essayer cette fiche ENT sans XP':'Faire cette fiche ENT',()=>mount(id,content));
   open.style.cssText=style.button;
   row.append(open,content);host.append(row);
  }
