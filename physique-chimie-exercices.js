@@ -81,7 +81,7 @@ async function mount(id,where){
   return;
  }
  const answers=Array(10).fill(null);
- let page=0,pending=false;
+ let page=0,pending=false,refreshLast=()=>{};
  const head=E('section','tim-es-training-form');
  const details=E('div','');
  where.replaceChildren(head,details);
@@ -112,7 +112,7 @@ async function mount(id,where){
    input.placeholder='Écris ta réponse courte';input.value=answers[page]??'';
    input.setAttribute('aria-label','Réponse à la question '+(page+1));
    input.style.cssText='display:block;box-sizing:border-box;width:100%;min-height:47px;font-size:17px;border:1px solid #9db8d0;border-radius:9px;padding:10px;color:#263b56;background:#fff';
-   input.oninput=()=>{answers[page]=input.value.trim()?input.value:null;feedback.textContent='Question '+(page+1)+' sur 10 · '+answers.filter(v=>v!==null).length+' réponse(s) complétée(s)';};
+   input.oninput=()=>{answers[page]=input.value.trim()?input.value:null;feedback.textContent='Question '+(page+1)+' sur 10 · '+answers.filter(v=>v!==null).length+' réponse(s) complétée(s)';if(page===9)refreshLast();};
    block.append(input);
   }
   details.append(block);
@@ -120,9 +120,9 @@ async function mount(id,where){
   if(page>0)nav.append(button('← Précédente',()=>{page--;draw();},'pc-prev'));
   if(page<9)nav.append(button('Suivante →',()=>{page++;draw();},'pc-next'));
   if(page===9){
-   const filled=answers.every((v,i)=>task.questions[i].kind==='text'?(typeof v==='string'&&v.trim().length>0):Number.isInteger(v));
+   const filled=()=>answers.every((v,i)=>task.questions[i].kind==='text'?(typeof v==='string'&&v.trim().length>0):Number.isInteger(v));
    const info=E('p','', 'Il manque '+answers.filter(v=>v===null).length+' réponse(s). Tu peux revenir aux questions précédentes.');
-   if(filled)info.textContent='Les 10 réponses sont complètes. Vérifie-les avant la validation définitive.';
+   if(filled())info.textContent='Les 10 réponses sont complètes. Vérifie-les avant la validation définitive.';
    info.style.cssText=st.warning;nav.append(info);
    const confirm=E('label','pc-confirm');
    const box=E('input');box.type='checkbox';box.style.cssText='width:21px;height:21px;margin-right:8px;vertical-align:middle';
@@ -130,7 +130,7 @@ async function mount(id,where){
    confirm.style.cssText='display:block;width:100%;font-weight:700;color:#273f5a;padding:8px 0';
    nav.append(confirm);
    const submit=button('Valider définitivement les 10 réponses',async()=>{
-    if(pending||!filled||!box.checked)return;
+    if(pending||!filled()||!box.checked)return;
     pending=true;submit.disabled=true;setStatus(details,'Enregistrement de la copie et de la correction…');
     try{
      const graded=await bridge().physicsTrainingSubmit(id,answers,task.bankVersion);
@@ -143,8 +143,13 @@ async function mount(id,where){
      note.style.cssText=st.warning;details.prepend(note);
     }
    });submit.style.cssText=st.primary;submit.disabled=!filled;
-   box.onchange=()=>submit.disabled=pending||!filled||!box.checked;
-   nav.append(submit);
+   refreshLast=()=>{
+    const missing=answers.filter(v=>v===null).length;
+    info.textContent=missing?('Il manque '+missing+' réponse(s). Tu peux revenir aux questions précédentes.'):'Les 10 réponses sont complètes. Vérifie-les avant la validation définitive.';
+    submit.disabled=pending||!filled()||!box.checked;
+   };
+   box.onchange=refreshLast;
+   nav.append(submit);refreshLast();
   }
   details.append(nav);
  };
