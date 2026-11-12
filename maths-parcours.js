@@ -423,6 +423,8 @@ function render(element,opts){
  exercises=options.exercises||[];
  grades=window.__TIM_MATH_PROGRESS||{status:'loading',attempts:[]};
  home();
+ // Lien direct vers la sous-leçon demandée depuis une correction, sans tout faire défiler.
+ if(options.openLessonId&&lesson(options.openLessonId))viewBis(options.openLessonId);
  if(options.progress)refreshProgress().then(()=>{if(root&&group&&!selected)category(group);});
 }
 function renderParentProgress(container){
