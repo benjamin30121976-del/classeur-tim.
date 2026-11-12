@@ -6,6 +6,10 @@ on:
       - 'espagnol-cours-12nov.js'
       - 'espagnol-ent-exact.js'
       - 'espagnol-simplifie.js'
+      - 'boot.js'
+      - 'index.html'
+      - 'espagnol-12nov-public.js'
+      - 'espagnol-12nov-correction.mjs'
       - 'espagnol-bis-ent-data.js'
       - 'tools/test/espagnol-12nov-parent.cjs'
       - '.github/workflows/espagnol-12nov-parent.yml'
@@ -14,6 +18,10 @@ on:
       - 'espagnol-cours-12nov.js'
       - 'espagnol-ent-exact.js'
       - 'espagnol-simplifie.js'
+      - 'boot.js'
+      - 'index.html'
+      - 'espagnol-12nov-public.js'
+      - 'espagnol-12nov-correction.mjs'
       - 'espagnol-bis-ent-data.js'
       - 'tools/test/espagnol-12nov-parent.cjs'
       - '.github/workflows/espagnol-12nov-parent.yml'
@@ -38,6 +46,9 @@ jobs:
           node --check espagnol-cours-12nov.js
           node --check espagnol-ent-exact.js
           node --check espagnol-simplifie.js
+          node --check boot.js
+          node --check espagnol-12nov-public.js
+          node --check espagnol-12nov-correction.mjs
           node --check espagnol-bis-ent-data.js
           node --check tools/test/espagnol-12nov-parent.cjs
       - name: Installer Chromium
