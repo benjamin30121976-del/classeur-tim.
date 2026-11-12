@@ -348,6 +348,21 @@ async function submitPhysicsTraining(db,uid,payload){
  ],tx);
  return {...result,xp,submitted:true,submittedAt:new Date().toISOString()};
 }
+/* Aperçu/essai du Parent uniquement : correction en mémoire, sans écriture
+   Firestore, sans tentative, sans XP et sans modification des résultats de Tim. */
+async function previewPhysicsTraining(db,uid,payload){
+ permitted(uid,'parent');
+ const id=payload?.id,answers=payload?.answers;
+ if(!physicsTrainingId(id)||!Array.isArray(answers)||answers.length!==10)
+  throw new ApiFault(400,'invalid-physics-preview');
+ if(payload?.bankVersion!==PHYSICS_BANK_VERSION)
+  throw new ApiFault(409,'stale-physics-bank');
+ let graded;
+ try{graded=gradePhysicsTask(id,answers,payload.bankVersion);}
+ catch{throw new ApiFault(400,'invalid-physics-preview');}
+ return {...graded,xp:0,practice:true,submitted:false,saved:false,
+  message:'Simulation Parent : aucune note, tentative ou XP enregistrés.'};
+}
 async function getPhysicsTrainingProgress(db,uid,payload){
  allowedFamily(uid);
  const id=payload?.id;
@@ -444,6 +459,7 @@ const ACTIONS={
  getPhysicsTrainingTask:getPhysicsTrainingTask,
  submitPhysicsTraining:submitPhysicsTraining,
  getPhysicsTrainingProgress:getPhysicsTrainingProgress,
+ previewPhysicsTraining:previewPhysicsTraining,
  getSpanishDailyMissions:getSpanishDailyMissions,
  getSpanishEntTrainingTask:getSpanishEntTrainingTask,
  submitSpanishEntTraining:submitSpanishEntTraining,
@@ -483,4 +499,4 @@ export async function handleRequest(request,env){
   return respond({error:code},status);
  }
 }
-export const TESTABLE={getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
+export const TESTABLE={previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
