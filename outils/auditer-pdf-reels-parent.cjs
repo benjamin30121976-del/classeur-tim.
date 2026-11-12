@@ -64,6 +64,8 @@ async function verify(browser,device,viewport){
   // Parse each actual PDF; never extract, log, upload or reproduce its contents.
   const parse=await page.evaluate(async()=>{
    const docs=window.__PDF_PARENT_READONLY,api=window.__TIM_BRIDGE.attachments,lib=window.pdfjsLib;
+   // Même version et même worker que le lecteur utilisé dans les leçons.
+   lib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.2.146/build/pdf.worker.min.js';
    const groups={};
    for(const [name,items] of Object.entries(docs)){
     const seen=new Set(),r={present:0,parsed:0,failed:0,pages:0};
