@@ -108,7 +108,7 @@ function originalPanel(slot,id,mode){
  const docs=entOf(id),work=dueOf(id);
  if(mode==='course'){
   slot.append(E('h3','','Le PDF original du professeur'));
-  slot.append(E('p','', 'Pour lire le document complet, utilise le bouton « Ouvrir le PDF du professeur » ci-dessous. Les exercices interactifs de Tim se font dans le menu « Exercices », pas dans le PDF.'));
+  slot.append(E('p','', 'Les pages utiles du PDF figurent désormais directement dans la leçon BIS. Le document complet peut aussi être affiché ci-dessous, sans changer d’onglet. Pour répondre, utilise les exercices interactifs, pas le PDF.'));
  }else{
   slot.append(E('h3','','Exercices du professeur (ENT)'));
   slot.append(E('p','', 'Les PDF du professeur sont des documents à consulter ou à imprimer : ils ne sont pas des questionnaires à remplir sur le téléphone.'));
