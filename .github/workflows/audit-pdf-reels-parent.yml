@@ -1,0 +1,41 @@
+name: Verifier les vrais PDF dans les lecons (Parent lecture seule)
+on:
+  pull_request:
+    paths:
+      - 'outils/auditer-pdf-reels-parent.cjs'
+      - '.github/workflows/audit-pdf-reels-parent.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'outils/auditer-pdf-reels-parent.cjs'
+      - '.github/workflows/audit-pdf-reels-parent.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  pdf-lecture-seule:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      TIM_PARENT_EMAIL: \${{ secrets.TIM_PARENT_EMAIL }}
+      TIM_PARENT_PASSWORD: \${{ secrets.TIM_PARENT_PASSWORD }}
+      TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Verifier le programme de test
+        run: node --check outils/auditer-pdf-reels-parent.cjs
+      - name: Verifier l'acces Parent sans afficher les identifiants
+        run: test -n "$TIM_PARENT_EMAIL" && test -n "$TIM_PARENT_PASSWORD"
+      - name: Installer Chromium
+        run: |
+          npm install --prefix /tmp/tim-pdf-audit --no-audit --no-fund playwright
+          if ! command -v google-chrome >/dev/null 2>&1 && ! command -v chromium >/dev/null 2>&1; then
+            /tmp/tim-pdf-audit/node_modules/.bin/playwright install --with-deps chromium
+          fi
+      - name: Ouvrir les PDF originaux sans les extraire ni enregistrer
+        env:
+          NODE_PATH: /tmp/tim-pdf-audit/node_modules
+        run: node outils/auditer-pdf-reels-parent.cjs
