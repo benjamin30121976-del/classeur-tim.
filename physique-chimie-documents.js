@@ -75,7 +75,7 @@ async function lessonFiles(id,slot){
  try{
   const files=(await Promise.all(targets.map(id=>api.list('lesson',id)))).flat();
   slot.replaceChildren();
-  if(!files.length){message(slot,'Les documents ENT sont récupérés, mais pas encore importés dans le lecteur privé. Le compte Parent peut les importer depuis son archive ZIP.');return;}
+  if(!files.length){message(slot,'Les documents ENT sont récupérés, mais pas encore importés dans le lecteur privé. Le compte Parent peut les importer depuis son archive ZIP, sans quitter le classeur.');return;}
   for(const file of files){
    const isPdf=(file.mime||'').includes('pdf')||/\.pdf$/i.test(file.fileName||'');
    const row=E('div','pc-doc-row');
@@ -84,11 +84,11 @@ async function lessonFiles(id,slot){
    row.append(E('strong','',title+(file.title||file.fileName)));
    const err=E('p');err.style.cssText='color:#a34c42;font-size:13px';
    if(isPdf){
-    const btn=E('button','spx-quick-link','Ouvrir le PDF du professeur');
-    btn.style.cssText='display:block;width:100%;margin:10px 0 4px;min-height:47px;text-align:center;font-weight:800';
-    btn.type='button';
-    btn.onclick=()=>openFile(file,btn,'view',row).catch(e=>{err.textContent='Ouverture impossible : '+(e.message||e)});
-    row.append(btn);
+    if(window.TIM_PHYSICS_INLINE_PDF?.originalFiles){
+     window.TIM_PHYSICS_INLINE_PDF.originalFiles(id,row,[file]);
+    }else{
+     row.append(E('p','','Le lecteur intégré du PDF est indisponible.'));
+    }
    }
    const download=E('button','plain',isPdf?'Télécharger ce PDF':'Télécharger le PowerPoint');
    download.style.cssText='display:block;margin:6px 0;min-height:41px;font-size:14px';
