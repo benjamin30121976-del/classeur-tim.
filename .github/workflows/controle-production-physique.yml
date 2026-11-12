@@ -1,0 +1,42 @@
+name: Contrôle production Physique-chimie sans connexion
+on:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/controle-production-physique.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verifier-production:
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - name: Confirmer les nouveaux scripts réellement servis sur Cloudflare
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://classeur-tim-v16.pages.dev"
+          ok=0
+          for essai in $(seq 1 24); do
+            if curl -fsSL --max-time 20 "$BASE/" | grep -q 'physique-chimie-documents.js?v=20261112-import-prive-v1' &&
+               curl -fsSL --max-time 20 "$BASE/physique-chimie-exercices.js?v=20261112-exercices-210-v2" | grep -q 'physicsTrainingSubmit' &&
+               curl -fsSL --max-time 20 "$BASE/physique-chimie-parcours.js?v=20261112-exercices-docs-v3" | grep -q 'TIM_PHYSICS_TRAINING' &&
+               curl -fsSL --max-time 20 "$BASE/boot.js?v=physique-exercices-210-20261112-v1" | grep -q 'physicsTrainingProgress'; then
+               ok=1
+               break
+            fi
+            sleep 10
+          done
+          test "$ok" = 1
+          echo "Pages et scripts de physique-chimie publiés."
+      - name: Confirmer le backend actif et les réponses cachées
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE="https://classeur-tim-v16.pages.dev"
+          curl -fsSL --max-time 20 "$BASE/api/status" | tee /tmp/pc-status.json
+          grep -q '"platform":"cloudflare-pages"' /tmp/pc-status.json
+          code=$(curl -sS -o /tmp/pc-secret -w '%{http_code}' --max-time 20 "$BASE/worker/physics-quiz-01.mjs")
+          test "$code" = "404"
+          echo "Serveur disponible et banque de réponses inaccessible par URL publique."
