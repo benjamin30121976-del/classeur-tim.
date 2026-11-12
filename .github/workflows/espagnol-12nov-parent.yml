@@ -1,0 +1,40 @@
+name: Contrôle dernier cours espagnol 12 novembre
+on:
+  pull_request:
+    paths:
+      - 'espagnol-cours-12nov.js'
+      - 'espagnol-ent-exact.js'
+      - 'tools/test/espagnol-12nov-parent.cjs'
+      - '.github/workflows/espagnol-12nov-parent.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  dernier-cours:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+      TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
+      TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier la syntaxe des modules
+        run: |
+          node --check espagnol-cours-12nov.js
+          node --check espagnol-ent-exact.js
+          node --check tools/test/espagnol-12nov-parent.cjs
+      - name: Installer Chromium
+        run: |
+          test -n "$TIM_PARENT_EMAIL" && test -n "$TIM_PARENT_PASSWORD"
+          npm install --prefix /tmp/tim-es12 --no-audit --no-fund playwright
+          if ! command -v google-chrome >/dev/null 2>&1 && ! command -v chromium >/dev/null 2>&1; then
+            /tmp/tim-es12/node_modules/.bin/playwright install --with-deps chromium
+          fi
+      - name: Contrôler la séance, le PDF et la traduction dans le compte Parent
+        env:
+          NODE_PATH: /tmp/tim-es12/node_modules
+        run: node tools/test/espagnol-12nov-parent.cjs
