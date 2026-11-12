@@ -825,6 +825,10 @@ function renderMatiere(name,openLessonId=null){
   window.TIM_SPANISH_PATH.render(root,{lessons:DATA.lessons,back:renderMatieres,original:openLesson});
   return;
  }
+ if(name==='Physique-chimie'&&window.TIM_PHYSIQUE_PATH){
+  window.TIM_PHYSIQUE_PATH.render(root,{lessons:DATA.lessons,back:renderMatieres});
+  return;
+ }
  if(name==='Mathématiques'&&window.TIM_MATH_PATH){
   window.TIM_MATH_PATH.render(root,{
    lessons:DATA.lessons,exercises:DATA.exercises,
