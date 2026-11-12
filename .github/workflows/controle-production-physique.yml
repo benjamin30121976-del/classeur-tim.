@@ -29,7 +29,7 @@ jobs:
             curl -fsSL --max-time 20 "$BASE/" -o /tmp/pc-index.html || true
             curl -fsSL --max-time 20 "$BASE/physique-chimie-exercices.js?v=20261112-correction-pedago-v4" -o /tmp/pc-exercises.js || true
             curl -fsSL --max-time 20 "$BASE/physique-chimie-parcours.js?v=20261112-ent-interactif-v7" -o /tmp/pc-parcours.js || true
-            curl -fsSL --max-time 20 "$BASE/boot.js?v=maths-ent-20261112-v4" -o /tmp/pc-boot.js || true
+            curl -fsSL --max-time 20 "$BASE/boot.js?v=essai-espagnol-parent-20261112-v5" -o /tmp/pc-boot.js || true
             curl -fsSL --max-time 20 "$BASE/app.js?v=trois-matieres-pedago-20261112-v8" -o /tmp/pc-app.js || true
             curl -fsSL --max-time 20 "$BASE/physique-chimie-documents.js?v=20261112-inline-pdf-ent-v3" -o /tmp/pc-documents.js || true
             curl -fsSL --max-time 20 "$BASE/physique-chimie-inline-pdf.js?v=20261112-inline-pdf-securise-v2" -o /tmp/pc-inline.js || true
