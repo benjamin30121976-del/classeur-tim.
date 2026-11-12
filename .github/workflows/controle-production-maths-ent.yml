@@ -33,7 +33,7 @@ jobs:
             curl -fsSL --max-time 20 "$BASE/maths-ent-exercices.js?v=ent-maths-correction-pedago-20261112-v4" -o /tmp/math-ent.js || true
             curl -fsSL --max-time 20 "$BASE/maths-parcours.js?v=maths-docs-et-renvois-20261112-v6" -o /tmp/math-parcours.js || true
             curl -fsSL --max-time 20 "$BASE/boot.js?v=maths-ent-20261112-v4" -o /tmp/boot.js || true
-            curl -fsSL --max-time 20 "$BASE/app.js?v=trois-matieres-pedago-20261112-v7" -o /tmp/app.js || true
+            curl -fsSL --max-time 20 "$BASE/app.js?v=trois-matieres-pedago-20261112-v8" -o /tmp/app.js || true
             curl -fsSL --max-time 20 "$BASE/parent-unified-results.js?v=maths-ent-parents-20261112-v3" -o /tmp/parent.js || true
             curl -fsSL --max-time 20 "$BASE/api/status" -o /tmp/status.json || true
             if grep -q 'maths-ent-exercices.js?v=ent-maths-correction-pedago-20261112-v4' /tmp/index.html 2>/dev/null &&
