@@ -148,7 +148,9 @@ function render(element,options){
  const all=Array.isArray(opts.lessons)?opts.lessons:[];
  bis=all.filter(x=>x.subject==='Physique-chimie'&&x.kind==='bis'&&/^PC_BIS0[1-7]$/.test(x.id||''));
  ent=all.filter(x=>x.subject==='Physique-chimie'&&/^PCENT/.test(x.id||''));
- home();
+ if(opts.openLessonId && /^PC_BIS0[1-7]$/.test(opts.openLessonId) && byId(opts.openLessonId))lesson(opts.openLessonId);
+ else if(opts.openLessonId && /^PCENT/.test(opts.openLessonId) && byId(opts.openLessonId))entLesson(opts.openLessonId);
+ else home();
 }
 window.TIM_PHYSIQUE_PATH={render};
 })();
