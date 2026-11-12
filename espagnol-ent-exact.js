@@ -620,6 +620,9 @@ async function render(root,opts={}){
  const app=window.TIM_SPANISH_SIMPLIFIED;
  if(!app)return renderArchive(root,opts);
  await app.render(root,opts,{appendL01:appendBisL01});
+ const today=window.TIM_SPANISH_NOV12?.render?.();
+ if(today){const heading=root.querySelector('h2');if(heading)heading.after(today);else root.prepend(today);}
+
  if(window.__TIM_PARENT&&!window.__TIM_GUEST){
   const archive=$('details','ent-es-archive-parent');
   archive.style.cssText='border:1px solid #7a8ca8;border-radius:13px;padding:13px 14px;margin:24px 0;background:#20324d;color:#f3f7ff';
