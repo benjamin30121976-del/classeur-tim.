@@ -585,6 +585,49 @@ async function startSession(user){
   return window.__TIM_SPANISH_PROGRESS;
  };
  window.__TIM_BRIDGE={
+  /* Physique-chimie : deux véritables fiches ENT avec correction privée. */
+  physicsEntTask:async(id)=>{
+   if(!['PC_ENT_CTRL1','PC_ENT_MOLECULES'].includes(id))throw Error('Fiche ENT inconnue.');
+   const r=await cloudCallable('getPhysicsEntTask')({id});
+   const t=r.data?.task;
+   if(!t||!Array.isArray(t.fields)||![10,12].includes(t.fields.length)||
+      t.fields.some(q=>!['text','formula','model'].includes(q.kind)||!q.id))
+    throw Error('Fiche ENT incomplète. Aucune tentative consommée.');
+   return r.data;
+  },
+  physicsEntSubmit:async(id,answers,bankVersion)=>{
+   if(activeUser?.uid!==TIM_UID)throw Error('Seul Tim peut enregistrer cette fiche.');
+   if(!['PC_ENT_CTRL1','PC_ENT_MOLECULES'].includes(id)||
+      !Array.isArray(answers)||answers.length!==(id==='PC_ENT_CTRL1'?10:12)||
+      answers.some(a=>typeof a!=='string'||!a.trim()||a.length>160))
+    throw Error('Toutes les réponses de la fiche sont obligatoires.');
+   const r=await cloudCallable('submitPhysicsEntTask')({id,answers,bankVersion});
+   if(!r.data?.submitted||!Number.isInteger(r.data?.score)||r.data.score<0||r.data.score>10||
+      ![0,.5,1].includes(r.data.xp)||r.data.items?.length!==answers.length||
+      r.data.bankVersion!==bankVersion)
+    throw Error('La copie ENT corrigée n’a pas été confirmée par le serveur.');
+   return r.data;
+  },
+  physicsEntPreviewSubmit:async(id,answers,bankVersion)=>{
+   if(activeUser?.uid!==PARENT_UID)throw Error('Essai ENT réservé au compte Parent.');
+   if(!['PC_ENT_CTRL1','PC_ENT_MOLECULES'].includes(id)||
+      !Array.isArray(answers)||answers.length!==(id==='PC_ENT_CTRL1'?10:12)||
+      answers.some(a=>typeof a!=='string'||!a.trim()||a.length>160))
+    throw Error('Toutes les réponses de la fiche sont obligatoires.');
+   const r=await cloudCallable('previewPhysicsEntTask')({id,answers,bankVersion});
+   if(r.data?.practice!==true||r.data.saved!==false||r.data.xp!==0||
+      !Number.isInteger(r.data.score)||r.data.items?.length!==answers.length)
+    throw Error('Correction ENT de simulation Parent indisponible.');
+   return r.data;
+  },
+  physicsEntProgress:async(id)=>{
+   if(activeUser?.uid!==TIM_UID&&activeUser?.uid!==PARENT_UID)
+    throw Error('Résultats ENT réservés à Tim et au Parent.');
+   const r=await cloudCallable('getPhysicsEntProgress')(id?{id}:{});
+   if(id){if(!('attempt' in (r.data||{})))throw Error('Copie ENT indisponible.');}
+   else if(!Array.isArray(r.data?.attempts))throw Error('Historique ENT indisponible.');
+   return r.data;
+  },
   physicsTrainingTask:async(id)=>{
    if(!/^PCQ_L0[1-7]_0[1-3]$/.test(String(id||'')))throw Error('Exercice de physique inconnu.');
    const r=await cloudCallable('getPhysicsTrainingTask')({id});
