@@ -51,6 +51,29 @@ async function check(browser,name,viewport){
   }));
   assert.equal(structure.total,14);
   assert.equal(structure.bis,true);
+  if(name==='ordinateur'){
+   const ids=['ESE_L14_01','ESE_L14_02','ESE_L14_03'];
+   const check=await page.evaluate(async ids=>{
+    const exercises=window.__TIM_DATA?.exercises||[];
+    const saved=ids.map(id=>exercises.find(ex=>ex.id===id));
+    if(saved.some(x=>x?.questions?.length!==10))return {present:saved.filter(x=>x?.questions?.length===10).length,taskLength:0};
+    const first=await window.__TIM_BRIDGE.spanishEntTrainingTask(ids[0]);
+    return {present:saved.length,taskLength:first.task?.questions?.length||0,
+     noOriginalAnswers:first.task?.questions?.every(q=>!('right'in q)&&!('expected'in q))};
+   },ids);
+   assert.equal(check.present,3,'Les trois exercices importés sont masqués dans la version V16.');
+   assert.equal(check.taskLength,10,'L’exercice 14 ne se charge pas depuis Firestore.');
+   assert.equal(check.noOriginalAnswers,true,'La lecture publique de la fiche contient des réponses.');
+   const {nov12ForParentImport}=await import('../functions/spanish-nov12-training.mjs');
+   const answers=nov12ForParentImport()[0].questions.map(q=>q.type==='mc'?Number(q.right):String(q.right));
+   const report=await page.evaluate(async answers=>
+    window.__TIM_BRIDGE.spanishEntTrainingPreview('ESE_L14_01',answers,Array(10).fill(false)),answers);
+   assert.equal(report.practice,true);
+   assert.equal(report.saved,false);
+   assert.equal(report.score,10);
+   assert.equal(report.items?.length,10);
+   console.log('PASS Parent : 3 exercices du 12 novembre visibles, questions sans réponses, essai 10/10 sans note ni XP enregistrés.');
+  }
   // Passer complètement l'animation AVANT de naviguer vers la matière,
   // car le bouton "Passer" peut lui-même renvoyer à l'accueil.
   await page.evaluate(()=>document.getElementById('intro-skip')?.click());
