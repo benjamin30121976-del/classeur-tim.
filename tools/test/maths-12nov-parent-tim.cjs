@@ -49,8 +49,8 @@ async function verify(browser,user){
   await page.evaluate(()=>window.TIM_PEDAGOGY_NAVIGATE('Mathématiques',''));
   const first=page.locator('#matieres-content [data-math-reciproque]').first();
   await first.waitFor({state:'visible',timeout:20000});
-  await first.click();
-  await page.locator('#matieres-content [data-math-nov12-ex="MTH12_01"]').click();
+  await first.evaluate(el=>el.click());
+  await page.locator('#matieres-content [data-math-nov12-ex="MTH12_01"]').evaluate(el=>el.click());
   const form=page.locator('#matieres-content #math12-quiz-form');
   await form.waitFor({state:'visible',timeout:20000});
   assert.equal(await form.locator('fieldset').count(),10);
