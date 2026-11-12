@@ -71,6 +71,11 @@ const SPECIAL_HELP={
    'Écris dans cet ordre : bonjour, prénom et âge, goûts, animal préféré, invitation, formule de fin. Chaque partie peut tenir en une phrase courte.',
    '¡Hola! Me llamo Ana. Tengo quince años. Me gusta el fútbol. ¡Hasta pronto!']
  ],
+ '10099~6400554':[
+  ['Pourquoi « sino » et non « pero » ?','Sino remplace une idée que l’on vient de nier : pas septembre, mais mars. Pero oppose deux idées sans corriger cette négation.','No empiezo en septiembre, sino en marzo. = Je ne commence pas en septembre, mais en mars.'],
+  ['Quelle différence entre nunca et nada ?','Nunca signifie jamais : cela parle de fréquence. Nada signifie rien : cela parle d’une absence de chose.','Nunca estudio el domingo. = Je n’étudie jamais le dimanche. No veo nada. = Je ne vois rien.'],
+  ['Pourquoi est-ce l’hiver en août dans le sud ?','Les saisons sont inversées entre les deux hémisphères : août est l’été en France et l’hiver dans l’hémisphère sud.','En agosto es invierno en el hemisferio sur. = En août, c’est l’hiver dans l’hémisphère sud.']
+ ],
  '10099~6400502':[
   ['À quoi sert l’animal totem dans ce cours ?',
    'La professeure demande une phrase supplémentaire dans la lettre au correspondant. Tu choisis un animal, puis tu expliques ton choix avec « porque » (parce que).',
