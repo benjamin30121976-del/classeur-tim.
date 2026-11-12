@@ -128,13 +128,19 @@ async function main(){
    host.append(example);
   },makeSyntheticPdf());
   await page.locator('#pc-test-in-page').scrollIntoViewIfNeeded();
-  await page.waitForFunction(()=>{
-   const card=document.querySelector('#pc-test-in-page .pc-inline-pdf');
-   const cv=card?.querySelector('canvas');
-   return Boolean(card&&cv&&cv.width>100&&cv.height>100&&!card.textContent.includes('Affichage impossible'));
-  },{timeout:45000});
+  try{
+   await page.waitForFunction(()=>{
+    const label=document.querySelector('#pc-test-in-page .pc-pdf-toolbar span');
+    return label && /^Page \d+ \/ \d+$/.test(label.textContent.trim());
+   },{timeout:45000});
+  }catch(err){
+   const status=await page.locator('#pc-test-in-page .pc-inline-pdf').innerText();
+   throw new Error('Le PDF intégré n’a pas été rendu. État : '+status.slice(0,1200)+' ; '+err.message);
+  }
   const pageLabel=await page.locator('#pc-test-in-page .pc-pdf-toolbar span').innerText();
   assert.equal(pageLabel,'Page 1 / 1');
+  const hasCanvas=await page.locator('#pc-test-in-page canvas').evaluate(x=>x.width>300&&x.height>300);
+  assert.equal(hasCanvas,true,'Le dessin PDF doit être rendu sur le canvas');
   report.checks.privatePdfInsideLesson=true;
   report.checks.pdfCanvasRendered=true;
   report.checks.openedTabs=0;
