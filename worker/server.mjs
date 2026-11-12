@@ -535,6 +535,23 @@ async function getSpanishEntTrainingTask(db,uid,payload){
  const saved=await db.get('spanishEntTrainingAttempts/'+id);
  return {task,completed:Boolean(saved&&saved.authorUid===TIM_UID)};
 }
+/* Aperçu pédagogique du Parent : même correcteur que Tim, sans écriture ni XP.
+   Toutes les bonnes réponses restent dans le module privé du Worker. */
+async function previewSpanishEntTraining(db,uid,payload){
+ permitted(uid,'parent');
+ const id=payload?.id,answers=payload?.answers,translationsUsed=payload?.translationsUsed;
+ if(!spanishEntTrainingId(id)||!Array.isArray(answers)||answers.length!==10||
+    !Array.isArray(translationsUsed)||translationsUsed.length!==10||
+    translationsUsed.some(v=>typeof v!=='boolean')||
+    answers.some(v=>!((typeof v==='string'&&v.trim().length>0&&v.length<=200)||
+      (Number.isInteger(v)&&v>=0&&v<=3))))
+  throw new ApiFault(400,'invalid-spanish-preview');
+ let report;
+ try{report=gradeSpanishEntTask(id,answers,translationsUsed);}
+ catch{throw new ApiFault(400,'invalid-spanish-preview');}
+ return {...report,practice:true,submitted:false,saved:false,xp:0,
+  message:'Essai Parent : aucun résultat ou XP enregistré pour Tim.'};
+}
 async function submitSpanishEntTraining(db,uid,payload){
  permitted(uid,'tim');
  const id=payload?.id,answers=payload?.answers,translationsUsed=payload?.translationsUsed;
@@ -600,6 +617,7 @@ async function getSpanishDailyMissions(db,uid){
 }
 
 const ACTIONS={
+ previewSpanishEntTraining:previewSpanishEntTraining,
  getMathEntTask:getMathEntTask,
  submitMathEntTask:submitMathEntTask,
  previewMathEntTask:previewMathEntTask,
@@ -651,4 +669,4 @@ export async function handleRequest(request,env){
   return respond({error:code},status);
  }
 }
-export const TESTABLE={getMathEntTask,submitMathEntTask,previewMathEntTask,getMathEntProgress,getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
+export const TESTABLE={previewSpanishEntTraining,getMathEntTask,submitMathEntTask,previewMathEntTask,getMathEntProgress,getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
