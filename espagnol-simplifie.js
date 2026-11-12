@@ -578,23 +578,44 @@ async function render(root,opts={},helpers={}){
    b.onclick=async()=>{
     card.open=true;work.replaceChildren();
     const wait=p(work,'Ouverture de l’exercice…');
-    if(!loaded){await refresh();if(!loaded){wait.textContent='Connexion au suivi impossible. Aucune validation ne peut être enregistrée pour le moment.';return;}}
+    if(!loaded){await refresh();if(!loaded&&!isParent()){wait.textContent='Connexion au suivi impossible. Aucune validation ne peut être enregistrée pour le moment.';return;}}
     const previous=attempts.find(a=>a.id===id);
     try{
-     if(previous){
+     if(previous&&!isParent()){
       const saved=await bridge.spanishEntTrainingProgress(id);
       if(!saved.attempt){wait.textContent='Le résultat enregistré est momentanément inaccessible.';return;}
       drawCorrection(work,saved.attempt,index,openLesson);
       return;
      }
      const resp=await bridge.spanishEntTrainingTask(id);
-     if(resp.completed){
+     if(resp.completed&&!isParent()){
       const saved=await bridge.spanishEntTrainingProgress(id);
       if(saved.attempt){drawCorrection(work,saved.attempt,index,openLesson);await refresh();}
       else wait.textContent='Cet exercice est déjà validé. Résultat à actualiser.';
       return;
      }
-     renderQuestions(work,resp.task,index,refresh,openLesson);
+     if(isParent()){
+      work.replaceChildren();
+      if(previous||resp.completed){
+       const savedPanel=el('details');savedPanel.className='tim-es-parent-copy';
+       savedPanel.style.cssText=ST.panel+';margin:10px 0';
+       savedPanel.append(el('summary','Consulter la copie corrigée de Tim'));
+       const savedBody=el('div');savedPanel.append(savedBody);
+       savedPanel.addEventListener('toggle',async()=>{
+        if(!savedPanel.open)return;
+        try{
+         const copy=await bridge.spanishEntTrainingProgress(id);
+         if(copy.attempt)drawCorrection(savedBody,copy.attempt,index,openLesson);
+         else savedBody.textContent='Copie de Tim indisponible actuellement.';
+        }catch(e){savedBody.textContent='Copie indisponible : '+String(e.message||e);}
+       });
+       work.append(savedPanel);
+      }
+      const practice=el('div');work.append(practice);
+      renderQuestions(practice,resp.task,index,refresh,openLesson);
+     }else{
+      renderQuestions(work,resp.task,index,refresh,openLesson);
+     }
     }catch(e){wait.textContent='Impossible d’ouvrir cet exercice : '+(e.message||'service indisponible');}
    };
    rows.append(b);
