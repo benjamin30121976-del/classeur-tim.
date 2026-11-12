@@ -236,6 +236,63 @@ async function main(){
   report.checks.entTeacherQuestionsFillableParent=true;
   report.checks.entParentNoSavedAttempt=true;
 
+  // Le tableau des molécules utilise les 12 cases d'un vrai exercice ENT :
+  // six formules écrites et six modèles construits avec les boules.
+  await page.evaluate(async()=>{
+   const rows=[
+    {id:'eau',name:'Eau'}, {id:'dioxygene',name:'Dioxygène'},
+    {id:'diazote',name:'Diazote'},{id:'dihydrogene',name:'Dihydrogène'},
+    {id:'dioxyde_carbone',name:'Dioxyde de carbone'},
+    {id:'methane',name:'Méthane',printedFormula:'CH₄'},
+    {id:'protoxyde_azote',name:'Protoxyde d’azote',printedModel:'2 N (bleu) + 1 O (rouge)'}
+   ];
+   const fields=[];
+   for(const [i,row] of rows.entries()){
+    if(!row.printedFormula)fields.push({id:row.id+'_formula',group:i+1,kind:'formula',label:'Formule : '+row.name});
+    if(!row.printedModel)fields.push({id:row.id+'_model',group:i+1,kind:'model',label:'Modèle : '+row.name,atoms:['H','C','N','O']});
+   }
+   window.__PC_ENT_TABLE_AUDIT={calls:0};
+   window.__TIM_BRIDGE.physicsEntTask=async()=>({completed:false,task:{
+    id:'PC_ENT_MOLECULES',type:'molecule-table',title:'Chapitre 1 — Tableau des molécules',
+    source:'Tableau original — essai sans compte',date:'2026-10-06',bankVersion:'pc-ent-test',scale:'12 cases.',
+    document:{target:'PCENT6390201',fileName:'Chapitre 1 tableau molecules.pdf',page:1},molecules:rows,fields
+   }});
+   window.__TIM_BRIDGE.physicsEntPreviewSubmit=async(id,answers)=>{
+    window.__PC_ENT_TABLE_AUDIT.calls++;
+    if(id!=='PC_ENT_MOLECULES'||answers.length!==12)throw new Error('Tableau incomplet');
+    return {id,practice:true,saved:false,submitted:false,xp:0,score:10,total:10,
+     correctFields:12,fieldCount:12,scale:'12 cases.',
+     items:answers.map((response,i)=>({prompt:'Cellule '+(i+1),kind:'text',response,expected:'réponse',correct:true,
+      explanation:'Corrigé de simulation.'}))};
+   };
+   const host=document.createElement('div');host.id='pc-ent-table-test';document.body.append(host);
+   await window.TIM_PHYSICS_ENT.mount('PC_ENT_MOLECULES',host);
+  });
+  const mol=page.locator('#pc-ent-table-test');
+  const molRows=mol.locator('.pc-ent-molecule-row');
+  assert.equal(await molRows.count(),7,'Le tableau ENT doit comporter sept lignes');
+  const compositions=[
+   {formula:'H2O',atoms:['H','H','O']},
+   {formula:'O2',atoms:['O','O']},
+   {formula:'N2',atoms:['N','N']},
+   {formula:'H2',atoms:['H','H']},
+   {formula:'CO2',atoms:['C','O','O']},
+   {atoms:['C','H','H','H','H']},
+   {formula:'N2O'}
+  ];
+  for(const [i,m] of compositions.entries()){
+   const line=molRows.nth(i);
+   if(m.formula)await line.locator('input[type=text]').fill(m.formula);
+   for(const atom of m.atoms||[])await line.getByRole('button',{name:new RegExp('^\\+ '+atom+' ·')}).click();
+  }
+  await mol.locator('input[type=checkbox]').check();
+  await mol.getByRole('button',{name:/Corriger mon essai ENT/}).click();
+  await mol.locator('.pc-ent-grade').getByText(/10 \/ 10 · 0 XP/).waitFor({state:'visible',timeout:15000});
+  assert.equal((await page.evaluate(()=>window.__PC_ENT_TABLE_AUDIT)).calls,1);
+  report.checks.entMoleculeSevenRowsTwelveFields=true;
+  report.checks.entMoleculeModelsFillable=true;
+
+
   await page.screenshot({path:output+'/physique-mobile.jpg',type:'jpeg',quality:70,fullPage:true});
   fs.writeFileSync(output+'/rapport.json',JSON.stringify(report,null,2));
   process.stdout.write(JSON.stringify(report)+'\n');
