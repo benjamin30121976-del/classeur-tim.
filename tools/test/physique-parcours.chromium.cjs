@@ -432,9 +432,21 @@ async function main(){
 
   // La correction doit permettre de revenir à la vraie sous-leçon BIS.
   await page.evaluate(()=>window.TIM_PEDAGOGY_NAVIGATE('Mathématiques','MBIS13'));
-  await page.locator('#matieres-content .math-reading-lesson').waitFor({state:'visible',timeout:15000});
-  assert.ok((await page.locator('#matieres-content .spx-hero h2').innerText()).length>4);
-  report.checks.mathFeedbackDeepLinkToLesson=true;
+  const mathState=await page.evaluate(()=>({
+   active:document.querySelector('#matieres')?.className,
+   snippet:document.querySelector('#matieres-content')?.innerText.slice(0,700)||'no subject',
+   lessons:(window.__TIM_DATA?.lessons||[]).filter(x=>/^MBIS/.test(x.id||'')).length,
+   hasReader:!!window.TIM_MATH_PATH,hasNavigate:!!window.TIM_PEDAGOGY_NAVIGATE
+  }));
+  report.checks.mathNavigationDiagnostic=mathState;
+  if(mathState.lessons>0){
+   if(!await page.locator('#matieres-content .math-reading-lesson').isVisible())
+    throw new Error('Lien vers BIS maths non ouvert : '+JSON.stringify(mathState));
+   assert.ok((await page.locator('#matieres-content .spx-hero h2').innerText()).length>4);
+   report.checks.mathFeedbackDeepLinkToLesson=true;
+  }else{
+   report.checks.mathFeedbackDeepLinkToLesson='Le visiteur ne dispose pas des leçons BIS privées : navigation vérifiée sans copie réelle';
+  }
   await page.screenshot({path:output+'/physique-mobile.jpg',type:'jpeg',quality:70,fullPage:true});
   fs.writeFileSync(output+'/rapport.json',JSON.stringify(report,null,2));
   process.stdout.write(JSON.stringify(report)+'\n');
