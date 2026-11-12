@@ -73,7 +73,9 @@ window.TIM_ES12_STUDY={
    feedback:x.explanation||'',explanation:x.explanation||''}));
   const errors={};
   items.filter(x=>!x.correct).forEach(x=>{errors[x.category]=(errors[x.category]||0)+1;});
+  const count=doc?.translationHelpCount;
   return {id,submitted:true,score:Number(doc.score)||0,total:10,xp:0,items,
-   errorCounts:errors,translationHelpCount:0};
+   errorCounts:errors,
+   ...(Number.isInteger(count)&&count>=0&&count<=10?{translationHelpCount:count}:{})};
  }
 };
