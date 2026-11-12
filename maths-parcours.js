@@ -150,6 +150,7 @@ function home(){
  selected=null;group=null;
  draw(header('Mathématiques','Choisis ton chapitre, puis ta leçon.')+
  back('Toutes les matières')+
+ '<section class="spx-panel math-latest-ent" style="margin:14px 0"><h3>Dernier cours ENT · Jeudi 12 novembre</h3><p><strong>La réciproque de Thalès</strong> · devoir pour vendredi 13 novembre : finir l’exercice 25 p.253.</p><div class="spx-quick-links">'+btn('data-math-open-original','TIM_ENT_20261112','Voir le cours ENT du jour')+btn('data-math-reciproque','lesson','Lire la leçon expliquée')+'</div></section>'+
  '<div class="math-chapter-list">'+GROUPS.map((g,i)=>{
   const lessons=bis.filter(x=>groupOfId(x.id)===g);
   if(!lessons.length)return '';
@@ -173,7 +174,8 @@ function home(){
 }
 function viewEntChronology(){
  selected=null;group=null;
- const lessons=mathEntList().slice().sort((a,b)=>String(a.date||a.id).localeCompare(String(b.date||b.id),'fr'));
+ const lessonDate=x=>{const m=String(x.id||'').match(/^M26S(\d{2})(\d{2})$/);return m?'2026-'+m[1]+'-'+m[2]:String(x.date||'');};
+ const lessons=mathEntList().slice().sort((a,b)=>lessonDate(a).localeCompare(lessonDate(b),'fr'));
  draw(header('Cours ENT de mathématiques · Chronologie','Les cours originaux de Mme Pialet, sans ajout ni remplacement du contenu officiel.')+
  back('Retour aux chapitres')+
  '<section class="spx-panel"><h3>'+lessons.length+' séances ENT conservées</h3><p>Cours d’origine et mises à jour jusqu’au 12 novembre 2026. Aujourd’hui : réciproque de Thalès ; devoir du 13 novembre : exercice 25 p.253. Les énoncés du manuel ne figurent pas dans l’export.</p>'+
