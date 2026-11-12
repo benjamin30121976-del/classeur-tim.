@@ -751,30 +751,38 @@ async function startSession(user){
   },
   spanishEntTrainingProgress:async(id)=>{
    if(activeUser?.uid!==TIM_UID&&activeUser?.uid!==PARENT_UID)throw Error('Accès réservé à la famille.');
-   const special=Boolean(id&&/^ESE_L14_0[1-3]$/.test(id));
-   const r=await cloudCallable(special?'getSpanishNov12TrainingProgress':'getSpanishEntTrainingProgress')(id?{id}:{});
-   if(id){
-    if(!('attempt'in (r.data||{})))throw Error('Copie indisponible.');
-   }else{
-    if(!Array.isArray(r.data?.attempts))throw Error('Suivi des exercices indisponible.');
-    // Les 13 premiers cours restent intacts ; ajouter les résultats du cours 14
-    // uniquement après confirmation de leur lecture privée côté Firebase.
-    try{
-     const newer=await cloudCallable('getSpanishNov12TrainingProgress')({});
-     if(Array.isArray(newer.data?.attempts)){
-      const known=new Set(r.data.attempts.map(item=>item.id));
-      r.data.attempts.push(...newer.data.attempts.filter(item=>!known.has(item.id)));
-     }
-    }catch(error){
-     // La leçon reste lisible même en cas de déploiement Firebase différé.
-     console.warn('Suivi du 12 novembre temporairement indisponible',error?.code||error?.message);
+   if(id&&window.TIM_ES12_STUDY?.isId(id)){
+    const known=(window.__CLOUD_ATTEMPTS||[]).find(a=>a.id===id);
+    if(activeUser.uid===PARENT_UID){
+     const snapshot=await getDoc(doc(db,'privateAttempts',id));
+     return {attempt:snapshot.exists()?window.TIM_ES12_STUDY.officialReport(id,snapshot.data()):null};
     }
-    window.__TIM_SPANISH_ENT_XP=r.data.attempts.map(item=>({
+    const local=window.TIM_ES12_STUDY.saved(id);
+    if(local)return {attempt:local};
+    const released=known?.correctionStatus==='released'&&known.answers?.length===10;
+    return {attempt:released?window.TIM_ES12_STUDY.officialReport(id,known):null};
+   }
+   const response=await cloudCallable('getSpanishEntTrainingProgress')(id?{id}:{});
+   if(id){
+    if(!('attempt'in (response.data||{})))throw Error('Copie indisponible.');
+   }else{
+    if(!Array.isArray(response.data?.attempts))throw Error('Suivi des exercices indisponible.');
+    // Les notes du 12 novembre sont déjà dans attempts et privateAttempts,
+    // collections Firebase utilisées par les autres matières.
+    const known=new Set(response.data.attempts.map(a=>a.id));
+    for(const a of window.__CLOUD_ATTEMPTS||[]){
+     if(!window.TIM_ES12_STUDY?.isId(a.id)||known.has(a.id))continue;
+     const local=activeUser.uid===TIM_UID?window.TIM_ES12_STUDY.saved(a.id):null;
+     response.data.attempts.push({id:a.id,lessonId:'10099~6400554',
+      score:Number.isFinite(a.score)?a.score:(local?.score??null),total:10,xp:0,
+      submittedAt:a.date,items:a.answers||[],category:'Entraînement du 12 novembre'});
+    }
+    window.__TIM_SPANISH_ENT_XP=response.data.attempts.map(item=>({
      id:item.id,xp:Number(item.xp||0),submittedAt:item.submittedAt||''
     }));
     document.dispatchEvent(new Event('tim-spanish-ent-xp-progress'));
    }
-   return r.data;
+   return response.data;
   },
   trainingProgress:loadSpanishProgress,
   parentReport:async()=>{
