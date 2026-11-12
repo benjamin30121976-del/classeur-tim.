@@ -35,7 +35,7 @@ async function checkZip(file){
  for(const item of data.documents){
   if(!/^[A-Z0-9_]{2,20}$/.test(item.docId||'')||seen.has(item.docId))throw Error('Doublon ou référence de pièce jointe invalide.');
   seen.add(item.docId);
-  if(typeof item.zipPath!=='string'||!/^pieces_jointes\/[A-Za-z0-9_ -]+\.pdf$/i.test(item.zipPath))throw Error('Chemin PDF non autorisé.');
+  if(typeof item.zipPath!=='string'||!/^pieces_jointes\/[^/\\]{1,150}\.pdf$/i.test(item.zipPath))throw Error('Chemin PDF non autorisé.');
   if(!isPdf(item.displayName)||!isPdf(item.zipPath)||!Number.isInteger(item.size)||item.size<20||item.size>MAX_DOC||
      !/^[0-9a-f]{64}$/.test(item.sha256||'')||
      !Array.isArray(item.targetDates)||!item.targetDates.length||item.targetDates.length>3)
