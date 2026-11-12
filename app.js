@@ -621,6 +621,7 @@ function makeAttachmentAdminPanel(){
 function parentAdminPanels(root){
  if(window.TIM_ENT_PRIVATE_IMPORT?.render&&window.__TIM_BRIDGE?.attachments)root.prepend(window.TIM_ENT_PRIVATE_IMPORT.render({lessons:DATA.lessons,api:window.__TIM_BRIDGE.attachments}));
  if(window.__TIM_BRIDGE?.attachments)root.prepend(makeAttachmentAdminPanel());
+ if(window.TIM_MATH_PDF_BULK_IMPORT?.render&&window.__TIM_BRIDGE?.attachments)root.prepend(window.TIM_MATH_PDF_BULK_IMPORT.render());
  const test=E('div','panel');test.append(E('h3','','Contrôle technique de Firebase'),E('p','small','Ce test crée un résultat fictif dans la collection séparée test_attempts, le lit, vérifie le verrouillage, puis le supprime. Il ne touche à aucun résultat de Tim.'));
  const status=E('p','subtle','Aucun test effectué.');
  const run=button('Tester Firebase sans toucher aux notes',async()=>{
