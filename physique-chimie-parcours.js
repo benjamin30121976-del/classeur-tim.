@@ -79,12 +79,109 @@ function sections(l){
   return '';
  }).join('');
 }
+
+/* Ces schémas sont pédagogiques : ils ne remplacent pas les figures PDF de la professeure. */
+const GLOSSARY={
+ PC_BIS01:[['Atome','Une partie minuscule de la matière.'],['Noyau','Le centre de l’atome.'],['Proton','Une particule positive dans le noyau.'],['Neutron','Une particule sans charge dans le noyau.'],['Électron','Une particule négative autour du noyau.']],
+ PC_BIS02:[['Neutre','Qui a autant de charges positives que négatives.'],['Ion','Un atome ou un groupe d’atomes qui a gagné ou perdu des électrons.'],['Charge','Le signe électrique positif (+) ou négatif (−).']],
+ PC_BIS03:[['Molécule','Un groupe d’atomes reliés entre eux.'],['Symbole','Une ou deux lettres pour nommer un élément, comme H ou Cl.'],['Indice','Le petit chiffre placé après une lettre dans une formule.']],
+ PC_BIS04:[['Axe','Une ligne graduée du graphique.'],['Graduation','Un repère numéroté sur l’axe.'],['Unité','Ce que l’on mesure : minute, degré, centimètre…']],
+ PC_BIS05:[['Réactif de test','Le produit que le professeur ajoute pour reconnaître un ion.'],['Précipité','Un solide qui apparaît dans le liquide pendant le test.']],
+ PC_BIS06:[['Réactifs','Les substances présentes au départ.'],['Produits','Les substances obtenues après la réaction.'],['Dihydrogène','Un gaz noté H₂, avec deux atomes d’hydrogène par molécule.']],
+ PC_BIS07:[['Équation','Une écriture avec une flèche pour représenter une réaction.'],['Coefficient','Le grand chiffre DEVANT une formule, qui compte les molécules.'],['Indice','Le petit chiffre DANS une formule : on ne le change pas.']]
+};
+function glossary(id){
+ const words=GLOSSARY[id]||[];
+ if(!words.length)return '';
+ return '<section class="math-reading-section pc-vocabulary"><h3>Les mots à connaître avant de commencer</h3><dl>'+
+ words.map(([w,d])=>'<dt>'+esc(w)+'</dt><dd>'+esc(d)+'</dd>').join('')+'</dl></section>';
+}
+const SHAPES={
+ PC_BIS01:
+ '<svg viewBox="0 0 640 235" role="img" aria-label="Schéma simple d’un atome : le noyau avec protons et neutrons au centre, les électrons négatifs autour." xmlns="http://www.w3.org/2000/svg">'+
+ '<ellipse cx="315" cy="112" rx="176" ry="74" fill="none" stroke="#a4bdd6" stroke-width="3" stroke-dasharray="8 8"/>'+
+ '<circle cx="315" cy="112" r="52" fill="#eef3fa" stroke="#566b87" stroke-width="3"/>'+
+ '<circle cx="293" cy="100" r="19" fill="#d87064"/><circle cx="330" cy="95" r="19" fill="#9cacc0"/><circle cx="319" cy="125" r="19" fill="#d87064"/>'+
+ '<text x="293" y="106" text-anchor="middle" fill="white" font-size="20" font-weight="bold">+</text><text x="330" y="101" text-anchor="middle" fill="#23364e" font-size="18">0</text><text x="319" y="131" text-anchor="middle" fill="white" font-size="20" font-weight="bold">+</text>'+
+ '<circle cx="156" cy="80" r="16" fill="#3b7cbb"/><circle cx="478" cy="137" r="16" fill="#3b7cbb"/>'+
+ '<text x="156" y="87" text-anchor="middle" font-size="21" fill="white">−</text><text x="478" y="144" text-anchor="middle" font-size="21" fill="white">−</text>'+
+ '<text x="314" y="187" text-anchor="middle" font-size="18" fill="#223b58" font-weight="bold">NOYAU</text><text x="314" y="209" text-anchor="middle" font-size="15" fill="#344c69">protons (+) et neutrons (0)</text>'+
+ '<text x="85" y="58" text-anchor="middle" font-size="16" fill="#244e7d">électron (−)</text><path d="M116 61L143 75" stroke="#3b7cbb" stroke-width="2"/>'+
+ '<text x="534" y="105" text-anchor="middle" font-size="16" fill="#244e7d">électron (−)</text><path d="M503 112L485 125" stroke="#3b7cbb" stroke-width="2"/>'+
+ '</svg>',
+ PC_BIS02:
+ '<svg viewBox="0 0 640 220" role="img" aria-label="Sodium neutre : 11 protons et 11 électrons. Après perte d’un électron, ion sodium positif : 11 protons et 10 électrons." xmlns="http://www.w3.org/2000/svg">'+
+ '<rect x="22" y="20" width="235" height="170" rx="14" fill="#eef6fc" stroke="#a5c2d9"/>'+
+ '<text x="139" y="56" text-anchor="middle" font-size="23" fill="#244360" font-weight="bold">Sodium Na</text>'+
+ '<text x="139" y="91" text-anchor="middle" font-size="18" fill="#244360">11 protons (+)</text><text x="139" y="122" text-anchor="middle" font-size="18" fill="#244360">11 électrons (−)</text><text x="139" y="159" text-anchor="middle" font-size="18" fill="#315a75" font-weight="bold">Neutre</text>'+
+ '<path d="M268 106H363" stroke="#3a6789" stroke-width="4"/><path d="M352 95L364 106L352 117" fill="none" stroke="#3a6789" stroke-width="4"/><text x="315" y="76" text-anchor="middle" font-size="15" fill="#2a4c6a">perd 1</text><text x="315" y="93" text-anchor="middle" font-size="15" fill="#2a4c6a">électron</text>'+
+ '<rect x="378" y="20" width="240" height="170" rx="14" fill="#fff4e7" stroke="#d5b18d"/><text x="498" y="56" text-anchor="middle" font-size="23" fill="#6e4b28" font-weight="bold">Ion Na⁺</text>'+
+ '<text x="498" y="91" text-anchor="middle" font-size="18" fill="#6e4b28">11 protons (+)</text><text x="498" y="122" text-anchor="middle" font-size="18" fill="#6e4b28">10 électrons (−)</text><text x="498" y="159" text-anchor="middle" font-size="18" fill="#855222" font-weight="bold">Positif (+)</text>'+
+ '</svg>',
+ PC_BIS03:
+ '<svg viewBox="0 0 640 230" role="img" aria-label="Une molécule d’eau H2O possède deux atomes d’hydrogène H et un atome d’oxygène O. Une molécule de dioxyde de carbone CO2 possède un carbone et deux oxygènes." xmlns="http://www.w3.org/2000/svg">'+
+ '<text x="164" y="31" text-anchor="middle" font-size="22" font-weight="bold" fill="#294768">Eau : H₂O</text>'+
+ '<path d="M115 124L165 98L210 124" fill="none" stroke="#8497a9" stroke-width="12" stroke-linecap="round"/>'+
+ '<circle cx="105" cy="130" r="34" fill="#f7f8fb" stroke="#8198af" stroke-width="3"/><circle cx="165" cy="89" r="42" fill="#d65b52"/><circle cx="223" cy="130" r="34" fill="#f7f8fb" stroke="#8198af" stroke-width="3"/>'+
+ '<text x="105" y="139" text-anchor="middle" fill="#334d6b" font-size="27" font-weight="bold">H</text><text x="165" y="98" text-anchor="middle" fill="white" font-size="30" font-weight="bold">O</text><text x="223" y="139" text-anchor="middle" fill="#334d6b" font-size="27" font-weight="bold">H</text>'+
+ '<text x="164" y="199" text-anchor="middle" font-size="17" fill="#294768">2 H + 1 O</text>'+
+ '<text x="472" y="31" text-anchor="middle" font-size="22" font-weight="bold" fill="#294768">Dioxyde de carbone : CO₂</text>'+
+ '<path d="M383 125H560" stroke="#8497a9" stroke-width="12"/><circle cx="385" cy="125" r="37" fill="#d65b52"/><circle cx="472" cy="125" r="40" fill="#41474e"/><circle cx="559" cy="125" r="37" fill="#d65b52"/>'+
+ '<text x="385" y="135" text-anchor="middle" font-size="29" fill="white" font-weight="bold">O</text><text x="472" y="135" text-anchor="middle" font-size="29" fill="white" font-weight="bold">C</text><text x="559" y="135" text-anchor="middle" font-size="29" fill="white" font-weight="bold">O</text>'+
+ '<text x="472" y="199" text-anchor="middle" font-size="17" fill="#294768">1 C + 2 O</text>'+
+ '</svg>',
+ PC_BIS04:
+ '<svg viewBox="0 0 640 260" role="img" aria-label="Graphique du temps en minutes sur l’axe horizontal et de la température en degrés Celsius sur l’axe vertical. Un point est marqué à 5 minutes et 30 degrés." xmlns="http://www.w3.org/2000/svg">'+
+ '<path d="M96 18V210H565" stroke="#2c4b6a" stroke-width="3" fill="none"/>'+
+ '<g stroke="#d5e0eb" stroke-width="1"><path d="M96 165H540M96 120H540M96 75H540M96 30H540M172 18V210M248 18V210M324 18V210M400 18V210M476 18V210M552 18V210"/></g>'+
+ '<g fill="#2b4968" font-size="16"><text x="75" y="214">0</text><text x="60" y="170">10</text><text x="60" y="125">20</text><text x="60" y="80">30</text><text x="60" y="35">40</text><text x="92" y="233">0</text><text x="168" y="233">1</text><text x="244" y="233">2</text><text x="320" y="233">3</text><text x="396" y="233">4</text><text x="472" y="233">5</text><text x="548" y="233">6</text></g>'+
+ '<circle cx="476" cy="75" r="9" fill="#c85e5a" stroke="white" stroke-width="2"/><path d="M476 75V210M476 75H96" stroke="#be5d59" stroke-width="2" stroke-dasharray="7 6"/>'+
+ '<text x="516" y="60" font-size="17" font-weight="bold" fill="#9b413c">(5 ; 30)</text>'+
+ '<text x="316" y="255" text-anchor="middle" fill="#2b4968" font-size="16">Temps (min)</text>'+
+ '<text x="98" y="12" fill="#2b4968" font-size="15">Température (°C)</text>'+
+ '</svg>',
+ PC_BIS05:
+ '<svg viewBox="0 0 640 205" role="img" aria-label="Deux tests d’identification : avec la soude, les ions cuivre peuvent donner un solide bleu ; avec le nitrate d’argent, les ions chlorure peuvent donner un solide blanc." xmlns="http://www.w3.org/2000/svg">'+
+ '<rect x="17" y="15" rx="15" width="298" height="175" fill="#eef6fc" stroke="#b3cee2"/><rect x="325" y="15" rx="15" width="298" height="175" fill="#f2f5fa" stroke="#c1cfdd"/>'+
+ '<text x="167" y="45" text-anchor="middle" font-size="19" fill="#284966" font-weight="bold">Ion cuivre Cu²⁺</text><text x="167" y="75" text-anchor="middle" font-size="16" fill="#284966">Test avec la soude</text>'+
+ '<rect x="110" y="92" width="114" height="55" rx="8" fill="#4388c2" stroke="#36729f"/><text x="167" y="126" text-anchor="middle" font-size="19" font-weight="bold" fill="white">Bleu</text>'+
+ '<text x="167" y="174" text-anchor="middle" font-size="15" fill="#284966">Un solide peut apparaître</text>'+
+ '<text x="475" y="45" text-anchor="middle" font-size="19" fill="#284966" font-weight="bold">Ion chlorure Cl⁻</text><text x="475" y="75" text-anchor="middle" font-size="16" fill="#284966">Test avec le nitrate d’argent</text>'+
+ '<rect x="418" y="92" width="114" height="55" rx="8" fill="#fff" stroke="#7e94a8" stroke-width="2"/><text x="475" y="126" text-anchor="middle" font-size="19" font-weight="bold" fill="#334c65">Blanc</text>'+
+ '<text x="475" y="174" text-anchor="middle" font-size="15" fill="#284966">Un solide peut apparaître</text>'+
+ '</svg>',
+ PC_BIS06:
+ '<svg viewBox="0 0 640 190" role="img" aria-label="Schéma conceptuel d’une réaction : fer et acide sont les réactifs ; des ions fer et du dihydrogène sont des produits possibles dans les conditions étudiées." xmlns="http://www.w3.org/2000/svg">'+
+ '<rect x="15" y="20" width="235" height="138" rx="14" fill="#eef6fc" stroke="#a9c4dc"/>'+
+ '<text x="132" y="50" text-anchor="middle" fill="#264965" font-size="18" font-weight="bold">DÉPART</text><text x="132" y="88" text-anchor="middle" fill="#264965" font-size="20">Fer + acide</text><text x="132" y="123" text-anchor="middle" fill="#264965" font-size="16">Réactifs</text>'+
+ '<path d="M263 90H375" stroke="#3a6b8c" stroke-width="5"/><path d="M360 77L377 90L360 103" stroke="#3a6b8c" stroke-width="5" fill="none"/>'+
+ '<rect x="388" y="20" width="235" height="138" rx="14" fill="#edf8f1" stroke="#a4cdb3"/>'+
+ '<text x="506" y="50" text-anchor="middle" fill="#27583f" font-size="18" font-weight="bold">ARRIVÉE</text><text x="506" y="87" text-anchor="middle" fill="#27583f" font-size="18">Ions fer + H₂</text><text x="506" y="123" text-anchor="middle" fill="#27583f" font-size="16">Produits</text>'+
+ '</svg>',
+ PC_BIS07:
+ '<svg viewBox="0 0 640 200" role="img" aria-label="Équation équilibrée 2 H2 plus O2 donne 2 H2O : quatre atomes d’hydrogène et deux atomes d’oxygène des deux côtés." xmlns="http://www.w3.org/2000/svg">'+
+ '<rect x="12" y="15" width="290" height="152" rx="15" fill="#edf5fc" stroke="#adc4dd"/>'+
+ '<rect x="338" y="15" width="290" height="152" rx="15" fill="#edf8f1" stroke="#a7cdb4"/>'+
+ '<text x="157" y="49" text-anchor="middle" font-size="18" fill="#254f74" font-weight="bold">AVANT</text><text x="157" y="94" text-anchor="middle" font-size="29" fill="#254f74" font-weight="bold">2 H₂ + O₂</text>'+
+ '<text x="157" y="130" text-anchor="middle" font-size="17" fill="#254f74">4 H et 2 O</text>'+
+ '<path d="M303 92H337" stroke="#477999" stroke-width="4"/><path d="M326 82L339 92L326 102" stroke="#477999" stroke-width="3" fill="none"/>'+
+ '<text x="483" y="49" text-anchor="middle" font-size="18" fill="#28583f" font-weight="bold">APRÈS</text><text x="483" y="94" text-anchor="middle" font-size="29" fill="#28583f" font-weight="bold">2 H₂O</text>'+
+ '<text x="483" y="130" text-anchor="middle" font-size="17" fill="#28583f">4 H et 2 O</text>'+
+ '<text x="320" y="189" text-anchor="middle" font-size="16" fill="#2b4c69">Même nombre d’atomes de chaque côté</text>'+
+ '</svg>'
+};
+function diagram(id){
+ const svg=SHAPES[id];if(!svg)return '';
+ return '<figure class="pc-illustration">'+svg+
+ '<figcaption>Schéma simplifié pour comprendre la leçon ; ce n’est pas un document original du professeur.</figcaption></figure>';
+}
+
 function lesson(id){
  const l=byId(id);if(!l)return;
  const i=gById(id);groupIndex=i;selected=id;
  const g=GROUPS[i];
  draw(header(l.title,'Lis la leçon du début à la fin.')+back('Retour aux leçons du chapitre')+
- '<article class="spx-panel math-reading-lesson">'+sections(l)+'</article>'+
+ '<article class="spx-panel math-reading-lesson">'+glossary(id)+diagram(id)+sections(l)+'</article>'+
  '<div class="math-reading-actions"><h3>Après la leçon</h3>'+
  btn('data-pc-help',id,'Je n’ai pas compris')+'</div>'+
  '<details class="math-reading-docs"><summary>Documents et exercices du professeur (ENT)</summary>'+
