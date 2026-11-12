@@ -683,6 +683,22 @@ async function startSession(user){
    if(!r.data?.task||r.data.task.questions?.length!==10)throw Error('Les dix questions sont indisponibles.');
    return r.data;
   },
+  spanishEntTrainingPreview:async(id,answers,translationsUsed)=>{
+   if(activeUser?.uid!==PARENT_UID)throw Error('Essai espagnol réservé au compte Parent.');
+   if(!/^ESE_L(?:0[1-9]|1[0-3])_0[1-3]$/.test(String(id||''))||
+      !Array.isArray(answers)||answers.length!==10||
+      !Array.isArray(translationsUsed)||translationsUsed.length!==10||
+      translationsUsed.some(v=>typeof v!=='boolean')||
+      answers.some(v=>!((Number.isInteger(v)&&v>=0&&v<=3)||
+        (typeof v==='string'&&v.trim().length>0&&v.length<=200))))
+    throw Error('Les dix réponses espagnoles sont nécessaires.');
+   const r=await cloudCallable('previewSpanishEntTraining')({id,answers,translationsUsed});
+   if(r.data?.practice!==true||r.data?.saved!==false||r.data?.xp!==0||
+      !Number.isFinite(r.data.score)||r.data.score<0||r.data.score>10||
+      !Array.isArray(r.data.items)||r.data.items.length!==10)
+    throw Error('La correction de l’essai Parent espagnol est indisponible.');
+   return r.data;
+  },
   spanishEntTrainingSubmit:async(id,answers,translationsUsed)=>{
    if(activeUser?.uid!==TIM_UID)throw Error('Seul Tim peut valider.');
    if(!/^ESE_L(?:0[1-9]|1[0-3])_0[1-3]$/.test(String(id||''))||
