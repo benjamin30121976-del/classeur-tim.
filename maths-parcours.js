@@ -12,6 +12,45 @@ const GROUPS=[
  {name:'Automatismes',start:19,end:21,keywords:/automatism/},
  {name:'Révisions et évaluations',start:22,end:23,keywords:/evaluation|controle|revisio|correction/}
 ];
+
+/* Compléments de l'ENT du 10/11/2026 : lecture seule, sans notes ni XP. */
+const TIM_ENT_NEW=[
+ {id:'TIM_ENT_20261106',date:'2026-11-06',title:'6 novembre — Automatismes 5 et factorisation',chapter:'Calcul littéral',teacher:'Test 5 sur les automatismes Leçon : factoriser une expression littérale',work:'Finir de corriger son évaluation',source:'Séance ENT 10099~6402971 ; devoir ENT 10099~214457',note:'Ces informations figuraient dans l’export ENT du 10 novembre, après les premières captures prises pendant la séance.'},
+ {id:'TIM_ENT_20261109',date:'2026-11-09',title:'9 novembre — Correction et factorisation',chapter:'Calcul littéral',teacher:'Correction du test 5 sur les automatismes Correction ex 35 p.77 Exercices sur la factorisation : n°36 et 37 p.77',work:'Faire exercice n°35 p.77',source:'Séance ENT 10099~6402906 ; devoir ENT 10099~214606',note:'Les énoncés et corrigés officiels de la page 77 ne sont pas disponibles.'}
+];
+function mathEntList(){
+ const old=ent.filter(e=>!TIM_ENT_NEW.some(v=>String(e.id)===v.id));
+ return [...old,...TIM_ENT_NEW];
+}
+function viewTimEnt(id){
+ const x=TIM_ENT_NEW.find(v=>v.id===id);if(!x)return;
+ selected=id;group=GROUPS[2];
+ draw(header('Cours ENT · '+x.title,'Retranscription exacte du cahier de textes de Mme Pialet.')+
+ back('Retour à tous les cours ENT')+
+ '<article class="spx-panel math-reading-lesson">'+
+ '<section class="math-reading-section"><h3>En classe — texte du professeur</h3><p>'+esc(x.teacher)+'</p></section>'+
+ '<section class="math-reading-section"><h3>Travail demandé — texte ENT</h3><p>'+esc(x.work)+'</p></section>'+
+ '<section class="math-reading-section"><h3>Source et limites</h3><p>'+esc(x.source)+'. '+esc(x.note)+'</p></section></article>'+
+ '<div class="math-reading-actions"><h3>Comprendre la factorisation</h3>'+
+ btn('data-math-factor','lesson','Lire la leçon simplifiée')+'</div>',viewEntChronology);
+ wire();
+}
+function viewTimFactorisation(){
+ selected='TIM_FACTORISATION_BIS';group=GROUPS[2];
+ draw(header('Factoriser une expression littérale','Cours simplifié à partir des séances des 6 et 9 novembre · distinct du texte original ENT.')+
+ back('Retour au chapitre Calcul littéral')+
+ '<article class="spx-panel math-reading-lesson">'+
+ '<section class="math-reading-section"><h3>Comprendre</h3><p>Factoriser, c’est transformer une somme ou une différence en produit, grâce à un facteur commun. C’est le contraire de développer.</p><p>Développer : 3(x + 4) = 3x + 12.<br>Factoriser : <strong>3x + 12 = 3(x + 4)</strong>.</p></section>'+
+ '<section class="math-reading-section"><h3>La méthode</h3><ol><li>Dans 6x + 15, repère le facteur commun : 3.</li><li>Écris 6x = 3 × 2x et 15 = 3 × 5.</li><li>Place le facteur devant la parenthèse : <strong>6x + 15 = 3(2x + 5)</strong>.</li><li>Vérifie en développant : 3 × 2x + 3 × 5 = 6x + 15.</li></ol></section>'+
+ '<section class="math-reading-section"><h3>Trois exemples corrigés</h3><p>5x² + 10x = <strong>5x(x + 2)</strong>.</p><p>8x − 12 = <strong>4(2x − 3)</strong>.</p><p>7(x + 2) + 3(x + 2) = <strong>10(x + 2)</strong>.</p></section>'+
+ '<section class="math-reading-section"><h3>Attention aux signes</h3><p>4x − 8 = 4(x − 2), et non 4(x + 2). Développe pour vérifier.</p></section>'+
+ '<section class="math-reading-section"><h3>Deux vérifications sans note</h3><p>Factorise 9x + 18 : <strong>9(x + 2)</strong>.</p><p>Factorise 12x − 8 : <strong>4(3x − 2)</strong>.</p><p>Ces exemples ne sont pas les exercices 35, 36 et 37 du manuel, dont les énoncés restent manquants.</p></section>'+
+ '</article><details class="math-reading-docs"><summary>Cours originaux du professeur (ENT)</summary>'+
+ TIM_ENT_NEW.map(x=>btn('data-math-open-original',x.id,x.title)).join('')+
+ '</details><p class="small">Aucune nouvelle évaluation, note ou tentative créée.</p>',()=>category(GROUPS[2]));
+ wire();
+}
+
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const nrm=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 const suffix=x=>String(x).replace(/^MBIS/,'');
@@ -33,7 +72,7 @@ function groupOfEnt(lesson){
  if(/fraction|puissanc|relatif|calcul numerique|ecriture scientifique/.test(text))return GROUPS[0];
  return null;
 }
-function entFor(g){return ent.filter(x=>groupOfEnt(x)===g);}
+function entFor(g){return mathEntList().filter(x=>groupOfEnt(x)===g);}
 function exFor(g){const ids=new Set(entFor(g).map(x=>x.id));return exercises.filter(x=>x.subject==='Mathématiques'&&ids.has(x.lesson)&&x.category!=='bonus');}
 function header(title,sub){return '<header class="spx-hero"><span class="spx-kicker">MATHÉMATIQUES · CLASSEUR DE TIM</span><h2>'+esc(title)+'</h2><p>'+esc(sub)+'</p></header>';}
 function back(label){return '<button type="button" class="spx-back" data-math-back>← '+esc(label)+'</button>';}
@@ -60,7 +99,8 @@ function wire(){
  root.querySelectorAll('[data-math-ex]').forEach(b=>b.onclick=()=>viewEntExercises(b.dataset.mathEx));
  root.querySelectorAll('[data-math-programs]').forEach(b=>b.onclick=()=>viewProgramsOriginal());
  root.querySelectorAll('[data-math-train]').forEach(b=>b.onclick=()=>viewTraining(b.dataset.mathTrain));
- root.querySelectorAll('[data-math-open-original]').forEach(b=>b.onclick=()=>options.original(b.dataset.mathOpenOriginal));
+ root.querySelectorAll('[data-math-open-original]').forEach(b=>b.onclick=()=>TIM_ENT_NEW.some(x=>x.id===b.dataset.mathOpenOriginal)?viewTimEnt(b.dataset.mathOpenOriginal):options.original(b.dataset.mathOpenOriginal));
+ root.querySelectorAll('[data-math-factor]').forEach(b=>b.onclick=()=>viewTimFactorisation());
  root.querySelectorAll('[data-math-open-exercise]').forEach(b=>b.onclick=()=>options.exercise(b.dataset.mathOpenExercise));
 }
 function home(){
@@ -70,18 +110,18 @@ function home(){
  '<div class="math-chapter-list">'+GROUPS.map((g,i)=>{
   const lessons=bis.filter(x=>groupOfId(x.id)===g);
   if(!lessons.length)return '';
-  return '<button type="button" class="math-chapter-entry" data-math-group="'+i+'"><strong>'+esc(g.name)+'</strong><span>'+lessons.length+' leçon'+(lessons.length>1?'s':'')+' à lire</span></button>';
+  return '<button type="button" class="math-chapter-entry" data-math-group="'+i+'"><strong>'+esc(g.name)+'</strong><span>'+(lessons.length+(g===GROUPS[2]?1:0))+' leçon'+(lessons.length>1?'s':'')+' à lire</span></button>';
  }).join('')+'</div>'+
  '<details class="math-reading-docs"><summary>Voir les cours du professeur (ENT)</summary>'+
- btn('data-math-all-ent','all','Consulter les '+ent.length+' cours originaux')+'</details>',options.back);
+ btn('data-math-all-ent','all','Consulter les '+mathEntList().length+' cours originaux')+'</details>',options.back);
  wire();
 }
 function viewEntChronology(){
  selected=null;group=null;
- const lessons=ent.slice().sort((a,b)=>String(a.id).localeCompare(String(b.id),'fr'));
+ const lessons=mathEntList().slice().sort((a,b)=>String(a.date||a.id).localeCompare(String(b.date||b.id),'fr'));
  draw(header('Cours ENT de mathématiques · Chronologie','Les cours originaux de Mme Pialet, sans ajout ni remplacement du contenu officiel.')+
  back('Retour aux chapitres')+
- '<section class="spx-panel"><h3>'+lessons.length+' séances ENT conservées</h3><p>Du 14 septembre au 6 novembre 2026 selon les captures reçues. La consigne du devoir du 9 novembre est conservée dans le suivi scolaire ; elle ne constitue pas à elle seule une nouvelle leçon.</p>'+
+ '<section class="spx-panel"><h3>'+lessons.length+' séances ENT conservées</h3><p>Cours d’origine et compléments des 6 et 9 novembre 2026 récupérés dans l’export ENT du 10 novembre. Les énoncés de la page 77 restent manquants.</p>'+
  (lessons.length?lessons.map((x,i)=>'<button class="spx-row" type="button" data-math-open-original="'+esc(x.id)+'"><span class="spx-chip">'+(i+1)+'</span><span><strong>'+esc(x.title)+'</strong><small>'+esc(x.date||x.summary||'Cours ENT')+'</small></span></button>').join(''):'<p>Aucun cours ENT retrouvé.</p>')+
  '</section>',home);
  wire();
@@ -97,7 +137,7 @@ function category(g){
    '<span class="math-lesson-open">'+(done?'Lire la leçon · Évaluation déjà faite':'Lire la leçon')+' →</span></button>';
  }).join('');
  draw(header(g.name,'Choisis une leçon pour la lire.')+back('Tous les chapitres')+
- '<div class="math-lesson-list">'+rows+'</div>',home);
+ '<div class="math-lesson-list">'+rows+(g===GROUPS[2]?'<button type="button" class="math-lesson-entry" data-math-factor="lesson"><strong>Factoriser une expression littérale · 6 et 9 novembre</strong><span class="math-lesson-description">Méthode expliquée et exemples corrigés</span><span class="math-lesson-open">Lire la leçon →</span></button>':'')+'</div>',home);
  wire();
 }
 function listPage(id,title,rows,kind){
