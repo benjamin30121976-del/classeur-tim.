@@ -1,0 +1,70 @@
+name: Déployer les exercices privés espagnol du 12 novembre
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'functions/spanish-nov12-training.mjs'
+      - 'functions/index.mjs'
+      - 'functions/test/spanish-nov12-training.test.mjs'
+      - '.github/workflows/deployer-espagnol-12nov.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verifier-et-publier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier le moteur et les 30 questions
+        run: |
+          node --check functions/index.mjs
+          node --check functions/spanish-nov12-training.mjs
+          node --test functions/test/spanish-nov12-training.test.mjs
+      - name: Vérifier les identifiants Firebase sans révéler de secret
+        id: auth
+        shell: bash
+        run: |
+          if [ -n "$FIREBASE_SERVICE_ACCOUNT" ]; then
+            echo 'method=service' >> "$GITHUB_OUTPUT"
+          elif [ -n "$FIREBASE_TOKEN" ]; then
+            echo 'method=token' >> "$GITHUB_OUTPUT"
+          else
+            echo 'method=none' >> "$GITHUB_OUTPUT"
+            echo "::warning::Aucun identifiant Firebase de publication : fonctions non déployées."
+          fi
+      - name: Installer le CLI Firebase et ses dépendances
+        if: steps.auth.outputs.method != 'none'
+        run: |
+          npm install --prefix functions --ignore-scripts --no-audit --no-fund
+          npm install --no-save --no-audit --no-fund firebase-tools
+      - name: Déployer seulement les 4 fonctions du 12 novembre
+        if: steps.auth.outputs.method != 'none'
+        shell: bash
+        run: |
+          set -euo pipefail
+          DEPLOY="functions:getSpanishNov12TrainingTask,functions:previewSpanishNov12Training,functions:submitSpanishNov12Training,functions:getSpanishNov12TrainingProgress"
+          if [ "${{ steps.auth.outputs.method }}" = "service" ]; then
+            KEY="$RUNNER_TEMP/firebase-tim-12nov.json"
+            trap 'rm -f "$KEY"' EXIT
+            printf '%s' "$FIREBASE_SERVICE_ACCOUNT" > "$KEY"
+            chmod 600 "$KEY"
+            export GOOGLE_APPLICATION_CREDENTIALS="$KEY"
+            npx firebase deploy --only "$DEPLOY" --project classeur-ba3e7 --non-interactive
+          else
+            npx firebase deploy --only "$DEPLOY" --project classeur-ba3e7 --token "$FIREBASE_TOKEN" --non-interactive
+          fi
+      - name: Résultat de la publication
+        if: always()
+        run: |
+          if [ "${{ steps.auth.outputs.method }}" = "none" ]; then
+            echo "Tests exécutés. Publication Firebase non réalisée (identifiants absents)." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "Consulter le résultat de l'étape de déploiement avant d'affirmer que les exercices sont disponibles sur le site." >> "$GITHUB_STEP_SUMMARY"
+          fi
