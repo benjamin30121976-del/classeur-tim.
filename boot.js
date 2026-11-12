@@ -1109,6 +1109,12 @@ async function startSession(user){
     summary.textContent=exerciseTitle+' · '+score+' · '+(isAutomatic?'Corrigé immédiatement':isReleased?'Correction autorisée':'Correction en attente')+(isMission&&Number.isFinite(item.xp)?' · '+(item.xp>=0?'+':'')+item.xp+' XP':'');
     summary.style.cssText='margin:5px 0 10px;color:#cbd9ee';
     line.append(heading,summary);
+    if(/^ESE_L14_0[1-3]$/.test(String(item.id||''))&&Number.isInteger(item.translationHelpCount)){
+     const help=document.createElement('p');
+     help.textContent='Aide de traduction : '+item.translationHelpCount+' question(s) sur 10, sans pénalité.';
+     help.style.cssText='margin:5px 0 10px;color:#cbd9ee';
+     line.append(help);
+    }
     if(item.orphan){
      const warning=document.createElement('small');
      warning.textContent='Détail enregistré, tentative associée introuvable.';
@@ -1207,6 +1213,12 @@ async function startSession(user){
       if(Number.isFinite(record.score)&&Number.isFinite(record.total)){
        const gained=attemptDoc.exists()?Number(attemptDoc.data()?.xp):Number(item.xp);
        note('Note : '+record.score+'/'+record.total+(isMission&&Number.isFinite(gained)?' · '+(gained>=0?'+':'')+gained+' XP':''),'font-weight:800;font-size:17px');
+      }
+      if(/^ESE_L14_0[1-3]$/.test(String(item.id||''))){
+       note(Number.isInteger(record.translationHelpCount)?
+        'Traduction française affichée pour '+record.translationHelpCount+' question(s) sur 10, sans pénalité.':
+        'Nombre de traductions non enregistré pour cette copie ; aucune valeur estimée.',
+        'font-size:14px;color:#cbd9ee');
       }
       const answers=Array.isArray(record.answers)?record.answers:[];
       if(!answers.length){
