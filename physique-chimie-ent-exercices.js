@@ -74,8 +74,17 @@ function correction(slot,report){
   card.append(E('p','', 'Explication : '+item.explanation));
   slot.append(card);
  }
- const hint=E('p','','Tu peux relire la leçon BIS correspondante pour comprendre les erreurs.');
+ const hint=E('p','',report.score===10
+  ?'Toutes les réponses sont correctes. Tu peux relire la règle pour consolider les acquis.'
+  :'Pour chaque erreur, compare ta réponse, la correction et la règle de la leçon BIS.');
  hint.style.cssText=noteStyle;slot.append(hint);
+ const ref=report.lessonToReview||
+  (report.id==='PC_ENT_MOLECULES'?'PC_BIS03':'PC_BIS01');
+ if(/^PC_BIS0[1-7]$/.test(String(ref))){
+  const link=B('Revoir la leçon BIS liée à cet exercice',()=>{
+   window.TIM_PEDAGOGY_NAVIGATE?.('Physique-chimie',ref);
+  });link.style.cssText=btnStyle+';width:100%';slot.append(link);
+ }
 }
 async function savedCopy(slot,id){
  try{
