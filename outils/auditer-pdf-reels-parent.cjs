@@ -171,7 +171,7 @@ async function verify(browser,device,viewport){
    const rendered=await page.waitForFunction(()=>{
       const root=document.querySelector('#matieres-content article.math-reading-lesson [data-tim-thales-original-pdf]');
       const canvas=root?.querySelector('canvas'),label=root?.querySelector('.pc-pdf-toolbar span')?.textContent||'';
-      return !!canvas&&canvas.width>0&&canvas.height>0&&/^Page \\d+ \\/ \\d+$/.test(label);
+      return !!canvas&&canvas.width>0&&canvas.height>0&&/^Page \d+ \/ \d+$/.test(label);
     },undefined,{timeout:35000}).then(()=>true).catch(()=>false);
    assert(rendered,device+' '+target.label+' : le PDF d origine ne s affiche pas automatiquement dans la lecon');
    console.log('OK '+device+' : '+target.label+' affiche automatiquement le PDF de Thales dans le corps du cours.');
