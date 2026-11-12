@@ -87,3 +87,20 @@ export function nov12Evaluate(id,answers,translationsUsed){
  return {id,score,total:10,xp,items,errorCounts,translationHelpCount:translationsUsed.filter(Boolean).length};
 }
 export function nov12TaskIds(){return [1,2,3].map(n=>'ESE_L14_0'+n);}
+
+/* Format habituel de publication Parent : exercices persistés dans Firestore,
+   et évalués par la fonction déjà publiée submitTimExercise.
+   Cette méthode n'a besoin d'aucune nouvelle clé ni fonction Firebase. */
+export function nov12ForParentImport(){
+ return BANK.map((items,i)=>({
+  id:'ESE_L14_0'+(i+1),lesson:'L14',subject:'Espagnol',
+  title:'12 novembre — '+LABELS[i],topic:'Négations, conjugaison et saisons',
+  level:'Entraînement 10 questions',category:'school',kind:'training',
+  source:'Exercices pédagogiques du classeur — 12 novembre 2026, distincts du devoir officiel',
+  description:'10 questions ; une seule soumission ; 0 XP ; corrections et suivi Parent.',
+  enabled:true,
+  questions:items.map(item=>item.kind==='qcm'
+   ?{type:'mc',q:item.prompt,options:item.choices,right:String(item.right),why:item.explanation,skill:item.category}
+   :{type:'text',q:item.prompt,right:item.right,why:item.explanation,skill:item.category})
+ }));
+}
