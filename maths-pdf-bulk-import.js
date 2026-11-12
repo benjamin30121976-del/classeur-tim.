@@ -9,7 +9,7 @@ const byId='TIM_MATHS_IMPORT_MANIFEST.json';
 const el=(tag,value)=>{const e=document.createElement(tag);if(value!==undefined)e.textContent=String(value);return e;};
 const allowed=()=>!!window.__TIM_PARENT&&!window.__TIM_GUEST&&!!window.__TIM_BRIDGE?.attachments?.upload;
 const isPdf=name=>typeof name==='string'&&/\.pdf$/i.test(name)&&name.length<=120;
-const dateId=date=>'M26S'+date.slice(2).replace(/-/g,'');
+const dateId=date=>'M26S'+date.slice(5,7)+date.slice(8,10);
 const mathSource=l=>l?.subject==='Mathématiques'&&!/^MBIS/i.test(String(l.id||''))&&l.kind!=='bis'&&l.category!=='bis';
 function matchCourse(date){
  if(!/^\d{4}-\d{2}-\d{2}$/.test(date))throw Error('Date ENT incorrecte.');
