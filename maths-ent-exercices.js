@@ -183,11 +183,11 @@ async function mount(id,host){
  checkbox.addEventListener('change',onChange);onChange();
  host.append(submit,report);
 }
-function renderDirectory(host,{showUnavailable=true}={}){
+function renderDirectory(host,{showUnavailable=true,onlyIds=IDS}={}){
  host.replaceChildren();
  host.append(E('h3','Deux exercices ENT originaux remplissables'));
  host.append(E('p','Ces deux fiches proviennent des documents réellement donnés par Mme Pialet, et non d’exercices inventés.'));
- for(const id of IDS){
+ for(const id of onlyIds.filter(x=>IDS.includes(x))){
   const row=E('section','','math-ent-entry');row.style.cssText=style.panel;
   row.append(E('h4',TITLES[id]));
   row.append(E('p',id==='ME_ENT_PROGRAMMES'?'Six programmes de calcul, six expressions à écrire.':'Thalès : trois figures, 15 cases à compléter et des longueurs à calculer.'));
