@@ -717,13 +717,24 @@ async function startSession(user){
   },
   spanishEntTrainingProgress:async(id)=>{
    if(activeUser?.uid!==TIM_UID&&activeUser?.uid!==PARENT_UID)throw Error('Accès réservé à la famille.');
-   const r=await cloudCallable('getSpanishEntTrainingProgress')(id?{id}:{});
+   const special=Boolean(id&&/^ESE_L14_0[1-3]$/.test(id));
+   const r=await cloudCallable(special?'getSpanishNov12TrainingProgress':'getSpanishEntTrainingProgress')(id?{id}:{});
    if(id){
     if(!('attempt'in (r.data||{})))throw Error('Copie indisponible.');
    }else{
     if(!Array.isArray(r.data?.attempts))throw Error('Suivi des exercices indisponible.');
-    // Les XP des entraînements ENT sont comptés séparément des anciens
-    // devoirs, sans jamais modifier leurs tentatives ou leur barème.
+    // Les 13 premiers cours restent intacts ; ajouter les résultats du cours 14
+    // uniquement après confirmation de leur lecture privée côté Firebase.
+    try{
+     const newer=await cloudCallable('getSpanishNov12TrainingProgress')({});
+     if(Array.isArray(newer.data?.attempts)){
+      const known=new Set(r.data.attempts.map(item=>item.id));
+      r.data.attempts.push(...newer.data.attempts.filter(item=>!known.has(item.id)));
+     }
+    }catch(error){
+     // La leçon reste lisible même en cas de déploiement Firebase différé.
+     console.warn('Suivi du 12 novembre temporairement indisponible',error?.code||error?.message);
+    }
     window.__TIM_SPANISH_ENT_XP=r.data.attempts.map(item=>({
      id:item.id,xp:Number(item.xp||0),submittedAt:item.submittedAt||''
     }));
