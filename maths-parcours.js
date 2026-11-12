@@ -156,7 +156,19 @@ function listPage(id,title,rows,kind){
  '</div>'+sectionBtns(id),()=>category(group));
  wire();
 }
-function viewEnt(id){listPage(id,'Leçons ENT — '+groupOfId(id).name,entFor(groupOfId(id)),'original');}
+function viewEnt(id){
+ const g=groupOfId(id);
+ listPage(id,'Leçons ENT — '+g.name,entFor(g),'original');
+ if(window.TIM_INLINE_ENT_DOCUMENTS?.mount){
+  const panel=document.createElement('section');panel.className='math-inline-ent-list';
+  panel.style.cssText='padding:12px;margin:12px 0;border-radius:12px;border:1px solid #c1d2e5;background:#eef5fd;color:#25415e';
+  const host=root.querySelector('.spx.math-path');
+  host?.append(panel);
+  window.TIM_INLINE_ENT_DOCUMENTS.mount(panel,entFor(g).map(e=>e.id),{
+   title:'PDF et schémas originaux — visibles sur cette page',limit:15
+  }).catch(e=>{panel.textContent='Document privé indisponible : '+String(e.message||e);});
+ }
+}
 function viewEntExercises(id){
  const g=groupOfId(id);
  listPage(id,'Exercices ENT du chapitre — '+g.name,exFor(g),'exercise');
@@ -219,6 +231,29 @@ function viewBis(id){
  '</details>':''),
  home);
  wire();
+ // Les documents du professeur restent dans cette leçon, sous la méthode BIS.
+ // L'archive privée est interrogée seulement à l'ouverture du volet.
+ const article=root.querySelector('.math-reading-lesson');
+ if(article&&window.TIM_INLINE_ENT_DOCUMENTS?.mount){
+  const ids=entFor(g).map(e=>String(e.id||'')).filter(Boolean);
+  if(ids.length){
+   const details=document.createElement('details');details.className='math-inline-ent-sources';
+   details.style.cssText='padding:12px;margin:16px 0;border:1px solid #bdd0e2;border-radius:12px;background:#edf5fd;color:#223c59';
+   const summary=document.createElement('summary');
+   summary.textContent='Lire les PDF et schémas ENT dans cette leçon (sans changer de page)';
+   summary.style.cssText='cursor:pointer;font-weight:800;line-height:1.5;min-height:40px';
+   const slot=document.createElement('div');details.append(summary,slot);
+   let mounted=false;
+   details.addEventListener('toggle',()=>{
+    if(!details.open||mounted)return;
+    mounted=true;
+    window.TIM_INLINE_ENT_DOCUMENTS.mount(slot,ids,{
+     title:'Documents originaux du chapitre '+g.name,limit:10
+    }).catch(err=>{slot.textContent='Lecture des PDF indisponible : '+String(err.message||err);});
+   });
+   article.append(details);
+  }
+ }
 }
 
 /* Aides courtes et différentes de la leçon, écrites pour chaque notion. */
