@@ -229,7 +229,7 @@ async function main(){
   for(let i=0;i<10;i++)await entInputs.nth(i).fill('réponse de test');
   await entHost.locator('input[type=checkbox]').check();
   await entHost.getByRole('button',{name:/Corriger mon essai ENT/}).click();
-  await entHost.getByText(/10 \/ 10/).waitFor({state:'visible',timeout:15000});
+  await entHost.locator('.pc-ent-grade').getByText(/10 \/ 10 · 0 XP/).waitFor({state:'visible',timeout:15000});
   const entAudit=await page.evaluate(()=>window.__PC_ENT_AUDIT);
   assert.equal(entAudit.calls,1);
   assert.equal(entAudit.submitted,false);
