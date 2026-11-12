@@ -261,10 +261,11 @@ function spellingWarning(parent){
 function drawCorrection(slot,report,lessonNumber,ensureLesson){
  slot.replaceChildren();
  const score=Number(report.score),items=Array.isArray(report.items)?report.items:[];
+ const parentPractice=report.practice===true;
  const wrapper=css(el('section',undefined,'tim-es-training-result'),ST.panel);
- const title=css(el('h4','Résultat de l’exercice — '+String(score).replace('.',',')+' / 10 points'),ST.title);
+ const title=css(el('h4',(parentPractice?'Simulation Parent — ':'Résultat de l’exercice — ')+String(score).replace('.',',')+' / 10 points'),ST.title);
  wrapper.append(title);
- p(wrapper,'Ce résultat mesure la compréhension de la leçon. Ce n’est pas une note scolaire. XP gagnés : '+Number(report.xp||0).toLocaleString('fr-FR')+' XP.','font-size:15px;font-weight:750;color:#263d89;line-height:1.6');
+ p(wrapper,parentPractice?'Simulation du Parent : 0 XP, aucune tentative ni note enregistrée pour Tim.':'Ce résultat mesure la compréhension de la leçon. Ce n’est pas une note scolaire. XP gagnés : '+Number(report.xp||0).toLocaleString('fr-FR')+' XP.','font-size:15px;font-weight:750;color:#263d89;line-height:1.6');
  if(Number.isInteger(report.translationHelpCount))p(wrapper,'Traduction française consultée pour '+report.translationHelpCount+' question(s) sur 10. Aucune pénalité.','font-weight:850;color:#263d89;font-size:15px');
  const points=item=>Number.isFinite(item.points)?item.points:(item.correct?1:0);
  const errors=items.map((item,i)=>({item,i})).filter(x=>points(x.item)<1);
@@ -318,10 +319,14 @@ function drawCorrection(slot,report,lessonNumber,ensureLesson){
 function renderQuestions(slot,task,lessonNumber,after,ensureLesson){
  slot.replaceChildren();
  const wrapper=css(el('section'),ST.panel);
+ const parentPractice=isParent();
+ const mayAnswer=isTim()||parentPractice;
  const head=css(el('h4',task.title),ST.title);wrapper.append(head);
  p(wrapper,'10 questions. Une question à la fois. Tu peux écouter ou traduire la consigne.','font-size:15px;line-height:1.55;color:#344663;margin:8px 0 14px');
- if(!isTim()){
-  p(wrapper,'Seul Tim peut répondre. Le Parent peut relire les questions, les réponses et les corrections.','font-weight:750;color:#6b4c2a');
+ if(parentPractice){
+  p(wrapper,'Mode essai Parent : répondez aux dix questions, obtenez la correction, mais aucune note ni XP ne seront enregistrés pour Tim. Vous pouvez recommencer votre essai.','font-weight:750;color:#375179');
+ }else if(!mayAnswer){
+  p(wrapper,'Connexion Parent ou Tim nécessaire pour répondre aux questions.','font-weight:750;color:#6b4c2a');
  }
  const readers=[],translationsUsed=Array(10).fill(false);
  const pages=[];
@@ -372,7 +377,7 @@ function renderQuestions(slot,task,lessonNumber,after,ensureLesson){
    const radios=[];
    q.choices.forEach((choice,k)=>{
     const label=css(el('label'),'display:flex;gap:11px;align-items:flex-start;cursor:pointer;background:#f4f7fc;border:1px solid #d9e1ef;border-radius:10px;margin:7px 0;padding:11px;color:#25354b;font-size:15px;line-height:1.55');
-    const radio=el('input');radio.type='radio';radio.name=task.id+'_q'+i;radio.value=String(k);radio.disabled=!isTim();
+    const radio=el('input');radio.type='radio';radio.name=task.id+'_q'+i;radio.value=String(k);radio.disabled=!mayAnswer;
     radio.style.cssText='flex:0 0 20px;display:block!important;position:static!important;opacity:1!important;visibility:visible!important;width:20px;height:20px;margin:2px 0;accent-color:#28458e;appearance:auto!important;pointer-events:auto!important';
     label.append(radio,el('span',choice));field.append(label);radios.push(radio);
    });
@@ -380,7 +385,7 @@ function renderQuestions(slot,task,lessonNumber,after,ensureLesson){
   }else if(q.kind==='gap'||q.kind==='write'){
    const label=css(el('label',q.kind==='gap'?'Écris le mot manquant :':'Écris ta réponse en espagnol :'),'font-weight:750;color:#354766;display:block;margin:10px 0 8px;font-size:14px');
    const answer=el('input');answer.type='text';answer.maxLength=200;
-   answer.disabled=!isTim();answer.autocomplete='off';answer.setAttribute('autocapitalize','none');
+   answer.disabled=!mayAnswer;answer.autocomplete='off';answer.setAttribute('autocapitalize','none');
    answer.spellcheck=false;answer.placeholder=q.kind==='gap'?'Mot à compléter':'Réponse sans propositions';
    answer.style.cssText='display:block!important;visibility:visible!important;opacity:1!important;box-sizing:border-box;width:100%;min-height:45px;padding:11px 12px;background:white!important;color:#20344c!important;border:1px solid #8498b8!important;border-radius:10px;font-size:16px;line-height:1.45';
    field.append(label,answer);readers.push(()=>answer.value.trim());
@@ -414,22 +419,29 @@ function renderQuestions(slot,task,lessonNumber,after,ensureLesson){
  wrapper.append(navigation);
  wrapper.addEventListener('change',()=>showQuestion(current));
  showQuestion(0);
- if(isTim()){
+ if(mayAnswer){
   const advice=el('details',undefined,'tim-es-answer-advice');
   advice.append(el('summary','Conseil avant de valider'),el('p','Vérifie les accents, la lettre ñ et les signes ¿ ? quand tu écris en espagnol.'));
   wrapper.append(advice);
-  const confirmButton=button('Valider mes 10 réponses — une seule fois');
+  const confirmButton=button(parentPractice?'Corriger mon essai Parent (sans XP)':'Valider mes 10 réponses — une seule fois');
   const feedback=p(wrapper,'','font-weight:750;color:#9a4b36;margin:12px 0');
   confirmButton.onclick=async()=>{
    const answers=readers.map(read=>read());
    if(answers.some(a=>a===null||a===-1||a==='')){showQuestion(answers.findIndex(a=>a===null||a===-1||a===''));feedback.textContent='Réponds à cette question avant de valider.';return;}
-   if(!window.confirm('Avant de valider, as-tu vérifié les accents, la lettre ñ, la conjugaison et les signes « ¿ » et « ? » ?\\nUne fois validé, cet exercice ne pourra plus être recommencé.'))return;
-   confirmButton.disabled=true;confirmButton.textContent='Enregistrement sécurisé…';feedback.textContent='';
+   if(!parentPractice&&!window.confirm('Avant de valider, as-tu vérifié les accents, la lettre ñ, la conjugaison et les signes « ¿ » et « ? » ?\\nUne fois validé, cet exercice ne pourra plus être recommencé.'))return;
+   confirmButton.disabled=true;confirmButton.textContent=parentPractice?'Correction de votre essai…':'Enregistrement sécurisé…';feedback.textContent='';
    try{
-    const report=await window.__TIM_BRIDGE.spanishEntTrainingSubmit(task.id,answers,translationsUsed);
+    const report=parentPractice
+     ?await window.__TIM_BRIDGE.spanishEntTrainingPreview(task.id,answers,translationsUsed)
+     :await window.__TIM_BRIDGE.spanishEntTrainingSubmit(task.id,answers,translationsUsed);
     drawCorrection(slot,report,lessonNumber,ensureLesson);
-    await after();
+    if(!parentPractice)await after();
    }catch(e){
+    if(parentPractice){
+     feedback.textContent='Essai non enregistré : '+(e?.message||'correction momentanément indisponible');
+     confirmButton.disabled=false;confirmButton.textContent='Corriger mon essai Parent (sans XP)';
+     return;
+    }
     const code=String(e?.code||e?.message||e);
     if(/already-exists/.test(code)){
      try{
