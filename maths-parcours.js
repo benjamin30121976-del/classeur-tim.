@@ -78,6 +78,17 @@ function viewTimReciproqueThales(){
  wire();
  mountTimThalesSource();
 }
+function viewTimMathNov12Exercise(id){
+ if(!/^MTH12_0[1-3]$/.test(String(id||'')))return;
+ selected=id;group=GROUPS[3];
+ const name={MTH12_01:'Comprendre la méthode',MTH12_02:'Calculer et comparer',MTH12_03:'Rédiger et conclure'}[id];
+ draw(header('Exercice du 12 novembre — '+name,'Réciproque de Thalès · 10 questions · une seule tentative · 0 XP')+
+ back('Retour à la leçon du 12 novembre')+
+ '<section class="spx-panel" id="math12-exercise-slot"><p>Chargement des dix questions…</p></section>',viewTimReciproqueThales);
+ const slot=root?.querySelector('#math12-exercise-slot');
+ if(slot&&window.TIM_MATH12_UI?.render)window.TIM_MATH12_UI.render(slot,id,viewTimReciproqueThales);
+ else if(slot)slot.textContent='Les exercices du 12 novembre sont momentanément indisponibles.';
+}
 function viewTimFactorisation(){
  selected='TIM_FACTORISATION_BIS';group=GROUPS[2];
  draw(header('Factoriser une expression littérale','Cours simplifié à partir des séances des 6 et 9 novembre · distinct du texte original ENT.')+
