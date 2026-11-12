@@ -49,7 +49,7 @@ function mountTimThalesSource(){
  if(host&&window.TIM_INLINE_ENT_DOCUMENTS?.mount){
   window.TIM_INLINE_ENT_DOCUMENTS.mount(host,['M26S1009'],{
    title:'Support du professeur du 9 octobre : théorème de Thalès (déjà archivé, non joint au cours du 12 novembre)',
-   filenamePattern:/leçon.*théorème.*thalès\\.pdf/i,limit:1,auto:false
+   filenamePattern:/leçon.*théorème.*thalès\.pdf/i,limit:1,auto:false
   }).catch(()=>{host.textContent='Le PDF de Thalès du 9 octobre est momentanément indisponible.';});
  }
 }
