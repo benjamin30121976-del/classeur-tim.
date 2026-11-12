@@ -681,6 +681,71 @@ async function startSession(user){
    else if(!Array.isArray(r.data?.attempts))throw Error('Résultats de physique indisponibles.');
    return r.data;
   },
+  /* 12 novembre, Thalès : même service submitTimExercise et mêmes collections
+     attempts / privateAttempts que les exercices déjà publiés.
+     Les réponses ne sont corrigées localement qu'après la validation serveur. */
+  mathNov12Task:async(id)=>{
+   if(!/^MTH12_0[1-3]$/.test(String(id||'')))throw Error('Exercice de maths inconnu.');
+   const ex=window.__TIM_DATA?.exercises?.find(x=>x.id===id);
+   if(!ex||ex.questions?.length!==10)throw Error('Questions mathématiques non publiées dans le classeur.');
+   const task={id,lessonId:'MTH12',title:ex.title,
+    questions:ex.questions.map((q,i)=>({number:i+1,prompt:q.q,choices:q.options}))};
+   return {task,completed:(window.__CLOUD_ATTEMPTS||[]).some(a=>a.id===id)};
+  },
+  mathNov12Preview:async(id,answers)=>{
+   if(activeUser?.uid!==PARENT_UID)throw Error('Essai réservé au Parent.');
+   const {mathNov12Score}=await import('./maths-12nov-training.mjs?v=thales-12nov-v1');
+   const r=mathNov12Score(id,answers);
+   if(!r)throw Error('Dix réponses sont nécessaires.');
+   return {...r,practice:true,saved:false,xp:0};
+  },
+  mathNov12Submit:async(id,answers)=>{
+   if(activeUser?.uid!==TIM_UID)throw Error('Seul Tim peut valider cet exercice.');
+   if(!/^MTH12_0[1-3]$/.test(String(id||''))||
+      !Array.isArray(answers)||answers.length!==10||answers.some(a=>!Number.isInteger(a)||a<0||a>3))
+    throw Error('Les dix réponses sont nécessaires.');
+   const ex=window.__TIM_DATA?.exercises?.find(x=>x.id===id);
+   if(!ex||ex.questions?.length!==10)throw Error('Exercice mathématique manquant dans Firebase.');
+   // Charger le corrigé avant l'écriture définitive ; ne jamais envoyer la
+   // même tentative une deuxième fois si l'accusé de réception est incertain.
+   const {mathNov12Score}=await import('./maths-12nov-training.mjs?v=thales-12nov-v1');
+   const grade=mathNov12Score(id,answers);
+   if(!grade)throw Error('Les dix réponses sont nécessaires.');
+   const response=await cloudCallable('submitTimExercise')({id,answers});
+   if(response.data?.submitted!==true||Number(response.data?.xp)!==0)
+    throw Error('Validation non confirmée : consulter les résultats avant toute nouvelle tentative.');
+   const report={...grade,submitted:true,submittedAt:new Date().toISOString()};
+   try{localStorage.setItem('tim-math12-result-'+id,JSON.stringify(report));}catch(error){
+    console.warn('Résultat local à conserver :',error?.message||error);
+   }
+   try{await fetchAttempts(window.__TIM_DATA);}catch(error){
+    console.warn('Résultat Firebase à actualiser',error?.message||error);
+   }
+   return report;
+  },
+  mathNov12Progress:async(id)=>{
+   if(activeUser?.uid!==TIM_UID&&activeUser?.uid!==PARENT_UID)throw Error('Accès réservé à la famille.');
+   if(!/^MTH12_0[1-3]$/.test(String(id||'')))throw Error('Exercice inconnu.');
+   if(activeUser.uid===PARENT_UID){
+    const snap=await getDoc(doc(db,'privateAttempts',id));
+    if(!snap.exists())return {attempt:null};
+    const data=snap.data(),raw=Array.isArray(data.answers)?data.answers:[];
+    const items=raw.map(x=>({prompt:x.question||'',response:x.response||'',correct:x.correct===true,
+     expected:x.expected||'',explanation:x.explanation||'',points:x.correct?1:0}));
+    return {attempt:{id,lessonId:'MTH12',score:Number(data.score||0),total:10,
+     items,submitted:true,submittedAt:data.submittedAt?.toDate?.()?.toISOString?.()||'',xp:0}};
+   }
+   const official=(window.__CLOUD_ATTEMPTS||[]).find(x=>x.id===id);
+   let local=null;
+   try{local=JSON.parse(localStorage.getItem('tim-math12-result-'+id)||'null');}catch(_){}
+   if(local?.submitted&&local?.id===id)return {attempt:local};
+   if(official?.correctionStatus==='released'&&official.answers?.length===10){
+    return {attempt:{id,lessonId:'MTH12',score:official.score,total:10,
+     items:official.answers.map(x=>({prompt:x.question,response:x.response,correct:x.correct,
+      expected:x.expected,explanation:x.explanation})),submitted:true,xp:0}};
+   }
+   return {attempt:null,completed:Boolean(official)};
+  },
   spanishEntTrainingTask:async(id)=>{
    if(!/^ESE_L(?:0[1-9]|1[0-4])_0[1-3]$/.test(String(id||'')))throw Error('Exercice espagnol inconnu.');
    if(window.TIM_ES12_STUDY?.isId(id)){
