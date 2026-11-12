@@ -73,17 +73,27 @@ async function build(slot){
    else{
     st.textContent='Le PDF figure dans l’export ENT, mais n’est pas encore présent dans le stockage privé du classeur.';
     if(window.__TIM_PARENT&&!window.__TIM_GUEST&&api.upload){
-     const help=e('p','Parent : télécharge le PDF du groupe A depuis cette conversation, puis sélectionne-le ici. Aucun autre document ne sera modifié.');
+     const help=e('p','Parent : télécharge la petite archive ZIP du groupe A depuis cette conversation, puis sélectionne-la ici. Le PDF original reste privé et aucun autre document ne sera modifié.');
      help.style.cssText=style.caption;
-     const picker=e('input');picker.type='file';picker.accept='.pdf,application/pdf';picker.setAttribute('aria-label','Fiche PDF espagnol groupe A');
+     const picker=e('input');picker.type='file';picker.accept='.zip,.pdf,application/zip,application/pdf';picker.setAttribute('aria-label','Archive ZIP de la fiche PDF espagnol groupe A');
      picker.style.cssText='display:block;max-width:100%;margin:10px 0';
      const upload=e('button','Installer cette fiche PDF privée');upload.type='button';
      upload.style.cssText='min-height:44px;padding:9px 12px;border:1px solid #7692bc;border-radius:9px;background:#244575;color:white;font-size:15px;font-weight:800';
      upload.addEventListener('click',async()=>{
-      if(!picker.files?.[0]){st.textContent='Choisir d’abord le PDF dans tes téléchargements.';return;}
+      if(!picker.files?.[0]){st.textContent='Choisir d’abord le ZIP du groupe A dans tes téléchargements.';return;}
       upload.disabled=true;
       try{
-       const src=picker.files[0],bytes=new Uint8Array(await src.arrayBuffer());
+       const src=picker.files[0];
+       let bytes;
+       if(/\.zip$/i.test(src.name)){
+        if(!window.JSZip||src.size>6000000)throw Error('Archive ZIP invalide ou trop volumineuse.');
+        const zip=await window.JSZip.loadAsync(await src.arrayBuffer());
+        const entries=Object.values(zip.files).filter(f=>!f.dir);
+        if(entries.length!==1||entries[0].name!==PDF_NAME)throw Error('Cette archive ne contient pas la fiche ENT attendue.');
+        bytes=await entries[0].async('uint8array');
+       }else if(/\.pdf$/i.test(src.name)){
+        bytes=new Uint8Array(await src.arrayBuffer());
+       }else throw Error('Sélectionner le ZIP contenant la fiche du groupe A.');
        if(bytes.length<20||bytes.length>4194304||String.fromCharCode(...bytes.slice(0,5))!=='%PDF-')throw Error('PDF invalide.');
        const digest=Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',bytes)),
         b=>b.toString(16).padStart(2,'0')).join('');
