@@ -29,7 +29,11 @@ async function checkZip(file){
  const zip=await window.JSZip.loadAsync(await file.arrayBuffer());
  const manifestFile=zip.file(byId);
  if(!manifestFile)throw Error('Ce ZIP ne contient pas le manifeste de vérification attendu.');
- const data=JSON.parse(await manifestFile.async('string'));
+ const manifestBytes=await manifestFile.async('uint8array');
+ const manifestSha=hex(new Uint8Array(await crypto.subtle.digest('SHA-256',manifestBytes)));
+ if(manifestSha!=='84a42504f3a746f973eb5171f3fdb4bb6c0056adb3a27a2f9d8a45e11c1eac45')
+  throw Error('Manifeste privé différent de l’archive officielle vérifiée.');
+ const data=JSON.parse(new TextDecoder().decode(manifestBytes));
  if(data?.version!==VERSION||data.count!==17||!Array.isArray(data.documents)||data.documents.length!==17)throw Error('Lot différent des 17 PDF mathématiques vérifiés.');
  const seen=new Set(),records=[];
  for(const item of data.documents){
