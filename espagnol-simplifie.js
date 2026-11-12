@@ -651,6 +651,7 @@ async function render(root,opts={},helpers={}){
    };
    rows.append(b);
   }
+  exerciseBody.append(rows,work);
   if(index===14){
    // Aucun résultat de Tim n'est écrit lors de cette vérification.
    // Tant que la fonction privée n'est pas déployée, éviter un questionnaire
@@ -681,7 +682,7 @@ async function render(root,opts={},helpers={}){
    exerciseBody.insertBefore(retry,rows);
    checkActivation();
   }
-  exerciseBody.append(rows,work);exerciseSection.append(exerciseBody);
+  exerciseSection.append(exerciseBody);
   inner.append(exerciseSection);card.append(inner);root.append(card);
   lessonCards.push(card);
   // Ouvrir le cours pendant le clic, sans attendre l'événement toggle asynchrone.
