@@ -58,9 +58,10 @@ const ENT_WHAT_WAS_DONE={
  '10099~6400553':'Comprendre les questions, les possessifs et le dialogue du manuel avec la professeure.',
  '10099~6400536':'Réviser su et usted, puis préparer l’évaluation de compréhension et d’expression écrite.',
  '10099~6400506':'Évaluation de fin de séquence ; travail de conjugaison Práctica (photocopie du professeur).',
- '10099~6400487':'Réviser les dix verbes au présent pour l’évaluation de conjugaison et préparer la carte Plickers.'
+ '10099~6400487':'Réviser les dix verbes au présent pour l’évaluation de conjugaison et préparer la carte Plickers.',
+ '10099~6400554':'Évaluation de conjugaison, compréhension écrite « No empiezo en septiembre » (groupe A) : no… sino, nunca, nada et hemisferio sur ; Plickers. Photocopie à finir pour mardi 17 novembre.'
 };
-const LESSON_HELP_IDS=['L01','L04','L05','L05','L06','L07','L08','L07','L04','L11','L12','L10','L15'];
+const LESSON_HELP_IDS=['L01','L04','L05','L05','L06','L07','L08','L07','L04','L11','L12','L10','L15','L15'];
 const SPECIAL_HELP={
  '10099~6400534':[
   ['Pourquoi parle-t-on d’un anniversaire dans la lettre ?',
@@ -493,7 +494,7 @@ function summaryOf(attempts,where){
  const complete=attempts.length;
  const result=css(el('div'),ST.panel);
  const title=css(el('h3','Mes résultats' ),ST.title);result.append(title);
- p(result,complete+' / 39 exercices réalisés. Chaque exercice a 10 questions et ne peut être validé qu’une fois.','font-size:15px;color:#34445f;line-height:1.55');
+ p(result,complete+' / 42 exercices réalisés. Chaque exercice a 10 questions et ne peut être validé qu’une fois.','font-size:15px;color:#34445f;line-height:1.55');
  const totalXp=attempts.reduce((n,a)=>n+Number(a.xp||0),0);
  p(result,'XP gagnés avec les leçons d’espagnol : '+totalXp.toLocaleString('fr-FR')+' XP.','font-size:15px;font-weight:850;color:#263d89;line-height:1.55');
  if(complete>=3){
