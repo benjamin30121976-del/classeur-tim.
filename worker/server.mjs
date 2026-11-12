@@ -59,6 +59,11 @@ async function resolveExercise(db,id){
  }
  const extra=await db.get('exercises/'+id);
  let raw=extra;
+ // Les exercices ajoutés au classeur sont stockés avec leur payloadJson privé.
+ if(raw&&typeof raw.payloadJson==='string'){
+  try{const parsed=JSON.parse(raw.payloadJson);if(parsed.id!==id)throw Error('ID mismatch');raw=parsed;}
+  catch{throw new ApiFault(409,'exercise-invalid');}
+ }
  if(!raw){
   const pub=await db.get('publicExercises/'+id);
   const key=await db.get('answerKeys/'+id);
@@ -78,6 +83,12 @@ async function submitExercise(db,uid,payload){
   throw new ApiFault(400,'invalid-exercise');
  const {exercise,key,spanishSource}=await resolveExercise(db,id);
  if(exercise.enabled!==true)throw new ApiFault(409,'exercise-closed');
+  // Défi bonus : pas de texte libre ni de question sans correction expliquée.
+  if(exercise.kind==='bonus-day'){
+   if(!Array.isArray(exercise.questions)||exercise.questions.length<10||exercise.questions.length>20||
+      exercise.questions.some((q,i)=>!['mc','text'].includes(q.type)||!String(key?.questions?.[i]?.why||'').trim()))
+    throw new ApiFault(409,'bonus-questionnaire-incomplet');
+  }
  let evaluated;
  try{evaluated=spanishSource?gradeSpanishDailyMission(spanishSource,answers):grade(exercise,key,answers);}catch{throw new ApiFault(400,'invalid-answers');}
  const transaction=await db.transaction();
@@ -89,7 +100,7 @@ async function submitExercise(db,uid,payload){
  const current=state.date===today?state:{earned:0,lost:0,bonus:0};
  const weekEarned=state.week===week?Number(state.weekEarned||0):0;
  const weekXp=state.week===week?Number(state.weekXp??state.weekEarned??0):0;
- const category=exercise.category||'school';
+ const category=exercise.kind==='bonus-day'?'challenge':exercise.category||'school';
  let raw,points;
  try{
   raw=rawPoints({kind:exercise.kind,category,score:evaluated.score,total:evaluated.total,needsReview:evaluated.needsReview});
@@ -107,7 +118,7 @@ async function submitExercise(db,uid,payload){
   score:evaluated.score,total:evaluated.total,needsReview:evaluated.needsReview,
   policyVersion:18,...evaluated
  };
- const autoRelease=isMissionId(id);
+ const autoRelease=isMissionId(id)||exercise.kind==='bonus-day';
  const pending={
   exerciseId:id,authorUid:uid,policyVersion:18,xp:points,correctionStatus:autoRelease?'released':'pending-parent'
  };

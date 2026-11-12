@@ -8,7 +8,7 @@
  const dateParts=d=>Object.fromEntries(dt.formatToParts(new Date(d)).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
  function day(x){const d=new Date(x);if(!Number.isFinite(d.getTime()))return '';const v=dateParts(d);return `${v.year}-${v.month}-${v.day}`;}
  function nextDay(s){if(!/^\d{4}-\d{2}-\d{2}$/.test(s))return '';const d=new Date(s+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+1);return d.toISOString().slice(0,10);}
- const challenge=ex=>['daily','weekly','sunday','bonus-parent'].includes(ex?.kind);
+ const challenge=ex=>['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex?.kind);
  const school=ex=>!!ex&&!challenge(ex)&&(ex.category==='school'||ex.exerciseType==='school'||ex.fromENT===true||ex.origin==='ENT'||ex.sourceType==='ENT');
  function mode(ex,now=new Date()){
   if(challenge(ex))return 'challenge';
