@@ -919,7 +919,7 @@ function renderMatiere(name,openLessonId=null){
  }
  if(name==='Mathématiques'&&window.TIM_MATH_PATH){
   window.TIM_MATH_PATH.render(root,{
-   lessons:DATA.lessons,exercises:DATA.exercises,
+   lessons:DATA.lessons,exercises:DATA.exercises,openLessonId,
    back:renderMatieres,original:openLesson,exercise:openExercise,
    task:id=>window.__TIM_BRIDGE.mathTrainingTask(id),
    submit:(id,answers,bankVersion)=>window.__TIM_BRIDGE.mathTrainingSubmit(id,answers,bankVersion),
