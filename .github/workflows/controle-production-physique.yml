@@ -19,10 +19,14 @@ jobs:
           BASE="https://classeur-tim-v16.pages.dev"
           ok=0
           for essai in $(seq 1 24); do
-            if curl -fsSL --max-time 20 "$BASE/" | grep -q 'physique-chimie-documents.js?v=20261112-import-prive-v1' &&
-               curl -fsSL --max-time 20 "$BASE/physique-chimie-exercices.js?v=20261112-exercices-210-v2" | grep -q 'physicsTrainingSubmit' &&
-               curl -fsSL --max-time 20 "$BASE/physique-chimie-parcours.js?v=20261112-exercices-docs-v3" | grep -q 'TIM_PHYSICS_TRAINING' &&
-               curl -fsSL --max-time 20 "$BASE/boot.js?v=physique-exercices-210-20261112-v1" | grep -q 'physicsTrainingProgress'; then
+            curl -fsSL --max-time 20 "$BASE/" -o /tmp/pc-index.html || true
+            curl -fsSL --max-time 20 "$BASE/physique-chimie-exercices.js?v=20261112-exercices-210-v2" -o /tmp/pc-exercises.js || true
+            curl -fsSL --max-time 20 "$BASE/physique-chimie-parcours.js?v=20261112-exercices-docs-v3" -o /tmp/pc-parcours.js || true
+            curl -fsSL --max-time 20 "$BASE/boot.js?v=physique-exercices-210-20261112-v1" -o /tmp/pc-boot.js || true
+            if grep -q 'physique-chimie-documents.js?v=20261112-import-prive-v1' /tmp/pc-index.html 2>/dev/null &&
+               grep -q 'physicsTrainingSubmit' /tmp/pc-exercises.js 2>/dev/null &&
+               grep -q 'TIM_PHYSICS_TRAINING' /tmp/pc-parcours.js 2>/dev/null &&
+               grep -q 'physicsTrainingProgress' /tmp/pc-boot.js 2>/dev/null; then
                ok=1
                break
             fi
@@ -37,6 +41,7 @@ jobs:
           BASE="https://classeur-tim-v16.pages.dev"
           curl -fsSL --max-time 20 "$BASE/api/status" | tee /tmp/pc-status.json
           grep -q '"platform":"cloudflare-pages"' /tmp/pc-status.json
+          grep -q '"available":true' /tmp/pc-status.json
           code=$(curl -sS -o /tmp/pc-secret -w '%{http_code}' --max-time 20 "$BASE/worker/physics-quiz-01.mjs")
           test "$code" = "404"
           echo "Serveur disponible et banque de réponses inaccessible par URL publique."
