@@ -123,7 +123,7 @@ function inlineLesson(holder,entId,renderL01,showExercises){
  para(explained?.rule||data.goal);
  h('Comment faire');
  const steps=el('ol',undefined,'tim-es-course-steps');
- (data.steps||[]).slice(0,3).forEach(step=>steps.append(el('li',step)));
+ (data.steps||[]).slice(0,entId==='10099~6400554'?5:3).forEach(step=>steps.append(el('li',step)));
  sheet.append(steps);
  if(explained?.worked?.length===3){
   h('Un exemple corrigé, pas à pas');
