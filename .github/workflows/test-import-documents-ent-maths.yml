@@ -1,0 +1,43 @@
+name: Tester l'import prive des documents ENT maths
+on:
+  pull_request:
+    paths:
+      - 'maths-ent-pdf-import.js'
+      - 'maths-parcours.js'
+      - 'index.html'
+      - 'tools/test/math-ent-pdf-import.chromium.cjs'
+      - '.github/workflows/test-import-documents-ent-maths.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'maths-ent-pdf-import.js'
+      - 'maths-parcours.js'
+      - 'index.html'
+      - 'tools/test/math-ent-pdf-import.chromium.cjs'
+      - '.github/workflows/test-import-documents-ent-maths.yml'
+permissions:
+  contents: read
+jobs:
+  importer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier la syntaxe du formulaire
+        run: |
+          node --check maths-ent-pdf-import.js
+          node --check maths-parcours.js
+          node --check tools/test/math-ent-pdf-import.chromium.cjs
+      - name: Installer Chromium
+        run: |
+          npm install --prefix /tmp/tim-math-batch --no-audit --no-fund playwright
+          if ! command -v google-chrome >/dev/null 2>&1 && ! command -v chromium >/dev/null 2>&1; then
+            /tmp/tim-math-batch/node_modules/.bin/playwright install --with-deps chromium
+          fi
+      - name: Tester neuf pièces jointes factices, dédoublonnage et permissions Parent
+        env:
+          NODE_PATH: /tmp/tim-math-batch/node_modules
+        run: node tools/test/math-ent-pdf-import.chromium.cjs
