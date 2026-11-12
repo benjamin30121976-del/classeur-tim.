@@ -8,6 +8,7 @@ import {spanishNov05Exercises} from './spanish-nov05-private.mjs';
 import {SPANISH_COURSE} from './spanish-training-curriculum.mjs';
 import {buildSpanishTasks,evaluateSpanishTask} from './spanish-training-engine.mjs';
 import {nov12IdValid,nov12TaskPublic,nov12Evaluate,nov12TaskIds} from './spanish-nov12-training.mjs';
+import {getSpanishNov12TranslationCount} from './spanish-nov12-translation-count.mjs';
 initializeApp();
 const db=getFirestore();
 const timUid=process.env.TIM_STUDENT_UID||'uqZI3Up97YWzKvWhssWQidn4TJO2',parentUid=process.env.TIM_PARENT_UID||'BPEuNAhHVyX8ewQ2I54s56m11vj1';
@@ -47,7 +48,10 @@ async function resolveExercise(id){
 }
 export const submitTimExercise=onCall({region:'europe-west1',enforceAppCheck:true},async request=>{
  role(request,'tim');
- const {id,answers}=request.data||{};
+ const {id,answers,translationsUsed}=request.data||{};
+ let translationHelpCount;
+ try{translationHelpCount=getSpanishNov12TranslationCount(id,translationsUsed);}
+ catch(e){throw new HttpsError('invalid-argument',String(e.message||e));}
  if(!validId(id)||!Array.isArray(answers)||answers.length>100||answers.some(v=>!['string','number','boolean'].includes(typeof v)||String(v).length>2000))throw new HttpsError('invalid-argument','Exercice invalide');
  const attemptRef=db.doc('attempts/'+id),privateRef=db.doc('privateAttempts/'+id),xpRef=db.doc('xpState/tim');
  const resolved=await resolveExercise(id);
@@ -71,10 +75,11 @@ export const submitTimExercise=onCall({region:'europe-west1',enforceAppCheck:tru
   tx.set(xpRef,{date,week,earned:Number(today.earned||0)+Math.max(0,xp),lost:Number(today.lost||0)+Math.max(0,-xp),bonus:Number(today.bonus||0)+(category==='bonus'?Math.max(0,xp):0),weekEarned:weekEarned+Math.max(0,xp),weekXp:Math.max(0,weekXp+xp),policyVersion:18,updatedAt:FieldValue.serverTimestamp()});
   const common={exerciseId:id,title:String(ex.title||id).slice(0,200),authorUid:request.auth.uid,submittedAt:FieldValue.serverTimestamp(),score:result.score,total:result.total,needsReview:result.needsReview,policyVersion:18};
   tx.create(attemptRef,{exerciseId:id,authorUid:request.auth.uid,submittedAt:FieldValue.serverTimestamp(),policyVersion:18,xp,correctionStatus:autoRelease?'released':'pending-parent'});
-  tx.create(privateRef,{...common,...result});
+  tx.create(privateRef,{...common,...result,...(translationHelpCount===null?{}:{translationHelpCount})});
   if(autoRelease)tx.set(db.doc('releasedCorrections/'+id),{released:true,updatedAt:FieldValue.serverTimestamp()});
-  return autoRelease?{id,submitted:true,xp,correctionLocked:false,correctionStatus:'released',score:result.score,total:result.total,answers:result.answers}:
-   {id,submitted:true,xp,correctionLocked:true,correctionStatus:'pending-parent'};
+  const tracking=translationHelpCount===null?{}:{translationHelpCount,translationTrackingSaved:true};
+  return autoRelease?{id,submitted:true,xp,correctionLocked:false,correctionStatus:'released',score:result.score,total:result.total,answers:result.answers,...tracking}:
+   {id,submitted:true,xp,correctionLocked:true,correctionStatus:'pending-parent',...tracking};
  });}catch(error){if(error instanceof HttpsError)throw error;throw new HttpsError('internal','Échec de validation');}
 });
 // Défi bonus exceptionnel de 5 XP : un exercice choisi par le parent, validation unique par Tim.
@@ -118,7 +123,7 @@ export const getParentReport=onCall({region:'europe-west1',enforceAppCheck:true}
  const attempts=await Promise.all(snap.docs.map(async d=>{
   const [record,ex]=await Promise.all([db.doc('attempts/'+d.id).get(),db.doc('publicExercises/'+d.id).get()]);
   const data=record.exists?record.data():{};
-  return {id:d.id,title:d.get('title')||(ex.exists?ex.data().title:d.id)||d.id,score:d.get('score')??0,total:d.get('total')??0,needsReview:Boolean(d.get('needsReview')),xp:data.xp??0,correctionStatus:data.correctionStatus==='released'?'released':'pending-parent'};
+  return {id:d.id,title:d.get('title')||(ex.exists?ex.data().title:d.id)||d.id,score:d.get('score')??0,total:d.get('total')??0,needsReview:Boolean(d.get('needsReview')),xp:data.xp??0,correctionStatus:data.correctionStatus==='released'?'released':'pending-parent',...(Number.isInteger(d.get('translationHelpCount'))?{translationHelpCount:d.get('translationHelpCount')}:{})};
  }));
  return {attempts,pendingCorrections:attempts.filter(a=>a.correctionStatus==='pending-parent').length};
 });
