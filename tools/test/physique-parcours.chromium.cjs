@@ -145,6 +145,53 @@ async function main(){
   report.checks.pdfCanvasRendered=true;
   report.checks.openedTabs=0;
   await page.locator('#pc-test-in-page').screenshot({path:output+'/pdf-integre-demonstration.jpg',type:'jpeg',quality:75});
+  // Simulation locale du profil Parent : AUCUNE vraie connexion ni API appelée.
+  await page.evaluate(async()=>{
+   window.__TIM_PARENT=true;
+   window.__TIM_GUEST=false;
+   window.__PC_PREVIEW_TEST={written:false,calls:0};
+   window.__TIM_BRIDGE.physicsTrainingTask=async id=>({
+    completed:false,
+    task:{
+     id,lessonId:'PC_BIS01',title:'Exercice Parent de démonstration',bankVersion:'pc-audit-demo',
+     questions:Array.from({length:10},(_,n)=>({
+      kind:'qcm',prompt:'Question de démonstration '+(n+1)+' : quelle réponse choisir ?',
+      choices:['Réponse A','Réponse B','Réponse C','Réponse D']
+     }))
+    }
+   });
+   window.__TIM_BRIDGE.physicsTrainingPreviewSubmit=async(id,answers,bankVersion)=>{
+    window.__PC_PREVIEW_TEST.calls++;
+    if(id!=='PCQ_L01_01'||answers.length!==10||bankVersion!=='pc-audit-demo')
+     throw new Error('Validation de simulation incorrecte');
+    return {practice:true,saved:false,submitted:false,xp:0,score:10,total:10,
+      items:answers.map((answer,i)=>({
+       questionIndex:i,correct:true,prompt:'Question de démonstration '+(i+1),
+       response:'Réponse '+String.fromCharCode(65+answer),
+       expected:'Réponse A',explanation:'Explication de démonstration.'
+      }))
+    };
+   };
+   const host=document.createElement('div');
+   host.id='pc-parent-audit';
+   host.style.cssText='padding:20px;background:#fff;color:#1b2f4a';
+   document.body.append(host);
+   await window.TIM_PHYSICS_TRAINING.mount('PCQ_L01_01',host);
+  });
+  const host=page.locator('#pc-parent-audit');
+  await host.getByText(/Mode essai Parent/).waitFor({state:'visible',timeout:12000});
+  for(let i=0;i<10;i++){
+   await host.locator('input[type="radio"]').first().check();
+   if(i<9)await host.getByRole('button',{name:'Suivante →'}).click();
+  }
+  await host.locator('input[type="checkbox"]').check();
+  await host.getByRole('button',{name:/Corriger mon essai/}).click();
+  await host.getByText(/Simulation Parent — 10 \/ 10/).waitFor({state:'visible',timeout:12000});
+  const audit=await page.evaluate(()=>window.__PC_PREVIEW_TEST);
+  assert.equal(audit.calls,1,'Une seule correction simulée');
+  assert.equal(audit.written,false,'Aucune écriture de tentative sur le compte Tim');
+  report.checks.parentSeesAndAnswersTenQuestions=true;
+  report.checks.parentSimulationNoWrite=true;
   await page.screenshot({path:output+'/physique-mobile.jpg',type:'jpeg',quality:70,fullPage:true});
   fs.writeFileSync(output+'/rapport.json',JSON.stringify(report,null,2));
   process.stdout.write(JSON.stringify(report)+'\n');
