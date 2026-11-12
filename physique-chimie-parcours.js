@@ -139,32 +139,110 @@ function showList(){
  cards.forEach(c=>{c.open=false;c.hidden=false;});
  try{root.scrollIntoView({block:'start'});}catch(_){}
 }
+
+/* Schémas pédagogiques simplifiés, distincts des documents du professeur.
+   Dans chaque figure, seuls les objets nécessaires à la notion sont représentés. */
+const PC_DRAWINGS={
+ PC_BIS01: '<svg viewBox="0 0 640 250" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Schéma simplifié d’un atome : au centre protons positifs et neutrons neutres ; autour électrons négatifs.">'
+  +'<ellipse cx="320" cy="123" rx="183" ry="83" fill="none" stroke="#a4b7cb" stroke-width="4" stroke-dasharray="8 7"/>'
+  +'<circle cx="320" cy="123" r="58" fill="#e6edf5" stroke="#8299b2" stroke-width="3"/>'
+  +'<circle cx="291" cy="111" r="21" fill="#bf6059"/><circle cx="337" cy="108" r="21" fill="#8da4b9"/><circle cx="319" cy="146" r="21" fill="#bf6059"/>'
+  +'<text x="291" y="118" text-anchor="middle" fill="#fff" font-size="24" font-weight="bold">+</text><text x="337" y="115" text-anchor="middle" fill="#fff" font-size="20">0</text><text x="319" y="154" text-anchor="middle" fill="#fff" font-size="24" font-weight="bold">+</text>'
+  +'<circle cx="144" cy="109" r="18" fill="#306fa9"/><circle cx="499" cy="145" r="18" fill="#306fa9"/><text x="144" y="117" text-anchor="middle" font-size="25" fill="#fff">−</text><text x="499" y="153" text-anchor="middle" font-size="25" fill="#fff">−</text>'
+  +'<path d="M237 202L279 159M394 204L342 164M68 63L133 99" stroke="#415a76" stroke-width="3" fill="none"/>'
+  +'<text x="195" y="225" text-anchor="middle" font-size="18" font-weight="bold" fill="#244567">Noyau : proton (+)</text><text x="438" y="227" text-anchor="middle" font-size="18" font-weight="bold" fill="#244567">et neutron (0)</text><text x="70" y="52" font-size="18" font-weight="bold" fill="#244567">Électron (−)</text>'
+  +'</svg>',
+ PC_BIS02: '<svg viewBox="0 0 640 235" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Le sodium perd un électron : de 11 protons et 11 électrons, il devient Na positif avec 11 protons et 10 électrons.">'
+  +'<rect x="12" y="28" width="241" height="167" rx="15" fill="#edf4fc" stroke="#98b6d1" stroke-width="3"/><rect x="388" y="28" width="240" height="167" rx="15" fill="#fff6e9" stroke="#c9ad85" stroke-width="3"/>'
+  +'<text x="132" y="65" text-anchor="middle" font-size="23" font-weight="bold" fill="#244967">ATOME Na</text><text x="132" y="101" text-anchor="middle" font-size="18" fill="#244967">11 protons (+)</text><text x="132" y="131" text-anchor="middle" font-size="18" fill="#244967">11 électrons (−)</text><text x="132" y="170" text-anchor="middle" font-size="20" font-weight="bold" fill="#244967">Neutre</text>'
+  +'<path d="M273 111H368" stroke="#446680" stroke-width="4"/><path d="M355 99L370 111L355 123" fill="none" stroke="#446680" stroke-width="4"/><text x="322" y="78" text-anchor="middle" font-size="16" fill="#284c66">Perd</text><text x="322" y="97" text-anchor="middle" font-size="16" fill="#284c66">1 électron</text>'
+  +'<text x="509" y="65" text-anchor="middle" font-size="23" font-weight="bold" fill="#85572d">ION Na⁺</text><text x="509" y="101" text-anchor="middle" font-size="18" fill="#85572d">11 protons (+)</text><text x="509" y="131" text-anchor="middle" font-size="18" fill="#85572d">10 électrons (−)</text><text x="509" y="170" text-anchor="middle" font-size="20" font-weight="bold" fill="#85572d">Positif (+)</text>'
+  +'</svg>',
+ PC_BIS03: '<svg viewBox="0 0 640 252" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Les molécules H2O et CO2 sont dessinées avec des boules : H2O contient deux H et un O ; CO2 contient un C et deux O.">'
+  +'<text x="160" y="35" font-size="25" text-anchor="middle" fill="#29456b" font-weight="bold">Eau H₂O</text><path d="M114 126L160 92L206 126" stroke="#849ab2" stroke-width="11" fill="none" stroke-linecap="round"/>'
+  +'<circle cx="106" cy="133" r="32" fill="#fff" stroke="#8094ad" stroke-width="3"/><circle cx="160" cy="94" r="44" fill="#d0554b"/><circle cx="214" cy="133" r="32" fill="#fff" stroke="#8094ad" stroke-width="3"/>'
+  +'<text x="106" y="142" text-anchor="middle" font-size="27" fill="#2b4364">H</text><text x="160" y="104" text-anchor="middle" font-size="31" fill="white">O</text><text x="214" y="142" text-anchor="middle" font-size="27" fill="#2b4364">H</text>'
+  +'<text x="160" y="215" text-anchor="middle" font-size="19" fill="#29456b">2 H et 1 O</text>'
+  +'<text x="480" y="35" font-size="25" text-anchor="middle" fill="#29456b" font-weight="bold">Gaz CO₂</text><path d="M392 122H568" stroke="#849ab2" stroke-width="12"/><circle cx="394" cy="122" r="38" fill="#d0554b"/><circle cx="480" cy="122" r="41" fill="#303b49"/><circle cx="568" cy="122" r="38" fill="#d0554b"/>'
+  +'<text x="394" y="131" text-anchor="middle" font-size="28" fill="#fff">O</text><text x="480" y="132" text-anchor="middle" font-size="29" fill="#fff">C</text><text x="568" y="131" text-anchor="middle" font-size="28" fill="#fff">O</text>'
+  +'<text x="480" y="215" text-anchor="middle" font-size="19" fill="#29456b">1 C et 2 O</text>'
+  +'</svg>',
+ PC_BIS04: '<svg viewBox="0 0 640 268" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Graphique avec minutes de 0 à 6 sur l’axe horizontal, température de 0 à 40 degrés sur le vertical, et un point placé à 5 minutes et 30 degrés.">'
+  +'<g stroke="#d9e2ec" stroke-width="1.5"><path d="M100 54H520M100 97H520M100 140H520M100 183H520M170 54V226M240 54V226M310 54V226M380 54V226M450 54V226M520 54V226"/></g>'
+  +'<path d="M100 40V226H555" stroke="#334f71" stroke-width="4" fill="none"/>'
+  +'<g font-size="16" fill="#29486a"><text x="78" y="230">0</text><text x="69" y="188">10</text><text x="69" y="145">20</text><text x="69" y="102">30</text><text x="69" y="59">40</text><text x="98" y="248">0</text><text x="167" y="248">1</text><text x="237" y="248">2</text><text x="307" y="248">3</text><text x="377" y="248">4</text><text x="447" y="248">5</text><text x="517" y="248">6</text></g>'
+  +'<path d="M450 97V226M100 97H450" stroke="#b6564b" stroke-width="3" stroke-dasharray="7 6"/><circle cx="450" cy="97" r="9" fill="#bd554b" stroke="#fff" stroke-width="2"/>'
+  +'<text x="462" y="83" font-size="19" fill="#a3453d" font-weight="bold">(5 ; 30)</text>'
+  +'<text x="310" y="267" text-anchor="middle" font-size="17" fill="#29486a">Temps (minutes)</text><text x="100" y="28" font-size="17" fill="#29486a">Température (°C)</text>'
+  +'</svg>',
+ PC_BIS05: '<svg viewBox="0 0 640 229" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Schémas de tests de laboratoire : soude et ion cuivre donnent un solide bleu ; nitrate d’argent et ion chlorure un solide blanc.">'
+  +'<rect x="10" y="14" width="304" height="200" rx="13" fill="#edf5fc" stroke="#b3cce2" stroke-width="2"/><rect x="326" y="14" width="303" height="200" rx="13" fill="#f2f5f9" stroke="#b7c8d7" stroke-width="2"/>'
+  +'<text x="161" y="45" text-anchor="middle" font-size="20" fill="#26476b" font-weight="bold">Test de l’ion cuivre</text><text x="161" y="77" text-anchor="middle" font-size="17" fill="#26476b">Produit : soude</text>'
+  +'<rect x="108" y="100" width="106" height="55" rx="7" fill="#367dc1" stroke="#245f9b"/><text x="161" y="134" text-anchor="middle" fill="white" font-size="21" font-weight="bold">Bleu</text><text x="161" y="185" text-anchor="middle" font-size="16" fill="#26476b">Solide bleu observé</text>'
+  +'<text x="477" y="45" text-anchor="middle" font-size="20" fill="#26476b" font-weight="bold">Test de l’ion chlorure</text><text x="477" y="77" text-anchor="middle" font-size="17" fill="#26476b">Produit : nitrate d’argent</text>'
+  +'<rect x="423" y="100" width="108" height="55" rx="7" fill="#fff" stroke="#8396aa" stroke-width="2"/><text x="477" y="134" text-anchor="middle" fill="#334b64" font-size="21" font-weight="bold">Blanc</text><text x="477" y="185" text-anchor="middle" font-size="16" fill="#26476b">Solide blanc observé</text>'
+  +'</svg>',
+ PC_BIS06: '<svg viewBox="0 0 640 222" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Avant la réaction : fer et ions hydrogène ; après, ions fer et dihydrogène gazeux.">'
+  +'<rect x="9" y="32" width="241" height="160" rx="14" fill="#edf5fc" stroke="#adc9e1" stroke-width="2"/><rect x="389" y="32" width="241" height="160" rx="14" fill="#edf8f1" stroke="#a5d0b9" stroke-width="2"/>'
+  +'<text x="130" y="64" text-anchor="middle" font-size="21" font-weight="bold" fill="#284e70">DÉPART</text><text x="130" y="110" text-anchor="middle" font-size="22" fill="#284e70">Fer + acide</text><text x="130" y="146" text-anchor="middle" font-size="18" fill="#284e70">Réactifs</text>'
+  +'<path d="M266 111H373" stroke="#386d91" stroke-width="5"/><path d="M361 99L375 111L361 123" fill="none" stroke="#386d91" stroke-width="5"/>'
+  +'<text x="510" y="64" text-anchor="middle" font-size="21" font-weight="bold" fill="#285f43">ARRIVÉE</text><text x="510" y="109" text-anchor="middle" font-size="20" fill="#285f43">Ions fer + H₂</text><text x="510" y="146" text-anchor="middle" font-size="18" fill="#285f43">Produits</text>'
+  +'</svg>',
+ PC_BIS07: '<svg viewBox="0 0 640 225" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Une équation équilibrée possède quatre atomes H et deux atomes O à gauche et à droite : 2 H2 plus O2 donne 2 H2O.">'
+  +'<rect x="10" y="13" width="296" height="190" rx="13" fill="#edf5fc" stroke="#aac6de" stroke-width="2"/><rect x="333" y="13" width="296" height="190" rx="13" fill="#edf8f2" stroke="#a5ccb2" stroke-width="2"/>'
+  +'<text x="158" y="48" text-anchor="middle" fill="#23486a" font-size="19" font-weight="bold">AVANT</text><text x="158" y="92" text-anchor="middle" fill="#23486a" font-size="28" font-weight="bold">2 H₂ + O₂</text>'
+  +'<text x="158" y="132" text-anchor="middle" fill="#23486a" font-size="19">4 H et 2 O</text><text x="158" y="165" text-anchor="middle" fill="#23486a" font-size="17">Réactifs</text>'
+  +'<text x="482" y="48" text-anchor="middle" fill="#296143" font-size="19" font-weight="bold">APRÈS</text><text x="482" y="92" text-anchor="middle" fill="#296143" font-size="28" font-weight="bold">2 H₂O</text>'
+  +'<text x="482" y="132" text-anchor="middle" fill="#296143" font-size="19">4 H et 2 O</text><text x="482" y="165" text-anchor="middle" fill="#296143" font-size="17">Produits</text>'
+  +'<path d="M304 111H332" stroke="#476b81" stroke-width="4"/><path d="M321 101L333 111L321 121" fill="none" stroke="#476b81" stroke-width="4"/>'
+  +'</svg>'
+};
+function drawing(id){
+ const svg=PC_DRAWINGS[id];if(!svg)return null;
+ const fig=E('figure','pc-learning-drawing');
+ fig.style.cssText='margin:15px 0 23px;padding:14px 9px 10px;background:#f7faff;border:1px solid #d4e0ee;border-radius:12px;overflow:auto';
+ const holder=E('div');holder.style.cssText='max-width:670px;margin:auto';holder.innerHTML=svg;
+ const legend=E('figcaption','','Dessin simplifié pour comprendre ; les figures du professeur restent dans les documents ENT.');
+ legend.style.cssText='font-size:13px;line-height:1.5;color:#445c76;margin-top:8px;text-align:center';
+ fig.append(holder,legend);return fig;
+}
+
 function buildLesson(id){
- const l=byId(id),blocks=l?.blocks||[];
+ const l=byId(id),t=l?.teaching;
+ if(!t)return E('p','','Cette leçon BIS n’est pas encore vérifiée.');
  const layout=E('div','tim-es-reading');
  const back=button('← Choisir une autre leçon',showList,'tim-es-back');
  back.style.cssText='margin:7px 0 13px;min-height:40px;background:#eef3fb!important;border:1px solid #bbcce1!important;color:#2d4d77!important;padding:8px 12px;border-radius:9px;font-weight:700';
  layout.append(back);
  const sheet=E('article','tim-es-course-sheet');
  sheet.append(E('p','tim-es-bis-label','LEÇON BIS · EXPLICATION FACILE'));
- section(sheet,'À quoi sert cette leçon ?',l.summary);
- section(sheet,'Comprendre la règle',blocks.slice(0,2).map(b=>b.body).join('\n'));
- section(sheet,'Comment faire',blocks[2]?.body||'Relis la méthode avec un exemple.');
+ section(sheet,'À quoi sert cette leçon ?',t.why);
+ const fig=drawing(id);if(fig)sheet.append(fig);
+ section(sheet,'Comprendre la règle',t.rule);
+ sheet.append(E('h3','','Comment faire'));
+ const steps=E('ol','tim-es-course-steps');
+ for(const step of t.steps||[])steps.append(E('li','',step.replace(/^\d+\.\s*/,'')));
+ sheet.append(steps);
  sheet.append(E('h3','','Un exemple corrigé, pas à pas'));
  const worked=E('div','tim-es-worked');
- const workedLines=String(blocks[3]?.body||'').split('\n').filter(Boolean);
- workedLines.forEach((line,i)=>worked.append(E('p',i===0?'tim-es-worked-question':i===workedLines.length-1?'tim-es-worked-answer':'tim-es-worked-method',line)));
+ for(const [index,line] of (t.worked||[]).entries())
+  worked.append(E('p',index===0?'tim-es-worked-question':index===(t.worked.length-1)?'tim-es-worked-answer':'tim-es-worked-method',line));
  sheet.append(worked);
  sheet.append(E('h3','','Deux autres exemples'));
- for(const [a,b] of (TWO_EXAMPLES[id]||[])){
-  const p=E('p','tim-es-course-example');p.append(E('strong','',a),E('span','',b));sheet.append(p);
+ for(const [title,explanation] of t.examples||[]){
+  const p=E('p','tim-es-course-example');
+  p.append(E('strong','',title),E('span','',explanation));sheet.append(p);
  }
- const take=E('p','tim-es-course-remember');take.append(E('strong','','À retenir : '),document.createTextNode((blocks[4]?.body||blocks[blocks.length-1]?.body||'').replace(/\n/g,' ')));sheet.append(take);
+ const take=E('p','tim-es-course-remember');
+ take.append(E('strong','','À retenir : '),document.createTextNode(t.remember));sheet.append(take);
  layout.append(sheet);
+
+ // Exactement les cinq accès de la page Espagnol.
  const menu=E('nav','spx-quick-links tim-es-quick-links');
  menu.setAttribute('aria-label','Cours et exercices de cette leçon');
  const original=E('details','tim-es-ent-original');original.hidden=true;
- const origSum=E('summary','','Cours original du professeur');const origSlot=E('div','tim-es-ent-original-content');
+ const origSum=E('summary','','Cours original du professeur');
+ const origSlot=E('div','tim-es-ent-original-content');
  original.append(origSum,origSlot);
  const openOriginal=mode=>{
   original.hidden=false;original.open=true;origSum.textContent=mode==='course'?'Cours original ENT':'Exercices ENT du chapitre';
@@ -174,40 +252,34 @@ function buildLesson(id){
  help.append(E('summary','','Je n’ai pas compris'),E('p','','Choisis ce qui te bloque :'));
  const choices=E('div','tim-es-help-choices'),answer=E('div','tim-es-help-answer');
  answer.setAttribute('aria-live','polite');
- for(const [title,exp,example] of (HELP[id]||[])){
-  const b=button(title,()=>answer.replaceChildren(E('strong','',title),E('p','',exp),E('p','',example)),'tim-es-help-question');
+ for(const [title,explanation,example] of t.help||[]){
+  const b=button(title,()=>answer.replaceChildren(E('strong','',title),E('p','',explanation),E('p','',example)),'tim-es-help-question');
   choices.append(b);
  }
  help.append(choices,answer);
  const exerciseSection=E('details','tim-es-exercises');
- exerciseSection.append(E('summary','','Après la leçon — faire les 3 exercices'));
+ exerciseSection.append(E('summary','','Après la leçon — exercices BIS (en préparation)'));
  const exerciseBody=E('div');
- exerciseBody.append(E('h3','','Exercices BIS : 3 séries de 10 questions'),E('p','','Les questionnaires de physique-chimie ne sont pas encore activés. Une note et une correction immédiates nécessitent leur publication et la liaison au suivi sécurisé du compte Parent. Aucune tentative ne sera enregistrée ici en attendant.'));
+ exerciseBody.append(E('h3','','Exercices BIS : 3 séries de 10 questions'),E('p','','Les questionnaires notés de physique-chimie ne sont pas encore publiés. Aucune note, tentative ni XP n’est enregistrée ici en attendant le suivi sécurisé et les corrections expliquées.'));
  exerciseSection.append(exerciseBody);
  const showExercises=()=>{exerciseSection.open=true;exerciseSection.scrollIntoView?.({block:'start'});};
- const choicesMenu=[
+ const actions=[
   ['1 · Leçon ENT',()=>openOriginal('course')],
   ['2 · Leçon BIS',()=>{original.open=false;original.hidden=true;help.open=false;help.hidden=true;sheet.scrollIntoView?.({block:'start'});}],
   ['3 · Je n’ai pas compris',()=>{original.open=false;original.hidden=true;help.hidden=false;help.open=true;help.scrollIntoView?.({block:'start'});}],
   ['Exercices ENT du chapitre',()=>openOriginal('exercises')],
   ['Exercices BIS · 3 séries de 10 questions',showExercises]
  ];
- for(const [label,fn] of choicesMenu)menu.append(button(label,fn,'spx-quick-link tim-es-quick-link'));
+ for(const [label,fn] of actions)menu.append(button(label,fn,'spx-quick-link tim-es-quick-link'));
  layout.append(menu,original,help);
  const extra=E('details','tim-es-course-extra');
- extra.append(E('summary','','Approfondir : autres exemples et vocabulaire'));
+ extra.append(E('summary','','Approfondir : vocabulaire et autres explications'));
  const body=E('div');
- const words={
-  PC_BIS01:['Proton = charge positive du noyau','Neutron = sans charge','Électron = charge négative autour du noyau'],
-  PC_BIS02:['Un ion positif a perdu des électrons','Un ion négatif a gagné des électrons'],
-  PC_BIS03:['Indice = petit chiffre dans la formule','Coefficient = grand chiffre devant une formule'],
-  PC_BIS04:['Horizontal = de gauche à droite','Vertical = du bas vers le haut'],
-  PC_BIS05:['Réactif de test = produit ajouté par le professeur','Précipité = solide qui apparaît dans le liquide'],
-  PC_BIS06:['Réactifs = substances de départ','Produits = substances obtenues'],
-  PC_BIS07:['Même nombre d’atomes de chaque côté','Ne pas modifier les petits indices']
- }[id]||[];
- for(const w of words)body.append(E('p','',w));
- if(blocks.length>5){body.append(E('h4','','Méthode supplémentaire'));textLines(body,blocks.slice(5).map(x=>x.body).join('\n'));}
+ const terms=E('dl','pc-lesson-terms');
+ for(const [word,definition] of t.terms||[]){
+  terms.append(E('dt','',word),E('dd','',definition));
+ }
+ body.append(terms);
  extra.append(body);layout.append(extra,exerciseSection);
  return layout;
 }
