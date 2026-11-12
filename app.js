@@ -140,6 +140,7 @@ function groupsForLessons(rows,subject){
  return topics.sort((a,b)=>a.localeCompare(b,'fr')).map(t=>({title:t,topics:[t],icon:'▤',sub:'Cours, devoirs et entraînements'}));
 }
 function setLessonSubject(name){
+ if(name==='Physique-chimie'&&window.TIM_PHYSIQUE_PATH){page('matieres');renderMatiere(name);return;}
  lessonSubject=name;lessonGroup='';
  const selector=document.getElementById('lesson-topic');
  const topics=[...new Set(DATA.lessons.filter(l=>!name||subjectOf(l)===name).map(chapterOf))].sort((a,b)=>a.localeCompare(b,'fr'));
@@ -183,7 +184,8 @@ function renderLessonIndex(){
  if(bisCourses.length){root.append(E('h3','lesson-type-label bis','LEÇONS BIS ILLUSTRÉES · '+bisCourses.length));for(const l of bisCourses)root.append(cardAction(l.title,'Leçon BIS · '+chapterOf(l),l.summary,()=>openLesson(l.id)));}
  if(!found.length)root.append(notice('Aucune fiche trouvée pour cette recherche.'));
 }
-function openLesson(id){const l=lessonBy(id);if(!l)return;lessonSubject=subjectOf(l);lessonGroup='';page('cours');document.getElementById('lesson-index').classList.add('hide');const dest=clear(document.getElementById('lesson-detail'));dest.classList.add('active');
+function openLesson(id){const l=lessonBy(id);if(!l)return;
+ if(subjectOf(l)==='Physique-chimie'&&window.TIM_PHYSIQUE_PATH){page('matieres');renderMatiere('Physique-chimie',id);return;}lessonSubject=subjectOf(l);lessonGroup='';page('cours');document.getElementById('lesson-index').classList.add('hide');const dest=clear(document.getElementById('lesson-detail'));dest.classList.add('active');
  const bis=isBisLesson(l),allSame=DATA.lessons.filter(x=>x.id!==l.id&&subjectOf(x)===subjectOf(l)&&chapterOf(x)===chapterOf(l)),others=allSame.filter(x=>bis?!isBisLesson(x):isBisLesson(x));
  dest.append(button('← Retour au sommaire',()=>{dest.classList.remove('active');document.getElementById('lesson-index').classList.remove('hide');scrollTop();},'plain back'));
  dest.append(E('p','lesson-type-label '+(bis?'bis':'ent'),bis?'LEÇON BIS · POUR MIEUX COMPRENDRE':'COURS ENT · DOCUMENT DU PROFESSEUR'),E('h2','',l.title),E('p','meta',bis?'Version pédagogique complémentaire':'Cours abordé : '+(l.date||'date non précisée')),E('p','',l.summary));
@@ -826,7 +828,7 @@ function renderMatiere(name,openLessonId=null){
   return;
  }
  if(name==='Physique-chimie'&&window.TIM_PHYSIQUE_PATH){
-  window.TIM_PHYSIQUE_PATH.render(root,{lessons:DATA.lessons,back:renderMatieres});
+  window.TIM_PHYSIQUE_PATH.render(root,{lessons:DATA.lessons,back:renderMatieres,openLessonId});
   return;
  }
  if(name==='Mathématiques'&&window.TIM_MATH_PATH){
