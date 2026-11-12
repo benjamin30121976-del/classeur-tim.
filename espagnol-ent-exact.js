@@ -184,26 +184,25 @@ function appendFileLinks(root,refs,metas,translations){
   nameBox.style.cssText='flex:1;min-width:0;overflow-wrap:anywhere';
   row.append(nameBox);
   if(meta){
-   const b=$('button','ent-es-pdf-open','Voir le PDF');b.type='button';
-   b.style.cssText='background:#173d75!important;color:#ffffff!important;border:2px solid #a7d2ff!important;border-radius:10px!important;font-weight:800!important;font-size:16px!important;line-height:1.3!important;padding:12px 18px!important;min-height:48px!important;min-width:138px!important;white-space:normal!important;text-shadow:none!important;opacity:1!important;cursor:pointer!important;';
-   b.addEventListener('click',async()=>{
-    const pdfWindow=window.open('about:blank','_blank');
-    b.disabled=true;b.textContent='Ouverture…';
-    try{
-     const blob=await window.__TIM_BRIDGE.attachments.read(meta);
-     const url=URL.createObjectURL(blob);
-     // Voir la fiche dans le navigateur, pas télécharger obligatoirement.
-     if(pdfWindow&&!pdfWindow.closed)pdfWindow.location.href=url;
-     else {
-      const link=$('a');link.href=url;link.target='_blank';link.rel='noopener noreferrer';
-      document.body.append(link);link.click();link.remove();
-     }
-     setTimeout(()=>URL.revokeObjectURL(url),180000);
-    }catch(e){if(pdfWindow&&!pdfWindow.closed)pdfWindow.close();alert('Lecture du PDF impossible : '+e.message)}
-    finally{b.disabled=false;b.textContent='Voir le PDF';}
-   });row.append(b);
-  }else row.append($('small','','PDF non présent dans Firebase'));
-  root.append(row);
+   /* Le PDF original est dessiné ici, à côté de la consigne et de la traduction.
+      Aucun onglet extérieur, aucune URL du fichier privé divulguée. */
+   const viewer=window.TIM_PHYSICS_INLINE_PDF?.createInline?.(
+    {target:TAG,fileName:name},1,
+    'Fiche originale du professeur — '+originalName,{manual:true}
+   );
+   if(viewer){
+    const guide=$('p','ent-es-inline-guide','La fiche reste sur cette page. Utilise « Afficher ici le document » puis Page avant / Page après et A+ pour l’agrandir.');
+    guide.style.cssText='margin:8px 0;color:inherit;font-size:14px;line-height:1.5';
+    row.append(guide);
+    root.append(row,viewer);
+   }else{
+    row.append($('small','','Lecteur PDF intégré indisponible : actualiser le classeur.'));
+    root.append(row);
+   }
+  }else{
+   row.append($('small','','PDF original non importé dans la bibliothèque privée.'));
+   root.append(row);
+  }
   const translation=translations?.attachments?.[String(info.id)];
   if(translation?.fr){
     const detail=$('details','ent-es-pdf-fr');
@@ -670,13 +669,18 @@ async function renderLessonOriginal(root,lessonId,section='course'){
  const homework=(pack.homework||[]).filter(x=>homeIds.includes(String(x?.data?.id)));
  let metas=[];
  const attachments=window.__TIM_BRIDGE?.attachments;
- if(section==='exercises'&&attachments?.list){
+ if(attachments?.list){
   try{metas=await attachments.list('lesson',TAG);}catch(_){}
  }
  const refs=(pack.index||[]).filter(info=>(info.rattache_a||[]).some(link=>
   (link.type==='cours'&&String(link.id)===id)||
   (link.type==='travail_associe'&&homeIds.includes(String(link.id)))
  ));
+ if(section!=='exercises'&&refs.length){
+  root.append($('h4','','Fiches originales du professeur — dans cette leçon'));
+  root.append($('p','','Lis le cours et la traduction, puis affiche ici les PDF associés sans changer de page.'));
+  appendFileLinks(root,refs,metas,translations);
+ }
  if(section==='exercises'&&homework.length){
   root.append($('h4','','Exercices demandés par la professeure'));
   homework.forEach(item=>{
