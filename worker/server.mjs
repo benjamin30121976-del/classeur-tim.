@@ -11,6 +11,7 @@ import {mathId,mathPublicTaskPrivate,gradeMathTaskPrivate,MATH_BANK_VERSION,vali
 import {spanishEntTrainingId,spanishEntTask,spanishEntPublicTask,gradeSpanishEntTask,isSpanishDailyMissionId,spanishDailyMissionIds,buildSpanishDailyMission,gradeSpanishDailyMission} from './spanish-ent-training.mjs';
 import {spanishLessonXp} from './spanish-lesson-xp.mjs';
 import {physicsTrainingId,physicsPublicTask,gradePhysicsTask,PHYSICS_BANK_VERSION} from './physics-training.mjs';
+import {PHYSICS_ENT_VERSION,physicsEntId,physicsEntPublicTask,physicsEntGrade} from './physics-ent-training.mjs';
 
 const PRIVATE_FIELDS=new Set(['right','also','why','expected','answer','answers','answerKey','answerKeys','solution','solutions','correction','corrections','explanation','rubric']);
 function sanitize(value){
@@ -379,6 +380,85 @@ async function getPhysicsTrainingProgress(db,uid,payload){
   .sort((a,b)=>String(b.submittedAt||'').localeCompare(String(a.submittedAt||'')))};
 }
 
+/* Exercice ENT original : même discipline de sécurité que l’Espagnol / Maths.
+   Tim valide une fois ; son Parent peut faire des essais non enregistrés.
+   Les bonnes réponses restent dans worker/physics-ent-training.mjs uniquement. */
+async function getPhysicsEntTask(db,uid,payload){
+ allowedFamily(uid);
+ const id=payload?.id;
+ if(!physicsEntId(id))throw new ApiFault(400,'invalid-physics-ent-id');
+ const task=physicsEntPublicTask(id);
+ const old=await db.get('physicsEntAttempts/'+id);
+ return {task,completed:Boolean(old?.authorUid===TIM_UID)};
+}
+async function submitPhysicsEntTask(db,uid,payload){
+ permitted(uid,'tim');
+ const id=payload?.id,answers=payload?.answers;
+ if(!physicsEntId(id)||!Array.isArray(answers)||answers.length>20)
+  throw new ApiFault(400,'invalid-physics-ent-answers');
+ if(payload?.bankVersion!==PHYSICS_ENT_VERSION)
+  throw new ApiFault(409,'stale-physics-ent-bank');
+ let result,xp;
+ try{
+  result=physicsEntGrade(id,answers,payload.bankVersion);
+  xp=spanishLessonXp(result.score,result.total);
+ }catch{throw new ApiFault(400,'invalid-physics-ent-answers');}
+ const tx=await db.transaction();
+ const [old,weekRecord]=await Promise.all([
+  db.get('physicsEntAttempts/'+id,tx),db.get('xpState/tim',tx)
+ ]);
+ if(old)throw new ApiFault(409,'already-exists');
+ const today=parisDate(new Date()),week=mondayOf(today),state=weekRecord||{};
+ const current=state.date===today?state:{earned:0,lost:0,bonus:0};
+ const weekEarned=state.week===week?Number(state.weekEarned||0):0;
+ const weekXp=state.week===week?Number(state.weekXp??state.weekEarned??0):0;
+ const nextXP={
+  date:today,week,
+  earned:Number(current.earned||0)+xp,
+  lost:Number(current.lost||0),
+  bonus:Number(current.bonus||0),
+  weekEarned:weekEarned+xp,
+  weekXp:Math.max(0,weekXp+xp),
+  policyVersion:18
+ };
+ await db.commit([
+  createWrite('physicsEntAttempts/'+id,{
+   ...result,xp,authorUid:uid,answers,version:1
+  },NOW),
+  upsertWrite('xpState/tim',nextXP,[{fieldPath:'updatedAt',setToServerValue:'REQUEST_TIME'}])
+ ],tx);
+ return {...result,xp,submitted:true,submittedAt:new Date().toISOString()};
+}
+async function previewPhysicsEntTask(db,uid,payload){
+ permitted(uid,'parent');
+ const id=payload?.id,answers=payload?.answers;
+ if(!physicsEntId(id)||!Array.isArray(answers)||answers.length>20)
+  throw new ApiFault(400,'invalid-physics-ent-answers');
+ if(payload?.bankVersion!==PHYSICS_ENT_VERSION)
+  throw new ApiFault(409,'stale-physics-ent-bank');
+ let graded;
+ try{graded=physicsEntGrade(id,answers,payload.bankVersion);}
+ catch{throw new ApiFault(400,'invalid-physics-ent-answers');}
+ return {...graded,practice:true,saved:false,submitted:false,xp:0,
+  message:'Essai Parent, sans note ni XP et sans écriture en base de données.'};
+}
+async function getPhysicsEntProgress(db,uid,payload){
+ allowedFamily(uid);
+ const id=payload?.id;
+ if(id!==undefined&&id!==null){
+  if(!physicsEntId(id))throw new ApiFault(400,'invalid-physics-ent-id');
+  const x=await db.get('physicsEntAttempts/'+id);
+  return {attempt:x?.authorUid===TIM_UID?{...x,id,xp:Number(x.xp||0)}:null};
+ }
+ const records=await db.list('physicsEntAttempts',100);
+ return {attempts:records.filter(x=>physicsEntId(x.id)&&x.data?.authorUid===TIM_UID)
+  .map(x=>({id:x.id,type:'ent',subject:'Physique-chimie',
+   title:x.data.title,source:x.data.source,score:x.data.score,total:10,
+   correctFields:x.data.correctFields,fieldCount:x.data.fieldCount,
+   xp:Number(x.data.xp||0),submittedAt:x.data.submittedAt||'',
+   errorCounts:x.data.errorCounts||{}}))};
+}
+
 /* Parcours Espagnol : résultats immédiats, zéro XP et tentative unique.
    Les questions sont publiques seulement après authentification, les clés
    de correction restent dans le serveur et ne sont renvoyées qu'après
@@ -456,6 +536,10 @@ async function getSpanishDailyMissions(db,uid){
 }
 
 const ACTIONS={
+ getPhysicsEntTask:getPhysicsEntTask,
+ submitPhysicsEntTask:submitPhysicsEntTask,
+ previewPhysicsEntTask:previewPhysicsEntTask,
+ getPhysicsEntProgress:getPhysicsEntProgress,
  getPhysicsTrainingTask:getPhysicsTrainingTask,
  submitPhysicsTraining:submitPhysicsTraining,
  getPhysicsTrainingProgress:getPhysicsTrainingProgress,
@@ -499,4 +583,4 @@ export async function handleRequest(request,env){
   return respond({error:code},status);
  }
 }
-export const TESTABLE={previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
+export const TESTABLE={getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
