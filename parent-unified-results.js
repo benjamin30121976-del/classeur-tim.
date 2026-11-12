@@ -13,6 +13,7 @@ const scoreLabel=r=>isExact(r.score)&&isExact(r.total)?Number(r.score).toLocaleS
 function subjectOf(id,ex){
  if(/^ESE_L|^SP[QW]_L/.test(id))return 'Espagnol';
  if(/^MT\d\d$/.test(id))return 'Mathématiques';
+ if(/^PCQ_L0[1-7]_0[1-3]$/.test(id))return 'Physique-chimie';
  if(/^(DAY_|WEEK_|SUNDAY_)/.test(id))return 'Défis';
  return ex?.subject||'Autre matière';
 }
@@ -29,6 +30,10 @@ function lessonOf(id,record,ex){
  if(/^MT\d\d$/.test(id)){
   const ref=record?.lessonId||'MBIS'+id.slice(2);
   return window.__TIM_DATA?.lessons?.find(x=>x.id===ref)?.title||'Sous-leçon '+id.slice(2);
+ }
+ if(/^PCQ_L0[1-7]_0[1-3]$/.test(id)){
+  const ref=record?.lessonId||('PC_BIS'+id.slice(5,7));
+  return window.__TIM_DATA?.lessons?.find(x=>x.id===ref)?.title||'Leçon '+id.slice(5,7);
  }
  return window.__TIM_DATA?.lessons?.find(x=>x.id===ex?.lesson)?.title||ex?.lesson||'';
 }
@@ -63,9 +68,10 @@ async function allRecords(){
   bridge.spanishEntTrainingProgress?.(),
   bridge.mathTrainingProgress?.(),
   bridge.trainingProgress?.(),
-  bridge.parentReport?.()
+  bridge.parentReport?.(),
+  bridge.physicsTrainingProgress?.()
  ]);
- const [spanish,math,oldSpanish,report]=responses.map(x=>x.status==='fulfilled'?x.value:null);
+ const [spanish,math,oldSpanish,report,physics]=responses.map(x=>x.status==='fulfilled'?x.value:null);
  const map=new Map(),add=(record,kind)=>{
   const x=makeRecord(record,kind);if(!x)return;
   const prev=map.get(x.id);
@@ -75,18 +81,22 @@ async function allRecords(){
  for(const r of oldSpanish?.attempts||window.__TIM_SPANISH_PROGRESS?.attempts||[])add(r,'oldSpanish');
  for(const r of spanish?.attempts||[])add(r,'spanishEnt');
  for(const r of math?.attempts||[])add(r,'math');
+ for(const r of physics?.attempts||[])add(r,'physics');
  for(const r of report?.attempts||[])if(!map.has(r.id))add(r,'parentSummary');
  const warnings=[];
  if(responses[0].status==='rejected')warnings.push('Espagnol : suivi momentanément indisponible');
  if(responses[1].status==='rejected')warnings.push('Mathématiques : suivi momentanément indisponible');
  if(responses[2].status==='rejected')warnings.push('Ancien suivi espagnol : indisponible');
  if(responses[3].status==='rejected')warnings.push('Archives Parent : indisponibles');
+ if(responses[4].status==='rejected')warnings.push('Physique-chimie : suivi momentanément indisponible');
  return {records:[...map.values()].sort((a,b)=>String(b.date).localeCompare(String(a.date))),warnings};
 }
 async function loadDetails(record){
- if(record.kind!=='spanishEnt'||record.items.length)return record.items;
- const result=await window.__TIM_BRIDGE.spanishEntTrainingProgress(record.id);
- if(!result?.attempt)throw Error('Copie espagnole momentanément indisponible');
+ if(!['spanishEnt','physics'].includes(record.kind)||record.items.length)return record.items;
+ const result=record.kind==='physics'
+  ?await window.__TIM_BRIDGE.physicsTrainingProgress(record.id)
+  :await window.__TIM_BRIDGE.spanishEntTrainingProgress(record.id);
+ if(!result?.attempt)throw Error('Copie momentanément indisponible');
  record.items=questionItems(result.attempt);
  return record.items;
 }
@@ -165,7 +175,7 @@ function render(root){
  exportButton.addEventListener('click',async()=>{
   exportButton.disabled=true;
   try{
-   for(const r of results)if(r.kind==='spanishEnt'&&!r.items.length){try{await loadDetails(r)}catch{}}
+   for(const r of results)if(['spanishEnt','physics'].includes(r.kind)&&!r.items.length){try{await loadDetails(r)}catch{}}
    const payload={exportedAt:new Date().toISOString(),records:results.map(r=>({
     id:r.id,subject:r.subject,lesson:r.lesson,title:r.title,date:r.date,score:r.score,total:r.total,xp:r.xp,
     questions:r.items
