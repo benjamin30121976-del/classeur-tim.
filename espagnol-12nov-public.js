@@ -38,3 +38,42 @@ window.TIM_ES12_PUBLIC_HINTS={
   "Complète avec le mot qui corrige l’idée précédente : pas en septembre, mais en mars."
  ]
 };
+
+/* Adaptateur vers les mêmes exercices enregistrés par le Parent dans Firestore.
+   Aucune réponse attendue ici : la banque est chargée seulement après l'essai. */
+window.TIM_ES12_STUDY={
+ isId:id=>/^ESE_L14_0[1-3]$/.test(String(id||'')),
+ task:(id,ex)=>{
+  if(!ex||!Array.isArray(ex.questions)||ex.questions.length!==10)return null;
+  const hints=window.TIM_ES12_PUBLIC_HINTS[id]||[];
+  return {id,title:ex.title,questions:ex.questions.map((q,i)=>({
+   kind:q.type==='mc'?'qcm':'write',
+   instructionEs:q.type==='mc'?q.q:'Escribe tu respuesta en español.',
+   instructionFr:hints[i]||'Écris ta réponse en espagnol.',
+   speechEs:q.q,speechFr:hints[i]||'',
+   ...(q.type==='mc'?{choices:q.options}:{stem:q.q}),
+   number:i+1
+  }))};
+ },
+ saved:(id)=>{
+  try{const x=JSON.parse(localStorage.getItem('tim-es12-correction-'+id)||'null');
+   return x?.id===id&&x.report?.submitted===true?x.report:null;
+  }catch(_){return null;}
+ },
+ remember:(id,report)=>{
+  try{localStorage.setItem('tim-es12-correction-'+id,JSON.stringify({id,report,savedAt:new Date().toISOString()}));}
+  catch(_){}
+ },
+ officialReport:(id,doc)=>{
+  const answers=Array.isArray(doc?.answers)?doc.answers:[];
+  if(answers.length!==10)return null;
+  const items=answers.map(x=>({prompt:x.question||x.prompt||'',response:x.response,
+   correct:x.correct===true,points:x.correct?1:0,expected:x.expected||'',
+   category:x.correct?'réussi':x.skill||'À revoir',
+   feedback:x.explanation||'',explanation:x.explanation||''}));
+  const errors={};
+  items.filter(x=>!x.correct).forEach(x=>{errors[x.category]=(errors[x.category]||0)+1;});
+  return {id,submitted:true,score:Number(doc.score)||0,total:10,xp:0,items,
+   errorCounts:errors,translationHelpCount:0};
+ }
+};
