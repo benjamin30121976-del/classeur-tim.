@@ -34,7 +34,7 @@ function message(parent,text){parent.append(E('p','',text))}
    Le lien de secours est visible lorsqu'une fenêtre est bloquée. */
 async function openFile(file,button,kind='view',row=null){
  const api=bridge();if(!api)throw Error('Lecteur privé indisponible.');
- const isPdf=(file.mime||'').includes('pdf')||/\\.pdf$/i.test(file.fileName||'');
+ const isPdf=(file.mime||'').includes('pdf')||/\.pdf$/i.test(file.fileName||'');
  let tab=null;
  if(kind==='view'&&isPdf){
   try{tab=window.open('about:blank','_blank');}catch(_){}
@@ -77,7 +77,7 @@ async function lessonFiles(id,slot){
   slot.replaceChildren();
   if(!files.length){message(slot,'Les documents ENT sont récupérés, mais pas encore importés dans le lecteur privé. Le compte Parent peut les importer depuis son archive ZIP.');return;}
   for(const file of files){
-   const isPdf=(file.mime||'').includes('pdf')||/\\.pdf$/i.test(file.fileName||'');
+   const isPdf=(file.mime||'').includes('pdf')||/\.pdf$/i.test(file.fileName||'');
    const row=E('div','pc-doc-row');
    row.style.cssText='padding:15px 13px;margin:10px 0;border:1px solid #c3d1e3;border-radius:12px;background:#f7faff;color:#253c60';
    const title=isPdf?'PDF du professeur : ':'Document PowerPoint : ';
