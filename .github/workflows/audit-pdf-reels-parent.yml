@@ -17,8 +17,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
-      TIM_PARENT_EMAIL: \${{ secrets.TIM_PARENT_EMAIL }}
-      TIM_PARENT_PASSWORD: \${{ secrets.TIM_PARENT_PASSWORD }}
+      TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+      TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
       TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
     steps:
       - uses: actions/checkout@v4
