@@ -683,7 +683,13 @@ async function startSession(user){
   },
   spanishEntTrainingTask:async(id)=>{
    if(!/^ESE_L(?:0[1-9]|1[0-4])_0[1-3]$/.test(String(id||'')))throw Error('Exercice espagnol inconnu.');
-   const r=await cloudCallable(/^ESE_L14_/.test(id)?'getSpanishNov12TrainingTask':'getSpanishEntTrainingTask')({id});
+   if(window.TIM_ES12_STUDY?.isId(id)){
+    const exercise=window.__TIM_DATA?.exercises?.find(x=>x.id===id);
+    const task=window.TIM_ES12_STUDY.task(id,exercise);
+    if(!task)throw Error('Les dix questions du 12 novembre ne sont pas encore disponibles dans le classeur.');
+    return {task,completed:(window.__CLOUD_ATTEMPTS||[]).some(x=>x.id===id)};
+   }
+   const r=await cloudCallable('getSpanishEntTrainingTask')({id});
    if(!r.data?.task||r.data.task.questions?.length!==10)throw Error('Les dix questions sont indisponibles.');
    return r.data;
   },
