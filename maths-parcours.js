@@ -163,7 +163,7 @@ function viewEnt(id){
   const panel=document.createElement('section');panel.className='math-inline-ent-list';
   panel.style.cssText='padding:12px;margin:12px 0;border-radius:12px;border:1px solid #c1d2e5;background:#eef5fd;color:#25415e';
   const host=root.querySelector('.spx.math-path');
-  host?.append(panel);
+  if(host)host.insertBefore(panel,host.children[2]||null);
   window.TIM_INLINE_ENT_DOCUMENTS.mount(panel,entFor(g).map(e=>e.id),{
    title:'PDF et schémas originaux — visibles sur cette page',limit:15
   }).catch(e=>{panel.textContent='Document privé indisponible : '+String(e.message||e);});
