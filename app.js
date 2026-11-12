@@ -983,6 +983,14 @@ const categories=[...new Set(DATA.lessons.map(l=>l.topic))].sort((a,b)=>a.locale
 topicSelect('lesson-topic',categories,'all',v=>{lessonTopic=v;renderLessonIndex()});
 topicSelect('exercise-topic',categories,'all',v=>{exerciseTopic=v;renderExerciseIndex()});
 renderHome();renderLessonIndex();renderExerciseIndex();renderRevisions();renderArchives();renderDico('hub');
+/* Retour pédagogique depuis une correction vers la sous-leçon concernée.
+   Sans soumettre de questionnaire ni modifier les copies déjà validées. */
+window.TIM_PEDAGOGY_NAVIGATE=(subject,lessonId)=>{
+ if(!['Espagnol','Mathématiques','Physique-chimie'].includes(subject))return;
+ if(typeof lessonId!=='string'||lessonId.length>40)return;
+ page('matieres');
+ renderMatiere(subject,lessonId);
+};
 const hash=location.hash.replace('#','');if(document.getElementById(hash)?.classList.contains('page'))page(hash);else page('home');
 
  v7InitUI();
