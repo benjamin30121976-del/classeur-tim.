@@ -175,8 +175,22 @@ async function courseContent(db,uid){
  ]);
  if(!main||!Array.isArray(main.lessons)||!Array.isArray(main.exercises))
   throw new ApiFault(404,'course-not-found');
+ // Les ajouts du classeur sont stockés avec un payloadJson. Le convertir
+ // AVANT de filtrer les corrigés, pour que Tim voie le défi publié sans fuite
+ // de réponses dans la chaîne JSON brute.
+ const unpack=record=>{
+  const value=record.data||{};
+  if(typeof value.payloadJson!=='string')return value;
+  try{
+   const parsed=JSON.parse(value.payloadJson);
+   return parsed&&parsed.id===record.id?parsed:null;
+  }catch{return null;}
+ };
  return {content:sanitize(main),
-  additions:sanitize({lessons:lessons.map(x=>x.data),exercises:exercises.map(x=>x.data)})};
+  additions:sanitize({
+   lessons:lessons.map(unpack).filter(Boolean),
+   exercises:exercises.map(unpack).filter(Boolean)
+  })};
 }
 async function oldTrainingProgress(db,uid){
  if(uid!==TIM_UID&&uid!==PARENT_UID)throw new ApiFault(403,'forbidden');
