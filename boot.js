@@ -730,6 +730,49 @@ async function startSession(user){
    if(!r.data?.saved||r.data.id!==id)throw Error('Stockage privé non confirmé.');
    return r.data;
   },
+  /* Devoirs ENT de mathématiques de Mme Pialet : correction côté serveur. */
+  mathEntTask:async(id)=>{
+   if(!['ME_ENT_PROGRAMMES','ME_ENT_THALES3'].includes(id))throw Error('Fiche de maths ENT inconnue.');
+   const r=await cloudCallable('getMathEntTask')({id});
+   if(!r.data?.task||!Array.isArray(r.data.task.fields)||
+     r.data.task.fields.length!==(id==='ME_ENT_PROGRAMMES'?6:15))
+    throw Error('Fiche ENT incomplète : aucune tentative utilisée.');
+   return r.data;
+  },
+  mathEntSubmit:async(id,answers,bankVersion)=>{
+   if(activeUser?.uid!==TIM_UID)throw Error('Seul Tim peut valider une fiche ENT.');
+   if(!['ME_ENT_PROGRAMMES','ME_ENT_THALES3'].includes(id)||
+      !Array.isArray(answers)||answers.length!==(id==='ME_ENT_PROGRAMMES'?6:15)||
+      answers.some(x=>typeof x!=='string'||!x.trim()||x.length>160))
+    throw Error('Toutes les réponses doivent être complétées.');
+   if(typeof bankVersion!=='string'||!bankVersion.startsWith('math-ent-'))
+    throw Error('Fiche périmée : recharge le classeur.');
+   const r=await cloudCallable('submitMathEntTask')({id,answers,bankVersion});
+   if(!r.data?.submitted||r.data.bankVersion!==bankVersion||
+      !Number.isInteger(r.data.score)||r.data.score<0||r.data.score>10||
+      ![0,.5,1].includes(r.data.xp)||r.data.items?.length!==answers.length)
+    throw Error('La correction ENT n’a pas été confirmée.');
+   return r.data;
+  },
+  mathEntPreviewSubmit:async(id,answers,bankVersion)=>{
+   if(activeUser?.uid!==PARENT_UID)throw Error('Essai réservé au Parent.');
+   if(!['ME_ENT_PROGRAMMES','ME_ENT_THALES3'].includes(id)||
+      !Array.isArray(answers)||answers.length!==(id==='ME_ENT_PROGRAMMES'?6:15)||
+      answers.some(x=>typeof x!=='string'||!x.trim()||x.length>160))
+    throw Error('Toutes les réponses doivent être complétées.');
+   const r=await cloudCallable('previewMathEntTask')({id,answers,bankVersion});
+   if(r.data?.practice!==true||r.data.saved!==false||r.data.xp!==0||
+      !Number.isInteger(r.data.score)||r.data.items?.length!==answers.length)
+    throw Error('La correction de l’essai Parent est indisponible.');
+   return r.data;
+  },
+  mathEntProgress:async(id)=>{
+   if(activeUser?.uid!==TIM_UID&&activeUser?.uid!==PARENT_UID)throw Error('Accès réservé à Tim et au Parent.');
+   const r=await cloudCallable('getMathEntProgress')(id?{id}:{});
+   if(id){if(!('attempt' in (r.data||{})))throw Error('Copie non disponible.');}
+   else if(!Array.isArray(r.data?.attempts))throw Error('Résultats ENT indisponibles.');
+   return r.data;
+  },
   mathTrainingTask:async(id)=>{
    if(!/^MT(?:0[1-9]|1[0-9]|2[0-3])$/.test(id))throw Error('Exercice de mathématiques invalide.');
    const r=await cloudCallable('getMathTrainingTask')({id});
