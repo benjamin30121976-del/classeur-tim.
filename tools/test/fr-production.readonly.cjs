@@ -24,8 +24,26 @@ const site=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
   await page.locator('#login-email').fill(process.env.TIM_PARENT_EMAIL);
   await page.locator('#login-password').fill(process.env.TIM_PARENT_PASSWORD);
   await page.locator('#login-button').click();
-  await page.waitForFunction(()=>document.body.classList.contains('ready')&&
-   Boolean(window.__TIM_BRIDGE?.frTrainingTask)&&Boolean(window.TIM_FR_PACK),null,{timeout:60000});
+  const clientErrors=[];
+  page.on('pageerror',e=>clientErrors.push('JS: '+String(e?.message||e).slice(0,350)));
+  page.on('console',msg=>{if(msg.type()==='error')clientErrors.push('console: '+msg.text().slice(0,350));});
+  try{
+   await page.waitForFunction(()=>document.body.classList.contains('ready')&&
+    Boolean(window.__TIM_BRIDGE?.frTrainingTask)&&Boolean(window.TIM_FR_PACK),null,{timeout:60000});
+  }catch(e){
+   const diagnostics=await page.evaluate(()=>({
+    title:document.title,path:location.href,bodyClass:document.body.className,
+    loginVisible:document.getElementById('login-screen')?.className,
+    frPack:!!window.TIM_FR_PACK,
+    frPath:!!window.TIM_FR_PATH,
+    frTraining:!!window.TIM_FR_TRAINING,
+    bridge:!!window.__TIM_BRIDGE,
+    bridgeFr:typeof window.__TIM_BRIDGE?.frTrainingTask,
+    scripts:[...document.scripts].filter(s=>/boot\.js|francais|app\.js/.test(s.src)).map(s=>s.src),
+    pageText:document.body.innerText.slice(0,300)
+   }));
+   throw new Error('Client français non prêt : '+JSON.stringify(diagnostics)+' / '+clientErrors.slice(0,8).join(' ; ')+' / '+e.message);
+  }
   await page.locator('#intro-screen').waitFor({state:'visible',timeout:9000}).catch(()=>{});
   if(await page.locator('#intro-screen').isVisible()){
    await page.locator('#intro-skip').click({timeout:9000});
