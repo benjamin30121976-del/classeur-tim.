@@ -27,7 +27,7 @@ function sampleDb(){
 test('HG : 8 leçons, 16 exercices, 160 questions et réponses masquées',()=>{
  const ids=HG_BANK_TEST.allIds();
  assert.equal(ids.length,16);
- assert.equal(new Set(ids).size,14);
+ assert.equal(new Set(ids).size,16);
  for(const id of ids){
   assert.ok(hgTrainingId(id));
   const t=hgTask(id),pub=hgPublicTask(id);
