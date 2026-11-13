@@ -149,7 +149,7 @@ async function submitExercise(db,uid,payload){
     questionIndex:c.questionIndex,before:c.before,after:c.after
    })),reviewChangeCount:reviewChanges.length}:{})
  };
- const autoRelease=isMissionId(id)||exercise.kind==='bonus-day'||(exercise.kind==='training'&&evaluated.needsReview!==true);
+ const autoRelease=isMissionId(id)||exercise.kind==='bonus-day'||(evaluated.needsReview===false&&exercise.kind!=='translation-help-log');
  const pending={
   exerciseId:id,authorUid:uid,policyVersion:18,xp:points,correctionStatus:autoRelease?'released':'pending-parent'
  };
@@ -197,12 +197,13 @@ async function releasedCorrections(db,uid){
  const [attempts,releases]=await Promise.all([db.list('attempts',1000),db.list('releasedCorrections',1000)]);
  const allowed=new Set(releases.filter(x=>x.data?.released===true).map(x=>x.id));
  const owned=attempts.filter(x=>x.data?.authorUid===uid);
- const legacy=owned.filter(x=>!allowed.has(x.id)&&x.data?.correctionStatus==='pending-parent');
+ const legacy=owned.filter(x=>!allowed.has(x.id)&&x.data?.correctionStatus==='pending-parent'&&
+  !x.id.startsWith('TRH_'));
  const eligible=await Promise.all(legacy.map(async x=>{
-  try{
-   const {exercise}=await resolveExercise(db,x.id);
-   return exercise?.kind==='training'?x.id:null;
-  }catch{return null;}
+  const detail=await db.get('privateAttempts/'+x.id);
+  // Aucun corrigé de rédaction libre non corrigée ne peut être divulgué.
+  return detail?.needsReview===false&&Array.isArray(detail.answers)&&detail.answers.length>0&&
+   detail.answers.every(a=>typeof a.correct==='boolean')?x.id:null;
  }));
  for(const id of eligible)if(id)allowed.add(id);
  const entries=await Promise.all(owned.filter(x=>allowed.has(x.id)&&
