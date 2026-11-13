@@ -424,6 +424,7 @@ async function fetchAttempts(content){
     if(!correction){attempt.correctionLocked=true;attempt.correctionStatus='pending-parent';continue;}
     attempt.answers=Array.isArray(correction.answers)?correction.answers:[];
     attempt.score=correction.score;attempt.total=correction.total;
+     if(Number.isInteger(correction.translationHelpCount))attempt.translationHelpCount=correction.translationHelpCount;
     attempt.correctionLocked=false;
    }
   }catch(error){console.warn('Corrections Tim en attente :',error.code||error.message);}
@@ -482,12 +483,25 @@ async function startSession(user){
  content=window.TIM_APPLY_SPANISH_NOV05?.(content)||content;
  const missionInput=window.TIM_SPANISH_ENT_EXACT?{...missionSource,exercises:missionSource.exercises.filter(e=>!String(e.subject||'').toLowerCase().includes('espagnol'))}:missionSource;
  const missionPlan=setupMissions(missionInput,new Date(),window.TIM_SPANISH_EDU);
- // Les défis du jour prennent les 390 questions privées des 39 exercices
- // d'espagnol : le serveur fournit seulement énoncés et choix, jamais les réponses.
- // Les anciennes tentatives restent inchangées. Si l'API est indisponible,
- // les défis classiques continuent de fonctionner sans bloquer les leçons.
- let mixedDaily=null;
- if(missionPlan.meta.dailyIds.length && missionPlan.meta.today>='2026-11-11'){
+ // Défis de trois matières : le serveur fabrique une banque distincte
+ // sans remplacer ni re-noter les anciens défis d'espagnol.
+ let mixedDaily=null,mixedChallengePlan=null;
+ if(missionPlan.meta.today>='2026-11-14'){
+  try{
+   const response=await cloudCallable('getMixedChallengePlan')({});
+   const data=response?.data||{};
+   if(data.day!==missionPlan.meta.today||!Array.isArray(data.exercises)||
+      (missionPlan.meta.today>='2026-11-16'&&missionPlan.meta.dailyIds.length&&data.dailyIds?.length!==3)||
+      data.exercises.some(ex=>ex.questionBank!=='mixed-202611-v1'||
+        ex.questions?.length!==(ex.kind==='daily'?10:20)||
+        ex.questions.some(q=>['right','also','why','answer','parts'].some(k=>Object.prototype.hasOwnProperty.call(q,k)))))
+    throw Error('Défis mélangés incomplets.');
+   mixedChallengePlan=data.exercises;
+  }catch(error){console.warn('Défis mélangés indisponibles ; anciennes missions conservées :',error.message||error);}
+ }
+ // Jusqu'au vendredi 13 inclus, préserver les défis espagnols déjà créés.
+ if(!mixedChallengePlan&&missionPlan.meta.dailyIds.length&&
+    missionPlan.meta.today>='2026-11-11'&&missionPlan.meta.today<'2026-11-16'){
   try{
    const result=await cloudCallable('getSpanishDailyMissions')({});
    const data=result?.data||{};
@@ -502,14 +516,18 @@ async function startSession(user){
        ex.questions.some(q=>Object.prototype.hasOwnProperty.call(q,'right'))))
     throw Error('Les nouveaux défis ne sont pas complets.');
    mixedDaily=data.exercises;
-  }catch(error){console.warn('Défis espagnols variés indisponibles ; défis classiques conservés :',error.message||error);}
+  }catch(error){console.warn('Défis espagnols indisponibles ; anciens défis conservés :',error.message||error);}
  }
- window.__TIM_CHALLENGES={...missionPlan.meta,dailyBankStatus:mixedDaily?'mixed':'classic'};
+ window.__TIM_CHALLENGES={...missionPlan.meta,
+  dailyBankStatus:mixedChallengePlan?'three-subjects':mixedDaily?'mixed':'classic'};
  window.__TIM_NEXT_DAILY=missionPlan.meta.daily;
  const retainedExercises=content.exercises.filter(x=>!/^DAY_20\d{6}(?:_\d{2})?$/.test(String(x.id||'')));
+ const plannedById=new Map(missionPlan.exercises.map(ex=>[ex.id,ex]));
+ for(const ex of mixedDaily||[])plannedById.set(ex.id,ex);
+ for(const ex of mixedChallengePlan||[])plannedById.set(ex.id,ex);
  const existingMissionIds=new Set(retainedExercises.map(x=>x.id));
- const planned=missionPlan.exercises.filter(ex=>!mixedDaily||ex.kind!=='daily');
- content={...content,exercises:[...retainedExercises,...planned.filter(x=>!existingMissionIds.has(x.id)),...(mixedDaily||[])]};
+ content={...content,exercises:[...retainedExercises,
+  ...[...plannedById.values()].filter(x=>!existingMissionIds.has(x.id))]};
  // Dans la matière espagnole, seuls les documents ENT exacts sont désormais visibles.
  // Les anciennes notes restent archivées dans Firestore pour le parent.
  if(window.TIM_SPANISH_ENT_EXACT){
@@ -1020,10 +1038,12 @@ async function startSession(user){
    if(window.__TIM_GUEST||activeUser.uid!==TIM_UID)throw Error('Seul Tim peut valider les exercices.');
    const ex=window.__TIM_DATA.exercises.find(q=>q.id===id);
    if(!ex||!Array.isArray(values)||values.length!==ex.questions.length)throw Error('Exercice ou réponses invalides.');
-   const response=await cloudCallable('submitTimExercise')({id,answers:values});
+   const translationsUsed=ex.questionBank==='mixed-202611-v1'?
+     (Array.isArray(options.translationsUsed)?options.translationsUsed:[]):[];
+    const response=await cloudCallable('submitTimExercise')({id,answers:values,translationsUsed});
    const xp=Number(response.data?.xp||0);
    const released=response.data?.correctionStatus==='released'&&Array.isArray(response.data.answers)&&response.data.answers.length===ex.questions.length;
-   return {id,date:new Date().toISOString(),title:ex.title,lesson:ex.lesson,xp,correctionLocked:!released,correctionStatus:released?'released':'pending-parent',answers:released?response.data.answers:[],score:released?Number(response.data.score):null,total:released?Number(response.data.total):null,needsReview:false,policyVersion:18};
+   return {id,date:new Date().toISOString(),title:ex.title,lesson:ex.lesson,xp,correctionLocked:!released,correctionStatus:released?'released':'pending-parent',answers:released?response.data.answers:[],score:released?Number(response.data.score):null,total:released?Number(response.data.total):null,needsReview:false,policyVersion:18,translationHelpCount:response.data?.translationHelpCount??null};
   },
   assignParentBonus:async sourceId=>{
    if(activeUser?.uid!==PARENT_UID)throw Error('Réservé au compte Parent.');
@@ -1178,7 +1198,7 @@ async function startSession(user){
       match?window.TIM_SPANISH_EDU?.[match[2]]:
       window.__TIM_DATA?.lessons?.find(l=>l.id===ex?.lesson);
     const isMission=gradedMission(item.id);
-    const subject=mathMatch?'Mathématiques':match?'Espagnol':isMission?'Défi · Espagnol':(ex?.subject||'Exercice');
+    const subject=mathMatch?'Mathématiques':match?'Espagnol':isMission?'Défi · 3 matières':(ex?.subject||'Exercice');
     const lessonTitle=lesson?.name||lesson?.title||'';
     const exerciseTitle=match?(match[1]==='Q'?'QCM ':'Écriture ')+Number(match[3]):mathMatch?'Évaluation de la sous-leçon · '+mathMatch[1]:(item.title||'Exercice');
     const heading=document.createElement('strong');heading.textContent=subject+(lessonTitle?' · '+lessonTitle:'');
@@ -1360,7 +1380,7 @@ async function startSession(user){
  document.getElementById('account-name').textContent=isParent?'Espace parent — compte connecté':'Espace Tim — compte connecté';
  document.querySelectorAll('[data-nav="parent"]').forEach(el=>el.hidden=!isParent);
  document.getElementById('logout-button').onclick=()=>signOut(auth);
- const sc=document.createElement('script');sc.src='./app.js?v=lecons-xp-7-5-0-v19';sc.onerror=()=>{stopApp();message('Le module pédagogique du classeur n’a pas chargé.');};
+ const sc=document.createElement('script');sc.src='./app.js?v=defis-mixtes-pedagogiques-20261113';sc.onerror=()=>{stopApp();message('Le module pédagogique du classeur n’a pas chargé.');};
  sc.addEventListener('load',()=>{try{if(document.querySelector('.mission-hero'))window.TIM_INTRO_SHOW?.();}catch(e){console.warn('Animation d’ouverture indisponible :',e);}});
  document.body.append(sc);appLoaded=true;
 }
