@@ -1040,7 +1040,9 @@ async function startSession(user){
    if(!ex||!Array.isArray(values)||values.length!==ex.questions.length)throw Error('Exercice ou réponses invalides.');
    const translationsUsed=ex.questionBank==='mixed-202611-v1'?
      (Array.isArray(options.translationsUsed)?options.translationsUsed:[]):[];
-    const response=await cloudCallable('submitTimExercise')({id,answers:values,translationsUsed});
+    const reviewChanges=ex.questionBank==='mixed-202611-v1'?
+     (Array.isArray(options.reviewChanges)?options.reviewChanges:[]):[];
+    const response=await cloudCallable('submitTimExercise')({id,answers:values,translationsUsed,reviewChanges});
    const xp=Number(response.data?.xp||0);
    const released=response.data?.correctionStatus==='released'&&Array.isArray(response.data.answers)&&response.data.answers.length===ex.questions.length;
    return {id,date:new Date().toISOString(),title:ex.title,lesson:ex.lesson,xp,correctionLocked:!released,correctionStatus:released?'released':'pending-parent',answers:released?response.data.answers:[],score:released?Number(response.data.score):null,total:released?Number(response.data.total):null,needsReview:false,policyVersion:18,translationHelpCount:response.data?.translationHelpCount??null};
