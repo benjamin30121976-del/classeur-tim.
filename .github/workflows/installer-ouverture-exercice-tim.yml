@@ -1,10 +1,10 @@
-name: Installer le splash d'ouverture des exercices de Tim
+name: Installer ouverture exercice et animation plus 2,5 XP
 on:
   push:
     branches:
       - animations-entree-revelation-xp-20261113
     paths:
-      - 'Tim_Ouverture_Exercice_V6_A_Importer.zip'
+      - 'Tim_Animations_Entree_Et_2_5XP.zip'
 permissions:
   contents: write
 jobs:
@@ -14,31 +14,42 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: true
-      - name: Extraire le MP4 validé et contrôler vidéo + audio
+      - name: Verifier et extraire les deux medias approuves
         shell: bash
         run: |
           set -euo pipefail
-          archive='Tim_Ouverture_Exercice_V6_A_Importer.zip'
-          media='Tim_Ouverture_Exercice_Splash_Tan_Tan_V6_Moins_Aigue.mp4'
-          test -f "$archive"
-          test "$(unzip -Z1 "$archive" | wc -l)" -eq 1
-          unzip -Z1 "$archive" | grep -Fx "$media"
-          mkdir -p assets/animations
-          unzip -p "$archive" "$media" > "assets/animations/$media"
-          printf '%s  %s\n' '77394bf218ed8484357cbee6065569121527838718003bbfd04462fe887fb4e1' "assets/animations/$media" | sha256sum --check --status
-          ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,height -of default=nw=1 "assets/animations/$media"
-          ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=nw=1 "assets/animations/$media"
-      - name: Installer sans toucher à main ni aux données scolaires
+          python - <<'PY'
+          from pathlib import Path
+          from zipfile import ZipFile
+          from hashlib import sha256
+          archive=Path('Tim_Animations_Entree_Et_2_5XP.zip')
+          expected={
+            'Tim_Ouverture_Exercice_Splash_Tan_Tan_V6_Moins_Aigue.mp4':'77394bf218ed8484357cbee6065569121527838718003bbfd04462fe887fb4e1',
+            'Tim_Animation_2_5XP_Loup.gif':'c086df08b0a2a36531871918b5ba6034cc51cabf3d959e323bf3c9b938b8c966'
+          }
+          with ZipFile(archive) as z:
+            if set(z.namelist())!=set(expected):raise SystemExit('Contenu du ZIP inattendu')
+            target=Path('assets/animations')
+            target.mkdir(parents=True,exist_ok=True)
+            for name,checksum in expected.items():
+              data=z.read(name)
+              if sha256(data).hexdigest()!=checksum:raise SystemExit('Empreinte incorrecte : '+name)
+              if name.endswith('.mp4') and b'ftyp' not in data[:20]:raise SystemExit('MP4 incorrect')
+              if name.endswith('.gif') and data[:6] not in (b'GIF87a',b'GIF89a'):raise SystemExit('GIF incorrect')
+              (target/name).write_bytes(data)
+              print('Media valide',name,len(data))
+          PY
+          ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,height -of default=nw=1 assets/animations/Tim_Ouverture_Exercice_Splash_Tan_Tan_V6_Moins_Aigue.mp4
+          ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=nw=1 assets/animations/Tim_Ouverture_Exercice_Splash_Tan_Tan_V6_Moins_Aigue.mp4
+      - name: Enregistrer dans la branche de travail seulement
         shell: bash
         run: |
           set -euo pipefail
-          archive='Tim_Ouverture_Exercice_V6_A_Importer.zip'
-          media='Tim_Ouverture_Exercice_Splash_Tan_Tan_V6_Moins_Aigue.mp4'
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add "assets/animations/$media"
-          git rm -f -- "$archive"
+          git add assets/animations/Tim_Ouverture_Exercice_Splash_Tan_Tan_V6_Moins_Aigue.mp4 assets/animations/Tim_Animation_2_5XP_Loup.gif
+          git rm -f -- Tim_Animations_Entree_Et_2_5XP.zip
           if ! git diff --cached --quiet; then
-            git commit -m "Installer splash V6 avec musique validée"
+            git commit -m "Installer splash ouverture et recompense 2,5 XP"
             git push
           fi
