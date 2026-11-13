@@ -38,7 +38,7 @@ function lessonOf(id,record,ex){
   const ref=record?.lessonId||('PC_BIS'+id.slice(5,7));
   return window.__TIM_DATA?.lessons?.find(x=>x.id===ref)?.title||'Leçon '+id.slice(5,7);
  }
- if(/^ENQ_L0[1-7]_0[1-3]$/.test(id)){const ref=record?.lessonId||('EN_BIS'+id.slice(5,7));return window.__TIM_DATA?.lessons?.find(x=>x.id===ref)?.title||'Leçon d’anglais';}
+ if(/^ENQ_L0[1-7]_0[1-3]$/.test(id)){const ref=record?.lessonId||('EN_BIS'+id.slice(5,7));return window.TIM_ANGLAIS_PACK?.bis?.find(x=>x.id===ref)?.title||window.__TIM_DATA?.lessons?.find(x=>x.id===ref)?.title||'Leçon d’anglais';}
  if(/^PC_ENT_/.test(id))return record?.source||'Fiche originale du professeur';
  if(/^ME_ENT_/.test(id))return record?.source||'Fiche ENT de maths de Mme Pialet';
  return window.__TIM_DATA?.lessons?.find(x=>x.id===ex?.lesson)?.title||ex?.lesson||'';
