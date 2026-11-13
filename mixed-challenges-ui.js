@@ -168,11 +168,19 @@ function open(ex,ctx={}){
    },'mix-review-item'+(complete?'':' mix-missing'));
    list.append(button);});
   box.append(E('h4','Revoir mes réponses'),list);
-  const submit=btn('Valider définitivement mon défi',async()=>{
-   if(countAnswered()!==questions.length||state.checked.some(v=>!v)){alert('Réponds aux questions restantes et coche les étapes de relecture.');return;}
-   if(!confirm('Valider définitivement ? Une seule tentative : tu recevras ensuite ta note et ton corrigé.'))return;
-   submit.disabled=true;submit.textContent='Enregistrement sécurisé…';
+  const submit=btn(parent?'Corriger mon essai Parent (sans XP)':'Valider définitivement mon défi',async()=>{
+   if(!parent&&(countAnswered()!==questions.length||state.checked.some(v=>!v))){
+    alert('Réponds aux questions restantes et coche les étapes de relecture.');return;
+   }
+   if(!parent&&!confirm('Valider définitivement ? Une seule tentative : tu recevras ensuite ta note et ton corrigé.'))return;
+   submit.disabled=true;submit.textContent=parent?'Calcul de ma correction…':'Enregistrement sécurisé…';
    try{
+    if(parent){
+     const graded=await window.__TIM_BRIDGE.mixedMissionPreview(ex.id,state.answers,state.translated);
+     if(!graded||graded.practice!==true||graded.saved!==false||graded.xp!==0)
+      throw Error('Essai non confirmé comme non enregistré.');
+     preview=graded;state.stage='result';showResult();return;
+    }
     const reviewChanges=Array.isArray(state.baseline)?
      state.answers.flatMap((after,i)=>state.baseline[i]!==after?
        [{questionIndex:i,before:state.baseline[i]||'',after}]:[]):[];
@@ -180,29 +188,39 @@ function open(ex,ctx={}){
      translationsUsed:state.translated,reviewChanges});
     save(ex.id,null);await ctx.onSaved?.(result);
    }catch(err){
+    if(parent){
+     submit.disabled=false;submit.textContent='Corriger mon essai Parent (sans XP)';
+     box.append(E('p','Correction indisponible : '+String(err?.message||err)+'. Aucune note ni aucun XP de Tim modifié.','mix-paper'));
+     return;
+    }
     submit.disabled=false;submit.textContent='Valider définitivement mon défi';
     try{await window.__TIM_BRIDGE.refresh?.();}catch{}
     if((window.__CLOUD_ATTEMPTS||[]).some(x=>x.id===ex.id)){ctx.onReload?.();return;}
     alert('Validation non confirmée. Tes réponses restent conservées. '+String(err?.message||err));
    }
   },'mix-btn mix-primary');
-  if(countAnswered()!==questions.length||state.checked.some(v=>!v))submit.disabled=true;
-  box.append(submit,E('p','Tu peux modifier tes réponses jusqu’à ce dernier clic. Après, le défi ne peut plus être recommencé.','mix-muted'));
+  if(!parent&&(countAnswered()!==questions.length||state.checked.some(v=>!v)))submit.disabled=true;
+  box.append(submit,E('p',parent?
+   'Simulation sans enregistrement : tu peux demander la correction, même avec des réponses manquantes, puis recommencer.':
+   'Tu peux modifier tes réponses jusqu’à ce dernier clic. Après, le défi ne peut plus être recommencé.','mix-muted'));
   host.append(box);focus();
  }
  function showResult(){
   clear();head();
   const copy=E('section',undefined,'mix-panel');
-  if(!old){copy.append(E('p','Copie en cours de récupération.'));host.append(copy);return;}
-  copy.append(E('h3','Ma note : '+(finite(old.score)?Number(old.score).toLocaleString('fr-FR')+'/'+old.total:'à actualiser')));
-  copy.append(E('p','XP obtenus : '+(finite(old.xp)?(old.xp>=0?'+':'')+old.xp:'à confirmer')+' XP','mix-advice'));
-  if(Number.isInteger(old.translationHelpCount))copy.append(E('p','Traduction utilisée pour '+old.translationHelpCount+' question(s) d’espagnol.','mix-muted'));
-  if(!Array.isArray(old.answers)||old.answers.length!==questions.length){
-   copy.append(E('p','Le résultat est enregistré. Actualise pour récupérer toute la correction.','mix-muted'));
-   copy.append(btn('Actualiser mon corrigé',async()=>{await window.__TIM_BRIDGE.refresh();ctx.onReload?.();},'mix-btn'));
+  const report=parent?preview:old;
+  if(!report){copy.append(E('p','Copie en cours de récupération.'));host.append(copy);return;}
+  copy.append(E('h3',(parent?'Note de mon essai Parent : ':'Ma note : ')+
+    (finite(report.score)?Number(report.score).toLocaleString('fr-FR')+'/'+report.total:'à actualiser')));
+  copy.append(E('p',parent?'ESSAI PARENT · 0 XP · aucune note de Tim enregistrée.':
+   'XP obtenus : '+(finite(report.xp)?(report.xp>=0?'+':'')+report.xp:'à confirmer')+' XP','mix-advice'));
+  if(Number.isInteger(report.translationHelpCount))copy.append(E('p','Traduction utilisée pour '+report.translationHelpCount+' question(s) d’espagnol.','mix-muted'));
+  if(!Array.isArray(report.answers)||report.answers.length!==questions.length){
+   copy.append(E('p',parent?'La correction de cet essai est indisponible.':'Le résultat est enregistré. Actualise pour récupérer toute la correction.','mix-muted'));
+   if(!parent)copy.append(btn('Actualiser mon corrigé',async()=>{await window.__TIM_BRIDGE.refresh();ctx.onReload?.();},'mix-btn'));
    host.append(copy);return;
   }
-  for(const [i,a] of old.answers.entries()){
+  for(const [i,a] of report.answers.entries()){
    const q=questions[i],item=E('article',undefined,'mix-correction');
    const partial=Number(a.points)||0;
    item.append(E('h4','Question '+(i+1)+' · '+q.subject+' · '+partial.toLocaleString('fr-FR')+'/1 point'));
@@ -215,7 +233,8 @@ function open(ex,ctx={}){
      ' · Calcul : '+(a.calculationCorrect?'correct':'à revoir')+
      ' · Conclusion : '+(a.conclusionCorrect?'correcte':'à revoir'),'mix-muted'));
    }else{
-    item.append(E('p','Ma réponse : '+(q.type==='mc'?q.options?.[Number(a.response)]||a.response:a.response)));
+    item.append(E('p','Ma réponse : '+(!String(a.response||'').trim()?'Sans réponse':
+     q.type==='mc'?q.options?.[Number(a.response)]||a.response:a.response)));
     if(a.correct===false)item.append(E('p','Réponse attendue : '+String(a.expected||'')));
    }
    item.append(E('p','Explication : '+String(a.explanation||'Relis la leçon pour comprendre.')));
@@ -225,9 +244,13 @@ function open(ex,ctx={}){
     item.append(btn('Ouvrir la leçon correspondante',()=>window.TIM_PEDAGOGY_NAVIGATE(q.subject,q.lessonId),'mix-link'));
    copy.append(item);
   }
+  if(parent)copy.append(btn('Recommencer un essai Parent',()=>{
+   preview=null;state.answers=questions.map(()=>'');state.translated=questions.map(()=>false);
+   state.baseline=null;state.checked=[false,false,false,false];state.page=0;showIntro();
+  },'mix-btn mix-primary'));
   host.append(copy);focus();
  }
- if(old)showResult();else if(parent||guest||serviceReadOnly)showQuiz();else showIntro();
+ if(old)showResult();else if(guest||serviceReadOnly)showQuiz();else showIntro();
 }
 window.TIM_MIXED_UI={open};
 })();
