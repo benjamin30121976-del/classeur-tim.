@@ -283,13 +283,10 @@ const ENGLISH_CHAPTERS=['Vacances et prétérit','Personnalité','Similitudes et
 function englishSeriesFor(bis){
  return ENGLISH_SERIES[bis.id]||['Comprendre et rédiger'];
 }
-async function openEnglishTrainingFromExercises(id,lessonId,title){
+function openEnglishTrainingFromExercises(id,lessonId,title){
  if(!/^ENQ_L0[1-7]_0[1-3]$/.test(id)||!window.TIM_ENGLISH_TRAINING?.mount){
   alert('Le questionnaire interactif d’anglais est momentanément indisponible.');
   return;
- }
- if(!window.__TIM_PARENT&&!window.__TIM_GUEST&&!attemptFor(id)){
-  try{await window.TIM_ANIMATIONS?.playOpening?.();}catch(error){console.warn('Ouverture sans animation',error);}
  }
  exerciseSubject='Anglais';
  page('exercices');
