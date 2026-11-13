@@ -197,11 +197,24 @@ async function releasedCorrections(db,uid){
 }
 async function courseContent(db,uid){
  permitted(uid,'tim');
- const [main,lessons,exercises]=await Promise.all([
-  db.get('content/main'),db.list('lessons',500),db.list('exercises',500)
- ]);
+ // Ne pas bloquer Tim si la lecture des compléments Firestore échoue.
+ // Les collections manquantes sont marquées, et le cours principal reste accessible.
+ const main=await db.get('content/main');
  if(!main||!Array.isArray(main.lessons)||!Array.isArray(main.exercises))
   throw new ApiFault(404,'course-not-found');
+ const resilientList=async name=>{
+  for(let attempt=0;attempt<3;attempt++){
+   try{return {items:await db.list(name,500),available:true};}
+   catch(error){
+    if(attempt===2)return {items:[],available:false};
+    await new Promise(resolve=>setTimeout(resolve,200*(attempt+1)));
+   }
+  }
+ };
+ const [lessonList,exerciseList]=await Promise.all([
+  resilientList('lessons'),resilientList('exercises')
+ ]);
+ const lessons=lessonList.items,exercises=exerciseList.items;
  // Les ajouts du classeur sont stockés avec un payloadJson. Le convertir
  // AVANT de filtrer les corrigés, pour que Tim voie le défi publié sans fuite
  // de réponses dans la chaîne JSON brute.
@@ -217,7 +230,8 @@ async function courseContent(db,uid){
   additions:sanitize({
    lessons:lessons.map(unpack).filter(Boolean),
    exercises:exercises.map(unpack).filter(Boolean)
-  })};
+  }),
+  additionsIncomplete:!lessonList.available||!exerciseList.available};
 }
 async function oldTrainingProgress(db,uid){
  if(uid!==TIM_UID&&uid!==PARENT_UID)throw new ApiFault(403,'forbidden');
