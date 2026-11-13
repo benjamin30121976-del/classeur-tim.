@@ -118,7 +118,7 @@ test('Raisonnement : « ne sont pas parallèles » contredit la conclusion atten
  assert.equal(good.answers[0].conclusionCorrect,true);
 });
 
-test('Défis quotidiens : quatre matières, deux questions anglaises et 30 questions distinctes',()=>{
+test('Défis quotidiens : cinq matières, deux questions anglaises et 30 questions distinctes',()=>{
  const englishIds=[];
  for(const day of ['16','17','18','19','20']){
   for(const slot of ['01','02','03']){
@@ -126,7 +126,8 @@ test('Défis quotidiens : quatre matières, deux questions anglaises et 30 quest
    assert.ok(challenge);
    assert.equal(challenge.questions.length,10);
    assert.equal(challenge.questions.filter(q=>q.subject==='Anglais').length,2);
-   for(const subject of ['Espagnol','Mathématiques','Physique-chimie','Anglais'])
+   assert.equal(challenge.questions.filter(q=>q.subject==='SVT').length,2);
+   for(const subject of ['Espagnol','Mathématiques','Physique-chimie','Anglais','SVT'])
     assert.ok(challenge.questions.some(q=>q.subject===subject),id+' sans '+subject);
    englishIds.push(...challenge.questions.filter(q=>q.subject==='Anglais').map(q=>q.sourceId));
    const publicData=publicMixedMission(challenge);
