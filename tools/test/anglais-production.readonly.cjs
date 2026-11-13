@@ -57,6 +57,32 @@ const email=process.env.TIM_PARENT_EMAIL,password=process.env.TIM_PARENT_PASSWOR
   assert.equal(report.items,10);
   assert.equal(report.hasExplanations,true);
   assert.equal(report.before,report.after,'Un essai Parent ne doit pas créer de copie Tim.');
+  // Contrôle réel de l’interface, sans valider d’exercice.
+  await page.locator('[data-nav="home"]').first().click();
+  const homeButtons=page.locator('#home-content .english-home-quick button');
+  assert.equal(await homeButtons.count(),2,'Deux raccourcis anglais doivent être visibles sur Accueil.');
+  const homepage=await page.locator('#home-content .english-home-quick').innerText();
+  assert.match(homepage,/Prétérit simple et BE-ING/,'Un exercice précis doit être accessible depuis Accueil.');
+  const state=await page.evaluate(()=>({
+   status:window.__TIM_CHALLENGES?.dailyBankStatus,
+   summary:document.querySelector('.daily-loup-summary')?.textContent||''
+  }));
+  if(state.status==='four-subjects')assert.match(state.summary,/Anglais.*espagnol.*maths.*physique-chimie/i);
+  await homeButtons.first().click();
+  assert.equal(await page.locator('#exercise-list .pc-exercise-lesson').count(),5,
+   'Les cinq chapitres d’anglais doivent figurer dans Exercices.');
+  assert.equal(await page.locator('#exercise-list .pc-exercise-lesson .tile').count(),11,
+   'Les 11 exercices anglais doivent être directement cliquables.');
+  assert.equal(await page.locator('#exercise-list .pc-official-ent-list details').count(),8,
+   'Les 9 pièces ENT sont réparties sur 8 séances datées.');
+  const consignes=page.locator('#exercise-list details').filter({hasText:'Consignes et devoirs de l’ENT'});
+  assert.equal(await consignes.count(),1,'Les 17 consignes ENT doivent rester distinguées des tests BIS.');
+  await page.locator('#exercise-list .pc-exercise-lesson .tile').last().click();
+  await page.locator('#exercise-detail .tim-es-question-page').waitFor({timeout:20000});
+  assert.match(await page.locator('#exercise-detail').innerText(),/Question 1 sur 10/);
+  assert.equal(await page.locator('#exercise-detail .pc-confirm').count(),0,
+   'Aucune validation ne doit être déclenchée par le test.');
+  console.log('ANGLAIS INTERFACE OK : Accueil, 11 exercices détaillés, 9 documents ENT sur 8 séances, questionnaire ouvrable sans validation.');
   console.log('ANGLAIS PRODUCTION OK : 22 cours ENT, 7 BIS, 17 devoirs, 9 documents privés, 10 réponses corrigées sans enregistrer de note/XP.');
  }finally{await page.close();await browser.close();}
 })().catch(e=>{console.error('ÉCHEC CONTRÔLE ANGLAIS : '+String(e?.message||e));process.exitCode=1;});
