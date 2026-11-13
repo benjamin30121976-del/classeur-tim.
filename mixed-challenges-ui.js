@@ -55,28 +55,33 @@ function open(ex,ctx={}){
  index.classList.add('hide');host.classList.add('active');
  const parent=Boolean(window.__TIM_PARENT),guest=Boolean(window.__TIM_GUEST),serviceReadOnly=Boolean(window.__TIM_READONLY_FALLBACK);
  const old=ctx.old||null,questions=ex.questions||[];
+ let preview=null;
  const stored=read()[ex.id]||{},state={
   answers:Array.from({length:questions.length},(_,i)=>String(stored.answers?.[i]||'')),
   translated:Array.from({length:questions.length},(_,i)=>stored.translated?.[i]===true),
-  baseline:stored.baseline||null,stage:old?'result':(parent||guest||serviceReadOnly?'quiz':'intro'),page:0,
+  baseline:stored.baseline||null,stage:old?'result':(guest||serviceReadOnly?'quiz':'intro'),page:0,
   checked:[false,false,false,false]};
  const persist=()=>{if(!old&&!parent&&!guest)save(ex.id,{answers:state.answers,translated:state.translated,baseline:state.baseline});};
  const clear=()=>host.replaceChildren();
  const back=()=>{index.classList.remove('hide');host.classList.remove('active');ctx.onReturn?.();};
  const head=()=>{const top=E('div',undefined,'mix-head');
   top.append(btn('← Retour aux défis',back,'mix-link'),E('h2',ex.title));
-  top.append(E('p','Espagnol · Mathématiques · Physique-chimie — '+questions.length+' questions · une seule validation.','mix-muted'));
+  top.append(E('p',parent?
+    'ESSAI PARENT · '+questions.length+' questions · correction immédiate · aucune note ni aucun XP de Tim enregistré.':
+    'Espagnol · Mathématiques · Physique-chimie — '+questions.length+' questions · une seule validation.','mix-muted'));
   host.append(top);};
  const focus=()=>{host.scrollIntoView?.({behavior:'smooth',block:'start'});};
  const advice=['Lis toutes les consignes jusqu’au bout.','Pose tes calculs sur ton brouillon papier.','Si tu bloques, avance et reviens ensuite.','Rédige des étapes et une phrase de conclusion.','Garde du temps pour relire ta copie.','Pour une interro longue, organise ton travail.','Utilise toutes les bonnes habitudes de la semaine.'];
  function showIntro(){
   clear();head();const box=E('section',undefined,'mix-panel');
-  box.append(E('h3','Ma méthode avant l’interrogation'));
+  box.append(E('h3',parent?'Essai Parent — méthode du défi':'Ma méthode avant l’interrogation'));
   const day=new Date().getDay();box.append(E('p','Conseil du jour : '+advice[(day+6)%7],'mix-advice'));
   const list=E('ol');
   for(const s of ['Je lis la consigne et je repère ce qui est demandé.','Je cherche sur mon brouillon avant de rédiger.','J’écris mon calcul ou mon raisonnement, puis ma conclusion.','Je passe une question difficile et j’y reviens.','Je relis ma copie avant de valider.'])list.append(E('li',s));
   box.append(list,E('p','Prépare une feuille, un stylo et éventuellement une règle. Aucune aide ne donne les réponses pendant le défi.','mix-muted'));
-  box.append(btn('J’ai préparé mon brouillon — Commencer',()=>{state.stage='quiz';showQuiz();},'mix-btn mix-primary'));
+  if(parent)box.append(E('p','Tu peux répondre librement, même à quelques questions seulement, puis demander le corrigé. Tu pourras recommencer cet essai autant de fois que nécessaire, sans toucher au compte Tim.','mix-advice'));
+  box.append(btn(parent?'Commencer mon essai Parent':'J’ai préparé mon brouillon — Commencer',
+    ()=>{state.stage='quiz';showQuiz();},'mix-btn mix-primary'));
   host.append(box);focus();
  }
  const countAnswered=()=>questions.filter((q,i)=>answered(q,state.answers[i])).length;
@@ -87,7 +92,7 @@ function open(ex,ctx={}){
    q.options.forEach((opt,idx)=>{
     const line=E('label',undefined,'mix-option'),radio=E('input');
     radio.type='radio';radio.name='mix-'+ex.id+'-'+i;radio.value=String(idx);radio.checked=val===String(idx);
-    radio.onchange=()=>{state.answers[i]=String(idx);persist();};if(old||parent||guest||serviceReadOnly)radio.disabled=true;
+    radio.onchange=()=>{state.answers[i]=String(idx);persist();};if(old||guest||serviceReadOnly)radio.disabled=true;
     line.append(radio,E('span',opt));group.append(line);
    });box.append(group);
   }else if(q.type==='reason'){
@@ -97,12 +102,12 @@ function open(ex,ctx={}){
     const line=E('label',undefined,'mix-option'),radio=E('input');
     radio.type='radio';radio.name='method-'+ex.id+'-'+i;radio.value=String(k);radio.checked=String(current.m??'')===String(k);
     radio.onchange=()=>{current.m=String(k);state.answers[i]=JSON.stringify(current);persist();};
-    if(old||parent||guest||serviceReadOnly)radio.disabled=true;line.append(radio,E('span',method));box.append(line);
+    if(old||guest||serviceReadOnly)radio.disabled=true;line.append(radio,E('span',method));box.append(line);
    });
    for(const [key,heading,placeholder] of [['c','2. Mon calcul et mes étapes','Je pose mon opération sur le brouillon, puis j’écris mon calcul…'],['s','3. Ma conclusion','Je rédige une phrase complète avec le résultat et l’unité…']]){
     box.append(E('p',heading,'mix-step-label'));
     const field=E('textarea',undefined,'mix-textarea');field.rows=key==='c'?3:2;
-    field.placeholder=placeholder;field.value=current[key]||'';field.disabled=!!old||parent||guest||serviceReadOnly;
+    field.placeholder=placeholder;field.value=current[key]||'';field.disabled=!!old||guest||serviceReadOnly;
     field.oninput=()=>{current[key]=field.value;state.answers[i]=JSON.stringify(current);persist();};
     box.append(field);
    }
@@ -111,7 +116,7 @@ function open(ex,ctx={}){
    const input=q.format==='short'?E('textarea',undefined,'mix-textarea'):E('input',undefined,'mix-input');
    if(q.format==='short')input.rows=3;else input.type='text';
    input.autocomplete='off';input.spellcheck=q.subject!=='Espagnol';input.placeholder='Écris ta réponse ici…';
-   input.value=val;input.disabled=!!old||parent||guest||serviceReadOnly;
+   input.value=val;input.disabled=!!old||guest||serviceReadOnly;
    input.oninput=()=>{state.answers[i]=input.value;persist();};
    box.append(input);
   }
@@ -151,7 +156,8 @@ function open(ex,ctx={}){
   if(state.baseline===null){state.baseline=state.answers.slice();persist();}
   clear();head();
   const box=E('section',undefined,'mix-panel');box.append(E('h3','Avant de rendre ma copie'));
-  box.append(E('p','Tu as répondu à '+countAnswered()+' question(s) sur '+questions.length+'. Tu peux revenir modifier chaque réponse.','mix-muted'));
+  box.append(E('p','Tu as répondu à '+countAnswered()+' question(s) sur '+questions.length+'. Tu peux revenir modifier chaque réponse.'+
+    (parent?' En essai Parent, les questions laissées vides vaudront zéro, sans blocage.':''),'mix-muted'));
   const rules=['J’ai relu attentivement les consignes.','J’ai vérifié mes calculs, signes et unités.','J’ai relu l’espagnol, les verbes et les phrases.','J’ai relu toutes mes conclusions et répondu à chaque question.'];
   rules.forEach((text,i)=>{const line=E('label',undefined,'mix-check'),checkbox=E('input');checkbox.type='checkbox';checkbox.checked=state.checked[i];
    checkbox.onchange=()=>{state.checked[i]=checkbox.checked;showReview();};line.append(checkbox,E('span',text));box.append(line);});
