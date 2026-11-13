@@ -13,6 +13,7 @@ import {spanishEntTrainingId,spanishEntTask,spanishEntPublicTask,gradeSpanishEnt
 import {spanishLessonXp} from './spanish-lesson-xp.mjs';
 import {physicsTrainingId,physicsPublicTask,gradePhysicsTask,PHYSICS_BANK_VERSION} from './physics-training.mjs';
 import {englishTrainingId,englishPublicTask,gradeEnglishTask,ENGLISH_BANK_VERSION} from './english-training.mjs';
+import {svtTrainingId,svtPublicTask,gradeSvtTask,SVT_BANK_VERSION} from './svt-training.mjs';
 import {PHYSICS_ENT_VERSION,physicsEntId,physicsEntPublicTask,physicsEntGrade} from './physics-ent-training.mjs';
 import {MATH_ENT_VERSION,mathEntId,mathEntPublicTask,gradeMathEnt} from './math-ent-training.mjs';
 
@@ -500,6 +501,87 @@ async function getEnglishTrainingProgress(db,uid,payload){
   .sort((a,b)=>String(b.submittedAt||'').localeCompare(String(a.submittedAt||'')))};
 }
 
+/* SVT : même sécurité, validation unique et suivi privé Parent-Tim que les autres matières. */
+async function getSvtTrainingTask(db,uid,payload){
+ allowedFamily(uid);
+ const id=payload?.id;
+ if(!svtTrainingId(id))throw new ApiFault(400,'invalid-svt-exercise');
+ const task=svtPublicTask(id);
+ const old=await db.get('svtTrainingAttempts/'+id);
+ return {task,completed:Boolean(old&&old.authorUid===TIM_UID)};
+}
+async function submitSvtTraining(db,uid,payload){
+ permitted(uid,'tim');
+ const id=payload?.id,answers=payload?.answers;
+ if(!svtTrainingId(id)||!Array.isArray(answers)||answers.length!==10)
+  throw new ApiFault(400,'invalid-svt-answers');
+ if(payload?.bankVersion!==SVT_BANK_VERSION)
+  throw new ApiFault(409,'stale-svt-bank');
+ let result,xp;
+ try{
+  result=gradeSvtTask(id,answers,payload.bankVersion);
+  xp=spanishLessonXp(result.score,result.total);
+ }catch{throw new ApiFault(400,'invalid-svt-answers');}
+ // Les réponses ne sont jamais écrites hors transaction : pas de note en double.
+ const tx=await db.transaction();
+ const [old,xpRecord]=await Promise.all([
+  db.get('svtTrainingAttempts/'+id,tx),
+  db.get('xpState/tim',tx)
+ ]);
+ if(old)throw new ApiFault(409,'already-exists');
+ const today=parisDate(new Date()),week=mondayOf(today),state=xpRecord||{};
+ const current=state.date===today?state:{earned:0,lost:0,bonus:0};
+ const weekEarned=state.week===week?Number(state.weekEarned||0):0;
+ const weekXp=state.week===week?Number(state.weekXp??state.weekEarned??0):0;
+ const nextXP={
+  date:today,week,
+  earned:Number(current.earned||0)+xp,
+  lost:Number(current.lost||0),
+  bonus:Number(current.bonus||0),
+  weekEarned:weekEarned+xp,
+  weekXp:Math.max(0,weekXp+xp),
+  policyVersion:18
+ };
+ await db.commit([
+  createWrite('svtTrainingAttempts/'+id,{
+   ...result,xp,authorUid:uid,subject:'SVT',
+   answers,version:1
+  },NOW),
+  upsertWrite('xpState/tim',nextXP,[{fieldPath:'updatedAt',setToServerValue:'REQUEST_TIME'}])
+ ],tx);
+ return {...result,xp,submitted:true,submittedAt:new Date().toISOString()};
+}
+/* Aperçu/essai du Parent uniquement : correction en mémoire, sans écriture
+   Firestore, sans tentative, sans XP et sans modification des résultats de Tim. */
+async function previewSvtTraining(db,uid,payload){
+ permitted(uid,'parent');
+ const id=payload?.id,answers=payload?.answers;
+ if(!svtTrainingId(id)||!Array.isArray(answers)||answers.length!==10)
+  throw new ApiFault(400,'invalid-svt-preview');
+ if(payload?.bankVersion!==SVT_BANK_VERSION)
+  throw new ApiFault(409,'stale-svt-bank');
+ let graded;
+ try{graded=gradeSvtTask(id,answers,payload.bankVersion);}
+ catch{throw new ApiFault(400,'invalid-svt-preview');}
+ return {...graded,xp:0,practice:true,submitted:false,saved:false,
+  message:'Simulation Parent : aucune note, tentative ou XP enregistrés.'};
+}
+async function getSvtTrainingProgress(db,uid,payload){
+ allowedFamily(uid);
+ const id=payload?.id;
+ if(id!==undefined&&id!==null){
+  if(!svtTrainingId(id))throw new ApiFault(400,'invalid-svt-exercise');
+  const old=await db.get('svtTrainingAttempts/'+id);
+  return {attempt:old?.authorUid===TIM_UID?{...old,id,xp:Number(old.xp||0)}:null};
+ }
+ const docs=await db.list('svtTrainingAttempts',100);
+ return {attempts:docs.filter(x=>svtTrainingId(x.id)&&x.data?.authorUid===TIM_UID)
+  .map(x=>({id:x.id,lessonId:x.data.lessonId,series:x.data.series,title:x.data.title,
+   score:x.data.score,total:x.data.total,xp:Number(x.data.xp||0),
+   errorCounts:x.data.errorCounts||{},submittedAt:x.data.submittedAt||''}))
+  .sort((a,b)=>String(b.submittedAt||'').localeCompare(String(a.submittedAt||'')))};
+}
+
 /* Mathématiques : deux fiches ENT dont les énoncés sont réellement disponibles.
    La note est calculée au serveur, aucune bonne réponse n’est envoyée avant
    la validation unique ; le compte Parent ne peut faire que des essais sans note. */
@@ -774,6 +856,10 @@ const ACTIONS={
  submitEnglishTraining:submitEnglishTraining,
  getEnglishTrainingProgress:getEnglishTrainingProgress,
  previewEnglishTraining:previewEnglishTraining,
+ getSvtTrainingTask:getSvtTrainingTask,
+ submitSvtTraining:submitSvtTraining,
+ getSvtTrainingProgress:getSvtTrainingProgress,
+ previewSvtTraining:previewSvtTraining,
  getPhysicsTrainingTask:getPhysicsTrainingTask,
  submitPhysicsTraining:submitPhysicsTraining,
  getPhysicsTrainingProgress:getPhysicsTrainingProgress,
@@ -798,7 +884,7 @@ const ACTIONS={
 export async function handleRequest(request,env){
  const url=new URL(request.url);
  if(url.pathname==='/api/status'&&request.method==='GET')
-  return respond({available:Boolean(env.FIREBASE_SERVICE_ACCOUNT),platform:'cloudflare-pages',lessonTrainingXpPolicy:'7-5-0-v1',mixedChallengesVersion:'mixed-202611-v1',mixedDailyRollout:'2026-11-13-separate-ids',features:{physicsParentPreview:true,physicsEntInteractive:true,physicsEntOriginalTasks:2,mathEntInteractive:true,mathEntOriginalTasks:2,spanishParentPreview:true,mixedParentPreview:true}});
+  return respond({available:Boolean(env.FIREBASE_SERVICE_ACCOUNT),platform:'cloudflare-pages',lessonTrainingXpPolicy:'7-5-0-v1',mixedChallengesVersion:'mixed-202611-v1',mixedDailyRollout:'2026-11-13-separate-ids',features:{svtTraining:true,svtParentPreview:true,svtLessons:7,svtExercises:14,physicsParentPreview:true,physicsEntInteractive:true,physicsEntOriginalTasks:2,mathEntInteractive:true,mathEntOriginalTasks:2,spanishParentPreview:true,mixedParentPreview:true}});
  if(url.pathname!=='/api/tim')return respond({error:'not-found'},404);
  try{
   if(request.method!=='POST')throw new ApiFault(405,'method-not-allowed');
@@ -819,4 +905,4 @@ export async function handleRequest(request,env){
   return respond({error:code},status);
  }
 }
-export const TESTABLE={getEnglishTrainingTask,submitEnglishTraining,getEnglishTrainingProgress,previewEnglishTraining,previewSpanishEntTraining,getMathEntTask,submitMathEntTask,previewMathEntTask,getMathEntProgress,getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,getMixedChallengePlan,previewMixedChallenge,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
+export const TESTABLE={getEnglishTrainingTask,submitEnglishTraining,getEnglishTrainingProgress,previewEnglishTraining,getSvtTrainingTask,submitSvtTraining,getSvtTrainingProgress,previewSvtTraining,previewSpanishEntTraining,getMathEntTask,submitMathEntTask,previewMathEntTask,getMathEntProgress,getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,getMixedChallengePlan,previewMixedChallenge,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
