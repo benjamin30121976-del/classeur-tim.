@@ -89,6 +89,23 @@ const email=process.env.TIM_PARENT_EMAIL,password=process.env.TIM_PARENT_PASSWOR
   assert.match(await page.locator('#exercise-detail').innerText(),/Question 1 sur 10/);
   assert.equal(await page.locator('#exercise-detail .pc-confirm').count(),0,
    'Aucune validation ne doit être déclenchée par le test.');
+  // Vérifier que le renvoi depuis une correction d'anglais ouvre une seule
+  // séance BIS dans le bon chapitre, plutôt que toutes les séances.
+  const pedagogic=await page.evaluate(()=>{
+   window.TIM_PEDAGOGY_NAVIGATE('Anglais','EN_BIS07');
+   const view=document.getElementById('matieres-content');
+   const expanded=[...view.querySelectorAll('details.chapter-section[open]')];
+   const courses=[...view.querySelectorAll('details.tim-es-lesson[open]')];
+   return {matterActive:document.getElementById('matieres').classList.contains('active'),
+    chapter:expanded[0]?.querySelector('summary')?.textContent||'',
+    expandedChapters:expanded.length,expandedLessons:courses.length,
+    selectedTab:courses[0]?.querySelector('div.lesson-tabs button[data-tab="bis"]')?.style.background||''};
+  });
+  assert.equal(pedagogic.matterActive,true,'Le lien doit ouvrir la matière Anglais.');
+  assert.match(pedagogic.chapter,/Actions passées et simultanéité/);
+  assert.equal(pedagogic.expandedChapters,1);
+  assert.equal(pedagogic.expandedLessons,1);
+  console.log('ANGLAIS RENVOI OK : correction → leçon BIS prétérit BE-ING, un seul cours ouvert.');
   console.log('ANGLAIS INTERFACE OK : Accueil, 11 exercices détaillés, 9 documents ENT sur 8 séances, questionnaire ouvrable sans validation.');
   console.log('ANGLAIS PRODUCTION OK : 22 cours ENT, 7 BIS, 17 devoirs, 9 documents privés, 10 réponses corrigées sans enregistrer de note/XP.');
  }finally{await page.close();await browser.close();}
