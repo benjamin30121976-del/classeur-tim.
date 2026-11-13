@@ -158,7 +158,7 @@ function open(ex,ctx={}){
   const box=E('section',undefined,'mix-panel');box.append(E('h3','Avant de rendre ma copie'));
   box.append(E('p','Tu as répondu à '+countAnswered()+' question(s) sur '+questions.length+'. Tu peux revenir modifier chaque réponse.'+
     (parent?' En essai Parent, les questions laissées vides vaudront zéro, sans blocage.':''),'mix-muted'));
-  const rules=['J’ai relu attentivement les consignes.','J’ai vérifié mes calculs, signes et unités.','J’ai relu les phrases et les verbes en espagnol et en anglais.','J’ai relu toutes mes conclusions et répondu à chaque question.'];
+  const rules=['J’ai relu attentivement les consignes.','J’ai vérifié mes calculs, signes et unités.','J’ai relu les phrases en langues et les mots scientifiques de SVT.','J’ai relu toutes mes conclusions et répondu à chaque question.'];
   rules.forEach((text,i)=>{const line=E('label',undefined,'mix-check'),checkbox=E('input');checkbox.type='checkbox';checkbox.checked=state.checked[i];
    checkbox.onchange=()=>{state.checked[i]=checkbox.checked;showReview();};line.append(checkbox,E('span',text));box.append(line);});
   const list=E('div',undefined,'mix-review-list');
