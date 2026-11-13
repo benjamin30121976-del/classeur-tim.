@@ -180,6 +180,88 @@ async function verify(browser,device,viewport){
    assert(rendered,device+' '+target.label+' : le PDF d origine ne s affiche pas automatiquement dans la lecon');
    console.log('OK '+device+' : '+target.label+' affiche automatiquement le PDF de Thales dans le corps du cours.');
   }
+  // Français : les 14 rattachements privés doivent s'ouvrir dans le lecteur réel.
+  // Lecture seule : aucune copie, note, tentative, XP ou document n'est écrit.
+  const french=await page.evaluate(async()=>{
+   const pack=window.TIM_FR_PACK,api=window.__TIM_BRIDGE?.attachments,lib=window.pdfjsLib;
+   if(!pack||!api||!lib)throw Error('Modules français/PDF indisponibles');
+   const cache=new Map(),result={expected:pack.attachments.length,present:0,parsed:0,rendered:0,pages:0,missing:[],failed:[]};
+   lib.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@3.2.146/build/pdf.worker.min.js';
+   for(const row of pack.attachments){
+    let list=cache.get(row.target);
+    if(!list){
+     list=await api.list('lesson',row.target);
+     cache.set(row.target,list);
+    }
+    const entry=list.find(x=>x.fileName===row.name);
+    if(!entry){result.missing.push(row.target+' / '+row.name);continue;}
+    result.present++;
+    let task;
+    try{
+     const blob=await api.read(entry);
+     if(blob.size<20||(await blob.slice(0,5).text())!=='%PDF-')throw Error('Signature PDF invalide');
+     task=lib.getDocument({data:new Uint8Array(await blob.arrayBuffer()),isEvalSupported:false});
+     const pdf=await task.promise;
+     if(pdf.numPages<1)throw Error('PDF sans page');
+     result.parsed++;result.pages+=pdf.numPages;
+     const first=await pdf.getPage(1),view=first.getViewport({scale:.45});
+     const canvas=document.createElement('canvas');
+     canvas.width=Math.max(1,Math.ceil(view.width));
+     canvas.height=Math.max(1,Math.ceil(view.height));
+     const ctx=canvas.getContext('2d',{alpha:false});
+     if(!ctx)throw Error('Canvas indisponible');
+     await first.render({canvasContext:ctx,viewport:view}).promise;
+     if(!canvas.width||!canvas.height)throw Error('Page non rendue');
+     result.rendered++;
+    }catch(e){result.failed.push(row.target+' : '+String(e?.message||e).slice(0,100));}
+    finally{if(task)try{await task.destroy();}catch{}}
+   }
+   return result;
+  });
+  report[device].french=french;
+  console.log(device+' : Français, '+french.present+'/'+french.expected+' PDF privés présents ; '+
+   french.parsed+' ouverts, '+french.rendered+' pages initiales rendues, '+french.pages+' pages totales.');
+  assert(french.expected===14,device+' : inventaire des 14 PDF français incomplet');
+  assert(french.present===14,device+' : PDF français absents du stockage privé ('+french.missing.join(' ; ').slice(0,400)+')');
+  assert(french.parsed===14&&french.rendered===14,
+   device+' : échec de lecture/rendu de PDF français : '+french.failed.join(' ; ').slice(0,450));
+  // Injecter les versions du code de la branche de préparation, sans publier :
+  // les pièces restent lues sur le site existant, mais l'interface testée est la nouvelle.
+  await page.addScriptTag({content:require('node:fs').readFileSync('francais-documents.js','utf8')});
+  await page.addScriptTag({content:require('node:fs').readFileSync('francais-parcours.js','utf8')});
+  await page.evaluate(()=>window.TIM_PEDAGOGY_NAVIGATE('Français','FR_ENT_20261112'));
+  const frenchLesson=page.locator('#matieres-content details.tim-es-lesson[open]').first();
+  await frenchLesson.waitFor({state:'visible',timeout:15000});
+  await page.waitForFunction(()=>{
+   const lesson=document.querySelector('#matieres-content details.tim-es-lesson[open]');
+   return !!lesson&&lesson.querySelectorAll('.pc-inline-pdf').length===3;
+  },null,{timeout:30000});
+  assert((await frenchLesson.locator('.pc-inline-pdf').count())===3,
+   device+' : les 3 PDF du 12/11 manquent dans la leçon ENT');
+  assert((await frenchLesson.locator('button:has-text("Afficher ici le document du professeur")').count())===0,
+   device+' : il faut encore cliquer pour voir le PDF');
+  let viewer=frenchLesson.locator('.pc-inline-pdf').first();
+  await viewer.scrollIntoViewIfNeeded();
+  await page.waitForFunction(()=>{
+   const c=document.querySelector('#matieres-content details.tim-es-lesson[open] .pc-inline-pdf canvas');
+   const txt=document.querySelector('#matieres-content details.tim-es-lesson[open] .pc-inline-pdf .pc-pdf-toolbar span')?.textContent||'';
+   return c?.width>0&&c?.height>0&&/^Page \\d+ \\/ \\d+$/.test(txt);
+  },null,{timeout:35000});
+  await frenchLesson.locator('button[data-tab="bis"]').click();
+  await page.waitForFunction(()=>{
+   const lesson=document.querySelector('#matieres-content details.tim-es-lesson[open]');
+   return !!lesson&&lesson.querySelectorAll('.pc-inline-pdf').length===5;
+  },null,{timeout:30000});
+  assert((await frenchLesson.locator('.pc-inline-pdf').count())===5,
+   device+' : la leçon BIS du 12/11 ne reprend pas les 3 PDF ENT et les 2 PDF de devoirs');
+  viewer=frenchLesson.locator('.pc-inline-pdf').last();
+  await viewer.scrollIntoViewIfNeeded();
+  await page.waitForFunction(()=>{
+   const roots=document.querySelectorAll('#matieres-content details.tim-es-lesson[open] .pc-inline-pdf');
+   const root=roots[roots.length-1];
+   return root?.querySelector('canvas')?.width>0&&/^Page \\d+ \\/ \\d+$/.test(root.querySelector('.pc-pdf-toolbar span')?.textContent||'');
+  },null,{timeout:35000});
+  console.log('OK '+device+' : Français original et BIS, PDF affichés sans clic et devoir du 26/11 rattaché.');
   assert(popupCount===0,'Le lecteur a ouvert un onglet exterieur');
   console.log('OK '+device+' : aucune nouvelle fenetre ou onglet.');
  }finally{
