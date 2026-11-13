@@ -93,6 +93,9 @@ async function mount(id,where){
   setStatus(where,'Ce questionnaire est réservé aux comptes Tim et Parent.');
   return;
  }
+ // Animation uniquement avant une nouvelle tentative, après vérification du serveur.
+ try{if(userIsTim())await window.TIM_ANIMATIONS?.playOpening?.();}
+ catch(error){console.warn('Animation anglais ignorée',error);}
  const answers=Array(10).fill(null);
  let page=0,pending=false,refreshLast=()=>{};
  const head=E('section','tim-es-training-form');
@@ -158,7 +161,11 @@ async function mount(id,where){
       ?await bridge().englishTrainingPreviewSubmit(id,answers,task.bankVersion)
       :await bridge().englishTrainingSubmit(id,answers,task.bankVersion);
      showCorrection(details,graded);
-     if(!isParentPractice)document.dispatchEvent(new Event('tim-physics-training-saved'));
+     if(!isParentPractice){
+      document.dispatchEvent(new Event('tim-physics-training-saved'));
+      try{await window.TIM_ANIMATIONS?.playResult?.({kind:'training'},graded);}
+      catch(error){console.warn('Animation XP anglais ignorée',error);}
+     }
     }catch(error){
      if(isParentPractice){
       setStatus(details,'Essai Parent non enregistré : '+(error.message||'Service momentanément indisponible'));

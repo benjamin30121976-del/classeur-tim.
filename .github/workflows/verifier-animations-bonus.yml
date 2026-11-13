@@ -3,6 +3,9 @@ on:
   pull_request:
     paths:
       - 'tim-animations.js'
+      - 'espagnol-training-ui.js'
+      - 'maths-parcours.js'
+      - 'anglais-exercices.js'
       - 'tim-animations.css'
       - 'app.js'
       - 'boot.js'
@@ -10,6 +13,8 @@ on:
       - 'functions/index.mjs'
       - 'functions/xp.mjs'
       - 'scripts/test-animations-bonus.mjs'
+      - 'scripts/test-animation-entree-xp.mjs'
+      - 'scripts/test-animation-browser.cjs'
       - 'scripts/test-animations-dimanche.mjs'
       - 'scripts/corriger_animation_dimanche.py'
       - 'assets/animations/Tim_Dimanche_Hologramme_20XP_Gagne.gif'
@@ -28,9 +33,30 @@ jobs:
         run: |
           node --check tim-animations.js
           node --check app.js
+          node --check maths-parcours.js
+          node --check anglais-exercices.js
+          node --check espagnol-training-ui.js
           node --check boot.js
           node --check xp-rules.js
           node --check functions/index.mjs
           node --check functions/xp.mjs
           node scripts/test-animations-bonus.mjs
+          node --test scripts/test-animation-entree-xp.mjs
           node --test scripts/test-animations-dimanche.mjs
+      - name: Installer Chromium avec Playwright (controle lecture seule)
+        run: |
+          mkdir -p /tmp/tim-animations-browser
+          npm install --prefix /tmp/tim-animations-browser --no-audit --no-fund playwright
+          /tmp/tim-animations-browser/node_modules/.bin/playwright install --with-deps chromium
+      - name: Tester ouverture et revelation XP dans Chromium mobile + bureau
+        env:
+          NODE_PATH: /tmp/tim-animations-browser/node_modules
+        run: node scripts/test-animation-browser.cjs
+      - name: Archiver les captures des animations
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: controles-animations-chromium
+          path: browser-results/animations-exercices/
+          retention-days: 3
+          if-no-files-found: warn
