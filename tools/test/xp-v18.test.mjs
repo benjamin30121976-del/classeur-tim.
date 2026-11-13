@@ -20,7 +20,11 @@ test('Grand défi du dimanche sur 20 questions, montants et anciens devoirs',()=
  assert.equal(xp('sunday',0),-2);
  for(const [score,euro] of [[0,0],[18,0],[19,2],[37,2],[38,5],[74,5],[75,10],[125,10]])
   assert.equal(weeklyReward(score),euro);
- assert.equal(rawPoints({kind:'training',category:'training',score:10,total:10}),0);
+ // Les entraînements de leçons suivent +1 / +0,5 / 0 XP,
+ // mais ne changent ni le barème des défis ni les devoirs ENT.
+ assert.equal(rawPoints({kind:'training',category:'training',score:10,total:10}),1);
+ assert.equal(rawPoints({kind:'training',category:'training',score:5,total:10}),0.5);
+ assert.equal(rawPoints({kind:'training',category:'training',score:4,total:10}),0);
  assert.equal(rawPoints({kind:'daily',category:'school',score:10,total:10}),0);
  assert.equal(cappedPoints(20,10,0,50,3,'challenge'),20);
  assert.equal(cappedPoints(2,10,0,50,2,'bonus'),1);
