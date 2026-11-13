@@ -1,0 +1,35 @@
+name: Auditer les corrections des quatre matières
+on:
+  push:
+    branches: [main, ajustement-corrections-4-matieres-20261113]
+    paths:
+      - 'worker/short-answer-equivalence.mjs'
+      - 'worker/english-training.mjs'
+      - 'worker/physics-training.mjs'
+      - 'worker/mixed-challenges.mjs'
+      - 'worker/test/corrections-pedagogiques.test.mjs'
+      - '.github/workflows/verifier-corrections-4-matieres.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  corrections:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier la syntaxe
+        run: |
+          node --check worker/short-answer-equivalence.mjs
+          node --check worker/english-training.mjs
+          node --check worker/physics-training.mjs
+          node --check worker/mixed-challenges.mjs
+          node --check worker/test/corrections-pedagogiques.test.mjs
+      - name: Corrections et sécurité sur quatre matières
+        run: |
+          node --test worker/test/corrections-pedagogiques.test.mjs worker/test/mixed-challenges.test.mjs worker/test/mixed-parent-preview.test.mjs worker/test/physics-training.test.mjs worker/test/math-training.test.mjs worker/test/spanish-parent-preview.test.mjs
+      - name: Confirmation
+        run: echo 'Corrections testées sans accéder au compte Tim ni modifier les copies.'
