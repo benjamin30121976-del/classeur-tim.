@@ -707,9 +707,12 @@ function openExercise(id,options={}){const ex=exerciseBy(id);if(!ex)return;
  // Seulement à l'entrée d'un exercice neuf du compte élève.
  // Pas de nouvelle lecture lors des corrections, consultations ou actualisations.
  if(!options.skipOpening&&!window.__TIM_PARENT&&!window.__TIM_GUEST&&!attemptFor(id)&&window.TIM_ANIMATIONS?.playOpening){
-  Promise.resolve().then(()=>window.TIM_ANIMATIONS.playOpening())
-   .catch(error=>console.warn('Animation d’ouverture ignorée',error))
-   .then(()=>openExercise(id,{skipOpening:true}));
+  // Démarrer la vidéo pendant le clic pour que le son fonctionne sur Android.
+  try{
+   Promise.resolve(window.TIM_ANIMATIONS.playOpening())
+    .catch(error=>console.warn('Animation d’ouverture ignorée',error))
+    .then(()=>openExercise(id,{skipOpening:true}));
+  }catch(error){console.warn('Animation indisponible',error);openExercise(id,{skipOpening:true});}
   return;
  }
  if(ex.questionBank==='mixed-202611-v1'&&window.TIM_MIXED_UI?.open){
