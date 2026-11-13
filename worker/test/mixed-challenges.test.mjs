@@ -143,3 +143,28 @@ test('Six matières du 23 novembre : 30 questions de HG distinctes sur cinq jour
   assert.equal(mission.questions.filter(x=>x.subject==='Histoire-géographie').length,4,id);
  }
 });
+
+test('Sept matières du 30 novembre, 30 questions françaises distinctes et copies anciennes intactes',()=>{
+ const ids=[];
+ for(const date of ['20261130','20261201','20261202','20261203','20261204']){
+  for(const slot of ['01','02','03']){
+   const id='DAY_'+date+'_'+slot,m=mixedMission(id);
+   assert.ok(m,id);assert.equal(m.questions.length,10);
+   for(const subject of ['Espagnol','Mathématiques','Physique-chimie','Anglais','SVT','Histoire-géographie','Français'])
+    assert.ok(m.questions.some(q=>q.subject===subject),id+' sans '+subject);
+   assert.equal(m.questions.filter(q=>q.subject==='Français').length,2);
+   assert.deepEqual(Object.fromEntries(['mc','fill','short','reason'].map(k=>[k,m.questions.filter(q=>q.format===k).length])),
+    {mc:2,fill:3,short:3,reason:2});
+   assert.equal(gradeMixedMission(m,keyAnswers(m)).score,10,id);
+   assert.ok(publicMixedMission(m).questions.every(q=>!['right','why','parts','answer'].some(k=>k in q)));
+   ids.push(...m.questions.filter(q=>q.subject==='Français').map(q=>q.sourceId));
+  }
+ }
+ assert.equal(ids.length,30);assert.equal(new Set(ids).size,30);
+ for(const id of ['DAY_20261116_01','DAY_20261123_02','WEEK_2026W48','SUNDAY_20261129'])
+  assert.equal(mixedMission(id).questions.filter(q=>q.subject==='Français').length,0,id);
+ for(const id of ['WEEK_2026W49','SUNDAY_20261206']){
+  const m=mixedMission(id);assert.equal(m.questions.length,20);
+  assert.equal(m.questions.filter(q=>q.subject==='Français').length,4,id);
+ }
+});
