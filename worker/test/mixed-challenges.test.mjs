@@ -26,7 +26,7 @@ for(const id of ['DAY_20261113_04','DAY_20261113_05','DAY_20261113_06','DAY_2026
   ]));
   assert.equal(Object.values(subjects).reduce((x,y)=>x+y,0),mission.questions.length);
   assert.ok(Object.values(subjects).every(x=>x>=1));
-  if(four)assert.equal(subjects.Anglais,daily?1:2);
+  if(four)assert.equal(subjects.Anglais,daily?2:4);
   else assert.deepEqual(Object.values(subjects).sort((a,b)=>a-b),daily?[3,3,4]:[6,7,7]);
   const tally=Object.fromEntries(['mc','fill','short','reason'].map(t=>[t,mission.questions.filter(q=>q.format===t).length]));
   assert.deepEqual(tally,daily?{mc:2,fill:3,short:3,reason:2}:{mc:4,fill:6,short:6,reason:4});
