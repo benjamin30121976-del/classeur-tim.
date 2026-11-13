@@ -28,10 +28,12 @@ const url=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
    try{const s=await window.__TIM_BRIDGE.spanishEntTrainingProgress();progress={ok:Array.isArray(s?.attempts),count:s?.attempts?.length||0};}
    catch(e){progress={ok:false,error:String(e?.code||e?.message||e).slice(0,100)};}
    return {count:docs.filter(x=>x?.questions?.length===10).length,keyLeaked,
+    privateTrackingHidden:!exercises.some(x=>/^TRH_ESE_L14_0[1-3]$/.test(String(x.id||''))),
     questionCount:task?.task?.questions?.length||0,completed:task?.completed===true,progress};
   });
   assert.equal(result.count,3,'Trois exercices manquants chez Tim');
   assert.equal(result.keyLeaked,false,'Corrigés exposés dans les questions de Tim');
+  assert.equal(result.privateTrackingHidden,true,'Les trois données privées de traduction ne doivent pas devenir des exercices pour Tim.');
   assert.equal(result.questionCount,10,'Questions non accessibles chez Tim');
   await page.evaluate(()=>document.getElementById('intro-skip')?.click());
   await page.locator('#intro-screen').waitFor({state:'hidden',timeout:16000});
