@@ -760,7 +760,13 @@ async function startSession(user){
    const official=(window.__CLOUD_ATTEMPTS||[]).find(x=>x.id===id);
    let local=null;
    try{local=JSON.parse(localStorage.getItem('tim-math12-result-'+id)||'null');}catch(_){}
-   if(local?.submitted&&local?.id===id)return {attempt:local};
+   if(local?.submitted&&local?.id===id){
+    if(official&&Number.isFinite(official.xp)){
+     local.xp=official.xp;
+     local.xpPolicyPending=false;
+    }
+    return {attempt:local};
+   }
    if(official?.correctionStatus==='released'&&official.answers?.length===10){
     return {attempt:{id,lessonId:'MTH12',score:official.score,total:10,
      items:official.answers.map(x=>({prompt:x.question,response:x.response,correct:x.correct,
@@ -849,11 +855,13 @@ async function startSession(user){
    if(id&&window.TIM_ES12_STUDY?.isId(id)){
     const known=(window.__CLOUD_ATTEMPTS||[]).find(a=>a.id===id);
     if(activeUser.uid===PARENT_UID){
-     const [snapshot,helpDoc]=await Promise.all([
+     const [snapshot,helpDoc,attemptDoc]=await Promise.all([
       getDoc(doc(db,'privateAttempts',id)),
-      getDoc(doc(db,'privateAttempts','TRH_'+id))
+      getDoc(doc(db,'privateAttempts','TRH_'+id)),
+      getDoc(doc(db,'attempts',id))
      ]);
      const result=snapshot.exists()?window.TIM_ES12_STUDY.officialReport(id,snapshot.data()):null;
+     if(result)result.xp=Number(attemptDoc.exists()?attemptDoc.data()?.xp||0:0);
      // Le suivi est une donnée pédagogique, jamais une note :
      // son premier champ "response" contient le total de 0 à 10.
      const raw=helpDoc.exists()?helpDoc.data()?.answers?.[0]?.response:null;
