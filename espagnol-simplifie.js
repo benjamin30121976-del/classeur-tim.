@@ -282,6 +282,7 @@ function drawCorrection(slot,report,lessonNumber,ensureLesson){
  wrapper.append(title);
  p(wrapper,parentPractice?'Simulation du Parent : 0 XP, aucune tentative ni note enregistrée pour Tim.':'Ce résultat mesure la compréhension de la leçon. Ce n’est pas une note scolaire. XP gagnés : '+Number(report.xp||0).toLocaleString('fr-FR')+' XP.','font-size:15px;font-weight:750;color:#263d89;line-height:1.6');
  if(Number.isInteger(report.translationHelpCount))p(wrapper,'Traduction française consultée pour '+report.translationHelpCount+' question(s) sur 10. Aucune pénalité.','font-weight:850;color:#263d89;font-size:15px');
+ if(report.xpPolicyPending===true)p(wrapper,'Le serveur a attribué les XP de l’ancien barème à cette copie ; le total affiché correspond aux XP réellement enregistrés.','font-weight:750;color:#87501b;font-size:14px');
  if(report.translationHelpSyncPending===true)p(wrapper,'Le compteur est conservé sur cet appareil, mais sa synchronisation avec le compte Parent n’a pas été confirmée par Firebase.','font-weight:750;color:#87501b;font-size:14px');
  if(/^ESE_L14_0[1-3]$/.test(String(report.id||''))&&!Number.isInteger(report.translationHelpCount)&&!parentPractice)
   p(wrapper,'Compteur de traduction non disponible pour cette copie : aucune valeur zéro n’est supposée.','color:#87501b;font-size:14px');
