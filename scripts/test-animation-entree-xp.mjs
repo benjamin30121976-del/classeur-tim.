@@ -49,6 +49,9 @@ for(const [xp,expected] of [
  assert.equal(find(award(),x=>x.className==='tim-anim-award-grade').textContent,'Note : 7 / 10');
  skip().onclick();await p;
 }
+p=anim.playResult({kind:'daily'},{xp:2,score:7.5,total:10,correctionStatus:'released'});
+assert.equal(find(award(),x=>x.className==='tim-anim-award-grade').textContent,'Note : 7,5 / 10','format décimal français');
+skip().onclick();await p;
 p=anim.playResult({kind:'sunday'},{xp:20,score:17,total:20,correctionStatus:'released'});
 assert.match(media().src,/Tim_Defi_Du_Dimanche_20XP_Original.mp4$/);skip().onclick();await p;
 p=anim.playResult({kind:'sunday'},{xp:14,score:15,total:20,correctionStatus:'released'});
