@@ -81,7 +81,7 @@ export function nov12Evaluate(id,answers,translationsUsed){
    explanation:q.explanation};
  });
  if(items.some(x=>!x))return null;
- const score=items.reduce((v,x)=>v+x.points,0),xp=score>=9?1:score>=7?0.5:0;
+ const score=items.reduce((v,x)=>v+x.points,0),xp=score>=7?1:score>=5?0.5:0;
  const errorCounts={};
  for(const item of items){if(!item.correct)errorCounts[item.category]=(errorCounts[item.category]||0)+1;}
  return {id,score,total:10,xp,items,errorCounts,translationHelpCount:translationsUsed.filter(Boolean).length};
@@ -97,7 +97,7 @@ export function nov12ForParentImport(){
   title:'12 novembre — '+LABELS[i],topic:'Négations, conjugaison et saisons',
   level:'Entraînement 10 questions',category:'school',kind:'training',
   source:'Exercices pédagogiques du classeur — 12 novembre 2026, distincts du devoir officiel',
-  description:'10 questions ; une seule soumission ; 0 XP ; corrections et suivi Parent.',
+  description:'10 questions ; une seule soumission ; selon la note : +1 / +0,5 / 0 XP ; corrections et suivi Parent.',
   enabled:true,
   questions:items.map(item=>item.kind==='qcm'
    ?{type:'mc',q:item.prompt,options:item.choices,right:String(item.right),why:item.explanation,skill:item.category}
