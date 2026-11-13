@@ -20,19 +20,19 @@ const reason=(q,methods,right,parts,answer,unit,why,extra={})=>({
 const B={
  es:{
   mc:[
-   ()=>mc('Elige la forma correcta: « Nosotros ... quince años ».',['tengo','tenemos','tienen','tenéis'],1,'Avec nosotros, tener se conjugue tenemos.',{fr:'Choisis la bonne forme de tener (avoir) pour « nous ».'}),
-   ()=>mc('Elige la forma correcta: « Yo ... al colegio ».',['va','voy','vas','vamos'],1,'Ir au présent avec yo donne voy.',{fr:'Choisis la forme de ir (aller) avec « je ».'}),
-   ()=>mc('Elige la frase negativa correcta.',['Yo no nunca estudio.','Nunca estudio los domingos.','Yo nada estudio nunca.','No nada estudio.'],1,'Nunca peut se placer avant le verbe : Nunca estudio los domingos.',{fr:'Choisis la phrase négative correctement construite.'}),
-   ()=>mc('Elige la conjugación de HACER con « él ».',['haces','hacen','hace','hago'],2,'Le verbe hacer avec él donne hace.',{fr:'Choisis la conjugaison de faire avec « il ».'}),
-   ()=>mc('¿Qué frase expresa una oposición « non… mais » ?',['No voy hoy, sino mañana.','No voy hoy y mañana.','Voy hoy también.','Voy hoy siempre.'],0,'Sino oppose deux éléments après une négation.',{fr:'Quelle phrase exprime une opposition « non… mais » ?'})
+   ()=>mc('Elige la forma correcta: « Nosotros ... quince años ».',['tengo','tenemos','tienen','tenéis'],1,'Avec nosotros, tener se conjugue tenemos.',{fr:'Choisis la forme correcte de tener (avoir) pour « nous ». Phrase : « Nous ... quinze ans ».'}),
+   ()=>mc('Elige la forma correcta: « Yo ... al colegio ».',['va','voy','vas','vamos'],1,'Ir au présent avec yo donne voy.',{fr:'Choisis la bonne forme de ir (aller). Phrase : « Je ... au collège ».'}),
+   ()=>mc('Elige la frase negativa correcta.',['Yo no nunca estudio.','Nunca estudio los domingos.','Yo nada estudio nunca.','No nada estudio.'],1,'Nunca peut se placer avant le verbe : Nunca estudio los domingos.',{fr:'Choisis la phrase négative espagnole correctement construite.'}),
+   ()=>mc('Elige la conjugación de HACER con « él ».',['haces','hacen','hace','hago'],2,'Le verbe hacer avec él donne hace.',{fr:'Choisis la conjugaison de hacer (faire) avec « il ».'}),
+   ()=>mc('¿Qué frase expresa una oposición « non… mais » ?',['No voy hoy, sino mañana.','No voy hoy y mañana.','Voy hoy también.','Voy hoy siempre.'],0,'Sino oppose deux éléments après une négation.',{fr:'Quelle phrase exprime l’opposition « non… mais » ?'})
   ],
   fill:[
-   ()=>txt('Completa: « Yo ___ quince años » (tener, presente).','tengo','Avec yo, le présent de tener est tengo.','fill',[],{fr:'Complète avec tener au présent à la première personne.'}),
-   ()=>txt('Completa: « Nosotros ___ al colegio » (ir, presente).','vamos','Avec nosotros, ir devient vamos.','fill',[],{fr:'Complète avec ir au présent pour « nous ».'}),
-   ()=>txt('Completa: « No estudio el lunes, ___ el martes ».','sino','Après no, sino marque une opposition : non lundi, mais mardi.','fill',[],{fr:'Complète la phrase négative avec le mot qui marque une opposition.'}),
-   ()=>txt('Completa: « Ella nunca ___ tarde » (llegar, presente).','llega','Le sujet ella impose la terminaison -a de llegar.','fill',[],{fr:'Complète avec llegar (arriver) au présent pour « elle ».'}),
-   ()=>txt('Completa: « Vosotros ___ español » (hablar, presente).','habláis','Hablar avec vosotros prend -áis.','fill',['hablais'],{fr:'Complète avec hablar (parler) au présent pour « vous ».'}),
-   ()=>txt('Completa: « Yo ___ mi mochila » (traer, presente).','traigo','Traer est irrégulier avec yo : traigo.','fill',[],{fr:'Complète avec traer (apporter) au présent pour « je ».'})
+   ()=>txt('Completa: « Yo ___ quince años » (tener, presente).','tengo','Avec yo, le présent de tener est tengo.','fill',[],{fr:'Complète avec tener (avoir) au présent. Phrase : « J’... quinze ans ».'}),
+   ()=>txt('Completa: « Nosotros ___ al colegio » (ir, presente).','vamos','Avec nosotros, ir devient vamos.','fill',[],{fr:'Complète avec ir (aller) au présent. Phrase : « Nous ... au collège ».'}),
+   ()=>txt('Completa: « No estudio el lunes, ___ el martes ».','sino','Après no, sino marque une opposition : non lundi, mais mardi.','fill',[],{fr:'Complète : « Je n’étudie pas le lundi, mais le mardi ». Trouve en espagnol le mot de liaison.'}),
+   ()=>txt('Completa: « Ella nunca ___ tarde » (llegar, presente).','llega','Le sujet ella impose la terminaison -a de llegar.','fill',[],{fr:'Complète avec llegar (arriver) au présent. Phrase : « Elle n’arrive jamais en retard ».'}),
+   ()=>txt('Completa: « Vosotros ___ español » (hablar, presente).','habláis','Hablar avec vosotros prend -áis.','fill',['hablais'],{fr:'Complète avec hablar (parler) au présent. Phrase : « Vous parlez espagnol ».'}),
+   ()=>txt('Completa: « Yo ___ mi mochila » (traer, presente).','traigo','Traer est irrégulier avec yo : traigo.','fill',[],{fr:'Complète avec traer (apporter) au présent. Phrase : « J’apporte mon sac ».'})
   ],
   short:[
    ()=>txt('Traduce al español: « Je vais au collège ».','Voy al colegio','Voy est la forme de ir avec yo.','short',['Yo voy al colegio'],{fr:'Traduis la phrase française en espagnol.'}),
