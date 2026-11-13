@@ -144,9 +144,10 @@ const BLUEPRINT=[
 ];
 function lessonFor(q,subject){return q.lesson||(subject==='es'?'L14':subject==='ma'?'MBIS13':'PC_BIS01');}
 function selectQuestions(id,kind){
- const items=kind==='daily'?BLUEPRINT[Number(id.slice(-2))-1]:
+ const missionNumber=kind==='daily'?Number(id.slice(-2))-(id.startsWith('DAY_20261113_')?3:0):0;
+ const items=kind==='daily'?BLUEPRINT[missionNumber-1]:
   kind==='weekly'?[...BLUEPRINT[0],...BLUEPRINT[1]]:[...BLUEPRINT[1],...BLUEPRINT[2]];
- const dailyIndex=kind==='daily'?Number(id.slice(-2))-1:0;
+ const dailyIndex=kind==='daily'?missionNumber-1:0;
  const rotationSeed=kind==='daily'?id.slice(0,12):id;
  const used={},selected=[];
  if(kind==='daily')for(const earlier of BLUEPRINT.slice(0,dailyIndex))
@@ -175,8 +176,12 @@ function selectQuestions(id,kind){
  });
 }
 export function isMixedMissionId(id){
- const daily=/^DAY_(20\d{6})_(0[1-3])$/.exec(String(id||''));
- if(daily)return daily[1]>='20261116'&&validDay(daily[1])&&![0,6].includes(new Date(dayString(daily[1])+'T12:00:00Z').getUTCDay());
+ const daily=/^DAY_(20\d{6})_(0[1-6])$/.exec(String(id||''));
+ if(daily){
+  const newFriday=daily[1]==='20261113'&&['04','05','06'].includes(daily[2]);
+  const ordinary=daily[1]>='20261116'&&['01','02','03'].includes(daily[2]);
+  return (newFriday||ordinary)&&validDay(daily[1])&&![0,6].includes(new Date(dayString(daily[1])+'T12:00:00Z').getUTCDay());
+ }
  const saturday=/^WEEK_(20\d{2})W(\d{2})$/.exec(String(id||''));
  if(saturday)return id>=weekId('2026-11-14')&&Number(saturday[2])<=53;
  const sunday=/^SUNDAY_(20\d{6})$/.exec(String(id||''));
@@ -185,13 +190,13 @@ export function isMixedMissionId(id){
 }
 export function mixedMission(id){
  if(!isMixedMissionId(id))return null;
- const daily=/^DAY_(20\d{6})_(0[1-3])$/.exec(id),sunday=/^SUNDAY_(20\d{6})$/.exec(id);
+ const daily=/^DAY_(20\d{6})_(0[1-6])$/.exec(id),sunday=/^SUNDAY_(20\d{6})$/.exec(id);
  const kind=daily?'daily':sunday?'sunday':'weekly';
  const period=daily?dayString(daily[1]):sunday?dayString(sunday[1]):id;
  const questions=selectQuestions(id,kind);
  const count=kind==='daily'?10:20;
  if(questions.length!==count)throw Error('Défi incomplet');
- return {id,title:kind==='daily'?'Défi du jour · Mission '+Number(daily[2])+' / 3':
+ return {id,title:kind==='daily'?'Défi du jour · Mission '+(Number(daily[2])-(daily[1]==='20261113'?3:0))+' / 3':
    kind==='weekly'?'Grand défi du samedi · Trois matières':'Grand défi du dimanche · Révisions depuis la rentrée',
   description:count+' questions mélangées : espagnol, mathématiques, physique-chimie. Rédaction et raisonnement.',
   level:kind==='daily'?'Mission quotidienne':kind==='weekly'?'Contrôle du samedi':'Grand contrôle du dimanche',
@@ -202,7 +207,11 @@ export function mixedMission(id){
 }
 export function mixedPlan(now=new Date()){
  const today=parisDay(now),compact=today.replace(/-/g,''),dow=new Date(today+'T12:00:00Z').getUTCDay();
- const dailyIds=dow>=1&&dow<=5&&compact>='20261116'?[1,2,3].map(i=>'DAY_'+compact+'_0'+i):[];
+ // Les missions espagnoles _01 à _03 du 13 novembre ne doivent jamais
+ // être remplacées par un questionnaire différent après validation.
+ // Les nouvelles missions du vendredi utilisent donc _04, _05 et _06.
+ const dailyNumbers=compact==='20261113'?[4,5,6]:compact>='20261116'?[1,2,3]:[];
+ const dailyIds=dow>=1&&dow<=5?dailyNumbers.map(i=>'DAY_'+compact+'_0'+i):[];
  const weekly=weekId(today),sunday='SUNDAY_'+addDays(monday(today),6).replace(/-/g,'');
  const ids=[...dailyIds,weekly,sunday];
  return {day:today,dailyIds,weekly,sunday,exercises:ids.map(mixedMission).filter(Boolean)};
