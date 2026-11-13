@@ -9,6 +9,7 @@ function mockFirestore(exercise){
  return {
   records,
   async get(path){return records.get(path)||null;},
+  async list(col){return [...records.entries()].filter(([key])=>key.startsWith(col+'/')).map(([key,data])=>({id:key.slice(col.length+1),data}));},
   async transaction(){return 'lesson-training-test';},
   async commit(writes){
    for(const write of writes){
@@ -62,4 +63,45 @@ test('Le compte Parent ne peut pas créer une tentative à la place de Tim',asyn
  await assert.rejects(()=>TESTABLE.submitExercise(db,PARENT_UID,{id:'ESE_L14_01',answers:Array(10).fill(1)}),
    e=>e.status===403);
  assert.equal(db.records.size,1);
+});
+
+test('Entraînement noté : note, explications et correction accessibles immédiatement sans autorisation Parent',async()=>{
+ const id='ESE_L14_01',db=mockFirestore(training(id,'Espagnol'));
+ const answers=Array(10).fill(1);
+ const submitted=await TESTABLE.submitExercise(db,TIM_UID,{id,answers});
+ assert.equal(submitted.correctionStatus,'released');
+ assert.equal(submitted.correctionLocked,false);
+ assert.equal(submitted.score,10);
+ assert.equal(submitted.answers.length,10);
+ assert.equal(db.records.get('attempts/'+id)?.correctionStatus,'released');
+ assert.equal(db.records.get('releasedCorrections/'+id)?.released,true);
+ const visible=await TESTABLE.releasedCorrections(db,TIM_UID,{});
+ assert.equal(visible.corrections.length,1);
+ assert.equal(visible.corrections[0].id,id);
+ assert.equal(visible.corrections[0].score,10);
+ assert.equal(visible.corrections[0].answers.length,10);
+ assert.equal(db.records.get('xpState/tim').weekXp,1);
+ await assert.rejects(()=>TESTABLE.submitExercise(db,TIM_UID,{id,answers}),e=>e.status===409);
+ await assert.rejects(()=>TESTABLE.releasedCorrections(db,PARENT_UID,{}),e=>e.status===403);
+});
+
+test('Ancien entraînement verrouillé : déverrouillage à la lecture sans nouvelle écriture',async()=>{
+ const id='ESE_L14_01',db=mockFirestore(training(id,'Espagnol'));
+ db.records.set('attempts/'+id,{authorUid:TIM_UID,correctionStatus:'pending-parent',xp:0.5});
+ const graded={score:8,total:10,answers:Array.from({length:10},(_,i)=>({question:'Q'+i,correct:i<8,explanation:'Explication complète'}))};
+ db.records.set('privateAttempts/'+id,graded);
+ const size=db.records.size;
+ const visible=await TESTABLE.releasedCorrections(db,TIM_UID,{});
+ assert.equal(visible.corrections.length,1);
+ assert.equal(visible.corrections[0].score,8);
+ assert.equal(visible.corrections[0].answers.length,10);
+ assert.equal(db.records.size,size,'Aucune écriture ne doit modifier les anciennes notes et XP');
+ assert.equal(db.records.get('attempts/'+id).correctionStatus,'pending-parent','Original historique conservé');
+});
+
+test('Un ancien devoir non classé entraînement ne se déverrouille pas automatiquement',async()=>{
+ const id='ENT_ES01',db=mockFirestore({...training(id,'Espagnol'),kind:'ent'});
+ db.records.set('attempts/'+id,{authorUid:TIM_UID,correctionStatus:'pending-parent',xp:0});
+ db.records.set('privateAttempts/'+id,{score:8,total:10,answers:Array(10).fill({})});
+ assert.equal((await TESTABLE.releasedCorrections(db,TIM_UID,{})).corrections.length,0);
 });
