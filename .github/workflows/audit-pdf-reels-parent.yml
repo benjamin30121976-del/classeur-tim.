@@ -5,10 +5,12 @@ on:
       - 'outils/auditer-pdf-reels-parent.cjs'
       - '.github/workflows/audit-pdf-reels-parent.yml'
   push:
-    branches: [main]
+    branches: [main, francais-pdf-inline-20261113]
     paths:
       - 'outils/auditer-pdf-reels-parent.cjs'
       - '.github/workflows/audit-pdf-reels-parent.yml'
+      - 'francais-documents.js'
+      - 'francais-parcours.js'
   workflow_dispatch:
 permissions:
   contents: read
@@ -26,7 +28,10 @@ jobs:
         with:
           node-version: '22'
       - name: Verifier le programme de test
-        run: node --check outils/auditer-pdf-reels-parent.cjs
+        run: |
+          node --check outils/auditer-pdf-reels-parent.cjs
+          node --check francais-documents.js
+          node --check francais-parcours.js
       - name: Verifier l'acces Parent sans afficher les identifiants
         run: test -n "$TIM_PARENT_EMAIL" && test -n "$TIM_PARENT_PASSWORD"
       - name: Installer Chromium
