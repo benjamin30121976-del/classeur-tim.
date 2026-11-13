@@ -5,6 +5,7 @@ on:
     paths:
       - 'browser-requests/inspection.json'
       - 'outils/navigateur-autonome.cjs'
+      - 'outils/inspecter-animations-publiees.cjs'
       - '.github/workflows/navigation-libre.yml'
   workflow_dispatch:
 permissions:
