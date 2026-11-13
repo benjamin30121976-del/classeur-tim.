@@ -374,6 +374,7 @@ function answerValue(input){if(input.type==='radio'){const chosen=document.query
 function freeOrTextAnswer(question,answer){if(question.type==='free')return null;const correct=question.type==='mc'?String(question.right)===String(answer):[question.right,...(question.also||[])].some(x=>norm(x)===norm(answer));return correct;}
 function openExercise(id){const ex=exerciseBy(id);if(!ex)return;
  if(ex.questionBank==='mixed-202611-v1'&&window.TIM_MIXED_UI?.open){
+  page('exercices');window.__TIM_OPEN_EXERCISE_ID=id;
   const existing=attemptFor(id);
   window.TIM_MIXED_UI.open(ex,{
    old:existing,
