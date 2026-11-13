@@ -22,7 +22,7 @@ async function render(target,slot){
   const card=E('section');card.style.cssText='margin:9px 0;padding:12px;border:1px solid #a9bfd9;border-radius:11px;background:#f6f9fe;color:#243a56';
   const name=add(card,'strong',row.name),file=found.find(f=>f.fileName===row.name);
   if(file&&row.kind==='pdf'&&window.TIM_PHYSICS_INLINE_PDF?.createInline){
-   card.append(window.TIM_PHYSICS_INLINE_PDF.createInline({target,fileName:row.name},1,'Lire le PDF original dans la leçon',{manual:true}));
+   card.append(window.TIM_PHYSICS_INLINE_PDF.createInline({target,fileName:row.name},1,'PDF original du professeur — à lire dans la leçon',{manual:false}));
   }else if(file&&row.kind==='docx'){
    const b=add(card,'button','Télécharger le DOCX original');b.type='button';b.className='plain';b.onclick=async()=>{
     b.disabled=true;try{const blob=await api.read(file),url=URL.createObjectURL(blob),link=E('a');link.href=url;link.download=row.name;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}catch(e){add(card,'p','Lecture indisponible : '+(e.message||e));}finally{b.disabled=false;}
