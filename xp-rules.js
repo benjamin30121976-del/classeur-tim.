@@ -40,7 +40,7 @@ function contributionV10(a,ex){if(!ex)return 0;if(isChallenge(ex))return contrib
 function isBonus(ex,attemptDate){return !!ex&&!isChallenge(ex)&&window.TIM_EXERCISE?.mode(ex,attemptDate)==='bonus';}
 function contribution(a,ex){if(!ex)return 0;
  if(isChallenge(ex)&&a.policyVersion>=18){const p=a.total>0?a.score/a.total:0;if(a.needsReview||!a.total)return 0;
-  if(ex.kind==='bonus-day')return p>=.7?5:0;
+  if(ex.kind==='bonus-day')return p>=.7?5:p>=.5?2.5:0;
    if(ex.kind==='bonus-parent')return p>=.85?5:0;
   return ex.kind==='daily'?(p>=.9?3:p>=.7?2:p>=.5?1:p>=.2?0:-1):ex.kind==='weekly'?(p>=.85?10:p>=.75?7:p>=.6?4:p>=.5?1:p>=.4?0:-1):(p>=.85?20:p>=.75?14:p>=.6?8:p>=.5?2:p>=.4?0:-2);
  }
