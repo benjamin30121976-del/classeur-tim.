@@ -42,6 +42,7 @@ jobs:
           node --check functions/xp.mjs
           node scripts/test-animations-bonus.mjs
           node --test scripts/test-animation-entree-xp.mjs
+          node --test tools/test/challenge-feedback.test.mjs
           node --test scripts/test-animations-dimanche.mjs
       - name: Installer Chromium avec Playwright (controle lecture seule)
         run: |
