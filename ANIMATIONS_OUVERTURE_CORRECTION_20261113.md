@@ -21,14 +21,16 @@
 - Devoirs scolaires 0 XP et copies en attente de correction : pas de fausse récompense animée.
 - Réouverture d'une copie déjà notée : accès direct au bilan, sans relancer l'animation.
 
-## MP4 à installer depuis le téléphone
-Le fichier binaire ne peut pas être transmis directement par les opérations de modification texte sur GitHub.
+## État validé le 13 novembre 2026
 
-1. Ouvrir la branche `animations-entree-revelation-xp-20261113`.
-2. À la racine du dépôt, utiliser `Add file > Upload files`.
-3. Sélectionner `Tim_Ouverture_Exercice_V6_A_Importer.zip` (fourni dans la conversation), puis enregistrer **uniquement sur cette branche**.
-4. Le workflow `installer-ouverture-exercice-tim.yml` vérifiera l'empreinte SHA256 du MP4, puis installera celui-ci dans `assets/animations/`.
-5. Vérifier les tests et le site de prévisualisation avec Chromium/Playwright via les workflows GitHub Actions existants, sans réponse réelle ni écriture sur Firebase.
+- **Créé et codé :** animation d'ouverture Splash V6 (MP4) sur les nouvelles tentatives ; cinq vidéos de résultats quotidiennes ; nouvelle animation du loup à **+2,5 XP** (GIF) seulement si le serveur attribue exactement 2,5 XP ; cartouche chiffré des résultats.
+- **Médias installés :** `assets/animations/Tim_Ouverture_Exercice_Splash_Tan_Tan_V6_Moins_Aigue.mp4` et `assets/animations/Tim_Animation_2_5XP_Loup.gif`.
+- **Publié dans GitHub main :** PR n° 50 fusionnée (commit `1d0973ec3a3c8b04216185bad48bce1c403c7eb9`).
+- **Sauvegarde avant fusion :** branche `sauvegarde-main-avant-animations-20261113`, commit `b57e5f28e3c427c0ed28f3efd41dc7bbd935962d`.
+- **Test de code :** tests des montants XP, ouverture, bouton « Passer », relecture sans animation, pas de modification des notes/copies/tentatives.
+- **Test Chromium/Playwright local via GitHub Actions :** succès sur écran mobile simulé et bureau ; vidéo, GIF +2,5 XP, cartouche de révélation et bouton de correction.
+- **Vérification de la version réellement publiée :** workflow existant « Navigateur autonome du classeur » n° `43493151312` réussi ; sur `https://classeur-tim-v16.pages.dev/`, ouverture MP4, GIF +2,5, révélation et bouton testés en Chromium (mobile simulé et bureau), sans se connecter. Captures archivées dans les artefacts du workflow.
+- **Test du corrigé des défis :** workflow n° `43493359715` réussi après adaptation du test à la nouvelle signature `openExercise(id,options={})` (aucun barème modifié).
+- **Limite explicite :** les essais réels des comptes Tim et Parent n'ont pas été soumis. Le son et la fluidité sur l'appareil Android du Parent n'ont pas été vérifiés physiquement. Certains contrôles transversaux d'autres matières peuvent signaler des anomalies indépendantes, qui doivent être suivies séparément.
 
-## Validation
-Le branchement UI et les tests de simulation sont codés. Les tests CI ne prouvent pas, à eux seuls, la lecture sur le téléphone de Tim : une inspection mobile en lecture seule et l'accord du parent restent nécessaires avant toute publication.
+**Il n'y a plus de ZIP à demander ni à importer : les deux fichiers sont déjà installés et consultables sur le site publié.**
