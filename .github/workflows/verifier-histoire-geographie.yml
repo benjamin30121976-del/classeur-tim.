@@ -1,0 +1,58 @@
+name: Vérifier la sixième matière Histoire-Géographie
+on:
+  push:
+    branches: [main, integration-histoire-geographie-20261113]
+    paths:
+      - 'histoire-geographie-*.js'
+      - 'worker/hg-*.mjs'
+      - 'worker/test/hg-training.test.mjs'
+      - 'worker/mixed-challenges.mjs'
+      - 'worker/test/mixed-challenges.test.mjs'
+      - 'worker/server.mjs'
+      - 'boot.js'
+      - 'app.js'
+      - 'index.html'
+      - 'parent-unified-results.js'
+      - 'tools/test/hg-production.readonly.cjs'
+      - '.github/workflows/verifier-histoire-geographie.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  hg-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier la syntaxe des fichiers
+        run: |
+          for f in histoire-geographie-pack.js histoire-geographie-documents.js histoire-geographie-parcours.js histoire-geographie-exercices.js app.js boot.js parent-unified-results.js worker/server.mjs worker/hg-questions.mjs worker/hg-training.mjs worker/mixed-challenges.mjs; do node --check "$f"; done
+      - name: Vérifier HG, correction, sécurité et missions des six matières
+        run: |
+          node --test worker/test/hg-training.test.mjs worker/test/mixed-challenges.test.mjs worker/test/mixed-parent-preview.test.mjs worker/test/corrections-pedagogiques.test.mjs worker/test/svt-training.test.mjs worker/test/physics-training.test.mjs worker/test/math-training.test.mjs
+      - name: Résumé
+        run: echo 'Aucune tentative réelle de Tim n’a été consommée.' >> "$GITHUB_STEP_SUMMARY"
+  navigateur-parent:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+      TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
+      TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Préparer le navigateur mobile Chromium
+        run: |
+          npm install --prefix /tmp/tim-hg --no-audit --no-fund playwright
+          /tmp/tim-hg/node_modules/.bin/playwright install chromium
+      - name: Contrôler le compte Parent sans écriture
+        env:
+          NODE_PATH: /tmp/tim-hg/node_modules
+        run: node tools/test/hg-production.readonly.cjs
