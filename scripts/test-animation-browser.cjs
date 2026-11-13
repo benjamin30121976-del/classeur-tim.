@@ -66,7 +66,7 @@ const close=()=>new Promise(resolve=>server.close(resolve));
    await page.screenshot({path:path.join(output,tag+'-loup-2-5.png')});
    // Le GIF a sa durée programmée ; pas de nouvel essai soumis.
    await page.locator('.tim-anim-award:not([hidden])').waitFor({timeout:9500});
-   assert.ok(await page.getByText('+2,5 XP').isVisible(),'Révélation +2,5 XP absente');
+   assert.ok(await page.locator('.tim-anim-award-value').getByText('+2,5 XP',{exact:true}).isVisible(),'Révélation +2,5 XP absente');
    await page.screenshot({path:path.join(output,tag+'-resultat-2-5.png')});
    await page.getByText('Voir ma correction').click();
    await page.locator('.tim-anim-overlay').waitFor({state:'detached'});
@@ -76,7 +76,7 @@ const close=()=>new Promise(resolve=>server.close(resolve));
    await page.getByText('Voir ma correction').click();
    await page.locator('.tim-anim-overlay').waitFor({state:'detached'});
    await page.locator('#bonus').click();
-   await page.getByText('+5 XP').waitFor();
+   await page.locator('.tim-anim-award-value').getByText('+5 XP',{exact:true}).waitFor();
    await page.screenshot({path:path.join(output,tag+'-bonus-5.png')});
    await page.getByText('Voir ma correction').click();
    await page.locator('.tim-anim-overlay').waitFor({state:'detached'});
