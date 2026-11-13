@@ -678,7 +678,7 @@ const ACTIONS={
 export async function handleRequest(request,env){
  const url=new URL(request.url);
  if(url.pathname==='/api/status'&&request.method==='GET')
-  return respond({available:Boolean(env.FIREBASE_SERVICE_ACCOUNT),platform:'cloudflare-pages',lessonTrainingXpPolicy:'7-5-0-v1',mixedChallengesVersion:'mixed-202611-v1',features:{physicsParentPreview:true,physicsEntInteractive:true,physicsEntOriginalTasks:2,mathEntInteractive:true,mathEntOriginalTasks:2,spanishParentPreview:true}});
+  return respond({available:Boolean(env.FIREBASE_SERVICE_ACCOUNT),platform:'cloudflare-pages',lessonTrainingXpPolicy:'7-5-0-v1',mixedChallengesVersion:'mixed-202611-v1',mixedDailyRollout:'2026-11-13-separate-ids',features:{physicsParentPreview:true,physicsEntInteractive:true,physicsEntOriginalTasks:2,mathEntInteractive:true,mathEntOriginalTasks:2,spanishParentPreview:true}});
  if(url.pathname!=='/api/tim')return respond({error:'not-found'},404);
  try{
   if(request.method!=='POST')throw new ApiFault(405,'method-not-allowed');
