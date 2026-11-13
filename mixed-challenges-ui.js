@@ -68,7 +68,7 @@ function open(ex,ctx={}){
   top.append(btn('← Retour aux défis',back,'mix-link'),E('h2',ex.title));
   top.append(E('p',parent?
     'ESSAI PARENT · '+questions.length+' questions · correction immédiate · aucune note ni aucun XP de Tim enregistré.':
-    ([...new Set(questions.map(q=>q.subject))].sort((a,b)=>['Espagnol','Mathématiques','Physique-chimie','Anglais'].indexOf(a)-['Espagnol','Mathématiques','Physique-chimie','Anglais'].indexOf(b)).join(' · '))+' — '+questions.length+' questions · une seule validation.','mix-muted'));
+    ([...new Set(questions.map(q=>q.subject))].sort((a,b)=>['Espagnol','Mathématiques','Physique-chimie','Anglais','SVT'].indexOf(a)-['Espagnol','Mathématiques','Physique-chimie','Anglais','SVT'].indexOf(b)).join(' · '))+' — '+questions.length+' questions · une seule validation.','mix-muted'));
   host.append(top);};
  const focus=()=>{host.scrollIntoView?.({behavior:'smooth',block:'start'});};
  const advice=['Lis toutes les consignes jusqu’au bout.','Pose tes calculs sur ton brouillon papier.','Si tu bloques, avance et reviens ensuite.','Rédige des étapes et une phrase de conclusion.','Garde du temps pour relire ta copie.','Pour une interro longue, organise ton travail.','Utilise toutes les bonnes habitudes de la semaine.'];
