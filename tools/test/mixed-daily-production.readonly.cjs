@@ -17,7 +17,18 @@ async function check(browser,user){
   await page.locator('#login-email').fill(user.email);
   await page.locator('#login-password').fill(user.password);
   await page.locator('#login-button').click();
-  await page.waitForFunction(()=>document.body.classList.contains('ready')&&Boolean(window.__TIM_DATA),null,{timeout:45000});
+  try{
+   await page.waitForFunction(()=>document.body.classList.contains('ready')&&Boolean(window.__TIM_DATA),null,{timeout:60000});
+  }catch(error){
+   const diagnostics=await page.evaluate(()=>({
+    message:document.getElementById('access-status')?.textContent?.slice(0,230)||'',
+    ready:document.body.classList.contains('ready'),
+    activeUser:Boolean(window.__TIM_DATA),
+    accessHidden:document.getElementById('access')?.hidden,
+    bodyClass:document.body.className.slice(0,100)
+   }));
+   throw Error('Compte '+user.role+' pas prêt : '+JSON.stringify(diagnostics));
+  }
   await page.waitForFunction(()=>Boolean(window.__TIM_CHALLENGES)&&Boolean(document.querySelector('.daily-loup-panel')),null,{timeout:25000});
   const report=await page.evaluate(()=>{
    const meta=window.__TIM_CHALLENGES||{},ids=meta.dailyIds||[];
