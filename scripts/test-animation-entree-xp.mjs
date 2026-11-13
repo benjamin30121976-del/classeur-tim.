@@ -33,6 +33,7 @@ firstSkip.onclick();await p;
 
 for(const [xp,expected] of [
  [3,'Tim_Animation_3XP_Mouche.mp4'],
+ [2.5,'Tim_Animation_2_5XP_Loup.gif'],
  [2,'Tim_Animation_2XP_Grattage.mp4'],
  [1,'Tim_Animation_1XP_Vitre_Embuee.mp4'],
  [0,'Tim_Animation_0XP_Toc_Toc_Paume.mp4'],
