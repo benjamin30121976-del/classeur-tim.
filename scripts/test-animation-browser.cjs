@@ -83,6 +83,20 @@ const close=()=>new Promise(resolve=>server.close(resolve));
    console.log('OK - Chromium '+tag+' : ouverture MP4, bouton Passer, GIF +2,5, XP et retour correction.');
    await context.close();
   }
+  // Le réglage Android "réduire les animations" ne doit pas cacher la note et les XP.
+  const reduced=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,reducedMotion:'reduce',locale:'fr-FR'});
+  const accessible=await reduced.newPage();
+  await accessible.goto(base+'/controle',{waitUntil:'load'});
+  await accessible.locator('#plus25').click();
+  assert.equal(await accessible.locator('.tim-anim-overlay video,.tim-anim-overlay img').count(),0,
+    'Vidéo indésirable quand les animations sont réduites');
+  assert.ok(await accessible.locator('.tim-anim-award-value').getByText('+2,5 XP',{exact:true}).isVisible(),
+    'Résultat XP masqué par le réglage Android');
+  await accessible.screenshot({path:path.join(output,'android-mouvement-reduit-note-xp.png')});
+  await accessible.getByRole('button',{name:'Voir ma correction'}).click();
+  await accessible.locator('.tim-anim-overlay').waitFor({state:'detached'});
+  await reduced.close();
+  console.log('OK - Chromium Android mouvement réduit : note et XP visibles sans animation.');
   assert.deepEqual(errors,[],'Erreurs JavaScript du navigateur');
  } finally {await browser.close();}
 })().then(close).catch(async error=>{console.error(error);await close();process.exitCode=1;});
