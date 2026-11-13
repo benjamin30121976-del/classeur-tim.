@@ -469,8 +469,26 @@ async function startSession(user){
   if(!snapshot.exists()){showImport();return;}
   content=decodeFromFirestore(snapshot.data());
  }else{
-  try{const response=await cloudCallable('getTimCourseContent')({});content=decodeFromFirestore(response.data.content);serverAdditions=response.data.additions;window.__TIM_ADDONS_INCOMPLETE=response.data.additionsIncomplete===true;}
-  catch(e){message('Chargement des cours de Tim impossible : '+(e.message||'Firebase'));return;}
+  try{
+   const response=await cloudCallable('getTimCourseContent')({});
+   content=decodeFromFirestore(response.data.content);
+   serverAdditions=response.data.additions;
+   window.__TIM_ADDONS_INCOMPLETE=response.data.additionsIncomplete===true;
+   window.__TIM_READONLY_FALLBACK=false;
+  }catch(error){
+   // Le catalogue public ne contient ni corrigés ni données privées.
+   // Il sert uniquement à lire les cours pendant une panne de la lecture
+   // serveur ; il ne remplace jamais les copies et notes enregistrées.
+   const safe=window.TIM_GUEST_DATA;
+   if(!Array.isArray(safe?.lessons)||!Array.isArray(safe?.exercises)||!safe.lessons.length){
+    message('Chargement des cours de Tim impossible : '+(error.message||'Firebase'));return;
+   }
+   console.warn('Catalogue privé temporairement indisponible ; accès de secours sans modification des notes.');
+   content={lessons:safe.lessons,exercises:safe.exercises};
+   serverAdditions={lessons:[],exercises:[]};
+   window.__TIM_ADDONS_INCOMPLETE=true;
+   window.__TIM_READONLY_FALLBACK=true;
+  }
  }
  if(!Array.isArray(content.lessons)||!Array.isArray(content.exercises)){message('Le contenu du cours est incomplet.');return;}
  const missionSource=content; // référentiel identique à celui du serveur
