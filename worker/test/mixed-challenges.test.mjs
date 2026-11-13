@@ -13,7 +13,7 @@ function keyAnswers(mission){
   return JSON.stringify({m:String(q.right),c:calc,s:'La réponse au problème est '+q.answer+' '+(q.unit||'unités')+'.'});
  });
 }
-for(const id of ['DAY_20261116_01','DAY_20261116_02','DAY_20261116_03',
+for(const id of ['DAY_20261113_04','DAY_20261113_05','DAY_20261113_06','DAY_20261116_01','DAY_20261116_02','DAY_20261116_03',
  'DAY_20261117_01','DAY_20261117_02','DAY_20261117_03',
  'WEEK_2026W46','SUNDAY_20261115']){
  test('Mission '+id+' : trois matières, questions vérifiables, aucune réponse publique',()=>{
@@ -41,6 +41,20 @@ test('Les dates des anciens défis restent inchangées',()=>{
  for(const id of ['DAY_20261111_01','DAY_20261113_03','SUNDAY_20261108','WEEK_2026W45'])
   assert.equal(isMixedMissionId(id),false);
 });
+test('Plan spécial du vendredi 13 : 3 missions mélangées différentes et anciennes copies intactes',()=>{
+ const plan=mixedPlan(new Date('2026-11-13T12:00:00Z'));
+ assert.deepEqual(plan.dailyIds,['DAY_20261113_04','DAY_20261113_05','DAY_20261113_06']);
+ assert.equal(plan.exercises.filter(x=>x.kind==='daily').length,3);
+ assert.equal(plan.exercises.length,5);
+ assert.ok(plan.exercises.filter(x=>x.kind==='daily').every((x,i)=>x.title.includes('Mission '+(i+1)+' / 3')));
+ const all=plan.exercises.filter(x=>x.kind==='daily').flatMap(x=>x.questions.map(q=>q.sourceId));
+ assert.equal(all.length,30);
+ assert.equal(new Set(all).size,30);
+ for(const id of ['DAY_20261113_01','DAY_20261113_02','DAY_20261113_03',
+                  'DAY_20261112_01','DAY_20261114_04','DAY_20261116_04'])
+  assert.equal(isMixedMissionId(id),false,'Ne jamais réutiliser une ID de défi validé : '+id);
+});
+
 test('Plan du 16 novembre : 3 missions + weekend ; pas de doublons',()=>{
  const plan=mixedPlan(new Date('2026-11-16T12:00:00Z'));
  assert.deepEqual(plan.dailyIds,['DAY_20261116_01','DAY_20261116_02','DAY_20261116_03']);
