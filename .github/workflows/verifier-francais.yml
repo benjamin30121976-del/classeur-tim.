@@ -1,0 +1,56 @@
+name: Vérifier la septième matière Français
+on:
+  push:
+    branches: [main, integration-francais-20261113]
+    paths:
+      - 'francais-*.js'
+      - 'worker/fr-*.mjs'
+      - 'worker/test/fr-training.test.mjs'
+      - 'worker/test/mixed-challenges.test.mjs'
+      - 'worker/mixed-challenges.mjs'
+      - 'worker/server.mjs'
+      - 'boot.js'
+      - 'app.js'
+      - 'index.html'
+      - 'parent-unified-results.js'
+      - 'tools/test/fr-production.readonly.cjs'
+      - '.github/workflows/verifier-francais.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  francais:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier la syntaxe JavaScript
+        run: |
+          for f in francais-pack.js francais-documents.js francais-parcours.js francais-exercices.js app.js boot.js parent-unified-results.js worker/server.mjs worker/fr-questions.mjs worker/fr-training.mjs worker/mixed-challenges.mjs; do node --check "$f"; done
+      - name: Vérifier 220 corrections, comptes Parent et sept matières
+        run: |
+          node --test worker/test/fr-training.test.mjs worker/test/mixed-challenges.test.mjs worker/test/mixed-parent-preview.test.mjs worker/test/corrections-pedagogiques.test.mjs worker/test/hg-training.test.mjs worker/test/svt-training.test.mjs worker/test/physics-training.test.mjs worker/test/math-training.test.mjs
+  navigateur-parent:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+      TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
+      TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer Chromium
+        run: |
+          npm install --prefix /tmp/tim-fr --no-audit --no-fund playwright
+          /tmp/tim-fr/node_modules/.bin/playwright install chromium
+      - name: Contrôle navigateur Parent en lecture seule
+        env:
+          NODE_PATH: /tmp/tim-fr/node_modules
+        run: node tools/test/fr-production.readonly.cjs
