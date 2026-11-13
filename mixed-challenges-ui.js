@@ -68,7 +68,7 @@ function open(ex,ctx={}){
   top.append(btn('← Retour aux défis',back,'mix-link'),E('h2',ex.title));
   top.append(E('p',parent?
     'ESSAI PARENT · '+questions.length+' questions · correction immédiate · aucune note ni aucun XP de Tim enregistré.':
-    ([...new Set(questions.map(q=>q.subject))].sort((a,b)=>['Espagnol','Mathématiques','Physique-chimie','Anglais','SVT'].indexOf(a)-['Espagnol','Mathématiques','Physique-chimie','Anglais','SVT'].indexOf(b)).join(' · '))+' — '+questions.length+' questions · une seule validation.','mix-muted'));
+    ([...new Set(questions.map(q=>q.subject))].sort((a,b)=>['Espagnol','Mathématiques','Physique-chimie','Anglais','SVT','Histoire-géographie'].indexOf(a)-['Espagnol','Mathématiques','Physique-chimie','Anglais','SVT','Histoire-géographie'].indexOf(b)).join(' · '))+' — '+questions.length+' questions · une seule validation.','mix-muted'));
   host.append(top);};
  const focus=()=>{host.scrollIntoView?.({behavior:'smooth',block:'start'});};
  const advice=['Lis toutes les consignes jusqu’au bout.','Pose tes calculs sur ton brouillon papier.','Si tu bloques, avance et reviens ensuite.','Rédige des étapes et une phrase de conclusion.','Garde du temps pour relire ta copie.','Pour une interro longue, organise ton travail.','Utilise toutes les bonnes habitudes de la semaine.'];
@@ -158,7 +158,7 @@ function open(ex,ctx={}){
   const box=E('section',undefined,'mix-panel');box.append(E('h3','Avant de rendre ma copie'));
   box.append(E('p','Tu as répondu à '+countAnswered()+' question(s) sur '+questions.length+'. Tu peux revenir modifier chaque réponse.'+
     (parent?' En essai Parent, les questions laissées vides vaudront zéro, sans blocage.':''),'mix-muted'));
-  const rules=['J’ai relu attentivement les consignes.','J’ai vérifié mes calculs, signes et unités.','J’ai relu les phrases en langues et les mots scientifiques de SVT.','J’ai relu toutes mes conclusions et répondu à chaque question.'];
+  const rules=['J’ai relu attentivement les consignes.','J’ai vérifié mes calculs, signes et unités.','J’ai relu les langues, les notions de SVT, les dates et les mots d’histoire-géographie.','J’ai relu toutes mes conclusions et répondu à chaque question.'];
   rules.forEach((text,i)=>{const line=E('label',undefined,'mix-check'),checkbox=E('input');checkbox.type='checkbox';checkbox.checked=state.checked[i];
    checkbox.onchange=()=>{state.checked[i]=checkbox.checked;showReview();};line.append(checkbox,E('span',text));box.append(line);});
   const list=E('div',undefined,'mix-review-list');
