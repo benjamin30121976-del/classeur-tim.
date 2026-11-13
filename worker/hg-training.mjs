@@ -1,4 +1,4 @@
-/* HG — 14 exercices (8 chapitres × 2 questionnaires de 10 questions).
+/* HG — 16 exercices (8 chapitres × 2 questionnaires de 10 questions).
    Corrections et bonnes réponses exclusivement côté serveur. */
 import {HG_QCM,HG_WRITTEN} from './hg-questions.mjs';
 import {sameShortAnswer} from './short-answer-equivalence.mjs';
@@ -48,7 +48,7 @@ export function hgPublicTask(id){
    ?{kind:'qcm',prompt:q.prompt,choices:q.choices}
    :{kind:'text',prompt:q.prompt})};
 }
-export function gradeSvtTask(id,answers,bankVersion){
+export function gradeHgTask(id,answers,bankVersion){
  if(bankVersion!==HG_BANK_VERSION)throw Error('stale-bank');
  const task=hgTask(id);
  if(!task||!Array.isArray(answers)||answers.length!==10)throw Error('invalid-answers');
