@@ -20,7 +20,7 @@ jobs:
           set -euo pipefail
           src='Tim_Ouverture_Exercice_Splash_Tan_Tan_V6_Moins_Aigue.mp4'
           test -f "$src"
-          echo '77394bf218ed8484357cbee6065569121527838718003bbfd04462fe887fb4e1  "$src" | sha256sum --check --status
+          printf '%s  %s\n' '77394bf218ed8484357cbee6065569121527838718003bbfd04462fe887fb4e1' "$src" | sha256sum --check --status
           ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,height -of default=nw=1 "$src"
           ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=nw=1 "$src"
           mkdir -p assets/animations
