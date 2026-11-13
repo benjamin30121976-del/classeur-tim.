@@ -70,4 +70,4 @@ export function gradeFrTask(id,answers,bankVersion){
   xp:0,items,errorCounts:wrong.length?{[task.lessonId]:wrong.length}:{},
   lessonToReview:wrong.length?task.lessonId:null,bankVersion:FR_BANK_VERSION};
 }
-export const FR_BANK_TEST={validate,allIds:()=>Array.from({length:11},(_,i)=>[1,2].map(s=>'FRQ_L0'+(i+1)+'_0'+s)).flat()};
+export const FR_BANK_TEST={validate,allIds:()=>Array.from({length:11},(_,i)=>[1,2].map(s=>'FRQ_L'+String(i+1).padStart(2,'0')+'_0'+s)).flat()};
