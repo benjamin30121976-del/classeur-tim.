@@ -18,6 +18,11 @@ const email=process.env.TIM_PARENT_EMAIL,password=process.env.TIM_PARENT_PASSWOR
   await page.locator('#login-password').fill(password);
   await page.locator('#login-button').click();
   await page.waitForFunction(()=>document.body.classList.contains('ready')&&Boolean(window.__TIM_DATA)&&Boolean(window.__TIM_BRIDGE?.englishTrainingTask),null,{timeout:60000});
+  // Le masque d'introduction empêche les clics de navigation sur mobile.
+  if(await page.locator('#intro-screen').isVisible()){
+   await page.locator('#intro-skip').click({timeout:8000});
+   await page.locator('#intro-screen').waitFor({state:'hidden',timeout:10000});
+  }
   const report=await page.evaluate(async()=>{
    const pack=window.TIM_ANGLAIS_PACK,bridge=window.__TIM_BRIDGE;
    if(!pack||!bridge?.attachments||!bridge?.englishTrainingPreviewSubmit)throw Error('Anglais ou connexion privée non chargé.');
