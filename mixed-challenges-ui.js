@@ -166,7 +166,11 @@ function open(ex,ctx={}){
    if(!confirm('Valider définitivement ? Une seule tentative : tu recevras ensuite ta note et ton corrigé.'))return;
    submit.disabled=true;submit.textContent='Enregistrement sécurisé…';
    try{
-    const result=await window.__TIM_BRIDGE.submit(ex.id,state.answers,{translationsUsed:state.translated});
+    const reviewChanges=Array.isArray(state.baseline)?
+     state.answers.flatMap((after,i)=>state.baseline[i]!==after?
+       [{questionIndex:i,before:state.baseline[i]||'',after}]:[]):[];
+    const result=await window.__TIM_BRIDGE.submit(ex.id,state.answers,{
+     translationsUsed:state.translated,reviewChanges});
     save(ex.id,null);await ctx.onSaved?.(result);
    }catch(err){
     submit.disabled=false;submit.textContent='Valider définitivement mon défi';
