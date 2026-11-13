@@ -12,7 +12,8 @@ function render(slot,id,back){
   if(!slot.isConnected)return;
   const questions=Array.isArray(report.items)?report.items:[];
   slot.innerHTML='<h3>Note : '+esc(report.score)+' / 10 · '+esc(Number(report.xp??0).toLocaleString('fr-FR'))+' XP</h3>'+
-   '<p>Exercice terminé. Une seule validation. Les réponses restent consultables.</p>'+
+   '<p>Exercice terminé. Une seule validation. Les réponses restent consultables.</p>'+ 
+   (report.xpPolicyPending?'<p class="spx-training-warning">Le serveur a conservé l’ancien barème pour cette copie. Le nombre de XP affiché est celui réellement enregistré.</p>':'')+
    '<p>'+questions.filter(x=>x.correct).length+' bonnes réponses sur '+questions.length+'.</p>'+
    questions.map((q,i)=>'<section class="spx-training-question math12-correction"><h4>Question '+(i+1)+' — '+(q.correct?'Réussie':'À revoir')+'</h4>'+
     '<p>'+esc(q.prompt)+'</p><p><strong>Réponse de Tim :</strong> '+esc(q.response)+'</p>'+
