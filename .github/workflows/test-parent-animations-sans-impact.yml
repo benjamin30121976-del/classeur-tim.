@@ -4,6 +4,7 @@ on:
     branches: [test-sans-impact-tim-20261114]
     paths:
       - 'tools/test/parcours-parent-animations-production.readonly.cjs'
+      - 'tools/test/verifier-tous-baremes-et-animations.production.readonly.cjs'
       - '.github/workflows/test-parent-animations-sans-impact.yml'
   workflow_dispatch:
 permissions:
@@ -22,11 +23,17 @@ jobs:
         with:
           node-version: '22'
       - name: Contrôler la syntaxe
-        run: node --check tools/test/parcours-parent-animations-production.readonly.cjs
+        run: |
+          node --check tools/test/parcours-parent-animations-production.readonly.cjs
+          node --check tools/test/verifier-tous-baremes-et-animations.production.readonly.cjs
       - name: Installer Chromium avec Playwright
         run: |
           npm install --prefix /tmp/tim-test-sans-impact --no-audit --no-fund playwright
           /tmp/tim-test-sans-impact/node_modules/.bin/playwright install --with-deps chromium
+      - name: Vérifier toutes les notes, XP et animations des défis sur Cloudflare
+        env:
+          NODE_PATH: /tmp/tim-test-sans-impact/node_modules
+        run: node tools/test/verifier-tous-baremes-et-animations.production.readonly.cjs
       - name: Naviguer sur le site publié (Parent en simulation, animations fictives)
         env:
           NODE_PATH: /tmp/tim-test-sans-impact/node_modules
