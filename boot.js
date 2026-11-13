@@ -501,7 +501,7 @@ async function startSession(user){
  content=window.TIM_APPLY_SPANISH_NOV05?.(content)||content;
  const missionInput=window.TIM_SPANISH_ENT_EXACT?{...missionSource,exercises:missionSource.exercises.filter(e=>!String(e.subject||'').toLowerCase().includes('espagnol'))}:missionSource;
  const missionPlan=setupMissions(missionInput,new Date(),window.TIM_SPANISH_EDU);
- // Défis de trois matières : le serveur fabrique une banque distincte
+ // Défis de trois matières jusqu'au 15 novembre, puis quatre avec anglais dès le 16.
  // sans remplacer ni re-noter les anciens défis d'espagnol.
  let mixedDaily=null,mixedChallengePlan=null;
  if(missionPlan.meta.today>='2026-11-13'){
@@ -544,7 +544,7 @@ async function startSession(user){
    missionPlan.meta.dailyIds;
  window.__TIM_CHALLENGES={...missionPlan.meta,
   dailyIds:effectiveDailyIds,daily:effectiveDailyIds[0]||null,
-  dailyBankStatus:mixedChallengePlan?'three-subjects':mixedDaily?'mixed':'classic'};
+  dailyBankStatus:mixedChallengePlan?(mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='Anglais'))?'four-subjects':'three-subjects'):mixedDaily?'mixed':'classic'};
  window.__TIM_NEXT_DAILY=effectiveDailyIds[0]||null;
  const mixedIds=new Set((mixedChallengePlan||[]).map(ex=>ex.id));
  const retainedExercises=content.exercises.filter(x=>
