@@ -1,0 +1,37 @@
+name: Vérifier un essai Parent des défis mélangés en production
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'worker/mixed-challenges.mjs'
+      - 'worker/server.mjs'
+      - 'boot.js'
+      - 'app.js'
+      - 'mixed-challenges-ui.js'
+      - 'index.html'
+      - 'tools/test/mixed-parent-production.readonly.cjs'
+      - '.github/workflows/verifier-essai-parent-defis.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  simulation-parent-sans-ecriture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+      TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
+      TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Préparer Chromium
+        run: |
+          npm install --prefix /tmp/mixed-parent-prod --no-audit --no-fund playwright
+          /tmp/mixed-parent-prod/node_modules/.bin/playwright install chromium
+      - name: Corriger deux copies d'essai sans toucher aux données de Tim
+        env:
+          NODE_PATH: /tmp/mixed-parent-prod/node_modules
+        run: node tools/test/mixed-parent-production.readonly.cjs
