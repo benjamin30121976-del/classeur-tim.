@@ -31,7 +31,7 @@ test('sept bonus de mathématiques et exactement 70 questions complètes',()=>{
   const result=evaluate(ex,asSubmission(ex));assert.equal(result.score,10);
   assert.equal(result.total,10);assert.equal(result.needsReview,false);
   assert(result.answers.every(a=>a.correct&&a.explanation.length>20));
- });
+ }
 });
 test('les 7 exercices ont bien 0, 5, 7 et 10 réponses, et une correction explicative',()=>{
  for(const ex of BONUS_MATH_2026){
