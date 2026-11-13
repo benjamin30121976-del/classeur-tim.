@@ -1,15 +1,17 @@
-/* Anglais-chimie — 6 exercices, 60 questions pédagogiques.
+/* Anglais — 11 exercices, 110 questions pédagogiques.
    Ne jamais importer ce module dans le navigateur : les clés de réponse restent au serveur.
-   Les 2 leçons fournissent chacune 2 QCM et 1 exercice de réponses écrites. */
+   Les leçons 1 et 2 ont chacune trois exercices ; les cinq autres ont un exercice de dix questions. */
 import {ENGLISH_QUESTIONS} from './english-questions.mjs';
+import {EXTRA_ENGLISH_QUESTIONS} from './english-extra.mjs';
 
-export const ENGLISH_BANK_VERSION='en-20261113-v1';
-const LESSONS=ENGLISH_QUESTIONS;
+export const ENGLISH_BANK_VERSION='en-20261113-v2';
+const LESSONS=[...ENGLISH_QUESTIONS,...EXTRA_ENGLISH_QUESTIONS];
 const NAMES=['Je comprends les mots','Je lis et j’applique','Je réponds par écrit'];
-const RE=/^ENQ_L(0[1-2])_0([1-3])$/;
-export function englishTrainingId(id){return typeof id==='string'&&RE.test(id);}
+const RE=/^ENQ_L(0[1-7])_0([1-3])$/;
+export function englishTrainingId(id){return typeof id==='string'&&Boolean(context(id));}
 function context(id){
  const m=RE.exec(String(id||''));if(!m)return null;
+ if(Number(m[1])>2&&Number(m[2])!==1)return null;
  return {lesson:Number(m[1]),series:Number(m[2]),lessonId:'EN_BIS'+m[1],id};
 }
 function cleanAnswer(value){
@@ -23,17 +25,19 @@ function cleanAnswer(value){
 function validQuestions(){
  for(let j=0;j<LESSONS.length;j++){
   const rows=LESSONS[j];
-  if(rows.length!==30)throw Error('Banque anglais incomplète : L'+(j+1));
+  if(rows.length!==(j<2?30:10))throw Error('Banque anglais incomplète : L'+(j+1));
   const seen=new Set();
   for(let i=0;i<rows.length;i++){
    const row=rows[i];
    if(seen.has(row[1]))throw Error('Question dupliquée');
    seen.add(row[1]);
-   if(i<20){
-    if(row.length!==5||row[0]!=='q'||row[3].length!==3||new Set([row[2],...row[3]]).size!==4||
+   if(row[0]==='q'){
+    if(row.length!==5||row[3].length!==3||new Set([row[2],...row[3]]).size!==4||
        !row[1].trim()||!row[2].trim()||!row[4].trim())throw Error('QCM mal formé : '+j+'/'+i);
-   }else if(row[0]!=='t'||row.length!==5||!row[1].trim()||!row[2].trim()||!row[3].trim()||!Array.isArray(row[4]))
-    throw Error('Réponse écrite mal formée : '+j+'/'+i);
+   }else if(row[0]==='t'){
+    if(row.length!==5||!row[1].trim()||!row[2].trim()||!row[3].trim()||!Array.isArray(row[4]))
+     throw Error('Réponse écrite mal formée : '+j+'/'+i);
+   }else throw Error('Type de question inconnu : '+j+'/'+i);
   }
  }
  return true;
@@ -43,7 +47,7 @@ export function englishTask(id){
  const c=context(id);if(!c)return null;
  const rows=LESSONS[c.lesson-1].slice((c.series-1)*10,c.series*10);
  return {id,lessonId:c.lessonId,series:c.series,
-  title:'Exercice '+c.series+' — '+NAMES[c.series-1],
+  title:c.lesson>2?'Exercice BIS — compréhension et rédaction':'Exercice '+c.series+' — '+NAMES[c.series-1],
   bankVersion:ENGLISH_BANK_VERSION,
   questions:rows.map((row,i)=>{
    const fullIndex=(c.series-1)*10+i;
@@ -81,5 +85,4 @@ export function gradeEnglishTask(id,answers,bankVersion){
   xp:0,items,errorCounts:wrong.length?{[task.lessonId]:wrong.length}:{},
   lessonToReview:wrong.length?task.lessonId:null,bankVersion:ENGLISH_BANK_VERSION};
 }
-export const ENGLISH_BANK_TEST={validate:validQuestions,allIds:()=>Array.from({length:2},(_,i)=>
- Array.from({length:3},(_,s)=>'ENQ_L0'+(i+1)+'_0'+(s+1))).flat()};
+export const ENGLISH_BANK_TEST={validate:validQuestions,allIds:()=>Array.from({length:7},(_,i)=>Array.from({length:i<2?3:1},(_,j)=>'ENQ_L0'+(i+1)+'_0'+(j+1))).flat()};

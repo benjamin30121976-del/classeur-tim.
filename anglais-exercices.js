@@ -4,7 +4,7 @@
    Même disposition et classes que l’Espagnol, une question à la fois. */
 (function(){
 'use strict';
-const RE=/^ENQ_L0[1-2]_0[1-3]$/;
+const RE=/^ENQ_L0[1-7]_0[1-3]$/;
 const E=(tag,cls,txt)=>{
  const a=document.createElement(tag);if(cls)a.className=cls;
  if(txt!==undefined)a.textContent=String(txt);return a;
@@ -49,9 +49,9 @@ function showCorrection(slot,report){
   slot.append(box);
  });
  slot.append(E('p','',parentPractice?'Vous pouvez recommencer cet essai sans toucher aux résultats de Tim.':'L’exercice n’est plus rejouable. Revois la méthode avant la prochaine activité.'));
- const lessonId=/^EN_BIS0[1-2]$/.test(String(report.lessonId||''))?report.lessonId:
-  /^ENQ_L0[1-2]_0[1-3]$/.test(String(report.id||''))?'EN_BIS'+String(report.id).slice(5,7):null;
- const reviewTitles={EN_BIS01:'The Sounds of Music : les genres et la chronologie',EN_BIS02:'Le suffixe -ness'};
+ const lessonId=/^EN_BIS0[1-7]$/.test(String(report.lessonId||''))?report.lessonId:
+  /^ENQ_L0[1-7]_0[1-3]$/.test(String(report.id||''))?'EN_BIS'+String(report.id).slice(5,7):null;
+ const reviewTitles={EN_BIS01:'The Sounds of Music : genres et chronologie',EN_BIS02:'Le suffixe -ness',EN_BIS03:'Vacances et prétérit simple',EN_BIS04:'Personnalité et adverbes',EN_BIS05:'SO, NEITHER et BUT',EN_BIS06:'Se présenter en anglais',EN_BIS07:'Prétérit simple et prétérit BE-ING'};
  if(lessonId){
   if(count)slot.append(E('p','','Partie conseillée à revoir : '+(reviewTitles[lessonId]||'la règle et les exemples')+'.'));
   const reviser=button('Revoir la leçon BIS pour comprendre les erreurs',()=>{

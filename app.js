@@ -324,7 +324,7 @@ function renderExerciseIndex(){
   overview.append(button('📚 DEVOIRS DE L’ÉCOLE · 0 XP',()=>{exerciseSubject='';exerciseMode='school-all';renderExerciseIndex();},'exercise-v12-overview-button school'));
   root.append(overview,bonusMissionPanel(false));
   const icons=['🇪🇸','∑','⚗','EN','📖','🌍','⚖','🌱','⚙'];
-  SCHOOL_SUBJECTS.forEach((name,i)=>{const count=name==='Physique-chimie'?23:name==='Anglais'?6:name==='Mathématiques'?2+bases.filter(e=>(e.subject||'Espagnol')===name).length:bases.filter(e=>(e.subject||'Espagnol')===name).length;
+  SCHOOL_SUBJECTS.forEach((name,i)=>{const count=name==='Physique-chimie'?23:name==='Anglais'?11:name==='Mathématiques'?2+bases.filter(e=>(e.subject||'Espagnol')===name).length:bases.filter(e=>(e.subject||'Espagnol')===name).length;
     const b=E('button','matter-card'+(name==='Espagnol'?' matter-espanol':''));b.type='button';
     b.append(E('span','ico',icons[i]||'▤'),E('strong','',name),E('small','',count?count+' exercice(s) disponible(s)':'À compléter avec les cours de Tim'));
     if(count)b.addEventListener('click',()=>{exerciseSubject=name;exerciseGroup='';exerciseMode='';document.getElementById('exercise-search').value='';renderExerciseIndex();scrollTop();});
@@ -926,7 +926,7 @@ function renderMatieres(){
  const wrap=E('div','matter-grid');
  const icons=['🇪🇸','∑','⚗','EN','📖','🌍','⚖','🌱','⚙'];
  for(let i=0;i<SCHOOL_SUBJECTS.length;i++){
-  const name=SCHOOL_SUBJECTS[i],n=name==='Espagnol'&&window.TIM_SPANISH_ENT_EXACT?.lessonCount?window.TIM_SPANISH_ENT_EXACT.lessonCount():name==='Espagnol'?(DATA.metadata?.spanishEnt?.lessons?.length||0):DATA.lessons.filter(x=>(x.subject||'Espagnol')===name).length,ex=name==='Physique-chimie'?23:name==='Anglais'?6:name==='Mathématiques'?2+DATA.exercises.filter(x=>(x.subject||'Espagnol')===name).length:name==='Espagnol'&&window.TIM_SPANISH_SIMPLIFIED?42:DATA.exercises.filter(x=>(x.subject||'Espagnol')===name).length;
+  const name=SCHOOL_SUBJECTS[i],n=name==='Espagnol'&&window.TIM_SPANISH_ENT_EXACT?.lessonCount?window.TIM_SPANISH_ENT_EXACT.lessonCount():name==='Espagnol'?(DATA.metadata?.spanishEnt?.lessons?.length||0):DATA.lessons.filter(x=>(x.subject||'Espagnol')===name).length,ex=name==='Physique-chimie'?23:name==='Anglais'?11:name==='Mathématiques'?2+DATA.exercises.filter(x=>(x.subject||'Espagnol')===name).length:name==='Espagnol'&&window.TIM_SPANISH_SIMPLIFIED?42:DATA.exercises.filter(x=>(x.subject||'Espagnol')===name).length;
   const b=E('button','matter-card'+(name==='Espagnol'?' matter-espanol':''));b.type='button';b.append(E('span','ico',icons[i]||'▤'),E('strong','',name),E('small','',n+' leçon(s) · '+ex+' exercice(s)'+(!n?' · Cours ENT à ajouter':'') ));
   if(n||(name==='Espagnol'&&window.__TIM_PARENT&&window.TIM_SPANISH_ENT_EXACT))b.addEventListener('click',()=>renderMatiere(name));else{b.title='Les vrais cours de Tim ne sont pas encore ajoutés';b.disabled=true;b.style.opacity='.55';}
   wrap.append(b);
