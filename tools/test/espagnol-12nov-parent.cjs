@@ -67,14 +67,16 @@ async function check(browser,name,viewport){
    const {nov12ForParentImport}=await import('../../functions/spanish-nov12-training.mjs');
    for(const exercise of nov12ForParentImport()){
     const answers=exercise.questions.map(q=>q.type==='mc'?Number(q.right):String(q.right));
-    const report=await page.evaluate(async ({id,answers})=>
-     window.__TIM_BRIDGE.spanishEntTrainingPreview(id,answers,Array(10).fill(false)),{id:exercise.id,answers});
+    const translated=Array(10).fill(false);translated[0]=true;translated[7]=true;
+    const report=await page.evaluate(async ({id,answers,translated})=>
+     window.__TIM_BRIDGE.spanishEntTrainingPreview(id,answers,translated),{id:exercise.id,answers,translated});
     assert.equal(report.practice,true);
     assert.equal(report.saved,false);
     assert.equal(report.score,10);
+    assert.equal(report.translationHelpCount,2);
     assert.equal(report.items?.length,10);
    }
-   console.log('PASS Parent : 3 exercices du 12 novembre visibles, 30 corrections 10/10 simulées, aucune note ni XP enregistrés.');
+   console.log('PASS Parent : 3 exercices du 12 novembre visibles, 30 corrections 10/10 simulées, compteur 2/10 vérifié, aucune note ni XP enregistrés.');
   }
   // Passer complètement l'animation AVANT de naviguer vers la matière,
   // car le bouton "Passer" peut lui-même renvoyer à l'accueil.
