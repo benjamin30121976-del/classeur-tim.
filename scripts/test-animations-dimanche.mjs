@@ -45,7 +45,7 @@ test('Dimanche: le MP4 à 20 XP seulement, sinon dévoilement du montant réel',
  const running=api.playResult({kind:'sunday'},{xp:20,score:17,total:20});
  const overlay=last(overlays),card=overlay.children[0],media=card.children[0];
  assert.equal(media.tagName,'VIDEO');
- assert.match(media.src,/Tim_Defi_Du_Dimanche_20XP_Original\\.mp4$/);
+ assert.ok(media.src.endsWith('Tim_Defi_Du_Dimanche_20XP_Original.mp4'))
  const award=find(card,n=>n.className==='tim-anim-award');
  assert.equal(award.hidden,true);
  media.onended();
@@ -79,5 +79,5 @@ test('La carte du dimanche conserve le GIF original',()=>{
  const {api}=animationHarness();
  const img={src:'old'};
  api.setCardImage(img,'sundayCard','old');
- assert.match(img.src,/Tim_Defi_Du_Dimanche_20XP_Original\\.gif$/);
+ assert.ok(img.src.endsWith('Tim_Defi_Du_Dimanche_20XP_Original.gif'))
 });
