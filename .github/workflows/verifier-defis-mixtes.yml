@@ -6,6 +6,7 @@ on:
       - 'worker/mixed-challenges.mjs'
       - 'worker/server.mjs'
       - 'worker/test/mixed-challenges.test.mjs'
+      - 'worker/test/mixed-parent-preview.test.mjs'
       - 'worker/test/course-fallback.test.mjs'
       - 'mixed-challenges-ui.js'
       - 'assets/mixed-challenges.css'
@@ -13,6 +14,7 @@ on:
       - 'app.js'
       - 'index.html'
       - 'tools/test/mixed-ui.readonly.cjs'
+      - 'tools/test/mixed-parent-ui.readonly.cjs'
       - '.github/workflows/verifier-defis-mixtes.yml'
   workflow_dispatch:
 permissions:
@@ -34,7 +36,7 @@ jobs:
           node --check boot.js
           node --check app.js
       - name: Vérifier les 30 questions, 3 matières, notes et traductions
-        run: node --test worker/test/mixed-challenges.test.mjs worker/test/course-fallback.test.mjs
+        run: node --test worker/test/mixed-challenges.test.mjs worker/test/mixed-parent-preview.test.mjs worker/test/course-fallback.test.mjs
       - name: Vérifier les règles historiques des XP
         run: node --test functions/test/xp.test.mjs
       - name: Résumé
@@ -51,4 +53,6 @@ jobs:
       - name: Tester la navigation et la relecture sans envoyer de copie
         env:
           NODE_PATH: /tmp/tim-mixed/node_modules
-        run: node tools/test/mixed-ui.readonly.cjs
+        run: |
+          node tools/test/mixed-ui.readonly.cjs
+          node tools/test/mixed-parent-ui.readonly.cjs
