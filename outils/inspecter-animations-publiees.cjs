@@ -27,9 +27,19 @@ fs.mkdirSync(out,{recursive:true});
    const links=await page.evaluate(()=>({
     splash:window.TIM_ANIMATIONS.url('opening'),
     gif:window.TIM_ANIMATIONS.url('plus2half'),
-    script:[...document.scripts].some(s=>s.src.includes('tim-animations.js?v=20261113-ouverture-xp'))
+    script:[...document.scripts].some(s=>s.src.includes('tim-animations.js?v=revelation-xp-defis-20261113-v2'))
    }));
-   assert.ok(links.script,'La nouvelle version du lecteur n’est pas publiée');
+   assert.ok(links.script,'La version corrigée du lecteur n’est pas publiée');
+   const [appResponse,mixedResponse,cssResponse]=await Promise.all([
+     page.request.get(new URL('./app.js?v=revelation-xp-defis-20261113-v2',base).href,{timeout:30000}),
+     page.request.get(new URL('./mixed-challenges-ui.js?v=revelation-xp-defis-20261113-v2',base).href,{timeout:30000}),
+     page.request.get(new URL('./tim-animations.css?v=revelation-xp-defis-20261113-v2',base).href,{timeout:30000})
+   ]);
+   assert.ok(appResponse.ok()&&mixedResponse.ok()&&cssResponse.ok(),'Les nouveaux modules ne sont pas accessibles');
+   const [appSource,mixedSource,cssSource]=await Promise.all([appResponse.text(),mixedResponse.text(),cssResponse.text()]);
+   assert.ok(appSource.includes('replay-result-animation'),'Bouton de relecture XP absent du module principal en production');
+   assert.ok(mixedSource.includes('replay-result-animation'),'Bouton de relecture XP absent des défis mélangés en production');
+   assert.ok(cssSource.includes('.tim-anim-overlay{display:flex!important}'),'CSS de réduction des animations non publié');
    assert.ok(links.splash.includes('Tan_Tan_V6_Moins_Aigue.mp4'),'Ancienne entrée des exercices');
    assert.ok(links.gif.includes('Tim_Animation_2_5XP_Loup.gif'),'GIF +2,5 non raccordé');
    for(const [name,rel] of [['MP4',links.splash],['GIF',links.gif]]){
@@ -55,5 +65,18 @@ fs.mkdirSync(out,{recursive:true});
    console.log('OK Cloudflare '+tag+': MP4, GIF +2,5, retour correction, lecture seule.');
    await context.close();
   }
+  // Test réel du rendu CSS sur un Android configuré pour réduire les animations.
+  const reduced=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,reducedMotion:'reduce',locale:'fr-FR'});
+  try{
+    const page=await reduced.newPage();
+    const response=await page.goto(base,{waitUntil:'domcontentloaded',timeout:45000});
+    assert.ok(response?.ok(),'Site indisponible en mode mouvement réduit');
+    await page.waitForFunction(()=>typeof window.TIM_ANIMATIONS?.playResult==='function',null,{timeout:20000});
+    await page.evaluate(()=>{window.TIM_ANIMATIONS.playResult({kind:'daily'},{xp:2,score:8,total:10,correctionStatus:'released',correctionLocked:false});});
+    assert.ok(await page.locator('.tim-anim-award-value').getByText('+2 XP',{exact:true}).isVisible(),'XP masqués sur Android en mode mouvement réduit');
+    await page.screenshot({path:path.join(out,'android-mouvement-reduit-cloudflare.png')});
+    await page.getByRole('button',{name:'Voir ma correction'}).click();
+    console.log('OK Cloudflare Android : +2 XP reste visible en mode mouvement réduit.');
+  }finally{await reduced.close();}
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
