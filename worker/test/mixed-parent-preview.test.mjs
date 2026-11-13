@@ -18,7 +18,7 @@ function correctAnswers(mission){
    s:'La réponse au problème est '+q.answer+' '+(q.unit||'unités')+'.'});
  });
 }
-for(const id of ['DAY_20261113_04','DAY_20261116_01','WEEK_2026W46','SUNDAY_20261115']){
+for(const id of ['DAY_20261113_04','DAY_20261116_01','WEEK_2026W46','SUNDAY_20261115','WEEK_2026W47','SUNDAY_20261122']){
  test('Parent : '+id+' corrigé complet et aucun appel base de données',async()=>{
   const mission=mixedMission(id),answers=correctAnswers(mission);
   const report=await TESTABLE.previewMixedChallenge(NO_DB,PARENT_UID,{id,answers,
