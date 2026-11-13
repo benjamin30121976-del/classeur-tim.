@@ -401,7 +401,9 @@ async function fetchAttempts(content){
  docs.forEach(d=>{
   const record=d.data(),ex=map.get(d.id);if(!ex&&!isMissionId(d.id))return;
   const secret=isParent?grades.get(d.id):null;
-  const released=record.correctionStatus==='released';
+  // Les anciens entraînements de leçon sont corrigés automatiquement.
+  // Cette règle ne modifie ni les copies ni les XP enregistrés.
+  const released=record.correctionStatus==='released'||(ex?.kind==='training'&&record.authorUid===TIM_UID);
   list.push({
    id:d.id,date:record.submittedAt?.toDate?.().toISOString()||new Date().toISOString(),
    title:ex?.title||secret?.title||(d.id.startsWith('DAY_')?'Petit défi du '+d.id.slice(4,12):d.id.startsWith('SUNDAY_')?'Grand défi du dimanche':'Grand défi du samedi'),lesson:ex?.lesson||'',xp:Number(record.xp||0),policyVersion:Number(record.policyVersion||0),
