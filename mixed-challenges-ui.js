@@ -214,6 +214,13 @@ function open(ex,ctx={}){
     (finite(report.score)?Number(report.score).toLocaleString('fr-FR')+'/'+report.total:'à actualiser')));
   copy.append(E('p',parent?'ESSAI PARENT · 0 XP · aucune note de Tim enregistrée.':
    'XP obtenus : '+(finite(report.xp)?(report.xp>=0?'+':'')+report.xp:'à confirmer')+' XP','mix-advice'));
+  // Replay visuel seulement, depuis la copie déjà confirmée par le serveur.
+  if(!parent&&!guest&&old&&report.correctionStatus==='released'&&!report.correctionLocked&&
+     typeof report.xp==='number'&&Number.isFinite(report.xp)&&
+     Array.isArray(report.answers)&&report.answers.length===questions.length){
+   copy.append(btn('Revoir l’animation de ma note et de mes XP',
+    ()=>window.TIM_ANIMATIONS?.playResult?.(ex,report),'mix-btn replay-result-animation'));
+  }
   if(Number.isInteger(report.translationHelpCount))copy.append(E('p','Traduction utilisée pour '+report.translationHelpCount+' question(s) d’espagnol.','mix-muted'));
   if(!Array.isArray(report.answers)||report.answers.length!==questions.length){
    copy.append(E('p',parent?'La correction de cet essai est indisponible.':'Le résultat est enregistré. Actualise pour récupérer toute la correction.','mix-muted'));
