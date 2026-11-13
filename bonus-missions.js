@@ -1,6 +1,6 @@
 /* Défi bonus : zéro exercice avant publication explicite.
  * Une fiche avec kind:'bonus-day' et 10 à 20 questions avec explications
- * apparaît à l'accueil. Si plusieurs sont publiées, une seule (la plus récente).
+ * apparaît à l'accueil. Si plusieurs sont publiées, toutes les fiches publiées.
  * Pas de tirage automatique ni d'attribution par le Parent.
  */
 (()=>{'use strict';
@@ -15,7 +15,7 @@
     Array.isArray(ex.questions)&&ex.questions.length>=10&&ex.questions.length<=20&&
     (!ex.publishedAt||day(ex.publishedAt)<=stamp))
    .sort((a,b)=>String(b.publishedAt||'').localeCompare(String(a.publishedAt||''))||b.id.localeCompare(a.id))
-   .slice(0,1);
+   ;
  }
  function draw(exercises,attempts,stamp=day()){return pool(exercises,attempts,stamp);}
  function state(exercises,attempts,date=new Date()){

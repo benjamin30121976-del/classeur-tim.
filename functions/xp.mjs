@@ -16,7 +16,7 @@ export function rawPoints({kind,category,score,total,needsReview}) {
  if(category==='school'||category==='training')return 0;
  const p=Math.max(0,Math.min(1,score/total));
  // Défi bonus du jour : 5 XP dès 70 %. L'ancien barème Parent est conservé.
- if(kind==='bonus-day')return p>=.7?5:0;
+ if(kind==='bonus-day')return p>=.7?5:p>=.5?2.5:0;
   if(kind==='bonus-parent')return p>=.85?5:0;
  if(kind==='daily')return p>=.9?3:p>=.7?2:p>=.5?1:p>=.2?0:-1;
  if(kind==='weekly')return p>=.85?10:p>=.75?7:p>=.6?4:p>=.5?1:p>=.4?0:-1;

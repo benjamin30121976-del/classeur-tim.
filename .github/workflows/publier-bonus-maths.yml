@@ -1,0 +1,81 @@
+name: Vérifier et publier les sept bonus mathématiques
+on:
+  pull_request:
+    paths:
+      - 'functions/bonus-maths-2026.mjs'
+      - 'functions/test/bonus-maths-2026.test.mjs'
+      - 'functions/grading.mjs'
+      - 'functions/xp.mjs'
+      - 'xp-rules.js'
+      - 'bonus-missions.js'
+      - 'boot.js'
+      - 'app.js'
+      - 'outils/publier-bonus-maths-via-parent.cjs'
+      - '.github/workflows/publier-bonus-maths.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'functions/bonus-maths-2026.mjs'
+      - 'functions/test/bonus-maths-2026.test.mjs'
+      - 'functions/grading.mjs'
+      - 'functions/xp.mjs'
+      - 'xp-rules.js'
+      - 'bonus-missions.js'
+      - 'boot.js'
+      - 'app.js'
+      - 'outils/publier-bonus-maths-via-parent.cjs'
+      - '.github/workflows/publier-bonus-maths.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier syntaxe interface, serveur, barème et import
+        run: |
+          node --check app.js
+          node --check boot.js
+          node --check bonus-missions.js
+          node --check xp-rules.js
+          node --check functions/grading.mjs
+          node --check functions/xp.mjs
+          node --check functions/bonus-maths-2026.mjs
+          node --check worker/server.mjs
+          node --check outils/publier-bonus-maths-via-parent.cjs
+      - name: Tester 70 questions, bonnes réponses, copies fausses, XP illimités
+        run: |
+          node --test functions/test/bonus-maths-2026.test.mjs
+          node --test functions/test/grading.test.mjs functions/test/xp.test.mjs
+  import-parent:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+      TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
+      TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier la connexion Parent configurée
+        run: |
+          test -n "$TIM_PARENT_EMAIL" || { echo "::error::Compte Parent non configuré"; exit 1; }
+          test -n "$TIM_PARENT_PASSWORD" || { echo "::error::Compte Parent non configuré"; exit 1; }
+      - name: Installer Chromium et Playwright
+        run: |
+          mkdir -p /tmp/tim-bonus-parent
+          npm install --prefix /tmp/tim-bonus-parent --no-audit --no-fund playwright
+          /tmp/tim-bonus-parent/node_modules/.bin/playwright install --with-deps chromium
+      - name: Attendre la nouvelle version Cloudflare, puis publier 7 bonus via Parent
+        env:
+          NODE_PATH: /tmp/tim-bonus-parent/node_modules
+        run: node outils/publier-bonus-maths-via-parent.cjs
