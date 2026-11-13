@@ -140,7 +140,7 @@ function groupsForLessons(rows,subject){
  return topics.sort((a,b)=>a.localeCompare(b,'fr')).map(t=>({title:t,topics:[t],icon:'▤',sub:'Cours, devoirs et entraînements'}));
 }
 function setLessonSubject(name){
- if(name==='Physique-chimie'&&window.TIM_PHYSIQUE_PATH){page('matieres');renderMatiere(name);return;}
+ if(name==='Physique-chimie'&&window.TIM_PHYSIQUE_PATH){page('matieres');renderMatiere(name);return;}if(name==='Anglais'&&window.TIM_ENGLISH_PATH){page('matieres');renderMatiere(name);return;}
  lessonSubject=name;lessonGroup='';
  const selector=document.getElementById('lesson-topic');
  const topics=[...new Set(DATA.lessons.filter(l=>!name||subjectOf(l)===name).map(chapterOf))].sort((a,b)=>a.localeCompare(b,'fr'));
@@ -185,7 +185,7 @@ function renderLessonIndex(){
  if(!found.length)root.append(notice('Aucune fiche trouvée pour cette recherche.'));
 }
 function openLesson(id){const l=lessonBy(id);if(!l)return;
- if(subjectOf(l)==='Physique-chimie'&&window.TIM_PHYSIQUE_PATH){page('matieres');renderMatiere('Physique-chimie',id);return;}lessonSubject=subjectOf(l);lessonGroup='';page('cours');document.getElementById('lesson-index').classList.add('hide');const dest=clear(document.getElementById('lesson-detail'));dest.classList.add('active');
+ if(subjectOf(l)==='Anglais'&&window.TIM_ENGLISH_PATH){page('matieres');renderMatiere('Anglais',id);return;}if(subjectOf(l)==='Physique-chimie'&&window.TIM_PHYSIQUE_PATH){page('matieres');renderMatiere('Physique-chimie',id);return;}lessonSubject=subjectOf(l);lessonGroup='';page('cours');document.getElementById('lesson-index').classList.add('hide');const dest=clear(document.getElementById('lesson-detail'));dest.classList.add('active');
  const bis=isBisLesson(l),allSame=DATA.lessons.filter(x=>x.id!==l.id&&subjectOf(x)===subjectOf(l)&&chapterOf(x)===chapterOf(l)),others=allSame.filter(x=>bis?!isBisLesson(x):isBisLesson(x));
  dest.append(button('← Retour au sommaire',()=>{dest.classList.remove('active');document.getElementById('lesson-index').classList.remove('hide');scrollTop();},'plain back'));
  dest.append(E('p','lesson-type-label '+(bis?'bis':'ent'),bis?'LEÇON BIS · POUR MIEUX COMPRENDRE':'COURS ENT · DOCUMENT DU PROFESSEUR'),E('h2','',l.title),E('p','meta',bis?'Version pédagogique complémentaire':'Cours abordé : '+(l.date||'date non précisée')),E('p','',l.summary));
@@ -300,6 +300,11 @@ function renderExerciseIndex(){
  const extras=clear(document.getElementById('recommended-extra'));
  const bases=DATA.exercises.filter(e=>!window.TIM_EXERCISE.challenge(e));
  if(exerciseSubject==='Physique-chimie'){renderPhysicsExerciseDirectory(root,toolbar);return;}
+ if(exerciseSubject==='Anglais'){
+  root.replaceChildren(button('← Toutes les matières',()=>{exerciseSubject='';renderExerciseIndex();},'plain'),E('h3','','Anglais — 6 exercices BIS'));
+  root.append(E('p','','Ouvre une leçon d’anglais, puis l’onglet Entraînement pour choisir un exercice de 10 questions.'));
+  root.append(button('Voir les exercices d’anglais',()=>{page('matieres');renderMatiere('Anglais');},'plain'));return;
+ }
  if(exerciseSubject==='Mathématiques'){renderMathOfficialExercises(root,toolbar);return;}
  if(!exerciseSubject){
   finder.classList.add('hide');root.className='matter-grid';
@@ -319,7 +324,7 @@ function renderExerciseIndex(){
   overview.append(button('📚 DEVOIRS DE L’ÉCOLE · 0 XP',()=>{exerciseSubject='';exerciseMode='school-all';renderExerciseIndex();},'exercise-v12-overview-button school'));
   root.append(overview,bonusMissionPanel(false));
   const icons=['🇪🇸','∑','⚗','EN','📖','🌍','⚖','🌱','⚙'];
-  SCHOOL_SUBJECTS.forEach((name,i)=>{const count=name==='Physique-chimie'?23:name==='Mathématiques'?2+bases.filter(e=>(e.subject||'Espagnol')===name).length:bases.filter(e=>(e.subject||'Espagnol')===name).length;
+  SCHOOL_SUBJECTS.forEach((name,i)=>{const count=name==='Physique-chimie'?23:name==='Anglais'?6:name==='Mathématiques'?2+bases.filter(e=>(e.subject||'Espagnol')===name).length:bases.filter(e=>(e.subject||'Espagnol')===name).length;
     const b=E('button','matter-card'+(name==='Espagnol'?' matter-espanol':''));b.type='button';
     b.append(E('span','ico',icons[i]||'▤'),E('strong','',name),E('small','',count?count+' exercice(s) disponible(s)':'À compléter avec les cours de Tim'));
     if(count)b.addEventListener('click',()=>{exerciseSubject=name;exerciseGroup='';exerciseMode='';document.getElementById('exercise-search').value='';renderExerciseIndex();scrollTop();});
@@ -921,7 +926,7 @@ function renderMatieres(){
  const wrap=E('div','matter-grid');
  const icons=['🇪🇸','∑','⚗','EN','📖','🌍','⚖','🌱','⚙'];
  for(let i=0;i<SCHOOL_SUBJECTS.length;i++){
-  const name=SCHOOL_SUBJECTS[i],n=name==='Espagnol'&&window.TIM_SPANISH_ENT_EXACT?.lessonCount?window.TIM_SPANISH_ENT_EXACT.lessonCount():name==='Espagnol'?(DATA.metadata?.spanishEnt?.lessons?.length||0):DATA.lessons.filter(x=>(x.subject||'Espagnol')===name).length,ex=name==='Physique-chimie'?23:name==='Mathématiques'?2+DATA.exercises.filter(x=>(x.subject||'Espagnol')===name).length:name==='Espagnol'&&window.TIM_SPANISH_SIMPLIFIED?42:DATA.exercises.filter(x=>(x.subject||'Espagnol')===name).length;
+  const name=SCHOOL_SUBJECTS[i],n=name==='Espagnol'&&window.TIM_SPANISH_ENT_EXACT?.lessonCount?window.TIM_SPANISH_ENT_EXACT.lessonCount():name==='Espagnol'?(DATA.metadata?.spanishEnt?.lessons?.length||0):DATA.lessons.filter(x=>(x.subject||'Espagnol')===name).length,ex=name==='Physique-chimie'?23:name==='Anglais'?6:name==='Mathématiques'?2+DATA.exercises.filter(x=>(x.subject||'Espagnol')===name).length:name==='Espagnol'&&window.TIM_SPANISH_SIMPLIFIED?42:DATA.exercises.filter(x=>(x.subject||'Espagnol')===name).length;
   const b=E('button','matter-card'+(name==='Espagnol'?' matter-espanol':''));b.type='button';b.append(E('span','ico',icons[i]||'▤'),E('strong','',name),E('small','',n+' leçon(s) · '+ex+' exercice(s)'+(!n?' · Cours ENT à ajouter':'') ));
   if(n||(name==='Espagnol'&&window.__TIM_PARENT&&window.TIM_SPANISH_ENT_EXACT))b.addEventListener('click',()=>renderMatiere(name));else{b.title='Les vrais cours de Tim ne sont pas encore ajoutés';b.disabled=true;b.style.opacity='.55';}
   wrap.append(b);
@@ -943,7 +948,8 @@ function renderMatiere(name,openLessonId=null){
   window.TIM_PHYSIQUE_PATH.render(root,{lessons:DATA.lessons,back:renderMatieres,openLessonId});
   return;
  }
- if(name==='Mathématiques'&&window.TIM_MATH_PATH){
+ if(name==='Anglais'&&window.TIM_ENGLISH_PATH){window.TIM_ENGLISH_PATH.render(root,{lessons:DATA.lessons,back:renderMatieres,openLessonId});return;}
+  if(name==='Mathématiques'&&window.TIM_MATH_PATH){
   window.TIM_MATH_PATH.render(root,{
    lessons:DATA.lessons,exercises:DATA.exercises,openLessonId,
    back:renderMatieres,original:openLesson,exercise:openExercise,
