@@ -6,6 +6,7 @@ on:
       - 'worker/mixed-challenges.mjs'
       - 'worker/server.mjs'
       - 'worker/test/mixed-challenges.test.mjs'
+      - 'worker/test/course-fallback.test.mjs'
       - 'mixed-challenges-ui.js'
       - 'assets/mixed-challenges.css'
       - 'boot.js'
@@ -33,7 +34,7 @@ jobs:
           node --check boot.js
           node --check app.js
       - name: Vérifier les 30 questions, 3 matières, notes et traductions
-        run: node --test worker/test/mixed-challenges.test.mjs
+        run: node --test worker/test/mixed-challenges.test.mjs worker/test/course-fallback.test.mjs
       - name: Vérifier les règles historiques des XP
         run: node --test functions/test/xp.test.mjs
       - name: Résumé
