@@ -138,8 +138,8 @@ const BLUEPRINT=[
 ];
 function lessonFor(q,subject){return q.lesson||(subject==='es'?'L14':subject==='ma'?'MBIS13':'PC_BIS01');}
 function selectQuestions(id,kind){
- const blueprint=kind==='daily'?BLUEPRINT:kind==='weekly'?[...BLUEPRINT[0],...BLUEPRINT[1]]:[...BLUEPRINT[1],...BLUEPRINT[2]];
- const items=Array.isArray(blueprint[0])&&typeof blueprint[0][0]==='string'?blueprint:blueprint.flat();
+ const items=kind==='daily'?BLUEPRINT[Number(id.slice(-2))-1]:
+  kind==='weekly'?[...BLUEPRINT[0],...BLUEPRINT[1]]:[...BLUEPRINT[1],...BLUEPRINT[2]];
  const used={},selected=[];
  for(let i=0;i<items.length;i++){
   const [subject,format]=items[i],k=subject+'-'+format;
