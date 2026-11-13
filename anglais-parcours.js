@@ -126,6 +126,8 @@ function render(root,opts={}){
  if(window.__TIM_PARENT&&window.TIM_ENGLISH_DOCUMENTS?.parentImport)root.append(window.TIM_ENGLISH_DOCUMENTS.parentImport());
  for(const chapter of ORDER){
   const rows=all.filter(x=>x.chapter===chapter),chapterBis=bis.filter(x=>x.group===chapter);
+  const chosenBis=chapterBis.find(b=>b.id===opts.openLessonId);
+  const chosenEnt=chosenBis?(rows.find(c=>c.date===chosenBis.date)||rows[rows.length-1]):null;
   const container=E('details',undefined,'chapter-section');container.style.cssText='border:1px solid #51617c;padding:13px;margin:14px 0;border-radius:14px';
   const heading=E('summary',chapter+' · '+rows.length+' séances ENT · '+chapterBis.length+' leçon(s) BIS');heading.style.cssText='cursor:pointer;font-size:20px;font-weight:800';container.append(heading);
   const list=E('div',undefined,'chapter-body');
@@ -133,7 +135,7 @@ function render(root,opts={}){
   for(const course of rows){
    const c=tabbedCourse(course,chapterBis,pack);
    list.append(c.details);
-   if(opts.openLessonId===course.id||opts.openLessonId===course.entId||chapterBis.some(b=>opts.openLessonId===b.id)){
+   if(opts.openLessonId===course.id||opts.openLessonId===course.entId||Boolean(chosenBis&&chosenEnt?.id===course.id)){
     container.open=true;c.details.open=true;c.openTab(opts.openLessonId?.startsWith('EN_BIS')?'bis':'ent');
    }
   }
