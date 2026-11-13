@@ -847,8 +847,17 @@ async function startSession(user){
    if(id&&window.TIM_ES12_STUDY?.isId(id)){
     const known=(window.__CLOUD_ATTEMPTS||[]).find(a=>a.id===id);
     if(activeUser.uid===PARENT_UID){
-     const snapshot=await getDoc(doc(db,'privateAttempts',id));
-     return {attempt:snapshot.exists()?window.TIM_ES12_STUDY.officialReport(id,snapshot.data()):null};
+     const [snapshot,helpDoc]=await Promise.all([
+      getDoc(doc(db,'privateAttempts',id)),
+      getDoc(doc(db,'privateAttempts','TRH_'+id))
+     ]);
+     const result=snapshot.exists()?window.TIM_ES12_STUDY.officialReport(id,snapshot.data()):null;
+     // Le suivi est une donnée pédagogique, jamais une note :
+     // son premier champ "response" contient le total de 0 à 10.
+     const raw=helpDoc.exists()?helpDoc.data()?.answers?.[0]?.response:null;
+     if(result&&/^(?:10|[0-9])$/.test(String(raw??'')))
+      result.translationHelpCount=Number(raw);
+     return {attempt:result};
     }
     const local=window.TIM_ES12_STUDY.saved(id);
     if(local)return {attempt:local};
@@ -870,6 +879,21 @@ async function startSession(user){
       score:Number.isFinite(a.score)?a.score:(local?.score??null),total:10,xp:0,
       submittedAt:a.date,items:a.answers||[],category:'Entraînement du 12 novembre',
       ...(Number.isInteger(a.translationHelpCount)?{translationHelpCount:a.translationHelpCount}:{})});
+    }
+    // Ajouter les trois compteurs privés du 12/11, s'ils sont enregistrés.
+    // Le suivi reste optionnel : son absence ne bloque jamais les notes.
+    if(activeUser.uid===PARENT_UID){
+     try{
+      const ids=['ESE_L14_01','ESE_L14_02','ESE_L14_03'];
+      const stats=await Promise.all(ids.map(x=>getDoc(doc(db,'privateAttempts','TRH_'+x))));
+      for(const [i,snap] of stats.entries()){
+       if(!snap.exists())continue;
+       const raw=snap.data()?.answers?.[0]?.response;
+       if(!/^(?:10|[0-9])$/.test(String(raw??'')))continue;
+       const entry=response.data.attempts.find(a=>a.id===ids[i]);
+       if(entry)entry.translationHelpCount=Number(raw);
+      }
+     }catch(error){console.warn('Compteurs espagnols indisponibles',error?.code||error?.message);}
     }
     window.__TIM_SPANISH_ENT_XP=response.data.attempts.map(item=>({
      id:item.id,xp:Number(item.xp||0),submittedAt:item.submittedAt||''
