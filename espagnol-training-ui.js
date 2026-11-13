@@ -93,11 +93,14 @@ function mount(root,{lesson,onBack,onHelp,onLesson}){
    '<p class="spx-note">Une seule tentative par exercice. Après validation, tu peux relire les réponses et les corrections, mais pas recommencer. Chaque exercice peut rapporter +1, +0,5 ou 0 XP selon la note ; les défis ont un barème distinct.</p>';
   slot.querySelectorAll('[data-training-id]').forEach(b=>b.onclick=()=>openExercise(b.dataset.trainingId));
  }
- function openExercise(id){
+ async function openExercise(id){
   const task=ENGINE.buildSpanishTasks(id,COURSE());if(!task)return;
   currentId=id;
   const done=found(id);
   if(done){drawReview(done);return;}
+  // L'exercice déjà terminé s'ouvre directement, sans animation.
+  try{if(isTim())await window.TIM_ANIMATIONS?.playOpening?.();}
+  catch(error){console.warn('Animation espagnol ignorée',error);}
   const canAnswer=isTim()&&['ok','local','unavailable'].includes(progress().status);
   const prev=draft(id)||Array(10).fill('');
   const title=task.mode==='Q'?'QCM '+task.series:'Écriture '+task.series;
@@ -146,6 +149,10 @@ function mount(root,{lesson,onBack,onHelp,onLesson}){
      const scored=ENGINE.evaluateSpanishTask(task,values);
      const local=storeLocal({...scored,mode:task.mode,series:task.series,lessonId:task.lesson,cloudSaved:true,xp:report.xp},values);
      clearDraft(id);drawReview(local);
+     // La correction vient d'être rendue ; seules les valeurs du serveur donnent les XP.
+     try{await window.TIM_ANIMATIONS?.playResult?.({kind:'training'},
+      {xp:Number(report.xp),score:Number(scored.score),total:10,correctionStatus:'released'});}
+     catch(error){console.warn('Animation XP espagnol ignorée',error);}
     }catch(error){
      // Vérifier d'abord si le serveur a bien enregistré la tentative malgré
      // une réponse réseau perdue ; ne jamais permettre une deuxième tentative.
