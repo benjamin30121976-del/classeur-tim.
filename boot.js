@@ -1061,6 +1061,22 @@ async function startSession(user){
    await loadSpanishProgress();
    return {submitted:true,xp:response.data.xp,cloudSaved:true};
   },
+  mixedMissionPreview:async(id,answers,translationsUsed=[])=>{
+   if(activeUser?.uid!==PARENT_UID)throw Error('Simulation réservée au Parent.');
+   const ex=window.__TIM_DATA?.exercises?.find(x=>x.id===id);
+   if(!ex||ex.questionBank!=='mixed-202611-v1'||
+      !Array.isArray(answers)||answers.length!==ex.questions?.length||
+      answers.some(a=>typeof a!=='string'||a.length>2000)||
+      !Array.isArray(translationsUsed)||translationsUsed.length>answers.length)
+    throw Error('Simulation Parent invalide.');
+   const response=await cloudCallable('previewMixedChallenge')({id,answers,translationsUsed});
+   const graded=response?.data;
+   if(graded?.practice!==true||graded?.saved!==false||graded?.submitted!==false||
+      graded?.xp!==0||!Number.isFinite(graded?.score)||
+      graded?.total!==answers.length||graded?.answers?.length!==answers.length)
+    throw Error('Correction non confirmée : aucune note de Tim n’a été modifiée.');
+   return graded;
+  },
   submit:async(id,values,options={})=>{
    if(window.__TIM_READONLY_FALLBACK)throw Error('Service des résultats indisponible : aucune tentative ne peut être validée en lecture seule.');
    if(window.__TIM_GUEST||activeUser.uid!==TIM_UID)throw Error('Seul Tim peut valider les exercices.');
