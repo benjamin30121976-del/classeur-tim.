@@ -15,7 +15,7 @@ const readActions=new Set([
  'getMathEntTask','getPhysicsTrainingTask','getPhysicsEntTask',
  'previewMixedChallenge'
 ]);
-const report={site:SITE,checks:[],blockedNonRead:0,mode:'simulation Parent sans écriture'};
+const report={site:SITE,checks:[],blockedNonRead:0,blockedHosts:[],mode:'simulation Parent sans écriture'};
 function check(label,condition){
  report.checks.push({label,ok:Boolean(condition)});
  assert(condition,label);
@@ -26,7 +26,8 @@ async function routeSafe(route){
  if(['GET','HEAD','OPTIONS'].includes(method))return route.continue();
  const url=new URL(req.url());
  if(method==='POST'){
-  if(['identitytoolkit.googleapis.com','securetoken.googleapis.com'].includes(url.hostname))
+  if(['identitytoolkit.googleapis.com','securetoken.googleapis.com'].includes(url.hostname)||
+     (url.hostname==='www.googleapis.com'&&url.pathname.includes('/identitytoolkit/')))
    return route.continue();
   if(url.hostname==='firestore.googleapis.com' &&
      (/(?:batchGet|runQuery|runAggregationQuery|listen)$/i.test(url.pathname) ||
@@ -38,6 +39,7 @@ async function routeSafe(route){
   }
  }
  report.blockedNonRead++;
+ report.blockedHosts.push(url.hostname+' '+method);
  return route.abort('blockedbyclient');
 }
 async function animations(browser){
@@ -111,9 +113,22 @@ async function parent(browser){
   await page.locator('#login-email').fill(process.env.TIM_PARENT_EMAIL);
   await page.locator('#login-password').fill(process.env.TIM_PARENT_PASSWORD);
   await page.locator('#login-button').click();
-  await page.waitForFunction(()=>document.body.classList.contains('ready')&&
-   window.__TIM_PARENT===true&&typeof window.__TIM_BRIDGE?.mixedMissionPreview==='function',
-   null,{timeout:50000});
+  try{
+   await page.waitForFunction(()=>document.body.classList.contains('ready')&&
+    window.__TIM_PARENT===true&&typeof window.__TIM_BRIDGE?.mixedMissionPreview==='function',
+    null,{timeout:35000});
+  }catch{
+   const state=await page.evaluate(()=>({
+    ready:document.body.classList.contains('ready'),
+    parent:window.__TIM_PARENT===true,
+    bridge:typeof window.__TIM_BRIDGE?.mixedMissionPreview==='function',
+    loginVisible:!!document.querySelector('#login-form:not([hidden])'),
+    statusPresent:Boolean(document.querySelector('#access-status')?.textContent?.trim())
+   }));
+   console.log('Diagnostic Parent non sensible : '+JSON.stringify(state)+
+    ', appels bloqués : '+JSON.stringify(report.blockedHosts));
+   throw Error('Chargement du compte Parent incomplet.');
+  }
   check('Connexion au compte Parent exclusivement',await page.evaluate(()=>window.__TIM_PARENT===true));
   const m=await page.evaluate(()=>{
    const plan=window.__TIM_CHALLENGES||{};
