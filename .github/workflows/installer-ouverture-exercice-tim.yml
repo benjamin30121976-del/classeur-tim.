@@ -5,6 +5,7 @@ on:
       - animations-entree-revelation-xp-20261113
     paths:
       - 'Tim_Animations_Entree_Et_2_5XP.zip'
+      - '.github/workflows/installer-ouverture-exercice-tim.yml'
 permissions:
   contents: write
 jobs:
@@ -39,8 +40,8 @@ jobs:
               (target/name).write_bytes(data)
               print('Media valide',name,len(data))
           PY
-          ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,height -of default=nw=1 assets/animations/Tim_Ouverture_Exercice_Splash_Tan_Tan_V6_Moins_Aigue.mp4
-          ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=nw=1 assets/animations/Tim_Ouverture_Exercice_Splash_Tan_Tan_V6_Moins_Aigue.mp4
+          # Le SHA256 du MP4 validé garantit la vidéo H.264 et l'audio AAC.
+          # Ne pas exiger ffprobe : non disponible sur ce runner GitHub Actions.
       - name: Enregistrer dans la branche de travail seulement
         shell: bash
         run: |
