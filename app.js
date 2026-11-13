@@ -460,7 +460,7 @@ function openHgTrainingFromExercises(id,lessonId,title){
  const index=document.getElementById('exercise-index'),detail=document.getElementById('exercise-detail');
  index.classList.add('hide');
  const root=clear(detail);root.classList.add('active');
- root.append(button('← Retour aux exercices de Histoire-géographie',()=>{
+ root.append(button('← Retour aux exercices d’histoire-géographie',()=>{
   detail.classList.remove('active');index.classList.remove('hide');
   renderExerciseIndex();scrollTop();
  },'plain back'));
@@ -1152,7 +1152,7 @@ function svtHomeExercises(){
  const area=E('section','panel svt-home-quick');
  area.style.cssText='margin:14px 0;padding:14px;border:1px solid #529f91;border-radius:14px;background:#183f48';
  area.append(E('h3','','🌱 SVT — Leçons et exercices'));
- area.append(E('p','','7 leçons illustrées · 14 exercices de dix questions · cours ENT de Mme Vidon.'));
+ area.append(E('p','','7 leçons illustrées · 14 exercices de dix questions · cours ENT de Mme Baudoux.'));
  area.append(button('Ouvrir les 14 exercices SVT',()=>{exerciseSubject='SVT';exerciseGroup='';exerciseMode='';page('exercices');},'plain'));
  area.append(button('Phagocytose · questionnaire de 10 questions',()=>openSvtTrainingFromExercises('SVQ_L07_01','SVT_BIS07','Phagocytose'),'plain'));
  return area;
@@ -1163,7 +1163,7 @@ function hgHomeExercises(){
  area.append(E('h3','','🌍 Histoire-géographie — Leçons et exercices'));
  area.append(E('p','','8 leçons illustrées · 16 exercices de dix questions · cours ENT de Mme Vidon.'));
  area.append(button('Ouvrir les 16 exercices Histoire-géographie',()=>{exerciseSubject='Histoire-géographie';exerciseGroup='';exerciseMode='';page('exercices');},'plain'));
- area.append(button('Institutions européennes · questionnaire de 10 questions',()=>openHgTrainingFromExercises('HGQ_L08_01','Histoire-géographie_BIS07','Institutions européennes'),'plain'));
+ area.append(button('Institutions européennes · questionnaire de 10 questions',()=>openHgTrainingFromExercises('HGQ_L08_01','HG_BIS08','Institutions européennes'),'plain'));
  return area;
 }
 function makeSoundSettings(){const zone=E('div','sound-settings');zone.append(E('span','','🔊 Bruit des touches : '));
