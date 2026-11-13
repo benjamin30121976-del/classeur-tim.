@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - 'functions/spanish-nov12-help-logging.mjs'
+      - 'functions/test/spanish-nov12-help-logging.test.mjs'
       - 'outils/publier-espagnol-12nov-compteurs-parent.cjs'
       - '.github/workflows/importer-espagnol-12nov-compteurs.yml'
   workflow_dispatch:
@@ -26,7 +27,7 @@ jobs:
         run: |
           node --check functions/spanish-nov12-help-logging.mjs
           node --check outils/publier-espagnol-12nov-compteurs-parent.cjs
-          node --test functions/test/spanish-nov12-translation-count.test.mjs
+          node --test functions/test/spanish-nov12-translation-count.test.mjs functions/test/spanish-nov12-help-logging.test.mjs
       - name: Installer Chromium (sans TinyFish)
         run: |
           mkdir -p /tmp/tim-es12-help
