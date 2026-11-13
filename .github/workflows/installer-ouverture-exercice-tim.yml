@@ -1,0 +1,40 @@
+name: Installer le splash d'ouverture des exercices de Tim
+on:
+  push:
+    branches:
+      - animations-entree-revelation-xp-20261113
+    paths:
+      - 'Tim_Ouverture_Exercice_Splash_Tan_Tan_V6_Moins_Aigue.mp4'
+permissions:
+  contents: write
+jobs:
+  installer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Contrôler le MP4 V6 validé et son audio
+        shell: bash
+        run: |
+          set -euo pipefail
+          src='Tim_Ouverture_Exercice_Splash_Tan_Tan_V6_Moins_Aigue.mp4'
+          test -f "$src"
+          echo '77394bf218ed8484357cbee6065569121527838718003bbfd04462fe887fb4e1  "$src" | sha256sum --check --status
+          ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,height -of default=nw=1 "$src"
+          ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=nw=1 "$src"
+          mkdir -p assets/animations
+          cp "$src" "assets/animations/$src"
+      - name: Enregistrer uniquement le média sur cette branche
+        shell: bash
+        run: |
+          set -euo pipefail
+          src='Tim_Ouverture_Exercice_Splash_Tan_Tan_V6_Moins_Aigue.mp4'
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add "assets/animations/$src"
+          git rm -f -- "$src"
+          if ! git diff --cached --quiet; then
+            git commit -m "Installer ouverture exercice splash V6 validée"
+            git push
+          fi
