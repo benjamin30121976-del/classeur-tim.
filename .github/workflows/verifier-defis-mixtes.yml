@@ -1,0 +1,39 @@
+name: Vérifier les défis pédagogiques mélangés
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'worker/mixed-challenges.mjs'
+      - 'worker/server.mjs'
+      - 'worker/test/mixed-challenges.test.mjs'
+      - 'mixed-challenges-ui.js'
+      - 'assets/mixed-challenges.css'
+      - 'boot.js'
+      - 'app.js'
+      - 'index.html'
+      - '.github/workflows/verifier-defis-mixtes.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tester-sans-copie-tim:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier la syntaxe des modules
+        run: |
+          node --check worker/mixed-challenges.mjs
+          node --check worker/server.mjs
+          node --check mixed-challenges-ui.js
+          node --check boot.js
+          node --check app.js
+      - name: Vérifier les 30 questions, 3 matières, notes et traductions
+        run: node --test worker/test/mixed-challenges.test.mjs
+      - name: Vérifier les règles historiques des XP
+        run: node --test functions/test/xp.test.mjs
+      - name: Résumé
+        run: echo 'Tests sans connexion et sans validation de copie de Tim.' >> "$GITHUB_STEP_SUMMARY"
