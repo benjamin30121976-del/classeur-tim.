@@ -213,13 +213,27 @@ function valueMatches(actual,expected,alternatives=[]){
  return [expected,...alternatives].some(x=>a===n(x).replace(/\s*([+\-=×÷*/²])\s*/g,'$1'));
 }
 function calcCorrect(input,q){
- const s=n(input).replace(/[−–—]/g,'−').replace(/,/g,'.');
+ const s=n(input).replace(/[−–—]/g,'−').replace(/,/g,'.').replace(/\^2/g,'²');
  if(s.length<5||!q.parts)return false;
- const operands=q.parts.filter(p=>typeof p==='number').map(String);
- if(!operands.every(v=>new RegExp('(^|[^\\d])'+v+'([^\\d]|$)').test(s)))return false;
+ const present=v=>new RegExp('(^|[^\\d])'+String(v)+'([^\\d]|$)').test(s);
  const operations=q.parts.filter(p=>typeof p==='string');
- if(!operations.every(op=>(op==='×'?/[×*x]/:op==='−'?/[-−]/:op==='+'?/\+/:op==='÷'?/[÷/]/:/./).test(s)))return false;
- return true;
+ const opOk=op=>{
+  if(op==='×'){
+   if(/[×*x]/.test(s))return true;
+   // Ecriture classique du programme de calcul : 2(3+4).
+   return /\d\s*\(/.test(s);
+  }
+  return (op==='−'?/[-−]/:op==='+'?/\+/:op==='÷'?/[÷/]/:/./).test(s);
+ };
+ if(!operations.every(opOk))return false;
+ const operands=q.parts.filter(p=>typeof p==='number');
+ if(operands.every(present))return true;
+ if(q.diagram==='triangle'){
+  const [asq,bsq,,csq]=q.parts,[a,b,c]=[asq,bsq,csq].map(Math.sqrt);
+  // Accepter AB² + AC² = BC² aussi bien que 9 + 16 = 25.
+  if([a,b,c].every(present)&&/[²]/.test(s)&&/\+/.test(s))return true;
+ }
+ return false;
 }
 function conclusionCorrect(input,q){
  const s=n(input).replace(/,/g,'.');
