@@ -518,14 +518,14 @@ function renderHgExerciseDirectory(root,toolbar){
 /* Français : mêmes accès directs que les exercices d'anglais et de physique. */
 function openFrTrainingFromExercises(id,lessonId,title){
  if(!/^FRQ_L(?:0[1-9]|1[01])_0[1-2]$/.test(id)||!window.TIM_FR_TRAINING?.mount){
-  alert('Questionnaire Français indisponible.');return;
+  alert('Questionnaire de français indisponible.');return;
  }
  exerciseSubject='Français';
  page('exercices');
  const index=document.getElementById('exercise-index'),detail=document.getElementById('exercise-detail');
  index.classList.add('hide');
  const root=clear(detail);root.classList.add('active');
- root.append(button('← Retour aux exercices d’histoire-géographie',()=>{
+ root.append(button('← Retour aux exercices de français',()=>{
   detail.classList.remove('active');index.classList.remove('hide');
   renderExerciseIndex();scrollTop();
  },'plain back'));
@@ -1237,7 +1237,7 @@ function frHomeExercises(){
  area.style.cssText='margin:14px 0;padding:14px;border:1px solid #529f91;border-radius:14px;background:#183f48';
  area.append(E('h3','','📖 Français — Leçons et exercices'));
  area.append(E('p','','11 leçons illustrées · 22 exercices de dix questions · cours ENT de M. Lunel et M. Simiez.'));
- area.append(button('Ouvrir les 22 exercices Français',()=>{exerciseSubject='Français';exerciseGroup='';exerciseMode='';page('exercices');},'plain'));
+ area.append(button('Ouvrir les 22 exercices de français',()=>{exerciseSubject='Français';exerciseGroup='';exerciseMode='';page('exercices');},'plain'));
  area.append(button('Accord du participe passé · questionnaire de 10 questions',()=>openFrTrainingFromExercises('FRQ_L07_01','FR_BIS07','Accord du participe passé'),'plain'));
  return area;
 }
