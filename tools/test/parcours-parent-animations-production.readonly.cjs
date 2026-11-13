@@ -39,7 +39,9 @@ async function routeSafe(route){
   }
  }
  report.blockedNonRead++;
- report.blockedHosts.push(url.hostname+' '+method);
+ const category=url.pathname.match(/Firestore\/([^/?]+)\/channel/i)?.[1]||
+  url.pathname.match(/:(batchGet|runQuery|listen|commit|batchWrite|write)$/i)?.[1]||'autre';
+ report.blockedHosts.push(url.hostname+' '+method+' '+category);
  return route.abort('blockedbyclient');
 }
 async function animations(browser){
