@@ -7,6 +7,7 @@ import {grade} from '../functions/grading.mjs';
 import {rawPoints,cappedPoints} from '../functions/xp.mjs';
 import {buildMission,isMissionId,isMissionOpen} from '../functions/missions-v18.mjs';
 import {SPANISH_COURSE} from '../functions/spanish-training-curriculum.mjs';
+import {isMixedMissionId,mixedMission,mixedPlan,publicMixedMission,gradeMixedMission} from './mixed-challenges.mjs';
 import {mathId,mathPublicTaskPrivate,gradeMathTaskPrivate,MATH_BANK_VERSION,validateMathFragment} from './math-private-kv.mjs';
 import {spanishEntTrainingId,spanishEntTask,spanishEntPublicTask,gradeSpanishEntTask,isSpanishDailyMissionId,spanishDailyMissionIds,buildSpanishDailyMission,gradeSpanishDailyMission} from './spanish-ent-training.mjs';
 import {spanishLessonXp} from './spanish-lesson-xp.mjs';
@@ -48,6 +49,12 @@ function checkOrigin(req){
  if(fetchSite==='cross-site')throw new ApiFault(403,'origin-denied');
 }
 async function resolveExercise(db,id){
+ if(isMixedMissionId(id)){
+  const mission=mixedMission(id);
+  if(!mission)throw new ApiFault(404,'mission-not-found');
+  if(!isMissionOpen(mission))throw new ApiFault(409,'mission-not-open');
+  return {exercise:{...publicMixedMission(mission),enabled:true},key:null,mixedSource:mission};
+ }
  if(isSpanishDailyMissionId(id)){
   const mission=buildSpanishDailyMission(id);
   if(!mission)throw new ApiFault(404,'mission-not-found');
@@ -80,11 +87,11 @@ async function resolveExercise(db,id){
 }
 async function submitExercise(db,uid,payload){
  permitted(uid,'tim');
- const {id,answers}=payload;
+ const {id,answers,translationsUsed=[]}=payload;
  if(!validId(id)||!Array.isArray(answers)||answers.length>30||
   answers.some(x=>!['string','number','boolean'].includes(typeof x)||String(x).length>2000))
   throw new ApiFault(400,'invalid-exercise');
- const {exercise,key,spanishSource}=await resolveExercise(db,id);
+ const {exercise,key,spanishSource,mixedSource}=await resolveExercise(db,id);
  if(exercise.enabled!==true)throw new ApiFault(409,'exercise-closed');
   // Défi bonus : pas de texte libre ni de question sans correction expliquée.
   if(exercise.kind==='bonus-day'){
@@ -93,7 +100,14 @@ async function submitExercise(db,uid,payload){
     throw new ApiFault(409,'bonus-questionnaire-incomplet');
   }
  let evaluated;
- try{evaluated=spanishSource?gradeSpanishDailyMission(spanishSource,answers):grade(exercise,key,answers);}catch{throw new ApiFault(400,'invalid-answers');}
+ try{
+  if(mixedSource){
+   if(!Array.isArray(translationsUsed)||translationsUsed.length>20||
+       translationsUsed.some((v,i)=>typeof v!=='boolean'||(v===true&&mixedSource.questions[i]?.subject!=='Espagnol')))
+    throw Error('invalid-translations');
+   evaluated=gradeMixedMission(mixedSource,answers,translationsUsed);
+  }else evaluated=spanishSource?gradeSpanishDailyMission(spanishSource,answers):grade(exercise,key,answers);
+ }catch{throw new ApiFault(400,'invalid-answers');}
  const transaction=await db.transaction();
  const [publicRecord,privateRecord,xpRecord]=await Promise.all([
   db.get('attempts/'+id,transaction),db.get('privateAttempts/'+id,transaction),db.get('xpState/tim',transaction)
@@ -131,7 +145,7 @@ async function submitExercise(db,uid,payload){
   upsertWrite('xpState/tim',stateAfter,[{fieldPath:'updatedAt',setToServerValue:'REQUEST_TIME'}]),
   ...(autoRelease?[createWrite('releasedCorrections/'+id,{released:true},NOW)]:[])
  ],transaction);
- return autoRelease?{id,submitted:true,xp:points,correctionLocked:false,correctionStatus:'released',score:evaluated.score,total:evaluated.total,answers:evaluated.answers}:
+ return autoRelease?{id,submitted:true,xp:points,correctionLocked:false,correctionStatus:'released',score:evaluated.score,total:evaluated.total,answers:evaluated.answers,translationHelpCount:evaluated.translationHelpCount??0}:
   {id,submitted:true,xp:points,correctionLocked:true,correctionStatus:'pending-parent'};
 }
 async function parentReport(db,uid){
@@ -141,7 +155,7 @@ async function parentReport(db,uid){
  const records=notes.map(x=>{
   const a=attemptById.get(x.id)||{},n=x.data||{};
   return {id:x.id,title:String(n.title||x.id),score:n.score??null,total:n.total??null,
-   needsReview:Boolean(n.needsReview),xp:a.xp??0,
+   needsReview:Boolean(n.needsReview),xp:a.xp??0,translationHelpCount:n.translationHelpCount??null,
    correctionStatus:a.correctionStatus==='released'?'released':'pending-parent'};
  });
  return {attempts:records,pendingCorrections:records.filter(r=>r.correctionStatus!=='released').length};
@@ -168,7 +182,7 @@ async function releasedCorrections(db,uid){
  const released=attempts.filter(x=>x.data?.authorUid===uid&&x.data.correctionStatus==='released'&&allowed.has(x.id));
  const entries=await Promise.all(released.map(async x=>({id:x.id,details:await db.get('privateAttempts/'+x.id)})));
  return {corrections:entries.filter(x=>x.details).map(x=>({
-  id:x.id,answers:x.details.answers||[],score:x.details.score,total:x.details.total
+  id:x.id,answers:x.details.answers||[],score:x.details.score,total:x.details.total,translationHelpCount:x.details.translationHelpCount??null
  }))};
 }
 async function courseContent(db,uid){
@@ -608,6 +622,11 @@ async function getSpanishEntTrainingProgress(db,uid,payload){
    .sort((a,b)=>String(b.submittedAt).localeCompare(String(a.submittedAt)))};
 }
 
+async function getMixedChallengePlan(db,uid){
+ allowedFamily(uid);
+ const plan=mixedPlan(new Date());
+ return {...plan,exercises:plan.exercises.map(publicMixedMission)};
+}
 async function getSpanishDailyMissions(db,uid){
  allowedFamily(uid);
  const day=parisDate(new Date()),dailyIds=spanishDailyMissionIds(day);
@@ -631,6 +650,7 @@ const ACTIONS={
  getPhysicsTrainingProgress:getPhysicsTrainingProgress,
  previewPhysicsTraining:previewPhysicsTraining,
  getSpanishDailyMissions:getSpanishDailyMissions,
+ getMixedChallengePlan:getMixedChallengePlan,
  getSpanishEntTrainingTask:getSpanishEntTrainingTask,
  submitSpanishEntTraining:submitSpanishEntTraining,
  getSpanishEntTrainingProgress:getSpanishEntTrainingProgress,
@@ -648,7 +668,7 @@ const ACTIONS={
 export async function handleRequest(request,env){
  const url=new URL(request.url);
  if(url.pathname==='/api/status'&&request.method==='GET')
-  return respond({available:Boolean(env.FIREBASE_SERVICE_ACCOUNT),platform:'cloudflare-pages',lessonTrainingXpPolicy:'7-5-0-v1',features:{physicsParentPreview:true,physicsEntInteractive:true,physicsEntOriginalTasks:2,mathEntInteractive:true,mathEntOriginalTasks:2,spanishParentPreview:true}});
+  return respond({available:Boolean(env.FIREBASE_SERVICE_ACCOUNT),platform:'cloudflare-pages',lessonTrainingXpPolicy:'7-5-0-v1',mixedChallengesVersion:'mixed-202611-v1',features:{physicsParentPreview:true,physicsEntInteractive:true,physicsEntOriginalTasks:2,mathEntInteractive:true,mathEntOriginalTasks:2,spanishParentPreview:true}});
  if(url.pathname!=='/api/tim')return respond({error:'not-found'},404);
  try{
   if(request.method!=='POST')throw new ApiFault(405,'method-not-allowed');
@@ -669,4 +689,4 @@ export async function handleRequest(request,env){
   return respond({error:code},status);
  }
 }
-export const TESTABLE={previewSpanishEntTraining,getMathEntTask,submitMathEntTask,previewMathEntTask,getMathEntProgress,getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
+export const TESTABLE={previewSpanishEntTraining,getMathEntTask,submitMathEntTask,previewMathEntTask,getMathEntProgress,getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,getMixedChallengePlan,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
