@@ -1,7 +1,7 @@
 name: Contrôle barème XP des exercices des leçons
 on:
   push:
-    branches: [main]
+    branches: [main, audit-correction-immediate-20261113]
     paths:
       - 'functions/xp.mjs'
       - 'functions/test/xp.test.mjs'
