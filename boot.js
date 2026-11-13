@@ -486,12 +486,15 @@ async function startSession(user){
  // Défis de trois matières : le serveur fabrique une banque distincte
  // sans remplacer ni re-noter les anciens défis d'espagnol.
  let mixedDaily=null,mixedChallengePlan=null;
- if(missionPlan.meta.today>='2026-11-14'){
+ if(missionPlan.meta.today>='2026-11-13'){
   try{
    const response=await cloudCallable('getMixedChallengePlan')({});
    const data=response?.data||{};
    if(data.day!==missionPlan.meta.today||!Array.isArray(data.exercises)||
-      (missionPlan.meta.today>='2026-11-16'&&missionPlan.meta.dailyIds.length&&data.dailyIds?.length!==3)||
+      !Array.isArray(data.dailyIds)||
+      (missionPlan.meta.dailyIds.length&&data.dailyIds.length!==3)||
+      data.dailyIds.some((id,i)=>id!=='DAY_'+missionPlan.meta.today.replace(/-/g,'')+'_0'+
+        (missionPlan.meta.today==='2026-11-13'?i+4:i+1))||
       data.exercises.some(ex=>ex.questionBank!=='mixed-202611-v1'||
         ex.questions?.length!==(ex.kind==='daily'?10:20)||
         ex.questions.some(q=>['right','also','why','answer','parts'].some(k=>Object.prototype.hasOwnProperty.call(q,k)))))
@@ -499,7 +502,7 @@ async function startSession(user){
    mixedChallengePlan=data.exercises;
   }catch(error){console.warn('Défis mélangés indisponibles ; anciennes missions conservées :',error.message||error);}
  }
- // Jusqu'au vendredi 13 inclus, préserver les défis espagnols déjà créés.
+ // Conserver les défis espagnols en secours tant que la nouvelle banque n'est pas disponible.
  if(!mixedChallengePlan&&missionPlan.meta.dailyIds.length&&
     missionPlan.meta.today>='2026-11-11'&&missionPlan.meta.today<'2026-11-16'){
   try{
@@ -518,11 +521,15 @@ async function startSession(user){
    mixedDaily=data.exercises;
   }catch(error){console.warn('Défis espagnols indisponibles ; anciens défis conservés :',error.message||error);}
  }
+ const effectiveDailyIds=mixedChallengePlan?
+   mixedChallengePlan.filter(ex=>ex.kind==='daily').map(ex=>ex.id):
+   missionPlan.meta.dailyIds;
  window.__TIM_CHALLENGES={...missionPlan.meta,
+  dailyIds:effectiveDailyIds,daily:effectiveDailyIds[0]||null,
   dailyBankStatus:mixedChallengePlan?'three-subjects':mixedDaily?'mixed':'classic'};
- window.__TIM_NEXT_DAILY=missionPlan.meta.daily;
+ window.__TIM_NEXT_DAILY=effectiveDailyIds[0]||null;
  const retainedExercises=content.exercises.filter(x=>!/^DAY_20\d{6}(?:_\d{2})?$/.test(String(x.id||'')));
- const plannedById=new Map(missionPlan.exercises.map(ex=>[ex.id,ex]));
+ const plannedById=new Map(missionPlan.exercises.filter(ex=>!mixedChallengePlan||ex.kind!=='daily').map(ex=>[ex.id,ex]));
  for(const ex of mixedDaily||[])plannedById.set(ex.id,ex);
  for(const ex of mixedChallengePlan||[])plannedById.set(ex.id,ex);
  const existingMissionIds=new Set(retainedExercises.map(x=>x.id));
@@ -1423,7 +1430,7 @@ async function startSession(user){
  document.getElementById('account-name').textContent=isParent?'Espace parent — compte connecté':'Espace Tim — compte connecté';
  document.querySelectorAll('[data-nav="parent"]').forEach(el=>el.hidden=!isParent);
  document.getElementById('logout-button').onclick=()=>signOut(auth);
- const sc=document.createElement('script');sc.src='./app.js?v=defis-mixtes-pedagogiques-20261113';sc.onerror=()=>{stopApp();message('Le module pédagogique du classeur n’a pas chargé.');};
+ const sc=document.createElement('script');sc.src='./app.js?v=defis-mixtes-pedagogiques-20261113-v4';sc.onerror=()=>{stopApp();message('Le module pédagogique du classeur n’a pas chargé.');};
  sc.addEventListener('load',()=>{try{if(document.querySelector('.mission-hero'))window.TIM_INTRO_SHOW?.();}catch(e){console.warn('Animation d’ouverture indisponible :',e);}});
  document.body.append(sc);appLoaded=true;
 }
