@@ -1210,7 +1210,7 @@ async function startSession(user){
     summary.textContent=exerciseTitle+' · '+score+' · '+(isAutomatic?'Corrigé immédiatement':isReleased?'Correction autorisée':'Correction en attente')+(isMission&&Number.isFinite(item.xp)?' · '+(item.xp>=0?'+':'')+item.xp+' XP':'');
     summary.style.cssText='margin:5px 0 10px;color:#cbd9ee';
     line.append(heading,summary);
-    if(/^ESE_L14_0[1-3]$/.test(String(item.id||''))&&Number.isInteger(item.translationHelpCount)){
+    if((/^ESE_L14_0[1-3]$/.test(String(item.id||''))||ex?.questionBank==='mixed-202611-v1')&&Number.isInteger(item.translationHelpCount)){
      const help=document.createElement('p');
      help.textContent='Aide de traduction : '+item.translationHelpCount+' question(s) sur 10, sans pénalité.';
      help.style.cssText='margin:5px 0 10px;color:#cbd9ee';
@@ -1321,6 +1321,14 @@ async function startSession(user){
         'Nombre de traductions non enregistré pour cette copie ; aucune valeur estimée.',
         'font-size:14px;color:#cbd9ee');
       }
+      if(ex?.questionBank==='mixed-202611-v1'){
+        note(Number.isInteger(record.translationHelpCount)?
+         'Traduction des énoncés : '+record.translationHelpCount+' question(s), sans pénalité.':
+         'Compteur de traduction indisponible.',
+         'font-size:14px;color:#cbd9ee');
+        note('Relecture : '+Number(record.reviewChangeCount||0)+' réponse(s) modifiée(s) avant la validation.',
+         'font-size:14px;color:#cbd9ee');
+      }
       const answers=Array.isArray(record.answers)?record.answers:[];
       if(!answers.length){
        note('Les questions et les réponses de cette tentative ne sont pas conservées dans ce dossier.');
@@ -1331,6 +1339,11 @@ async function startSession(user){
        const exerciseQuestion=ex?.questions?.[index];
        const taskQuestion=training?.questions?.[index];
        let response=String(answer.response??'');
+       if(ex?.questionBank==='mixed-202611-v1'&&exerciseQuestion?.type==='reason'){
+        response='Méthode : '+String(answer.methodResponse||'')+
+         '\nCalcul : '+String(answer.calculationResponse||'')+
+         '\nConclusion : '+String(answer.conclusionResponse||'');
+       }
        // Un QCM sauvegarde l'index du choix : afficher sa vraie réponse,
        // pas le numéro de case coché (0, 1, 2 ou 3).
        const choices=taskQuestion?.type==='mc'?taskQuestion.choices:
@@ -1346,7 +1359,9 @@ async function startSession(user){
        responseLine.style.cssText='margin:0 0 5px;white-space:pre-wrap';
        section.append(question,responseLine);
        const result=document.createElement('p');
-       result.textContent=answer.correct===true?'Bonne réponse':answer.correct===false?'Réponse à revoir':'Réponse enregistrée';
+       result.textContent=ex?.questionBank==='mixed-202611-v1'?
+        'Points : '+Number(answer.points||0).toLocaleString('fr-FR')+'/1 · '+(answer.correct?'Réussi':'À revoir'):
+        answer.correct===true?'Bonne réponse':answer.correct===false?'Réponse à revoir':'Réponse enregistrée';
        result.style.cssText='font-weight:700;margin:0;color:'+(answer.correct===false?'#ffb6a7':'#a4e9c8');
        section.append(result);
        if(answer.correct===false&&answer.expected!==undefined){
@@ -1354,7 +1369,33 @@ async function startSession(user){
         expected.textContent='Réponse attendue : '+String(answer.expected);
         expected.style.cssText='margin:6px 0 0';section.append(expected);
        }
+       if(ex?.questionBank==='mixed-202611-v1'){
+        const explanation=document.createElement('p');
+        explanation.textContent='Explication : '+String(answer.explanation||'Relire la leçon.');
+        section.append(explanation);
+        if(exerciseQuestion?.type==='reason'){
+         const steps=document.createElement('p');
+         steps.textContent='Méthode : '+(answer.methodCorrect?'correcte':'à revoir')+
+          ' · Calcul : '+(answer.calculationCorrect?'correct':'à revoir')+
+          ' · Conclusion : '+(answer.conclusionCorrect?'correcte':'à revoir');
+         section.append(steps);
+        }
+        const lesson=document.createElement('p');
+        lesson.textContent='Leçon à revoir : '+String(answer.lessonId||exerciseQuestion?.lessonId||'');
+        section.append(lesson);
+       }
        copy.append(section);
+      }
+      if(ex?.questionBank==='mixed-202611-v1'&&Array.isArray(record.reviewChanges)&&record.reviewChanges.length){
+       note('Réponses modifiées pendant la relecture :','font-weight:800');
+       const format=v=>{try{
+        const x=JSON.parse(String(v));
+        if(x&&typeof x==='object'&&('c'in x||'s'in x))
+         return 'Méthode n° '+(Number(x.m)+1)+' ; calcul : '+String(x.c||'')+' ; conclusion : '+String(x.s||'');
+       }catch{}return String(v||'Non répondue');};
+       for(const change of record.reviewChanges){
+        note('Question '+(change.questionIndex+1)+'\nAvant : '+format(change.before)+'\nAprès : '+format(change.after));
+       }
       }
       loaded=true;
      }catch(error){
