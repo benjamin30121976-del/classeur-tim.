@@ -31,7 +31,7 @@ const B={
    ()=>txt('Completa: « Nosotros ___ al colegio » (ir, presente).','vamos','Avec nosotros, ir devient vamos.','fill',[],{fr:'Complète avec ir (aller) au présent. Phrase : « Nous ... au collège ».'}),
    ()=>txt('Completa: « No estudio el lunes, ___ el martes ».','sino','Après no, sino marque une opposition : non lundi, mais mardi.','fill',[],{fr:'Complète : « Je n’étudie pas le lundi, mais le mardi ». Trouve en espagnol le mot de liaison.'}),
    ()=>txt('Completa: « Ella nunca ___ tarde » (llegar, presente).','llega','Le sujet ella impose la terminaison -a de llegar.','fill',[],{fr:'Complète avec llegar (arriver) au présent. Phrase : « Elle n’arrive jamais en retard ».'}),
-   ()=>txt('Completa: « Vosotros ___ español » (hablar, presente).','habláis','Hablar avec vosotros prend -áis.','fill',['hablais'],{fr:'Complète avec hablar (parler) au présent. Phrase : « Vous parlez espagnol ».'}),
+   ()=>txt('Completa: « Vosotros ___ español » (hablar, presente).','habláis','Hablar avec vosotros prend -áis.','fill',[],{fr:'Complète avec hablar (parler) au présent. Phrase : « Vous parlez espagnol ».'}),
    ()=>txt('Completa: « Yo ___ mi mochila » (traer, presente).','traigo','Traer est irrégulier avec yo : traigo.','fill',[],{fr:'Complète avec traer (apporter) au présent. Phrase : « J’apporte mon sac ».'})
   ],
   short:[
@@ -269,10 +269,16 @@ export function gradeMixedMission(mission,responses,translationsUsed=[]){
     skill:q.skill,subject:q.subject,lessonId:q.lessonId,explanation:q.why};
   }
   const correct=q.type==='mc'?raw===String(q.right):valueMatches(raw,q.right,q.also||[]);
-  score+=correct?1:0;
-  return {question:q.q,response:raw,correct,points:correct?1:0,
+  const plain=value=>String(value??'').toLowerCase().replace(/[¿?¡!.,;:]/g,'').replace(/\s+/g,' ').trim();
+  const exact=q.type==='text'?[q.right,...(q.also||[])].some(x=>plain(raw)===plain(x)):correct;
+  // En espagnol : accent ou ñ oubliés = demi-point, et non mauvaise
+  // compréhension ; les autres matières acceptent les accents français.
+  const points=!correct?0:q.subject==='Espagnol'&&!exact?0.5:1;
+  score+=points;
+  return {question:q.q,response:raw,correct:points===1,points,
    expected:q.type==='mc'?q.options[q.right]:q.right,subject:q.subject,
-   skill:q.skill,lessonId:q.lessonId,explanation:q.why};
+   skill:q.skill,lessonId:q.lessonId,
+   explanation:points===0.5?'Réponse proche : vérifie les accents et la lettre ñ. '+q.why:q.why};
  });
  const count=translationsUsed.filter((v,i)=>v===true&&mission.questions[i]?.subject==='Espagnol').length;
  return {score,total:mission.questions.length,needsReview:false,answers,
