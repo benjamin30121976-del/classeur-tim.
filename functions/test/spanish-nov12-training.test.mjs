@@ -40,3 +40,13 @@ test('corrigés serveur complets avec note sur 10 et bilan des erreurs',()=>{
   assert.equal(nov12Evaluate(id,[],Array(10).fill(false)),null);
  }
 });
+
+
+test('barème du 12 novembre : 7/10 donne +1 XP, 5/10 +0,5 XP, moins de 5 donne 0',()=>{
+ for(const [wrongCount,expected] of [[0,1],[3,1],[4,0.5],[5,0.5],[6,0]]){
+  const testAnswers=answers[0].map((value,i)=>i<wrongCount?(value+1)%4:value);
+  const result=nov12Evaluate('ESE_L14_01',testAnswers,Array(10).fill(false));
+  assert.equal(result.score,10-wrongCount);
+  assert.equal(result.xp,expected);
+ }
+});
