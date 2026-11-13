@@ -155,10 +155,10 @@ function thalesField(field,response){
  }
  return false;
 }
-export function gradeMathEnt(id,answers,version){
+export function gradeMathEnt(id,answers,version,{allowBlank=false}={}){
  if(!mathEntId(id)||version!==MATH_ENT_VERSION||!Array.isArray(answers))throw Error('invalid-task');
  const task=makeTask(id);
- if(answers.length!==task.fields.length||answers.some(x=>typeof x!=='string'||!x.trim()||x.length>160))
+ if(answers.length!==task.fields.length||answers.some(x=>typeof x!=='string'||(!allowBlank&&!x.trim())||x.length>160))
   throw Error('invalid-answers');
  let items;
  if(id==='ME_ENT_PROGRAMMES')items=task.fields.map((f,i)=>({
@@ -173,6 +173,14 @@ export function gradeMathEnt(id,answers,version){
   return {prompt:f.label,group:f.group,response:answers[i],expected,
    correct:thalesField(f,answers[i]),explanation:t.why};
  });
+ // Le Parent peut corriger un essai partiel : toute case vide est
+ // notée 0 et explicitement indiquée dans le corrigé.
+ if(allowBlank)for(const item of items){
+  if(!item.response.trim()){
+   item.correct=false;item.response='';
+   item.explanation='Question sans réponse. '+item.explanation;
+  }
+ }
  const correctFields=items.filter(x=>x.correct).length;
  return {id,kind:'mathsEnt',subject:'Mathématiques',lessonId:task.lessonId,title:task.title,
   source:task.source,bankVersion:MATH_ENT_VERSION,scale:task.scale,
