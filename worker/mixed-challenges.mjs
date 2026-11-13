@@ -140,12 +140,16 @@ function lessonFor(q,subject){return q.lesson||(subject==='es'?'L14':subject==='
 function selectQuestions(id,kind){
  const items=kind==='daily'?BLUEPRINT[Number(id.slice(-2))-1]:
   kind==='weekly'?[...BLUEPRINT[0],...BLUEPRINT[1]]:[...BLUEPRINT[1],...BLUEPRINT[2]];
+ const dailyIndex=kind==='daily'?Number(id.slice(-2))-1:0;
+ const rotationSeed=kind==='daily'?id.slice(0,12):id;
  const used={},selected=[];
+ if(kind==='daily')for(const earlier of BLUEPRINT.slice(0,dailyIndex))
+  for(const [subject,format] of earlier)used[subject+'-'+format]=(used[subject+'-'+format]||0)+1;
  for(let i=0;i<items.length;i++){
   const [subject,format]=items[i],k=subject+'-'+format;
-  const options=B[subject][format],index=(hash(id+'|'+k)%options.length)+(used[k]||0);
+  const options=B[subject][format],index=(hash(rotationSeed+'|'+k)%options.length)+(used[k]||0);
   used[k]=(used[k]||0)+1;
-  const seed=hash(id+'|'+k+'|'+index);
+  const seed=hash(rotationSeed+'|'+k+'|'+index);
   const question=options[index%options.length](seed);
   selected.push({...question,subject:TITLES[subject],lessonId:lessonFor(question,subject),
    sourceId:'mix-'+subject+'-'+format+'-'+index,skill:TITLES[subject]+': '+format,
