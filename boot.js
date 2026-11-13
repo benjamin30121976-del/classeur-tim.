@@ -587,6 +587,10 @@ async function startSession(user){
   const present=new Set(content.lessons.map(x=>x.id));
   content={...content,lessons:[...content.lessons,...window.TIM_PHYSIQUE_PACK.lessons.filter(x=>!present.has(x.id))]};
  }
+ if(Array.isArray(window.TIM_ANGLAIS_PACK?.lessons)){
+  const present=new Set(content.lessons.map(x=>x.id));
+  content={...content,lessons:[...content.lessons,...window.TIM_ANGLAIS_PACK.lessons.filter(x=>!present.has(x.id))]};
+ }
  window.__TIM_DATA=content;window.__TIM_PARENT=isParent;
  window.__CLOUD_ATTEMPTS=[];window.__TIM_SPANISH_PROGRESS={status:'loading',attempts:[]};
  try{await fetchAttempts(content);}catch(e){message('Impossible de lire les résultats. Les règles Firestore sont à vérifier.');return;}
@@ -745,6 +749,55 @@ async function startSession(user){
    const r=await cloudCallable('getPhysicsTrainingProgress')(id?{id}:{});
    if(id){if(!('attempt' in (r.data||{})))throw Error('Copie indisponible.');}
    else if(!Array.isArray(r.data?.attempts))throw Error('Résultats de physique indisponibles.');
+   return r.data;
+  },
+  englishTrainingTask:async(id)=>{
+   if(!/^ENQ_L0[1-2]_0[1-3]$/.test(String(id||'')))throw Error('Exercice de anglais inconnu.');
+   const r=await cloudCallable('getEnglishTrainingTask')({id});
+   if(!r.data?.task||r.data.task.questions?.length!==10||
+      r.data.task.questions.some(q=>!['qcm','text'].includes(q.kind)))
+    throw Error('Les dix questions de anglais ne sont pas disponibles.');
+   return r.data;
+  },
+  englishTrainingSubmit:async(id,answers,bankVersion)=>{
+   if(activeUser?.uid!==TIM_UID)throw Error('Seul Tim peut valider un exercice.');
+   if(!/^ENQ_L0[1-2]_0[1-3]$/.test(String(id||''))||
+      !Array.isArray(answers)||answers.length!==10||
+      answers.some(x=>!((Number.isInteger(x)&&x>=0&&x<=3)||
+        (typeof x==='string'&&x.trim()&&x.length<=80))))
+    throw Error('Les dix réponses sont obligatoires.');
+   if(typeof bankVersion!=='string'||!bankVersion.startsWith('en-'))
+    throw Error('Questionnaire périmé, recharge la page.');
+   const r=await cloudCallable('submitEnglishTraining')({id,answers,bankVersion});
+   if(!r.data?.submitted||!Number.isInteger(r.data?.score)||r.data.score<0||r.data.score>10||
+      !Array.isArray(r.data.items)||r.data.items.length!==10||
+      ![0,0.5,1].includes(r.data.xp)||r.data.bankVersion!==bankVersion)
+    throw Error('La note et la correction n’ont pas été confirmées.');
+   return r.data;
+  },
+  /* Un essai sur le compte Parent ne crée aucun résultat dans le dossier de Tim. */
+  englishTrainingPreviewSubmit:async(id,answers,bankVersion)=>{
+   if(activeUser?.uid!==PARENT_UID)throw Error('Mode essai réservé au compte Parent.');
+   if(!/^ENQ_L0[1-2]_0[1-3]$/.test(String(id||''))||
+      !Array.isArray(answers)||answers.length!==10||
+      answers.some(x=>!((Number.isInteger(x)&&x>=0&&x<=3)||
+        (typeof x==='string'&&x.trim()&&x.length<=80))))
+    throw Error('Les dix réponses sont obligatoires.');
+   if(typeof bankVersion!=='string'||!bankVersion.startsWith('en-'))
+    throw Error('Questionnaire périmé, recharge la page.');
+   const r=await cloudCallable('previewEnglishTraining')({id,answers,bankVersion});
+   if(r.data?.practice!==true||r.data.saved!==false||r.data?.xp!==0||
+      !Number.isInteger(r.data.score)||r.data.score<0||r.data.score>10||
+      !Array.isArray(r.data.items)||r.data.items.length!==10)
+    throw Error('La correction de simulation Parent est indisponible.');
+   return r.data;
+  },
+  englishTrainingProgress:async(id)=>{
+   if(activeUser?.uid!==TIM_UID&&activeUser?.uid!==PARENT_UID)
+    throw Error('Accès aux notes réservé à Tim et au Parent.');
+   const r=await cloudCallable('getEnglishTrainingProgress')(id?{id}:{});
+   if(id){if(!('attempt' in (r.data||{})))throw Error('Copie indisponible.');}
+   else if(!Array.isArray(r.data?.attempts))throw Error('Résultats de anglais indisponibles.');
    return r.data;
   },
   /* 12 novembre, Thalès : même service submitTimExercise et mêmes collections

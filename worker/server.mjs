@@ -12,6 +12,7 @@ import {mathId,mathPublicTaskPrivate,gradeMathTaskPrivate,MATH_BANK_VERSION,vali
 import {spanishEntTrainingId,spanishEntTask,spanishEntPublicTask,gradeSpanishEntTask,isSpanishDailyMissionId,spanishDailyMissionIds,buildSpanishDailyMission,gradeSpanishDailyMission} from './spanish-ent-training.mjs';
 import {spanishLessonXp} from './spanish-lesson-xp.mjs';
 import {physicsTrainingId,physicsPublicTask,gradePhysicsTask,PHYSICS_BANK_VERSION} from './physics-training.mjs';
+import {englishTrainingId,englishPublicTask,gradeEnglishTask,ENGLISH_BANK_VERSION} from './english-training.mjs';
 import {PHYSICS_ENT_VERSION,physicsEntId,physicsEntPublicTask,physicsEntGrade} from './physics-ent-training.mjs';
 import {MATH_ENT_VERSION,mathEntId,mathEntPublicTask,gradeMathEnt} from './math-ent-training.mjs';
 
@@ -419,6 +420,86 @@ async function getPhysicsTrainingProgress(db,uid,payload){
   .sort((a,b)=>String(b.submittedAt||'').localeCompare(String(a.submittedAt||'')))};
 }
 
+async function getEnglishTrainingTask(db,uid,payload){
+ allowedFamily(uid);
+ const id=payload?.id;
+ if(!englishTrainingId(id))throw new ApiFault(400,'invalid-physics-exercise');
+ const task=englishPublicTask(id);
+ const old=await db.get('englishTrainingAttempts/'+id);
+ return {task,completed:Boolean(old&&old.authorUid===TIM_UID)};
+}
+async function submitEnglishTraining(db,uid,payload){
+ permitted(uid,'tim');
+ const id=payload?.id,answers=payload?.answers;
+ if(!englishTrainingId(id)||!Array.isArray(answers)||answers.length!==10)
+  throw new ApiFault(400,'invalid-physics-answers');
+ if(payload?.bankVersion!==ENGLISH_BANK_VERSION)
+  throw new ApiFault(409,'stale-physics-bank');
+ let result,xp;
+ try{
+  result=gradeEnglishTask(id,answers,payload.bankVersion);
+  xp=spanishLessonXp(result.score,result.total);
+ }catch{throw new ApiFault(400,'invalid-physics-answers');}
+ // Les réponses ne sont jamais écrites hors transaction : pas de note en double.
+ const tx=await db.transaction();
+ const [old,xpRecord]=await Promise.all([
+  db.get('englishTrainingAttempts/'+id,tx),
+  db.get('xpState/tim',tx)
+ ]);
+ if(old)throw new ApiFault(409,'already-exists');
+ const today=parisDate(new Date()),week=mondayOf(today),state=xpRecord||{};
+ const current=state.date===today?state:{earned:0,lost:0,bonus:0};
+ const weekEarned=state.week===week?Number(state.weekEarned||0):0;
+ const weekXp=state.week===week?Number(state.weekXp??state.weekEarned??0):0;
+ const nextXP={
+  date:today,week,
+  earned:Number(current.earned||0)+xp,
+  lost:Number(current.lost||0),
+  bonus:Number(current.bonus||0),
+  weekEarned:weekEarned+xp,
+  weekXp:Math.max(0,weekXp+xp),
+  policyVersion:18
+ };
+ await db.commit([
+  createWrite('englishTrainingAttempts/'+id,{
+   ...result,xp,authorUid:uid,subject:'Anglais',
+   answers,version:1
+  },NOW),
+  upsertWrite('xpState/tim',nextXP,[{fieldPath:'updatedAt',setToServerValue:'REQUEST_TIME'}])
+ ],tx);
+ return {...result,xp,submitted:true,submittedAt:new Date().toISOString()};
+}
+/* Aperçu/essai du Parent uniquement : correction en mémoire, sans écriture
+   Firestore, sans tentative, sans XP et sans modification des résultats de Tim. */
+async function previewEnglishTraining(db,uid,payload){
+ permitted(uid,'parent');
+ const id=payload?.id,answers=payload?.answers;
+ if(!englishTrainingId(id)||!Array.isArray(answers)||answers.length!==10)
+  throw new ApiFault(400,'invalid-physics-preview');
+ if(payload?.bankVersion!==ENGLISH_BANK_VERSION)
+  throw new ApiFault(409,'stale-physics-bank');
+ let graded;
+ try{graded=gradeEnglishTask(id,answers,payload.bankVersion);}
+ catch{throw new ApiFault(400,'invalid-physics-preview');}
+ return {...graded,xp:0,practice:true,submitted:false,saved:false,
+  message:'Simulation Parent : aucune note, tentative ou XP enregistrés.'};
+}
+async function getEnglishTrainingProgress(db,uid,payload){
+ allowedFamily(uid);
+ const id=payload?.id;
+ if(id!==undefined&&id!==null){
+  if(!englishTrainingId(id))throw new ApiFault(400,'invalid-physics-exercise');
+  const old=await db.get('englishTrainingAttempts/'+id);
+  return {attempt:old?.authorUid===TIM_UID?{...old,id,xp:Number(old.xp||0)}:null};
+ }
+ const docs=await db.list('englishTrainingAttempts',100);
+ return {attempts:docs.filter(x=>englishTrainingId(x.id)&&x.data?.authorUid===TIM_UID)
+  .map(x=>({id:x.id,lessonId:x.data.lessonId,series:x.data.series,title:x.data.title,
+   score:x.data.score,total:x.data.total,xp:Number(x.data.xp||0),
+   errorCounts:x.data.errorCounts||{},submittedAt:x.data.submittedAt||''}))
+  .sort((a,b)=>String(b.submittedAt||'').localeCompare(String(a.submittedAt||'')))};
+}
+
 /* Mathématiques : deux fiches ENT dont les énoncés sont réellement disponibles.
    La note est calculée au serveur, aucune bonne réponse n’est envoyée avant
    la validation unique ; le compte Parent ne peut faire que des essais sans note. */
@@ -689,6 +770,10 @@ const ACTIONS={
  submitPhysicsEntTask:submitPhysicsEntTask,
  previewPhysicsEntTask:previewPhysicsEntTask,
  getPhysicsEntProgress:getPhysicsEntProgress,
+ getEnglishTrainingTask:getEnglishTrainingTask,
+ submitEnglishTraining:submitEnglishTraining,
+ getEnglishTrainingProgress:getEnglishTrainingProgress,
+ previewEnglishTraining:previewEnglishTraining,
  getPhysicsTrainingTask:getPhysicsTrainingTask,
  submitPhysicsTraining:submitPhysicsTraining,
  getPhysicsTrainingProgress:getPhysicsTrainingProgress,
@@ -734,4 +819,4 @@ export async function handleRequest(request,env){
   return respond({error:code},status);
  }
 }
-export const TESTABLE={previewSpanishEntTraining,getMathEntTask,submitMathEntTask,previewMathEntTask,getMathEntProgress,getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,getMixedChallengePlan,previewMixedChallenge,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
+export const TESTABLE={getEnglishTrainingTask,submitEnglishTraining,getEnglishTrainingProgress,previewEnglishTraining,previewSpanishEntTraining,getMathEntTask,submitMathEntTask,previewMathEntTask,getMathEntProgress,getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,getMixedChallengePlan,previewMixedChallenge,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
