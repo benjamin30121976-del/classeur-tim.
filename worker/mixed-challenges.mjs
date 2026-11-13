@@ -3,6 +3,8 @@
    Les anciennes missions et leurs copies ne sont jamais remplacées.
    Les réponses et barèmes ne sont importés que côté serveur. */
 import {weekId,monday,parisDay} from '../functions/missions-v18.mjs';
+import {ENGLISH_QUESTIONS} from './english-questions.mjs';
+import {EXTRA_ENGLISH_QUESTIONS} from './english-extra.mjs';
 
 const n=(s)=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
  .replace(/[¿?¡!.,;:]/g,'').replace(/[’‘]/g,"'").replace(/\s+/g,' ').trim();
@@ -150,6 +152,22 @@ const B={
   ]
  }
 };
+/* Les défis réutilisent les 110 questions BIS d'anglais (côté serveur).
+   Les 12 exemples d'origine sont conservés : les nouveaux tirages offrent une
+   progression plus variée sans divulguer les réponses avant la validation. */
+for(const [chapter,rows] of [...ENGLISH_QUESTIONS,...EXTRA_ENGLISH_QUESTIONS].entries()){
+ const lessonId='EN_BIS'+String(chapter+1).padStart(2,'0');
+ for(const row of rows){
+  if(row[0]==='q'){
+   const [_,prompt,correct,wrong,reason]=row;
+   B.en.mc.push(()=>mc(prompt,[correct,...wrong],0,reason,{lesson:lessonId}));
+  }else if(row[0]==='t'){
+   const [_,prompt,correct,reason,alternatives]=row;
+   const bank=/_{2,}/.test(prompt)?'fill':'short';
+   B.en[bank].push(()=>txt(prompt,correct,reason,bank,alternatives||[],{lesson:lessonId}));
+  }
+ }
+}
 const TITLES={es:'Espagnol',ma:'Mathématiques',pc:'Physique-chimie',en:'Anglais'};
 const BLUEPRINT=[
  [['es','mc'],['ma','reason'],['pc','short'],['es','fill'],['pc','mc'],['ma','fill'],['es','short'],['pc','reason'],['ma','short'],['es','fill']],
@@ -187,8 +205,14 @@ function selectQuestions(id,kind){
   for(const [subject,format] of earlier)used[subject+'-'+format]=(used[subject+'-'+format]||0)+1;
  for(let i=0;i<items.length;i++){
   const [subject,format]=items[i],k=subject+'-'+format;
-  const options=B[subject][format],index=subject==='en'&&kind==='daily'
-   ?(used[k]||0)%options.length:(hash(rotationSeed+'|'+k)%options.length)+(used[k]||0);
+  const options=B[subject][format];
+  // En anglais, déplacer le point de départ chaque jour : 4 réponses
+  // courtes, 1 QCM et 1 texte à trous. Les trois défis d'une journée
+  // ne reprennent ainsi pas les mêmes questions, ni ceux de la veille.
+  const serial=subject==='en'&&kind==='daily'?Math.floor(Date.parse(dayString(id.slice(4,12))+'T12:00:00Z')/86400000):0;
+  const index=subject==='en'&&kind==='daily'?
+   serial*(format==='short'?4:1)+(used[k]||0):
+   hash(rotationSeed+'|'+k)%options.length+(used[k]||0);
   used[k]=(used[k]||0)+1;
   const seed=hash(rotationSeed+'|'+k+'|'+index);
   const question=options[index%options.length](seed);
