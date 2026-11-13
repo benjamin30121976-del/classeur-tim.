@@ -19,8 +19,10 @@ export function grade(exercise, key, responses) {
   const secret=key.questions[i];
   let correct=null;
   if(question.type==='mc')correct=String(secret.right)===response;
-  else if(question.type==='text')correct=[secret.right,...(secret.also||[])].some(x=>(isMathBonus?normalizeMath(x):normalize(x))===(isMathBonus?normalizeMath(response):normalize(response)));
-  if(isMathBonus&&question.type==='text'&&correct===false){const normalized=normalizeMath(response);const expected=normalizeMath(secret.right);if(expected.startsWith('x=')&&normalized===expected.slice(2))correct=true;}
+  else if(question.type==='text'){
+   correct=[secret.right,...(secret.also||[])].some(x=>(isMathBonus?normalizeMath(x):normalize(x))===(isMathBonus?normalizeMath(response):normalize(response)));
+   if(isMathBonus&&!correct){const normalized=normalizeMath(response),expected=normalizeMath(secret.right);if(expected.startsWith('x=')&&normalized===expected.slice(2))correct=true;}
+  }
   else if(question.type==='free')needsReview=true;
   else throw new Error('Unsupported question type');
   if(correct!==null){total++;if(correct)score++;}
