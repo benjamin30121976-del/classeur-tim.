@@ -55,7 +55,7 @@ export function mathNov12ForParentImport(){
  const exercises=SERIES.map((rows,i)=>({id:MATH12_IDS[i],lesson:'MTH12',subject:'Mathématiques',topic:'Réciproque de Thalès',
   title:'12 novembre — '+names[i],level:'10 questions',category:'school',kind:'training',
   source:'Entraînement BIS du classeur — non fourni par le professeur',enabled:true,
-  description:'10 questions sur la réciproque de Thalès ; une seule tentative ; note sur 10 ; 0 XP.',
+  description:'10 questions sur la réciproque de Thalès ; une seule tentative ; note sur 10 ; +1 / +0,5 / 0 XP selon la note.',
   questions:rows.map(item=>({type:'mc',q:item.prompt,options:item.choices,right:String(item.right),
     why:item.why,skill:'Réciproque de Thalès'}))}));
  return {lessons:[lesson],exercises};
@@ -72,6 +72,7 @@ export function mathNov12Score(id,answers){
  const items=ex.questions.map((q,i)=>({prompt:q.q,response:q.options[answers[i]],
    expected:q.options[Number(q.right)],correct:answers[i]===Number(q.right),
    explanation:q.why,category:q.skill,points:answers[i]===Number(q.right)?1:0}));
- return {id,lessonId:'MTH12',score:items.filter(x=>x.correct).length,total:10,xp:0,
+ const score=items.filter(x=>x.correct).length;
+ return {id,lessonId:'MTH12',score,total:10,xp:score>=7?1:score>=5?0.5:0,
   items,errors:items.filter(x=>!x.correct).length};
 }
