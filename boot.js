@@ -528,7 +528,9 @@ async function startSession(user){
   dailyIds:effectiveDailyIds,daily:effectiveDailyIds[0]||null,
   dailyBankStatus:mixedChallengePlan?'three-subjects':mixedDaily?'mixed':'classic'};
  window.__TIM_NEXT_DAILY=effectiveDailyIds[0]||null;
- const retainedExercises=content.exercises.filter(x=>!/^DAY_20\d{6}(?:_\d{2})?$/.test(String(x.id||'')));
+ const mixedIds=new Set((mixedChallengePlan||[]).map(ex=>ex.id));
+ const retainedExercises=content.exercises.filter(x=>
+  !/^DAY_20\d{6}(?:_\d{2})?$/.test(String(x.id||''))&&!mixedIds.has(x.id));
  const plannedById=new Map(missionPlan.exercises.filter(ex=>!mixedChallengePlan||ex.kind!=='daily').map(ex=>[ex.id,ex]));
  for(const ex of mixedDaily||[])plannedById.set(ex.id,ex);
  for(const ex of mixedChallengePlan||[])plannedById.set(ex.id,ex);
