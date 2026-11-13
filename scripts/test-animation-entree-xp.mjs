@@ -64,4 +64,13 @@ const app=readFileSync('app.js','utf8');
 assert.match(app,/!window\.__TIM_PARENT&&!window\.__TIM_GUEST&&!attemptFor\(id\)/);
 assert.match(app,/openExercise\(id,\{skipOpening:true\}\)/);
 assert.match(app,/await window\.TIM_ANIMATIONS\?\.playResult\?\.\(ex,saved\)/);
+for(const [file,head] of [
+ ['espagnol-training-ui.js','Espagnol'],
+ ['maths-parcours.js','Mathématiques'],
+ ['anglais-exercices.js','Anglais']
+]){
+ const source=readFileSync(file,'utf8');
+ assert.match(source,/playOpening/,head+' : ouverture manquante');
+ assert.match(source,/playResult/,head+' : révélation XP manquante');
+}
 console.log('OUVERTURE + RÉVÉLATION XP : tests sans écriture réussis.');
