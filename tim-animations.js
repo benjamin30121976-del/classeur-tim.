@@ -1,6 +1,8 @@
 /* Animations validées : ouverture des exercices et révélation des XP.
    Visuel uniquement : aucune modification des notes, corrections ou tentatives. */
 (()=>{'use strict';
+ // Original conservé séparément : assets/animations/Tim_Defi_Du_Jour_Valide.gif
+ // La carte quotidienne continue d'utiliser son WebP actuel sans changement.
  const root='./assets/animations/';
  const files={
   daily:'../loup-defi-original.webp',
