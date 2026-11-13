@@ -48,6 +48,26 @@ function showBis(root,items){
   if(b.id==='FR_BIS10')add(root,'p','Le texte intégral de l’édition Nathan de L’Étranger n’est pas présent dans l’ENT : cette fiche n’en reproduit pas des passages.');
  }
 }
+/* Les devoirs avec PDF sont associés à la dernière séance ENT qui
+   référence ce même original avant la date du devoir. Le devoir futur
+   (fiche IV pour le 26/11) reste consultable avec le cours du 12/11. */
+function linkedHomework(course,pack){
+ const courseDocs=pack.attachments.filter(x=>!x.homework);
+ return pack.homework.filter(h=>pack.attachments.filter(x=>x.homework&&x.target===h.id).some(ref=>{
+  const matching=courseDocs.filter(x=>x.name===ref.name&&x.date<=h.due)
+   .sort((a,b)=>b.date.localeCompare(a.date));
+  return matching[0]?.target===course.id;
+ }));
+}
+async function showOriginalDocs(pane,targets,pack){
+ const ids=[...new Set(targets)].filter(id=>pack.attachments.some(x=>x.target===id));
+ if(!ids.length)return;
+ add(pane,'h4','Documents ENT du professeur — lecture dans la leçon');
+ for(const id of ids){
+  const slot=E('div');pane.append(slot);
+  await window.TIM_FR_DOCUMENTS?.render(id,slot);
+ }
+}
 function courseTabs(course,chapterBis,pack){
  const node=E('details',undefined,'tim-es-lesson');
  node.style.cssText='background:#18243c;border:1px solid #536784;border-radius:13px;margin:10px 0;padding:12px';
@@ -69,13 +89,15 @@ function courseTabs(course,chapterBis,pack){
    if(pack.attachments.some(x=>x.target===course.id))await window.TIM_FR_DOCUMENTS?.render(course.id,docs);
   }else if(name==='bis'){
    add(pane,'h3','2 · Leçon BIS — explication simplifiée');showBis(pane,chapterBis);
+   await showOriginalDocs(pane,[course.id,...linkedHomework(course,pack).map(h=>h.id)],pack);
   }else if(name==='help'){
    add(pane,'h3','3 · Je n’ai pas compris');
    for(const b of chapterBis){add(pane,'h4',b.title);b.help.forEach(line=>add(pane,'p','• '+line));}
    add(pane,'p','Lis l’explication, réécris un exemple et ouvre ensuite un exercice de 10 questions.');
   }else if(name==='entex'){
    add(pane,'h3','4 · Devoirs et exercices ENT');
-   const due=pack.homework.filter(h=>h.due===course.date);
+   const related=linkedHomework(course,pack);
+   const due=pack.homework.filter(h=>h.due===course.date||related.some(x=>x.id===h.id));
    if(!due.length)add(pane,'p','Aucune consigne de devoir avec ce jour précis dans le relevé.');
    for(const h of due){
     add(pane,'p',date(h.due)+' — '+h.title+' : '+h.content);
