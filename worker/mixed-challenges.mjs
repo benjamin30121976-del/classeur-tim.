@@ -377,7 +377,7 @@ export function gradeMixedMission(mission,responses,translationsUsed=[],{allowIn
    expected:q.type==='mc'?q.options[q.right]:q.right,subject:q.subject,
    skill:q.skill,lessonId:q.lessonId,
    explanation:points===0.5?'Réponse proche : vérifie les accents et la lettre ñ. '+q.why:correct?q.why:
-     'La réponse « '+raw+' » ne correspond pas aux formes reconnues pour cette consigne. Réponse modèle : « '+(q.type==='mc'?q.options[q.right]:q.right)+' ». '+q.why};
+     'La réponse « '+(q.type==='mc'?q.options[Number(raw)]??raw:raw)+' » ne correspond pas aux formes reconnues pour cette consigne. Réponse modèle : « '+(q.type==='mc'?q.options[q.right]:q.right)+' ». '+q.why};
  });
  const count=translationsUsed.filter((v,i)=>v===true&&mission.questions[i]?.subject==='Espagnol').length;
  return {score,total:mission.questions.length,needsReview:false,answers,
