@@ -4,6 +4,8 @@ on:
     branches: [test-sans-impact-tim-20261114]
     paths:
       - 'tools/test/parcours-parent-animations-production.readonly.cjs'
+      - 'tim-animations.js'
+      - 'scripts/test-animation-entree-xp.mjs'
       - 'tools/test/verifier-tous-baremes-et-animations.production.readonly.cjs'
       - '.github/workflows/test-parent-animations-sans-impact.yml'
   workflow_dispatch:
@@ -26,6 +28,12 @@ jobs:
         run: |
           node --check tools/test/parcours-parent-animations-production.readonly.cjs
           node --check tools/test/verifier-tous-baremes-et-animations.production.readonly.cjs
+          node --check tim-animations.js
+          node --check scripts/test-animation-entree-xp.mjs
+      - name: Vérifier le format français des notes et le choix des médias en code local
+        run: |
+          node scripts/test-animation-entree-xp.mjs
+          node --test scripts/test-animations-dimanche.mjs
       - name: Installer Chromium avec Playwright
         run: |
           npm install --prefix /tmp/tim-test-sans-impact --no-audit --no-fund playwright
