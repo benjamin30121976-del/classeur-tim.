@@ -53,12 +53,12 @@ function open(ex,ctx={}){
  const host=document.getElementById('exercise-detail'),index=document.getElementById('exercise-index');
  if(!host||!index)return;
  index.classList.add('hide');host.classList.add('active');
- const parent=Boolean(window.__TIM_PARENT),guest=Boolean(window.__TIM_GUEST);
+ const parent=Boolean(window.__TIM_PARENT),guest=Boolean(window.__TIM_GUEST),serviceReadOnly=Boolean(window.__TIM_READONLY_FALLBACK);
  const old=ctx.old||null,questions=ex.questions||[];
  const stored=read()[ex.id]||{},state={
   answers:Array.from({length:questions.length},(_,i)=>String(stored.answers?.[i]||'')),
   translated:Array.from({length:questions.length},(_,i)=>stored.translated?.[i]===true),
-  baseline:stored.baseline||null,stage:old?'result':(parent||guest?'quiz':'intro'),page:0,
+  baseline:stored.baseline||null,stage:old?'result':(parent||guest||serviceReadOnly?'quiz':'intro'),page:0,
   checked:[false,false,false,false]};
  const persist=()=>{if(!old&&!parent&&!guest)save(ex.id,{answers:state.answers,translated:state.translated,baseline:state.baseline});};
  const clear=()=>host.replaceChildren();
@@ -87,7 +87,7 @@ function open(ex,ctx={}){
    q.options.forEach((opt,idx)=>{
     const line=E('label',undefined,'mix-option'),radio=E('input');
     radio.type='radio';radio.name='mix-'+ex.id+'-'+i;radio.value=String(idx);radio.checked=val===String(idx);
-    radio.onchange=()=>{state.answers[i]=String(idx);persist();};if(old||parent||guest)radio.disabled=true;
+    radio.onchange=()=>{state.answers[i]=String(idx);persist();};if(old||parent||guest||serviceReadOnly)radio.disabled=true;
     line.append(radio,E('span',opt));group.append(line);
    });box.append(group);
   }else if(q.type==='reason'){
@@ -97,12 +97,12 @@ function open(ex,ctx={}){
     const line=E('label',undefined,'mix-option'),radio=E('input');
     radio.type='radio';radio.name='method-'+ex.id+'-'+i;radio.value=String(k);radio.checked=String(current.m??'')===String(k);
     radio.onchange=()=>{current.m=String(k);state.answers[i]=JSON.stringify(current);persist();};
-    if(old||parent||guest)radio.disabled=true;line.append(radio,E('span',method));box.append(line);
+    if(old||parent||guest||serviceReadOnly)radio.disabled=true;line.append(radio,E('span',method));box.append(line);
    });
    for(const [key,heading,placeholder] of [['c','2. Mon calcul et mes étapes','Je pose mon opération sur le brouillon, puis j’écris mon calcul…'],['s','3. Ma conclusion','Je rédige une phrase complète avec le résultat et l’unité…']]){
     box.append(E('p',heading,'mix-step-label'));
     const field=E('textarea',undefined,'mix-textarea');field.rows=key==='c'?3:2;
-    field.placeholder=placeholder;field.value=current[key]||'';field.disabled=!!old||parent||guest;
+    field.placeholder=placeholder;field.value=current[key]||'';field.disabled=!!old||parent||guest||serviceReadOnly;
     field.oninput=()=>{current[key]=field.value;state.answers[i]=JSON.stringify(current);persist();};
     box.append(field);
    }
@@ -111,7 +111,7 @@ function open(ex,ctx={}){
    const input=q.format==='short'?E('textarea',undefined,'mix-textarea'):E('input',undefined,'mix-input');
    if(q.format==='short')input.rows=3;else input.type='text';
    input.autocomplete='off';input.spellcheck=q.subject!=='Espagnol';input.placeholder='Écris ta réponse ici…';
-   input.value=val;input.disabled=!!old||parent||guest;
+   input.value=val;input.disabled=!!old||parent||guest||serviceReadOnly;
    input.oninput=()=>{state.answers[i]=input.value;persist();};
    box.append(input);
   }
@@ -124,6 +124,7 @@ function open(ex,ctx={}){
   const track=E('div',undefined,'mix-track'),fill=E('div',undefined,'mix-track-fill');
   fill.style.width=(100*(state.page+1)/questions.length)+'%';track.append(fill);progress.append(track);
   host.append(progress);
+  if(serviceReadOnly)host.append(E('p','Lecture seule : le serveur des notes est momentanément indisponible. Aucune tentative ne sera enregistrée. Recharge le classeur lorsque le service fonctionne.','mix-paper'));
   const q=questions[state.page],box=E('section',undefined,'mix-panel');
   box.append(E('p',q.subject+' · '+(q.format==='mc'?'Choix':q.format==='fill'?'À compléter':q.format==='reason'?'Raisonnement':'Réponse écrite'),'mix-subject'));
   box.append(E('h3',q.q));
@@ -220,7 +221,7 @@ function open(ex,ctx={}){
   }
   host.append(copy);focus();
  }
- if(old)showResult();else if(parent||guest)showQuiz();else showIntro();
+ if(old)showResult();else if(parent||guest||serviceReadOnly)showQuiz();else showIntro();
 }
 window.TIM_MIXED_UI={open};
 })();
