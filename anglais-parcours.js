@@ -1,77 +1,134 @@
-/* Anglais — navigation pédagogique selon la discussion de référence. */
+/* Anglais : 22 séances ENT datées, 7 fiches BIS, 5 onglets par leçon.
+   Les textes officiels restent séparés des explications et questions créées. */
 (function(){'use strict';
-const el=(tag,text)=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);return n;};
-const btn=(title,fn)=>{const b=el('button',title);b.type='button';b.className='plain';b.style.cssText='min-height:44px;margin:4px;white-space:normal';b.onclick=fn;return b;};
-const add=(root,tag,text)=>{const n=el(tag,text);root.append(n);return n;};
-const ENT_ACTIVITIES=[
-"1. Ranger les genres musicaux dans l’ordre chronologique.",
-"2. Lire les affirmations sur le chant des esclaves et les tambours.",
-"3. Identifier les chants fondés sur la Bible.",
-"4. Dire si le blues exprime le bonheur ou la tristesse.",
-"5. Situer la naissance du blues par rapport à l’abolition de l’esclavage.",
-"6. Situer les premiers groupes de jazz au Sud ou à l’Ouest des États-Unis.",
-"7. Relier Parker, Armstrong et Ellington à leur instrument.",
-"8. Situer la naissance du rock’n’roll dans le temps.",
-"9. Identifier le musicien surnommé « the King of rock’n’roll »."
+const E=(tag,text,cls='')=>{const n=document.createElement(tag);if(text!==undefined)n.textContent=String(text);if(cls)n.className=cls;return n;};
+const add=(root,tag,text,cls='')=>{const n=E(tag,text,cls);root.append(n);return n;};
+const button=(text,cb,cls='plain')=>{const n=E('button',text,cls);n.type='button';n.onclick=cb;n.style.cssText='min-height:44px;white-space:normal;margin:4px';return n;};
+const short=d=>d?String(d).slice(8,10)+'/'+String(d).slice(5,7)+'/'+String(d).slice(0,4):'';
+const ORDER=['Vacances et prétérit','Personnalité','Similitudes et présentation','Musique et vocabulaire','Actions passées et simultanéité'];
+const TRAINING={EN_BIS01:3,EN_BIS02:3,EN_BIS03:1,EN_BIS04:1,EN_BIS05:1,EN_BIS06:1,EN_BIS07:1};
+const ENT_MUSIC_QUIZ=[
+'1. Classer les genres musicaux dans l’ordre chronologique.',
+'2. Lire les affirmations sur le chant des esclaves et l’usage des tambours.',
+'3. Identifier les chants fondés sur la Bible.',
+'4. Identifier le sentiment exprimé par le blues.',
+'5. Situer les débuts du blues par rapport à l’esclavage.',
+'6. Situer les premiers groupes de jazz aux États-Unis.',
+'7. Associer des musiciens aux instruments.',
+'8. Situer la naissance du rock’n’roll dans le temps.',
+'9. Identifier le surnom « the King of rock’n’roll ».'
 ];
-const TOPICS=[
-{id:'EN_BIS01',name:'The Sounds of Music',original:true,rule:'Le document retrace l’évolution de plusieurs musiques, de leurs artistes et de leurs instruments.',examples:[['Work songs','Chants de travail : work signifie travail, songs signifie chansons.'],['The blues was born in the 1860s','Le blues est né dans les années 1860.'],['New Orleans','Ville citée pour le jazz.'],['The King of rock’n’roll','Surnom d’Elvis Presley.']],help:['1860s = années 1860 ; the fifties = années 1950.','Pour retrouver un instrument, relis la partie jazz.','Écris des phrases complètes : sujet + verbe + information.']},
-{id:'EN_BIS02',name:'Le suffixe -ness',original:false,rule:'Le suffixe -ness transforme souvent un adjectif en nom qui désigne une qualité ou un état.',examples:[['happy → happiness','Heureux → bonheur, le y devient i.'],['sad → sadness','Triste → tristesse.'],['kind → kindness','Gentil → gentillesse.'],['weak → weakness','Faible → faiblesse.']],help:['Identifie l’adjectif de départ.','Avec happy, remplace y par i.','Ajoute -ness puis vérifie toutes les lettres.']}
-];
-function render(root,options={}){
- root.replaceChildren(btn('← Toutes les matières',()=>options.back?.()),el('h2','Anglais — Mes leçons'));
- add(root,'p','1 document ENT vérifié · 2 leçons BIS · 6 exercices de 10 questions.');
- const warning=add(root,'p','Le PDF « The Sounds of Music » est archivé dans le dossier scolaire. Son fichier original n’est pas encore rattaché au lecteur du site ; les textes ci-dessous ne prétendent pas le remplacer.');warning.className='lesson-caution';
- for(const topic of TOPICS){
-  const card=el('details');card.className='tim-es-lesson';card.style.cssText='background:#1a2742;border:1px solid #66738a;border-radius:14px;padding:14px;margin:14px 0';
-  const summary=add(card,'summary',topic.name);summary.style.cssText='cursor:pointer;font-size:21px;font-weight:800';
-  const tabs=el('div'),sheet=el('section');tabs.className='lesson-tabs';sheet.className='panel';card.append(tabs,sheet);
-  function openTab(name){
-   [...tabs.children].forEach(b=>{b.style.background=b.dataset.tab===name?'#d8fc67':'#34415e';b.style.color=b.dataset.tab===name?'#17223b':'#fff'});
-   sheet.replaceChildren();
-   if(name==='ent'){
-    add(sheet,'h3','Leçon ENT du professeur');
-    add(sheet,'p',topic.original?'« The Sounds of Music », PDF du 3 novembre : 2 pages, texte à compléter et neuf activités sur l’évolution de la musique. Il n’y a aucune réponse de Tim dans le PDF.':'Un devoir sur le suffixe -ness est annoncé pour le 6 novembre. La leçon originale du professeur n’est pas fournie : aucun faux cours ENT n’est créé.');
+function bisContent(slot,bis){
+ add(slot,'h4',bis.title);
+ add(slot,'p',bis.rule);
+ for(const [a,b] of bis.examples){const p=E('p');p.append(E('strong',a+' : '),document.createTextNode(b));slot.append(p);}
+ add(slot,'h4','Exemple guidé : comment rédiger');
+ if(bis.id==='EN_BIS03')add(slot,'p','Question : Where did you go last summer? Réponse : I went to the beach last summer. Je reprends le sujet I, le verbe au prétérit went et le complément.');
+ else if(bis.id==='EN_BIS04')add(slot,'p','Question : What are you like? Réponse : I am rather shy, but I am very caring. Je formule deux phrases complètes avec des adjectifs.');
+ else if(bis.id==='EN_BIS05')add(slot,'p','Phrase : I can swim. Réponse : So can I. Je repère can, le conserve et construis So + can + I.');
+ else if(bis.id==='EN_BIS06')add(slot,'p','Question : Introduce yourself. Réponse : I am a student. I like playing football. Je donne une information par phrase.');
+ else if(bis.id==='EN_BIS07')add(slot,'p','Phrase : The band was playing when the lights went out. Je distingue was playing (action en cours) et went out (événement court).');
+ else if(bis.id==='EN_BIS02')add(slot,'p','Question : Turn happy into a noun. Réponse : Happiness. Je remplace y par i puis j’ajoute -ness.');
+ else add(slot,'p','Question : Where did the first jazz bands appear? Réponse : The first jazz bands appeared in New Orleans. Je reformule en phrase complète.');
+}
+function tabbedCourse(course,bis,pack){
+ const details=E('details',undefined,'tim-es-lesson');details.style.cssText='background:#18243c;border:1px solid #5b6983;border-radius:13px;margin:11px 0;padding:12px';
+ const summary=E('summary',short(course.date)+' — '+course.originalTitle);summary.style.cssText='cursor:pointer;font-size:17px;font-weight:800';details.append(summary);
+ const tabs=E('div',undefined,'lesson-tabs');tabs.style.cssText='display:flex;flex-wrap:wrap;gap:4px;margin:10px 0';
+ const body=E('section',undefined,'panel');body.style.cssText='margin-top:8px';
+ details.append(tabs,body);
+ let selected='';
+ function openTab(tab){
+  selected=tab;body.replaceChildren();
+  for(const b of tabs.children){const on=b.dataset.tab===tab;b.style.background=on?'#d8fc67':'#34415e';b.style.color=on?'#152039':'#fff';}
+  if(tab==='ent'){
+   add(body,'h3','1 · Leçon ENT du professeur');
+   add(body,'p','Séance '+short(course.date)+' · Référence ENT '+course.entId,'subtle');
+   if(course.originalContent.length){
+    add(body,'p','Texte authentique de l’enseignant, conservé sans correction ni réécriture :');
+    course.originalContent.forEach(line=>add(body,'p',line));
+   }else add(body,'p','Cette séance figure dans le calendrier ENT, mais l’archive ne contient pas de texte détaillé. Aucun cours n’a été inventé.');
+   const target=E('div');body.append(target);
+   if(window.TIM_ENGLISH_DOCUMENTS?.render)window.TIM_ENGLISH_DOCUMENTS.render(course.id,target);
+  }else if(tab==='bis'){
+   add(body,'h3','2 · Leçons BIS expliquées');
+   bis.forEach(b=>bisContent(body,b));
+  }else if(tab==='help'){
+   add(body,'h3','3 · Je n’ai pas compris');
+   for(const b of bis){
+    add(body,'h4',b.title);
+    b.help.forEach((step,i)=>add(body,'p',(i+1)+'. '+step));
    }
-   if(name==='bis'){
-    add(sheet,'h3','Leçon BIS — comprendre la règle');
-    add(sheet,'p',topic.rule);
-    if(topic.original)add(sheet,'p','Frise : work songs → blues (années 1860) → jazz (vers 1900) → rock’n’roll (années 1950) → rap (années 1990).');
-    for(const [a,b] of topic.examples){const p=el('p');p.append(el('strong',a+' : '),document.createTextNode(b));sheet.append(p)}
-    add(sheet,'h4','Écrire un résultat');
-    add(sheet,'p',topic.original?'Question : Where did the first jazz bands appear? Réponse : The first jazz bands appeared in New Orleans. Je reprends le sujet et le verbe, pas seulement le nom de la ville.':'Question : Turn happy into a noun. Réponse : Happiness. Je change le y en i, puis j’ajoute -ness.');
+   add(body,'p','Reprends un exemple, explique la démarche avec tes mots, puis essaie seul. La correction montrera précisément ce qu’il faut revoir.');
+  }else if(tab==='entex'){
+   add(body,'h3','4 · Exercices et fiches ENT du professeur');
+   const documents=pack.attachments.filter(x=>x.target===course.id);
+   if(!documents.length)add(body,'p','Aucune fiche d’exercices jointe à cette séance dans la collecte. Les consignes des devoirs liés n’étaient pas présentes dans le JSON exporté.');
+   else{
+    add(body,'p',documents.length+' document(s) originaux rattaché(s) à cette séance : '+documents.map(x=>x.name).join(' ; ')+'.');
+    const target=E('div');body.append(target);
+    if(window.TIM_ENGLISH_DOCUMENTS?.render)window.TIM_ENGLISH_DOCUMENTS.render(course.id,target);
+    if(course.chapter==='Musique et vocabulaire'&&documents.some(x=>/THE SOUNDS OF MUSIC/i.test(x.name))){
+     add(body,'h4','Neuf activités repérées dans le PDF original');
+     ENT_MUSIC_QUIZ.forEach(x=>add(body,'p',x));
+     add(body,'p','Ce questionnaire contient neuf activités de types différents. Il n’est pas transformé arbitrairement en dix questions notées.');
+    }
    }
-   if(name==='help'){
-    add(sheet,'h3','Je n’ai pas compris');
-    topic.help.forEach((h,i)=>add(sheet,'p',(i+1)+'. '+h));
-    add(sheet,'p','Relis un exemple, explique la méthode à voix haute, puis réponds sans recopier la correction.');
-   }
-   if(name==='entex'){
-    add(sheet,'h3','Exercices ENT originaux');
-    if(topic.original){add(sheet,'p','Neuf activités de la feuille du professeur, non transformées artificiellement en une note sur 10.');ENT_ACTIVITIES.forEach(s=>add(sheet,'p',s));}
-    else add(sheet,'p','Aucun questionnaire original ENT sur -ness n’est disponible. Les exercices de la rubrique Entraînement sont des créations BIS.');
-   }
-   if(name==='training'){
-    add(sheet,'h3','Entraînement interactif');
-    add(sheet,'p','Trois exercices de 10 questions, une tentative par exercice pour Tim. Le Parent peut tester sans enregistrer de note ou d’XP.');
-    const nav=el('div'),work=el('div');sheet.append(nav,work);
-    for(let i=1;i<=3;i++){
-     const id='ENQ_L'+topic.id.slice(-2)+'_0'+i;
-     nav.append(btn('Exercice '+i+' — '+['Comprendre les mots','Lire et appliquer','Écrire ses réponses'][i-1],()=>{
-      work.replaceChildren();
-      if(!window.TIM_ENGLISH_TRAINING?.mount){add(work,'p','Service sécurisé indisponible : l’exercice ne peut pas être validé.');return;}
-      window.TIM_ENGLISH_TRAINING.mount(id,work);
+  }else if(tab==='train'){
+   add(body,'h3','5 · Entraînement interactif — exercices BIS');
+   add(body,'p','Tous les questionnaires comportent dix questions. Tim valide une seule fois, reçoit sa note, ses corrections détaillées et les leçons à revoir. Le compte Parent peut tester sans enregistrer.');
+   const actions=E('div'),slot=E('div');body.append(actions,slot);
+   for(const item of bis){
+    for(let i=1;i<=TRAINING[item.id];i++){
+     const id='ENQ_L'+item.id.slice(-2)+'_0'+i;
+     actions.append(button(item.title+' · exercice '+i,()=>{
+      slot.replaceChildren();
+      if(!window.TIM_ENGLISH_TRAINING?.mount){add(slot,'p','Service de validation indisponible.');return;}
+      window.TIM_ENGLISH_TRAINING.mount(id,slot);
      }));
     }
    }
   }
-  for(const [id,text] of [['ent','Leçon ENT'],['bis','Leçon BIS'],['help','Je n’ai pas compris'],['entex','Exercices ENT'],['training','Entraînement']]){
-   const b=btn(text,()=>openTab(id));b.dataset.tab=id;tabs.append(b);
-  }
-  openTab('bis');if(options.openLessonId===topic.id||(topic.original&&options.openLessonId==='EN_ENT01'))card.open=true;root.append(card);
  }
- const summary=el('details');summary.className='panel';summary.append(el('summary','Notes et corrections d’anglais'));
- const content=el('div');summary.append(content);summary.addEventListener('toggle',()=>{if(summary.open)window.TIM_ENGLISH_TRAINING?.renderProgress?.(content)});root.append(summary);
+ for(const [tag,label] of [['ent','Leçon ENT'],['bis','Leçon BIS'],['help','Je n’ai pas compris'],['entex','Exercices ENT'],['train','Entraînement']]){
+  const b=button(label,()=>openTab(tag));b.dataset.tab=tag;tabs.append(b);
+ }
+ details.addEventListener('toggle',()=>{if(details.open&&!selected)openTab('ent');});
+ return {details,openTab};
+}
+function render(root,opts={}){
+ const pack=window.TIM_ANGLAIS_PACK;
+ root.replaceChildren(button('← Toutes les matières',()=>opts.back?.()),E('h2','Anglais — Mes leçons'));
+ if(!pack||!Array.isArray(pack.lessons)){add(root,'p','Les cours d’anglais ne sont pas chargés.');return;}
+ const all=pack.lessons.filter(x=>x.id.startsWith('EN_ENT_')),bis=pack.bis||[];
+ add(root,'p',all.length+' séances ENT classées chronologiquement · '+bis.length+' leçons BIS · '+pack.attachments.length+' pièces originales · 11 entraînements de dix questions.');
+ add(root,'p','Dernière collecte de l’ENT : 12 novembre 2026. Les séances sont classées d’après les textes authentiques ; les explications BIS sont distinctes.','lesson-caution');
+ if(window.__TIM_PARENT&&window.TIM_ENGLISH_DOCUMENTS?.parentImport)root.append(window.TIM_ENGLISH_DOCUMENTS.parentImport());
+ for(const chapter of ORDER){
+  const rows=all.filter(x=>x.chapter===chapter),chapterBis=bis.filter(x=>x.group===chapter);
+  const container=E('details',undefined,'chapter-section');container.style.cssText='border:1px solid #51617c;padding:13px;margin:14px 0;border-radius:14px';
+  const heading=E('summary',chapter+' · '+rows.length+' séances ENT · '+chapterBis.length+' leçon(s) BIS');heading.style.cssText='cursor:pointer;font-size:20px;font-weight:800';container.append(heading);
+  const list=E('div',undefined,'chapter-body');
+  container.append(list);
+  for(const course of rows){
+   const c=tabbedCourse(course,chapterBis,pack);
+   list.append(c.details);
+   if(opts.openLessonId===course.id||opts.openLessonId===course.entId||chapterBis.some(b=>opts.openLessonId===b.id)){
+    container.open=true;c.details.open=true;c.openTab(opts.openLessonId?.startsWith('EN_BIS')?'bis':'ent');
+   }
+  }
+  if(!opts.openLessonId&&chapter==='Actions passées et simultanéité'){
+   container.open=true;
+   const last=list.lastElementChild;if(last){last.open=true;}
+  }
+  root.append(container);
+ }
+ const future=E('section',undefined,'panel');
+ add(future,'h3','Prochain cours ENT — en attente');
+ add(future,'p','Lundi 16 novembre 2026 : séance inscrite à l’emploi du temps. Aucun contenu du professeur n’est encore présent dans cette collecte. Le devoir ENT lié est référencé, mais son texte n’est pas exporté.');
+ root.append(future);
+ const progress=E('details',undefined,'panel');progress.append(E('summary','Notes, copies et corrections d’anglais'));
+ const slot=E('div');progress.append(slot);progress.addEventListener('toggle',()=>{if(progress.open)window.TIM_ENGLISH_TRAINING?.renderProgress?.(slot)});root.append(progress);
 }
 window.TIM_ENGLISH_PATH={render};
 })();
