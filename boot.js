@@ -403,7 +403,8 @@ async function fetchAttempts(content){
   const secret=isParent?grades.get(d.id):null;
   // Les anciens entraînements de leçon sont corrigés automatiquement.
   // Cette règle ne modifie ni les copies ni les XP enregistrés.
-  const released=record.correctionStatus==='released'||(ex?.kind==='training'&&record.authorUid===TIM_UID);
+  const automaticallyCorrectable=Boolean(ex?.questions?.length&&ex.questions.every(q=>['mc','text'].includes(q.type))&&ex.kind!=='translation-help-log');
+  const released=record.correctionStatus==='released'||(automaticallyCorrectable&&record.authorUid===TIM_UID);
   list.push({
    id:d.id,date:record.submittedAt?.toDate?.().toISOString()||new Date().toISOString(),
    title:ex?.title||secret?.title||(d.id.startsWith('DAY_')?'Petit défi du '+d.id.slice(4,12):d.id.startsWith('SUNDAY_')?'Grand défi du dimanche':'Grand défi du samedi'),lesson:ex?.lesson||'',xp:Number(record.xp||0),policyVersion:Number(record.policyVersion||0),
