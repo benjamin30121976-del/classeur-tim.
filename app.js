@@ -76,38 +76,53 @@ const COURSE_GROUPS=[
  {title:'Méthodes de contrôle',topics:['Méthode'],icon:'✓',sub:'Comprendre les consignes et réviser'}
 ];
 let lessonGroup='', lessonSubject='', exerciseGroup='', exerciseSubject='', exerciseMode='';
-// Le bonus du jour reste vide tant qu'aucun exercice n'a été publié explicitement.
-// Un seul exercice peut être présenté ; aucune sélection automatique ni envoi Parent.
+// Les bonus publiés sont choisis librement : matière, puis exercice complet.
+let bonusCatalogSubject='';
 function bonusStatus(){return window.TIM_BONUS.state(DATA.exercises,attempts());}
 function bonusMissionPanel(onHome=false,subject=''){
- const status=bonusStatus();
- const available=status.chosen.filter(ex=>!subject||(ex.subject||'Espagnol')===subject).slice(0,1);
+ const state=bonusStatus(),all=state.chosen;
+ const chosen=subject||(onHome?'':bonusCatalogSubject);
+ const available=chosen?all.filter(e=>(e.subject||'Espagnol')===chosen):all;
  const box=E('section',onHome?'bonus-spotlight home-bonus':'bonus-spotlight');
- box.setAttribute('aria-label','Défi bonus du jour');
+ box.setAttribute('aria-label','Défi bonus : choisir une matière puis un exercice');
  const head=E('div','bonus-spotlight-head');
- head.append(E('h2','bonus-spotlight-heading','DÉFI BONUS DU JOUR'),
-  E('span','bonus-count',available.length+' exercice'+(available.length>1?'s':'')));
+ head.append(E('h2','bonus-spotlight-heading','DÉFI BONUS'),E('span','bonus-count',all.length+' exercice'+(all.length>1?'s':'')));
  box.append(head);
  if(onHome){
-  const scene=E('div','bonus-home-scene');
-  const wolf=E('img','bonus-home-wolf');
+  const scene=E('div','bonus-home-scene'),wolf=E('img','bonus-home-wolf');
   wolf.src=window.TIM_ANIMATIONS?.url?.('bonus')||'./assets/animations/Tim_Defi_Bonus_5XP.gif';
-  wolf.alt='Loup animé avec casque, assis devant une fenêtre';
-  wolf.width=307;wolf.height=309;
-  scene.append(wolf);box.append(scene);
+  wolf.alt='Loup animé avec casque, assis devant une fenêtre';wolf.width=307;wolf.height=309;scene.append(wolf);box.append(scene);
  }
- if(!available.length){
-  box.append(E('p','bonus-empty','Aucun exercice pour le moment.'));
+ if(!all.length){
+  box.append(E('p','bonus-empty','Aucun exercice bonus publié pour le moment.'));
+ }else if(!chosen){
+  box.append(E('p','bonus-lead','Choisis une matière. Chaque exercice bonus est indépendant et peut rapporter 5 XP, 2,5 XP ou 0 XP, sans plafond.'));
+  const subjects=[...new Set(all.map(ex=>ex.subject||'Espagnol'))].sort((a,b)=>a.localeCompare(b,'fr'));
+  for(const name of subjects){
+   const rows=all.filter(ex=>(ex.subject||'Espagnol')===name),done=rows.filter(ex=>attemptFor(ex.id)).length;
+   const b=E('button','bonus-mission-item');b.type='button';
+   b.append(E('span','bonus-mission-number','∑'));
+   const copy=E('span','bonus-mission-copy');copy.append(E('strong','',name),E('small','',rows.length+' exercices · '+done+' terminé(s) · '+(rows.length*5)+' XP à gagner au maximum'));b.append(copy,E('span','bonus-mission-status','Choisir'));
+   b.addEventListener('click',()=>{
+    bonusCatalogSubject=name;
+    if(onHome){exerciseSubject='';exerciseMode='bonus-mission';page('exercices');}
+    else renderExerciseIndex();
+   });box.append(b);
+  }
  }else{
-  const ex=available[0],done=attemptFor(ex.id);
-  box.append(E('p','bonus-lead',done?'Défi terminé : ton résultat reste consultable.':'Un exercice est disponible pour le défi bonus.'));
-  const b=E('button','bonus-mission-item');b.type='button';
-  b.append(E('span','bonus-mission-number',done?'✓':'1'));
-  const meta=E('span','bonus-mission-copy');
-  meta.append(E('strong','',ex.title),E('small','',ex.subject||'Cours enregistré'));
-  b.append(meta,E('span','bonus-mission-status',done?'Résultat':'Ouvrir'));
-  b.addEventListener('click',()=>openExercise(ex.id));
-  box.append(b);
+  if(!subject){
+   box.append(button('← Toutes les matières',()=>{bonusCatalogSubject='';renderExerciseIndex();},'group-back'));
+  }
+  box.append(E('p','bonus-lead',chosen+' · '+available.length+' exercices de 10 questions. Une seule tentative par exercice. Note et correction immédiates.'));
+  for(const [i,ex] of available.entries()){
+   const done=attemptFor(ex.id),b=E('button','bonus-mission-item');b.type='button';
+   b.append(E('span','bonus-mission-number',done?'✓':String(i+1)));
+   const copy=E('span','bonus-mission-copy');
+   copy.append(E('strong','',ex.title),E('small','',done?'Terminé · '+(Number.isFinite(done.score)?done.score+'/10 · ':'')+(Number.isFinite(done.xp)?done.xp+' XP':'Résultat consultable'):'À faire · 10 questions · jusqu’à 5 XP'));
+   b.append(copy,E('span','bonus-mission-status',done?'Voir le résultat':'Faire le défi'));
+   b.addEventListener('click',()=>openExercise(ex.id));box.append(b);
+  }
+  if(!available.length)box.append(E('p','bonus-empty','Aucun exercice bonus publié dans cette matière.'));
  }
  if(window.__TIM_GUEST)box.append(E('p','bonus-footnote','Mode invité : consultation uniquement, sans validation ni XP.'));
  return box;
@@ -735,8 +750,8 @@ if(ex.kind==='daily'&&ex.questionBank==='spanish-ent-v1'){
  root.append(E('p','small','Révision de plusieurs leçons d’espagnol : vocabulaire, phrases, traduction et conjugaison.'));
  root.append(button('Revoir les leçons d’espagnol',()=>{page('matieres');renderMatiere('Espagnol');},'plain'));
 }else{
- root.append(E('p','small','Leçon associée : '+(lessonBy(ex.lesson)?.title||'Voir les cours de la matière')));
- root.append(button('Voir la leçon correspondante',()=>openLesson(ex.lesson),'plain'));
+ root.append(E('p','small','Leçon associée : '+(lessonBy(ex.lesson)?.title||(ex.subject==='Mathématiques'?ex.chapter||'Cours ENT de mathématiques':'Voir les cours de la matière'))));
+ if(lessonBy(ex.lesson))root.append(button('Voir la leçon correspondante',()=>openLesson(ex.lesson),'plain'));
 }
 if(ex.instructions&&!completedChallenge){const instructions=E('div','note info',ex.instructions);instructions.style.cssText='white-space:pre-line;font-size:16px;line-height:1.65;margin:12px 0;padding:16px;border:2px solid #e9b84a;border-radius:14px';root.append(instructions);}
 if(!completedChallenge)root.append(makeAttachmentPanel('exercise',ex.id));if(!window.__TIM_GUEST&&!ex.kind&&!attemptFor(ex.id)){
@@ -746,7 +761,7 @@ if(!completedChallenge)root.append(makeAttachmentPanel('exercise',ex.id));if(!wi
 if(window.__TIM_GUEST){root.append(notice('Visite en lecture seule : tu peux voir les questions, mais tu ne peux ni répondre ni valider.','guest-preview'));
  for(const [i,q] of ex.questions.entries()){const row=E('div','q');row.append(E('strong','',(i+1)+'. '+q.q));if(q.type==='mc'){const ul=E('ul');for(const option of q.options)ul.append(E('li','',option));row.append(ul);}root.append(row);}return;}
 const old=existing,draft=drafts()[ex.id]||[];let form=E('div','panel');let controls=[];
-ex.questions.forEach((question,i)=>{const row=E('div','q');row.append(E('div','qtitle',(i+1)+'. '+question.q));const previous=old?old.answers[i]?.response:draft[i];if(question.type==='mc'){let options=E('div','check-answers');question.options.forEach((option,j)=>{const label=E('label','choose');const input=E('input');input.type='radio';input.name='question-'+ex.id+'-'+i;input.value=String(j);input.checked=previous!==undefined&&String(previous)===String(j);input.disabled=!!old;input.addEventListener('change',saveDraft);label.append(input,E('span','',option));options.append(label);});row.append(options);controls.push({kind:'mc',name:'question-'+ex.id+'-'+i});}else{const input=question.type==='free'?E('textarea','answer wide'):E('input','answer');if(question.type==='text'){input.type='text';input.autocomplete='off';input.spellcheck=false;input.placeholder='Écris la réponse en espagnol';}else{input.rows=6;input.placeholder='Écris ta lettre ici…';}input.value=previous===undefined?'':safe(previous);input.disabled=!!old;input.addEventListener('input',saveDraft);row.append(input);controls.push({kind:'text',node:input});}form.append(row);});if(!completedChallenge)root.append(form);
+ex.questions.forEach((question,i)=>{const row=E('div','q');row.append(E('div','qtitle',(i+1)+'. '+question.q));const previous=old?old.answers[i]?.response:draft[i];if(question.type==='mc'){let options=E('div','check-answers');question.options.forEach((option,j)=>{const label=E('label','choose');const input=E('input');input.type='radio';input.name='question-'+ex.id+'-'+i;input.value=String(j);input.checked=previous!==undefined&&String(previous)===String(j);input.disabled=!!old;input.addEventListener('change',saveDraft);label.append(input,E('span','',option));options.append(label);});row.append(options);controls.push({kind:'mc',name:'question-'+ex.id+'-'+i});}else{const input=question.type==='free'?E('textarea','answer wide'):E('input','answer');if(question.type==='text'){input.type='text';input.autocomplete='off';input.spellcheck=false;input.placeholder=ex.subject==='Mathématiques'?'Écris le résultat, par exemple 5/8 ou 12 cm':'Écris la réponse en espagnol';}else{input.rows=6;input.placeholder='Écris ta lettre ici…';}input.value=previous===undefined?'':safe(previous);input.disabled=!!old;input.addEventListener('input',saveDraft);row.append(input);controls.push({kind:'text',node:input});}form.append(row);});if(!completedChallenge)root.append(form);
 function values(){return controls.map(c=>c.kind==='mc'?(document.querySelector('input[name="'+c.name+'"]:checked')?.value??''):c.node.value.trim());}
 function saveDraft(){if(old)return;const d=drafts();d[id]=values();save(DRAFT_KEY,d);}
 if(old){
