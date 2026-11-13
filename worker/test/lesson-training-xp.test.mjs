@@ -88,7 +88,7 @@ test('Entraînement noté : note, explications et correction accessibles immédi
 test('Ancien entraînement verrouillé : déverrouillage à la lecture sans nouvelle écriture',async()=>{
  const id='ESE_L14_01',db=mockFirestore(training(id,'Espagnol'));
  db.records.set('attempts/'+id,{authorUid:TIM_UID,correctionStatus:'pending-parent',xp:0.5});
- const graded={score:8,total:10,answers:Array.from({length:10},(_,i)=>({question:'Q'+i,correct:i<8,explanation:'Explication complète'}))};
+ const graded={score:8,total:10,needsReview:false,answers:Array.from({length:10},(_,i)=>({question:'Q'+i,correct:i<8,explanation:'Explication complète'}))};
  db.records.set('privateAttempts/'+id,graded);
  const size=db.records.size;
  const visible=await TESTABLE.releasedCorrections(db,TIM_UID,{});
@@ -99,9 +99,33 @@ test('Ancien entraînement verrouillé : déverrouillage à la lecture sans nouv
  assert.equal(db.records.get('attempts/'+id).correctionStatus,'pending-parent','Original historique conservé');
 });
 
-test('Un ancien devoir non classé entraînement ne se déverrouille pas automatiquement',async()=>{
+test('Une rédaction libre nécessitant appréciation humaine reste en attente',async()=>{
  const id='ENT_ES01',db=mockFirestore({...training(id,'Espagnol'),kind:'ent'});
  db.records.set('attempts/'+id,{authorUid:TIM_UID,correctionStatus:'pending-parent',xp:0});
- db.records.set('privateAttempts/'+id,{score:8,total:10,answers:Array(10).fill({})});
+ db.records.set('privateAttempts/'+id,{score:8,total:10,needsReview:true,answers:Array(10).fill({correct:null})});
  assert.equal((await TESTABLE.releasedCorrections(db,TIM_UID,{})).corrections.length,0);
+});
+
+test('Devoir ENT automatique : correction immédiate et zéro XP',async()=>{
+ const id='ENT_ES01',db=mockFirestore({...training(id,'Espagnol'),kind:'ent'});
+ const result=await TESTABLE.submitExercise(db,TIM_UID,{id,answers:Array(10).fill(1)});
+ assert.equal(result.score,10);
+ assert.equal(result.xp,0);
+ assert.equal(result.correctionStatus,'released');
+ assert.equal(result.answers.length,10);
+ assert.equal(db.records.get('attempts/'+id).correctionStatus,'released');
+ assert.equal(db.records.get('xpState/tim').weekXp,0);
+});
+
+test('Ancien devoir ENT automatiquement corrigé : lecture possible sans modifier la copie',async()=>{
+ const id='ENT_ES01',db=mockFirestore({...training(id,'Espagnol'),kind:'ent'});
+ db.records.set('attempts/'+id,{authorUid:TIM_UID,correctionStatus:'pending-parent',xp:0});
+ db.records.set('privateAttempts/'+id,{
+  score:10,total:10,needsReview:false,answers:Array(10).fill({correct:true,explanation:'Règle et correction'})
+ });
+ const count=db.records.size,view=await TESTABLE.releasedCorrections(db,TIM_UID,{});
+ assert.equal(view.corrections.length,1);
+ assert.equal(view.corrections[0].score,10);
+ assert.equal(db.records.size,count);
+ assert.equal(db.records.get('attempts/'+id).correctionStatus,'pending-parent');
 });
