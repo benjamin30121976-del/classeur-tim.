@@ -46,11 +46,7 @@ jobs:
       - name: Installer Chromium de test
         run: |
           npm install --prefix /tmp/tim-mixed --no-audit --no-fund playwright
-          if command -v chromium >/dev/null 2>&1 || command -v google-chrome >/dev/null 2>&1; then
-            echo 'Navigateur Chrome disponible.'
-          else
-            /tmp/tim-mixed/node_modules/.bin/playwright install chromium
-          fi
+          /tmp/tim-mixed/node_modules/.bin/playwright install chromium
       - name: Tester la navigation et la relecture sans envoyer de copie
         env:
           NODE_PATH: /tmp/tim-mixed/node_modules
