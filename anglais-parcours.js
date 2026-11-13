@@ -48,6 +48,14 @@ function tabbedCourse(course,bis,pack){
     add(body,'p','Texte authentique de l’enseignant, conservé sans correction ni réécriture :');
     course.originalContent.forEach(line=>add(body,'p',line));
    }else add(body,'p','Cette séance figure dans le calendrier ENT, mais l’archive ne contient pas de texte détaillé. Aucun cours n’a été inventé.');
+   const due=(pack.homework||[]).filter(h=>h.due===course.date);
+   if(due.length){
+    add(body,'h4','Devoirs ENT pour cette date');
+    for(const hw of due){
+     add(body,'p',hw.title+' — '+(hw.content||'Aucune précision supplémentaire publiée dans l’agenda.'));
+    }
+    add(body,'p','Le statut fait/non fait de ces anciens devoirs n’a pas été vérifié par le Parent.','subtle');
+   }
    const target=E('div');body.append(target);
    if(window.TIM_ENGLISH_DOCUMENTS?.render)window.TIM_ENGLISH_DOCUMENTS.render(course.id,target);
   }else if(tab==='bis'){
@@ -63,7 +71,11 @@ function tabbedCourse(course,bis,pack){
   }else if(tab==='entex'){
    add(body,'h3','4 · Exercices et fiches ENT du professeur');
    const documents=pack.attachments.filter(x=>x.target===course.id);
-   if(!documents.length)add(body,'p','Aucune fiche d’exercices jointe à cette séance dans la collecte. Les consignes des devoirs liés n’étaient pas présentes dans le JSON exporté.');
+   const due=(pack.homework||[]).filter(h=>h.due===course.date);
+   for(const hw of due){
+    add(body,'p','Consigne ENT du '+short(hw.due)+' — '+hw.title+' : '+(hw.content||'Pas de détail supplémentaire publié.'));
+   }
+   if(!documents.length)add(body,'p','Aucune fiche originale jointe à cette séance dans la collecte.');
    else{
     add(body,'p',documents.length+' document(s) originaux rattaché(s) à cette séance : '+documents.map(x=>x.name).join(' ; ')+'.');
     const target=E('div');body.append(target);
@@ -103,6 +115,14 @@ function render(root,opts={}){
  const all=pack.lessons.filter(x=>x.id.startsWith('EN_ENT_')),bis=pack.bis||[];
  add(root,'p',all.length+' séances ENT classées chronologiquement · '+bis.length+' leçons BIS · '+pack.attachments.length+' pièces originales · 11 entraînements de dix questions.');
  add(root,'p','Dernière collecte de l’ENT : 12 novembre 2026. Les séances sont classées d’après les textes authentiques ; les explications BIS sont distinctes.','lesson-caution');
+ const nextEval=(pack.homework||[]).find(x=>x.due==='2026-11-16'&&/evaluation/i.test(x.title));
+ if(nextEval){
+  const call=E('section',undefined,'panel');
+  add(call,'h3','Évaluation d’anglais — lundi 16 novembre 2026');
+  add(call,'p',nextEval.content);
+  add(call,'p','Ouvre les deux chapitres « Musique et vocabulaire » et « Actions passées et simultanéité » pour réviser les leçons ENT, les BIS et les exercices.');
+  root.append(call);
+ }
  if(window.__TIM_PARENT&&window.TIM_ENGLISH_DOCUMENTS?.parentImport)root.append(window.TIM_ENGLISH_DOCUMENTS.parentImport());
  for(const chapter of ORDER){
   const rows=all.filter(x=>x.chapter===chapter),chapterBis=bis.filter(x=>x.group===chapter);
@@ -125,7 +145,7 @@ function render(root,opts={}){
  }
  const future=E('section',undefined,'panel');
  add(future,'h3','Prochain cours ENT — en attente');
- add(future,'p','Lundi 16 novembre 2026 : séance inscrite à l’emploi du temps. Aucun contenu du professeur n’est encore présent dans cette collecte. Le devoir ENT lié est référencé, mais son texte n’est pas exporté.');
+ add(future,'p','Lundi 16 novembre 2026 : séance inscrite à l’emploi du temps, sans nouveau cours publié dans cette collecte. Une évaluation écrite est annoncée dans l’agenda ENT : le contenu exact des révisions est rappelé ci-dessus.');
  root.append(future);
  const progress=E('details',undefined,'panel');progress.append(E('summary','Notes, copies et corrections d’anglais'));
  const slot=E('div');progress.append(slot);progress.addEventListener('toggle',()=>{if(progress.open)window.TIM_ENGLISH_TRAINING?.renderProgress?.(slot)});root.append(progress);
