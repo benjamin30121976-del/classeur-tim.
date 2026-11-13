@@ -8,7 +8,7 @@ Le parent constate que les animations ne semblent pas apparaître en ouvrant le 
 - Dans `app.js`, chaque bouton « Mission N · Commencer » du panneau quotidien appelle `openExercise(id)`.
 - `openExercise` n'essaie de lire l'animation d'ouverture **que** si le rôle est Tim, que l'exercice n'a pas déjà de tentative (`!attemptFor(id)`), et que `TIM_ANIMATIONS.playOpening` est présent.
 - Le lecteur `tim-animations.js` n'affiche aucune animation si le navigateur signale `prefers-reduced-motion: reduce`.
-- Un contrôle Chromium/Playwright depuis GitHub Actions (workflow `Vérifier animations et défi bonus de Tim`, run 43522629691) a testé le vrai clic des trois missions disponibles sur le site : **3 IDs quotidiens présents, bouton n°1, lecture vidéo MP4, retour à la fiche** sur mobile simulé et ordinateur. Aucun compte authentifié et aucune copie créée. Pour franchir le garde-fou Invité au seul moment du clic, le test a simulé le rôle élève dans la mémoire de son propre navigateur et a rétabli immédiatement le rôle Invité, sans envoi ni validation.
+- Un contrôle Chromium/Playwright depuis GitHub Actions (workflow `Vérifier animations et défi bonus de Tim`, run 43522629691) a confirmé la présence des trois missions quotidiennes et testé **le clic de la première mission**, la lecture de la vidéo MP4 et le retour à sa fiche sur mobile simulé et ordinateur. Aucun compte authentifié et aucune copie créée. Pour franchir le garde-fou Invité au seul moment du clic, le test a simulé le rôle élève dans la mémoire de son propre navigateur et a rétabli immédiatement le rôle Invité, sans envoi ni validation.
 - Le workflow s'est terminé avec conclusion `success`.
 
 ## Non vérifié
