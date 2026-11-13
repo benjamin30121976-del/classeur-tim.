@@ -81,6 +81,24 @@ const site=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
   assert.equal(link.chapter.length,1);
   assert.match(link.chapter[0],/Phagocytose/);
   assert.equal(link.courseCount,1);
+  // Le cours du 14 septembre porte sur les barrières. Le chapitre microbes
+  // conserve sa fiche BIS, mais aucune séance ENT fictive.
+  const classification=await page.evaluate(()=>{
+   window.TIM_SVT_PATH.render(document.getElementById('matieres-content'),{back:()=>{}});
+   const sections=[...document.querySelectorAll('#matieres-content details.chapter-section')];
+   const first=sections.find(x=>x.querySelector(':scope > summary')?.textContent.includes('Microbes et microbiote'));
+   const barriers=sections.find(x=>x.querySelector(':scope > summary')?.textContent.includes('Barrières et contamination'));
+   return {
+    first:first?.querySelector(':scope > summary')?.textContent||'',
+    bis:first?.querySelector('.tim-es-lesson summary')?.textContent||'',
+    barriers:barriers?.querySelector(':scope > summary')?.textContent||'',
+    courses:[...barriers.querySelectorAll('.tim-es-lesson summary')].map(x=>x.textContent)
+   };
+  });
+  assert.match(classification.first,/0 séance\(s\) · 1 BIS/);
+  assert.match(classification.bis,/Leçon BIS.*sans séance ENT propre/);
+  assert.match(classification.barriers,/2 séance\(s\) · 1 BIS/);
+  assert.ok(classification.courses.some(x=>/14\/09\/2026.*Barrières naturelles/.test(x)));
   assert.equal(blocked,0);
   console.log('SVT PRODUCTION OK : 11 séances ENT, 7 BIS, 14 quiz/140 questions, Parent 0 XP, Accueil, Exercices et retour Phagocytose.');
  }finally{await page.close();await browser.close();}
