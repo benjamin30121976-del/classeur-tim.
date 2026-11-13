@@ -90,6 +90,20 @@ const B={
      {diagram:'rectangle',dimensions:[a,b],lesson:'MBIS19'});}
   ]
  },
+ en:{
+ mc:[()=>mc("What does happiness mean?",["Le bonheur","La tristesse","La faiblesse","La colère"],0,"Happiness signifie bonheur : happy + -ness.",{lesson:"EN_BIS02"}),
+()=>mc("Which sentence uses the past BE-ING?",["I listen to music.","I was listening to music.","I will listen to music.","I have music."],1,"Was listening décrit une action en cours dans le passé.",{lesson:"EN_BIS07"}),
+()=>mc("How do you say Moi non plus after I do not like rock?",["So do I","Neither do I","So can I","But I do"],1,"Après une négation au présent : Neither do I.",{lesson:"EN_BIS05"}),
+()=>mc("What is the past form of go?",["goed","went","going","gone"],1,"Go devient went au prétérit.",{lesson:"EN_BIS03"})],
+ fill:[()=>txt("Complete: Yesterday, I ___ to school. (go)","went","Yesterday désigne le passé : go devient went.",'fill',[],{lesson:"EN_BIS03"}),
+()=>txt("Complete: While she ___, the phone rang. (sing)","was singing","She was singing décrit une action en cours.",'fill',[],{lesson:"EN_BIS07"}),
+()=>txt("Complete: happy → ___ (a noun)","happiness","Happy devient happiness avec le suffixe -ness.",'fill',[],{lesson:"EN_BIS02"}),
+()=>txt("Complete: I like ___ to music. (listen)","listening","Like peut être suivi d’un verbe en -ing.",'fill',[],{lesson:"EN_BIS04"})],
+ short:[()=>txt("Write Moi aussi after I like jazz.","So do I","On dit So do I après une affirmation au présent.",'short',[],{lesson:"EN_BIS05"}),
+()=>txt("Translate: J’écoutais de la musique.","I was listening to music","Was listening est un prétérit BE-ING.",'short',[],{lesson:"EN_BIS07"}),
+()=>txt("Translate: Je suis allé à la plage.","I went to the beach","Went est le prétérit de go.",'short',[],{lesson:"EN_BIS03"}),
+()=>txt("Make a noun from kind.","kindness","Kindness est le nom dérivé de kind.",'short',[],{lesson:"EN_BIS02"})]
+ },
  pc:{
   mc:[
    ()=>mc('Dans l’atome, quelles particules se trouvent dans le noyau ?',['Électrons et protons','Protons et neutrons','Électrons seuls','Molécules et ions'],1,'Le noyau contient des protons et des neutrons.',{lesson:'PC_BIS01'}),
@@ -136,21 +150,35 @@ const B={
   ]
  }
 };
-const TITLES={es:'Espagnol',ma:'Mathématiques',pc:'Physique-chimie'};
+const TITLES={es:'Espagnol',ma:'Mathématiques',pc:'Physique-chimie',en:'Anglais'};
 const BLUEPRINT=[
  [['es','mc'],['ma','reason'],['pc','short'],['es','fill'],['pc','mc'],['ma','fill'],['es','short'],['pc','reason'],['ma','short'],['es','fill']],
  [['ma','reason'],['pc','fill'],['es','short'],['pc','mc'],['ma','fill'],['es','mc'],['ma','reason'],['pc','short'],['es','fill'],['ma','short']],
  [['pc','reason'],['es','fill'],['ma','short'],['pc','mc'],['es','short'],['ma','reason'],['pc','fill'],['es','mc'],['pc','short'],['ma','fill']]
 ];
-function lessonFor(q,subject){return q.lesson||(subject==='es'?'L14':subject==='ma'?'MBIS13':'PC_BIS01');}
+function lessonFor(q,subject){return q.lesson||(subject==='es'?'L14':subject==='ma'?'MBIS13':subject==='en'?'EN_BIS07':'PC_BIS01');}
+/* Préserver les questions et copies jusqu'au 15 novembre.
+   Anglais ne paraît que dans les missions à partir du 16 novembre. */
+const FOUR_BLUEPRINT=BLUEPRINT.map((day,index)=>day.map(([subject,format],position)=>{
+ if(index===0&&position===0)return ['en','mc'];
+ if(index===1&&position===2)return ['en','short'];
+ if(index===2&&position===1)return ['en','fill'];
+ return [subject,format];
+}));
+function withEnglish(id,kind){
+ return kind==='daily'?id.slice(4,12)>='20261116':
+  kind==='weekly'?id>=weekId('2026-11-16'):
+  id>='SUNDAY_20261122';
+}
 function selectQuestions(id,kind){
  const missionNumber=kind==='daily'?Number(id.slice(-2))-(id.startsWith('DAY_20261113_')?3:0):0;
- const items=kind==='daily'?BLUEPRINT[missionNumber-1]:
-  kind==='weekly'?[...BLUEPRINT[0],...BLUEPRINT[1]]:[...BLUEPRINT[1],...BLUEPRINT[2]];
+ const blueprint=withEnglish(id,kind)?FOUR_BLUEPRINT:BLUEPRINT;
+ const items=kind==='daily'?blueprint[missionNumber-1]:
+  kind==='weekly'?[...blueprint[0],...blueprint[1]]:[...blueprint[1],...blueprint[2]];
  const dailyIndex=kind==='daily'?missionNumber-1:0;
  const rotationSeed=kind==='daily'?id.slice(0,12):id;
  const used={},selected=[];
- if(kind==='daily')for(const earlier of BLUEPRINT.slice(0,dailyIndex))
+ if(kind==='daily')for(const earlier of blueprint.slice(0,dailyIndex))
   for(const [subject,format] of earlier)used[subject+'-'+format]=(used[subject+'-'+format]||0)+1;
  for(let i=0;i<items.length;i++){
   const [subject,format]=items[i],k=subject+'-'+format;
@@ -194,11 +222,12 @@ export function mixedMission(id){
  const kind=daily?'daily':sunday?'sunday':'weekly';
  const period=daily?dayString(daily[1]):sunday?dayString(sunday[1]):id;
  const questions=selectQuestions(id,kind);
+ const four=withEnglish(id,kind);
  const count=kind==='daily'?10:20;
  if(questions.length!==count)throw Error('Défi incomplet');
  return {id,title:kind==='daily'?'Défi du jour · Mission '+(Number(daily[2])-(daily[1]==='20261113'?3:0))+' / 3':
-   kind==='weekly'?'Grand défi du samedi · Trois matières':'Grand défi du dimanche · Révisions depuis la rentrée',
-  description:count+' questions mélangées : espagnol, mathématiques, physique-chimie. Rédaction et raisonnement.',
+   kind==='weekly'?'Grand défi du samedi · '+(four?'Quatre':'Trois')+' matières':'Grand défi du dimanche · Révisions depuis la rentrée',
+  description:count+' questions mélangées : espagnol, mathématiques, physique-chimie'+(four?', anglais':'')+'. Rédaction et raisonnement.',
   level:kind==='daily'?'Mission quotidienne':kind==='weekly'?'Contrôle du samedi':'Grand contrôle du dimanche',
   subject:'Défis',lesson:questions[0].lessonId,kind,category:'challenge',period,
   questionBank:'mixed-202611-v1',
