@@ -1092,6 +1092,18 @@ async function startSession(user){
      return;
     }
    }
+   // Les documents TRH_ sont de simples relevés de traduction. Ils ne sont
+   // pas des exercices notés et ne doivent pas fausser les statistiques Parent.
+   attempts=attempts.filter(a=>!/^TRH_ESE_L14_0[1-3]$/.test(String(a.id||'')));
+   try{
+    const relevant=attempts.filter(a=>/^ESE_L14_0[1-3]$/.test(String(a.id||'')));
+    for(const item of relevant){
+     if(Number.isInteger(item.translationHelpCount))continue;
+     const snap=await getDoc(doc(db,'privateAttempts','TRH_'+item.id));
+     const raw=snap.exists()?snap.data()?.answers?.[0]?.response:null;
+     if(/^(?:10|[0-9])$/.test(String(raw??'')))item.translationHelpCount=Number(raw);
+    }
+   }catch(error){console.warn('Relevé de traduction temporairement inaccessible',error?.code||error?.message);}
    // Les évaluations mathématiques, comme les entraînements espagnols,
    // sont corrigées automatiquement : ne pas les mettre en "attente parent".
    // Elles disposent d'un enregistrement privé dédié dans Firestore.
