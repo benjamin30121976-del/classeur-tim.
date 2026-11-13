@@ -375,7 +375,8 @@ function freeOrTextAnswer(question,answer){if(question.type==='free')return null
 function openExercise(id){const ex=exerciseBy(id);if(!ex)return;
  if(ex.questionBank==='mixed-202611-v1'&&window.TIM_MIXED_UI?.open){
   page('exercices');window.__TIM_OPEN_EXERCISE_ID=id;
-  const existing=attemptFor(id);
+  // Un essai Parent ne doit jamais afficher ni consommer la copie de Tim.
+  const existing=window.__TIM_PARENT?null:attemptFor(id);
   window.TIM_MIXED_UI.open(ex,{
    old:existing,
    onReturn:()=>{renderExerciseIndex();scrollTop();},
