@@ -9,6 +9,7 @@
   opening:'Tim_Ouverture_Exercice_Splash_Tan_Tan_V6_Moins_Aigue.mp4',
   plus3:'Tim_Animation_3XP_Mouche.mp4',
   plus2:'Tim_Animation_2XP_Grattage.mp4',
+  plus2half:'Tim_Animation_2_5XP_Loup.gif',
   plus1:'Tim_Animation_1XP_Vitre_Embuee.mp4',
   zero:'Tim_Animation_0XP_Toc_Toc_Paume.mp4',
   minus1:'Tim_Animation_Minus1XP_Tete_Penaude.gif',
@@ -117,7 +118,7 @@
   if(saved?.correctionStatus==='pending-parent'||saved?.correctionLocked===true)return Promise.resolve();
   if(window.TIM_EXERCISE?.school?.(ex))return Promise.resolve();
   const kind=ex?.kind;
-  const media=kind==='daily'?
+  const media=xp===2.5?'plus2half':kind==='daily'?
    (xp===3?'plus3':xp===2?'plus2':xp===1?'plus1':xp===0?'zero':xp===-1?'minus1':null):
    kind==='sunday'&&xp===20?'sunday':null;
   return play(media||'reward',{xp,score:Number(saved.score),total:Number(saved.total),
