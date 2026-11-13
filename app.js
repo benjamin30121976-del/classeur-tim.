@@ -1128,8 +1128,10 @@ function dailyMissionPanel(){
  const content=E('div','daily-loup-content');
  content.append(E('p','daily-loup-eyebrow','MISSION · DU LUNDI AU VENDREDI'));
  content.append(E('h2','','DÉFI DU JOUR'));
- const mixed=['mixed','three-subjects','four-subjects','five-subjects','six-subjects'].includes(meta.dailyBankStatus);
- content.append(E('p','daily-loup-summary',meta.dailyBankStatus==='six-subjects'?
+ const mixed=['mixed','three-subjects','four-subjects','five-subjects','six-subjects','seven-subjects'].includes(meta.dailyBankStatus);
+ content.append(E('p','daily-loup-summary',meta.dailyBankStatus==='seven-subjects'?
+  '3 missions de 10 questions · Français, histoire-géographie, SVT, anglais, espagnol, maths et physique-chimie mélangés · 7 matières par jour.':
+  meta.dailyBankStatus==='six-subjects'?
   '3 missions de 10 questions · Histoire-géographie, SVT, anglais, espagnol, maths et physique-chimie mélangés · 6 matières chaque jour.':
   meta.dailyBankStatus==='five-subjects'?
   '3 missions de 10 questions · SVT, anglais, espagnol, maths et physique-chimie mélangés · 2 questions par matière.':
