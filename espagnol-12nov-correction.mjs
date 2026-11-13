@@ -83,7 +83,7 @@ export function nov12Evaluate(id,answers,translationsUsed){
    explanation:q.explanation};
  });
  if(items.some(x=>!x))return null;
- const score=items.reduce((v,x)=>v+x.points,0),xp=score>=9?1:score>=7?0.5:0;
+ const score=items.reduce((v,x)=>v+x.points,0),xp=score>=7?1:score>=5?0.5:0;
  const errorCounts={};
  for(const item of items){if(!item.correct)errorCounts[item.category]=(errorCounts[item.category]||0)+1;}
  return {id,score,total:10,xp,items,errorCounts,translationHelpCount:translationsUsed.filter(Boolean).length};
