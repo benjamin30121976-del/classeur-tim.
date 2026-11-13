@@ -5,6 +5,7 @@
 import {weekId,monday,parisDay} from '../functions/missions-v18.mjs';
 import {ENGLISH_QUESTIONS} from './english-questions.mjs';
 import {EXTRA_ENGLISH_QUESTIONS} from './english-extra.mjs';
+import {sameShortAnswer,numericEquivalent} from './short-answer-equivalence.mjs';
 
 const n=(s)=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
  .replace(/[¿?¡!.,;:]/g,'').replace(/[’‘]/g,"'").replace(/\s+/g,' ').trim();
@@ -282,9 +283,17 @@ export function publicMixedMission(mission){
   return publicFields;
  })};
 }
-function valueMatches(actual,expected,alternatives=[]){
- const a=n(actual).replace(/\s*([+\-=×÷*/²])\s*/g,'$1');
- return [expected,...alternatives].some(x=>a===n(x).replace(/\s*([+\-=×÷*/²])\s*/g,'$1'));
+function valueMatches(actual,expected,alternatives=[],subject=''){
+ if(subject==='Mathématiques'){
+  const num=/^[+−-]?(?:\d+(?:[.,]\d+)?|[.,]\d+)$/;
+  if(num.test(String(actual).trim())&&num.test(String(expected).trim()))
+   return numericEquivalent(actual,expected);
+ }
+ if(subject==='Espagnol'){
+  const a=n(actual).replace(/\s*([+\-=×÷*/²])\s*/g,'$1');
+  return [expected,...alternatives].some(x=>a===n(x).replace(/\s*([+\-=×÷*/²])\s*/g,'$1'));
+ }
+ return sameShortAnswer(actual,expected,alternatives,{english:subject==='Anglais'});
 }
 function calcCorrect(input,q){
  const s=n(input).replace(/[−–—]/g,'−').replace(/,/g,'.').replace(/\^2/g,'²');
@@ -313,7 +322,13 @@ function conclusionCorrect(input,q){
  const s=n(input).replace(/,/g,'.');
  if(s.length<12||!/[a-zàâéèêëîïôùûüç]/i.test(s))return false;
  const expected=n(q.answer).replace(/,/g,'.');
- if(!s.includes(expected))return false;
+ // Avoir seulement le bon nombre comme sous-chaîne (5 dans 15) ne suffit pas.
+ if(/^[+-]?\d+$/.test(expected)){
+  const numbers=s.match(/[+-]?\d+/g)||[];
+  if(!numbers.includes(expected))return false;
+ }else if(!s.includes(expected))return false;
+ // Refuser la négation d'une conclusion affirmant des droites parallèles.
+ if(expected==='paralleles'&&/\b(?:ne|non|pas|jamais)\b.{0,40}\bparalleles\b/.test(s))return false;
  if(q.unit==='cm²'&&!/(cm2|cm²|centimetr)/.test(s))return false;
  if(q.unit==='cm'&&!/(cm|centimetr)/.test(s))return false;
  if(q.unit==='°C'&&!/(°c|degres|degre)/.test(s))return false;
@@ -351,7 +366,7 @@ export function gradeMixedMission(mission,responses,translationsUsed=[],{allowIn
     methodCorrect:methodOk,calculationCorrect:calcOk,conclusionCorrect:conclusionOk,
     skill:q.skill,subject:q.subject,lessonId:q.lessonId,explanation:q.why};
   }
-  const correct=q.type==='mc'?raw===String(q.right):valueMatches(raw,q.right,q.also||[]);
+  const correct=q.type==='mc'?raw===String(q.right):valueMatches(raw,q.right,q.also||[],q.subject);
   const plain=value=>String(value??'').toLowerCase().replace(/[¿?¡!.,;:]/g,'').replace(/\s+/g,' ').trim();
   const exact=q.type==='text'?[q.right,...(q.also||[])].some(x=>plain(raw)===plain(x)):correct;
   // En espagnol : accent ou ñ oubliés = demi-point, et non mauvaise
@@ -361,7 +376,8 @@ export function gradeMixedMission(mission,responses,translationsUsed=[],{allowIn
   return {question:q.q,response:raw,correct:points===1,points,
    expected:q.type==='mc'?q.options[q.right]:q.right,subject:q.subject,
    skill:q.skill,lessonId:q.lessonId,
-   explanation:points===0.5?'Réponse proche : vérifie les accents et la lettre ñ. '+q.why:q.why};
+   explanation:points===0.5?'Réponse proche : vérifie les accents et la lettre ñ. '+q.why:correct?q.why:
+     'La réponse « '+raw+' » ne correspond pas aux formes reconnues pour cette consigne. Réponse modèle : « '+(q.type==='mc'?q.options[q.right]:q.right)+' ». '+q.why};
  });
  const count=translationsUsed.filter((v,i)=>v===true&&mission.questions[i]?.subject==='Espagnol').length;
  return {score,total:mission.questions.length,needsReview:false,answers,
