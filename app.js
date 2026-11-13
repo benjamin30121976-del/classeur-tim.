@@ -301,7 +301,7 @@ function renderExerciseIndex(){
  const bases=DATA.exercises.filter(e=>!window.TIM_EXERCISE.challenge(e));
  if(exerciseSubject==='Physique-chimie'){renderPhysicsExerciseDirectory(root,toolbar);return;}
  if(exerciseSubject==='Anglais'){
-  root.replaceChildren(button('← Toutes les matières',()=>{exerciseSubject='';renderExerciseIndex();},'plain'),E('h3','','Anglais — 6 exercices BIS'));
+  root.replaceChildren(button('← Toutes les matières',()=>{exerciseSubject='';renderExerciseIndex();},'plain'),E('h3','','Anglais — 11 exercices BIS'));
   root.append(E('p','','Ouvre une leçon d’anglais, puis l’onglet Entraînement pour choisir un exercice de 10 questions.'));
   root.append(button('Voir les exercices d’anglais',()=>{page('matieres');renderMatiere('Anglais');},'plain'));return;
  }
