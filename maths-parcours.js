@@ -1,4 +1,4 @@
-/* Parcours Mathématiques : même navigation que l'Espagnol, sans XP ni jeu.
+/* Parcours Mathématiques : même navigation que l'Espagnol ; entraînements des leçons à +1/+0,5/0 XP, distincts des défis.
    Sources : cours ENT existants et 23 leçons BIS conservées intactes.
    Les évaluations associées sont validées UNE fois et corrigées par le serveur. */
 (function(){
@@ -69,7 +69,7 @@ function viewTimReciproqueThales(){
  '<section class="math-reading-section"><h3>6 · Et si les rapports sont différents ?</h3><p>Par exemple : 3 / 5 = 0,6 mais 5 / 7 ≈ 0,714. Les rapports ne sont pas égaux ; si les points sont bien alignés, <strong>(DE) n’est pas parallèle à (BC)</strong> (contraposée de Thalès).</p></section>'+
  '<section class="math-reading-section"><h3>Devoir donné pour vendredi 13 novembre</h3><p><strong>Finir l’exercice 25 p.253.</strong> L’énoncé du manuel n’est pas présent dans l’archive ENT ; il n’est pas reproduit ici.</p></section>'+
  '</article>'+
- '<section class="spx-panel math12-exercises"><h3>Mes 3 exercices BIS — 12 novembre</h3><p>10 questions chacun, une seule validation, note sur 10 et correction. Ces exercices d’entraînement ne remplacent pas le devoir 25 p.253 du manuel (énoncé absent de l’ENT).</p><div class="spx-quick-links">'+
+ '<section class="spx-panel math12-exercises"><h3>Mes 3 exercices BIS — 12 novembre</h3><p>10 questions chacun, une seule validation, note sur 10, correction et +1 / +0,5 / 0 XP selon la note. Ces exercices d’entraînement ne remplacent pas le devoir 25 p.253 du manuel (énoncé absent de l’ENT).</p><div class="spx-quick-links">'+
  btn('data-math-nov12-ex','MTH12_01','Exercice 1 — Comprendre la méthode')+
  btn('data-math-nov12-ex','MTH12_02','Exercice 2 — Calculer les rapports')+
  btn('data-math-nov12-ex','MTH12_03','Exercice 3 — Rédiger et conclure')+
@@ -82,7 +82,7 @@ function viewTimMathNov12Exercise(id){
  if(!/^MTH12_0[1-3]$/.test(String(id||'')))return;
  selected=id;group=GROUPS[3];
  const name={MTH12_01:'Comprendre la méthode',MTH12_02:'Calculer et comparer',MTH12_03:'Rédiger et conclure'}[id];
- draw(header('Exercice du 12 novembre — '+name,'Réciproque de Thalès · 10 questions · une seule tentative · 0 XP')+
+ draw(header('Exercice du 12 novembre — '+name,'Réciproque de Thalès · 10 questions · une seule tentative · +1 / +0,5 / 0 XP')+
  back('Retour à la leçon du 12 novembre')+
  '<section class="spx-panel" id="math12-exercise-slot"><p>Chargement des dix questions…</p></section>',viewTimReciproqueThales);
  const slot=root?.querySelector('#math12-exercise-slot');
