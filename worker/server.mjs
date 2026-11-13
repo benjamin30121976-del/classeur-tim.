@@ -87,7 +87,7 @@ async function resolveExercise(db,id){
 }
 async function submitExercise(db,uid,payload){
  permitted(uid,'tim');
- const {id,answers,translationsUsed=[]}=payload;
+ const {id,answers,translationsUsed=[],reviewChanges=[]}=payload;
  if(!validId(id)||!Array.isArray(answers)||answers.length>30||
   answers.some(x=>!['string','number','boolean'].includes(typeof x)||String(x).length>2000))
   throw new ApiFault(400,'invalid-exercise');
@@ -105,6 +105,13 @@ async function submitExercise(db,uid,payload){
    if(!Array.isArray(translationsUsed)||translationsUsed.length>20||
        translationsUsed.some((v,i)=>typeof v!=='boolean'||(v===true&&mixedSource.questions[i]?.subject!=='Espagnol')))
     throw Error('invalid-translations');
+   if(!Array.isArray(reviewChanges)||reviewChanges.length>mixedSource.questions.length||
+      reviewChanges.some(c=>!c||!Number.isInteger(c.questionIndex)||
+       c.questionIndex<0||c.questionIndex>=answers.length||
+       typeof c.before!=='string'||c.before.length>2000||
+       typeof c.after!=='string'||c.after.length>2000||
+       c.after!==String(answers[c.questionIndex])||c.before===c.after))
+    throw Error('invalid-review');
    evaluated=gradeMixedMission(mixedSource,answers,translationsUsed);
   }else evaluated=spanishSource?gradeSpanishDailyMission(spanishSource,answers):grade(exercise,key,answers);
  }catch{throw new ApiFault(400,'invalid-answers');}
@@ -133,7 +140,10 @@ async function submitExercise(db,uid,payload){
  const details={
   exerciseId:id,title:String(exercise.title||id).slice(0,200),authorUid:uid,
   score:evaluated.score,total:evaluated.total,needsReview:evaluated.needsReview,
-  policyVersion:18,...evaluated
+  policyVersion:18,...evaluated,
+  ...(mixedSource?{reviewChanges:reviewChanges.map(c=>({
+    questionIndex:c.questionIndex,before:c.before,after:c.after
+   })),reviewChangeCount:reviewChanges.length}:{})
  };
  const autoRelease=isMissionId(id)||exercise.kind==='bonus-day';
  const pending={
@@ -156,7 +166,7 @@ async function parentReport(db,uid){
   const a=attemptById.get(x.id)||{},n=x.data||{};
   return {id:x.id,title:String(n.title||x.id),score:n.score??null,total:n.total??null,
    needsReview:Boolean(n.needsReview),xp:a.xp??0,translationHelpCount:n.translationHelpCount??null,
-   correctionStatus:a.correctionStatus==='released'?'released':'pending-parent'};
+   correctionStatus:a.correctionStatus==='released'?'released':'pending-parent',reviewChangeCount:n.reviewChangeCount??null};
  });
  return {attempts:records,pendingCorrections:records.filter(r=>r.correctionStatus!=='released').length};
 }
