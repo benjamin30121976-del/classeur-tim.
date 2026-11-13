@@ -29,6 +29,11 @@ jobs:
         env:
           NODE_PATH: /tmp/tim-agent/node_modules
         run: node outils/navigateur-autonome.cjs
+      - name: Vérifier les animations réellement publiées sur Cloudflare
+        if: always()
+        env:
+          NODE_PATH: /tmp/tim-agent/node_modules
+        run: node outils/inspecter-animations-publiees.cjs
       - name: Déposer le bilan permanent sur GitHub
         if: always()
         env:
