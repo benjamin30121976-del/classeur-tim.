@@ -564,7 +564,7 @@ async function startSession(user){
      id:d.id,lessonId:m[2],mode:m[1],series:Number(m[3]),
      score:Number.isFinite(privateRecord?.score)?privateRecord.score:null,total:10,
      submittedAt:d.data().submittedAt?.toDate?.().toISOString()||'',
-     xp:0,cloudSaved:true,
+     xp:Number(d.data().xp||0),cloudSaved:true,
      items:Array.isArray(privateRecord?.answers)?privateRecord.answers.map(q=>({
       prompt:q.question,response:q.response,correct:q.correct,
       expected:q.expected,explanation:q.explanation||''
@@ -733,9 +733,10 @@ async function startSession(user){
    const grade=mathNov12Score(id,answers);
    if(!grade)throw Error('Les dix réponses sont nécessaires.');
    const response=await cloudCallable('submitTimExercise')({id,answers});
-   if(response.data?.submitted!==true||Number(response.data?.xp)!==0)
+   if(response.data?.submitted!==true||![0,0.5,1].includes(response.data?.xp))
     throw Error('Validation non confirmée : consulter les résultats avant toute nouvelle tentative.');
-   const report={...grade,submitted:true,submittedAt:new Date().toISOString()};
+   const assignedXP=response.data.xp;
+    const report={...grade,xp:assignedXP,submitted:true,submittedAt:new Date().toISOString(),xpPolicyPending:assignedXP!==grade.xp};
    try{localStorage.setItem('tim-math12-result-'+id,JSON.stringify(report));}catch(error){
     console.warn('Résultat local à conserver :',error?.message||error);
    }
@@ -748,13 +749,13 @@ async function startSession(user){
    if(activeUser?.uid!==TIM_UID&&activeUser?.uid!==PARENT_UID)throw Error('Accès réservé à la famille.');
    if(!/^MTH12_0[1-3]$/.test(String(id||'')))throw Error('Exercice inconnu.');
    if(activeUser.uid===PARENT_UID){
-    const snap=await getDoc(doc(db,'privateAttempts',id));
+    const [snap,attemptDoc]=await Promise.all([getDoc(doc(db,'privateAttempts',id)),getDoc(doc(db,'attempts',id))]);
     if(!snap.exists())return {attempt:null};
     const data=snap.data(),raw=Array.isArray(data.answers)?data.answers:[];
     const items=raw.map(x=>({prompt:x.question||'',response:x.response||'',correct:x.correct===true,
      expected:x.expected||'',explanation:x.explanation||'',points:x.correct?1:0}));
     return {attempt:{id,lessonId:'MTH12',score:Number(data.score||0),total:10,
-     items,submitted:true,submittedAt:data.submittedAt?.toDate?.()?.toISOString?.()||'',xp:0}};
+     items,submitted:true,submittedAt:data.submittedAt?.toDate?.()?.toISOString?.()||'',xp:Number(attemptDoc.exists()?attemptDoc.data()?.xp||0:0)}};
    }
    const official=(window.__CLOUD_ATTEMPTS||[]).find(x=>x.id===id);
    let local=null;
@@ -763,7 +764,7 @@ async function startSession(user){
    if(official?.correctionStatus==='released'&&official.answers?.length===10){
     return {attempt:{id,lessonId:'MTH12',score:official.score,total:10,
      items:official.answers.map(x=>({prompt:x.question,response:x.response,correct:x.correct,
-      expected:x.expected,explanation:x.explanation})),submitted:true,xp:0}};
+      expected:x.expected,explanation:x.explanation})),submitted:true,xp:Number(official.xp||0)}};
    }
    return {attempt:null,completed:Boolean(official)};
   },
@@ -818,7 +819,7 @@ async function startSession(user){
     const localReport=nov12Evaluate(id,answers,translationsUsed);
     if(!localReport)throw Error('Les dix réponses sont nécessaires.');
     const receipt=await cloudCallable('submitTimExercise')({id,answers,translationsUsed});
-    if(receipt.data?.submitted!==true||Number(receipt.data?.xp)!==0)
+    if(receipt.data?.submitted!==true||![0,0.5,1].includes(receipt.data?.xp))
      throw Error('La validation Firebase n’a pas été confirmée. Ne recommence pas avant de vérifier la copie.');
     // Utiliser d'abord l'enregistrement direct si le serveur l'a confirmé.
     // Sinon : enregistrer le même compte via une fiche PRIVÉE de suivi 0 XP,
@@ -827,7 +828,8 @@ async function startSession(user){
     let trackingSaved=receipt.data.translationTrackingSaved===true&&
       receipt.data.translationHelpCount===localReport.translationHelpCount;
     if(!trackingSaved)trackingSaved=await persistNov12TranslationHelp(id,localReport.translationHelpCount);
-    const report={...localReport,submitted:true,xp:0,translationHelpSyncPending:!trackingSaved};
+    const actualXP=receipt.data.xp;
+    const report={...localReport,submitted:true,xp:actualXP,xpPolicyPending:actualXP!==localReport.xp,translationHelpSyncPending:!trackingSaved};
     window.TIM_ES12_STUDY.remember(id,report);
     try{await fetchAttempts(window.__TIM_DATA);}catch(error){
      console.warn('Résultats du 12 novembre à actualiser.',error?.message||error);
@@ -887,7 +889,7 @@ async function startSession(user){
      if(!window.TIM_ES12_STUDY?.isId(a.id)||known.has(a.id))continue;
      const local=activeUser.uid===TIM_UID?window.TIM_ES12_STUDY.saved(a.id):null;
      response.data.attempts.push({id:a.id,lessonId:'10099~6400554',
-      score:Number.isFinite(a.score)?a.score:(local?.score??null),total:10,xp:0,
+      score:Number.isFinite(a.score)?a.score:(local?.score??null),total:10,xp:Number.isFinite(a.xp)?a.xp:(local?.xp??0),
       submittedAt:a.date,items:a.answers||[],category:'Entraînement du 12 novembre',
       ...(Number.isInteger(a.translationHelpCount)?{translationHelpCount:a.translationHelpCount}:{})});
     }
@@ -1001,10 +1003,10 @@ async function startSession(user){
    // Reprise du service existant pour les devoirs : validation unique
    // et notation sur le serveur, aucune nouvelle fonction à déployer.
    const response=await cloudCallable('submitTimExercise')({id,answers});
-   if(!response.data?.submitted||Number(response.data.xp)!==0)
-    throw Error('Confirmation de validation sans XP non reçue.');
+   if(!response.data?.submitted||![0,0.5,1].includes(response.data?.xp))
+    throw Error('Confirmation de validation et des XP non reçue.');
    await loadSpanishProgress();
-   return {submitted:true,xp:0,cloudSaved:true};
+   return {submitted:true,xp:response.data.xp,cloudSaved:true};
   },
   submit:async(id,values)=>{
    if(window.__TIM_GUEST||activeUser.uid!==TIM_UID)throw Error('Seul Tim peut valider les exercices.');
