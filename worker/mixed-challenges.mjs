@@ -5,6 +5,7 @@
 import {weekId,monday,parisDay} from '../functions/missions-v18.mjs';
 import {ENGLISH_QUESTIONS} from './english-questions.mjs';
 import {EXTRA_ENGLISH_QUESTIONS} from './english-extra.mjs';
+import {SVT_QCM,SVT_WRITTEN} from './svt-questions.mjs';
 import {sameShortAnswer,numericEquivalent} from './short-answer-equivalence.mjs';
 
 const n=(s)=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
@@ -169,13 +170,29 @@ for(const [chapter,rows] of [...ENGLISH_QUESTIONS,...EXTRA_ENGLISH_QUESTIONS].en
   }
  }
 }
-const TITLES={es:'Espagnol',ma:'Mathématiques',pc:'Physique-chimie',en:'Anglais'};
+
+/* SVT : banque de défis dérivée des mêmes 140 questions BIS dont les
+   réponses sont exclusivement au serveur. Les QCM varient l'ordre des choix. */
+B.sv={mc:[],fill:[],short:[]};
+for(const [i,rows] of SVT_QCM.entries()){
+ for(const [prompt,expected,wrong,why] of rows)B.sv.mc.push(seed=>{
+  const pos=seed%4,choices=wrong.slice();choices.splice(pos,0,expected);
+  return mc(prompt,choices,pos,why,{lesson:'SVT_BIS'+String(i+1).padStart(2,'0')});
+ });
+}
+for(const [i,rows] of SVT_WRITTEN.entries()){
+ for(const [j,[prompt,expected,why,alternatives]] of rows.entries()){
+  const format=j%3===0?'fill':'short';
+  B.sv[format].push(()=>txt(prompt,expected,why,format,alternatives,{lesson:'SVT_BIS'+String(i+1).padStart(2,'0')}));
+ }
+}
+const TITLES={es:'Espagnol',ma:'Mathématiques',pc:'Physique-chimie',en:'Anglais',sv:'SVT'};
 const BLUEPRINT=[
  [['es','mc'],['ma','reason'],['pc','short'],['es','fill'],['pc','mc'],['ma','fill'],['es','short'],['pc','reason'],['ma','short'],['es','fill']],
  [['ma','reason'],['pc','fill'],['es','short'],['pc','mc'],['ma','fill'],['es','mc'],['ma','reason'],['pc','short'],['es','fill'],['ma','short']],
  [['pc','reason'],['es','fill'],['ma','short'],['pc','mc'],['es','short'],['ma','reason'],['pc','fill'],['es','mc'],['pc','short'],['ma','fill']]
 ];
-function lessonFor(q,subject){return q.lesson||(subject==='es'?'L14':subject==='ma'?'MBIS13':subject==='en'?'EN_BIS07':'PC_BIS01');}
+function lessonFor(q,subject){return q.lesson||(subject==='es'?'L14':subject==='ma'?'MBIS13':subject==='en'?'EN_BIS07':subject==='sv'?'SVT_BIS07':'PC_BIS01');}
 /* Deux questions d'anglais par défi quotidien à partir du 16 novembre.
    Préserver les questions et copies jusqu'au 15 novembre.
    Anglais ne paraît que dans les missions à partir du 16 novembre. */
@@ -189,6 +206,24 @@ const FOUR_BLUEPRINT=BLUEPRINT.map((day,index)=>day.map(([subject,format],positi
  if(index===2&&position===8)return ['en','short'];
  return [subject,format];
 }));
+/* Pour les nouvelles missions à partir du 16/11 : deux questions par
+   matière, cinq matières, toujours 2 QCM + 3 remplissages + 3 courtes +
+   2 questions de raisonnement par série de dix. */
+const FIVE_BLUEPRINT=FOUR_BLUEPRINT.map((day,index)=>day.map(([subject,format],position)=>{
+ if(index===0&&position===4)return ['sv','mc'];
+ if(index===0&&position===8)return ['sv','short'];
+ if(index===1&&position===3)return ['sv','mc'];
+ if(index===1&&position===6)return ['pc','reason'];
+ if(index===1&&position===9)return ['sv','short'];
+ if(index===2&&position===3)return ['sv','mc'];
+ if(index===2&&position===9)return ['sv','fill'];
+ return [subject,format];
+}));
+function withSvt(id,kind){
+ return kind==='daily'?id.slice(4,12)>='20261116':
+  kind==='weekly'?id>=weekId('2026-11-16'):
+  id>='SUNDAY_20261122';
+}
 function withEnglish(id,kind){
  return kind==='daily'?id.slice(4,12)>='20261116':
   kind==='weekly'?id>=weekId('2026-11-16'):
@@ -196,7 +231,7 @@ function withEnglish(id,kind){
 }
 function selectQuestions(id,kind){
  const missionNumber=kind==='daily'?Number(id.slice(-2))-(id.startsWith('DAY_20261113_')?3:0):0;
- const blueprint=withEnglish(id,kind)?FOUR_BLUEPRINT:BLUEPRINT;
+ const blueprint=withSvt(id,kind)?FIVE_BLUEPRINT:withEnglish(id,kind)?FOUR_BLUEPRINT:BLUEPRINT;
  const items=kind==='daily'?blueprint[missionNumber-1]:
   kind==='weekly'?[...blueprint[0],...blueprint[1]]:[...blueprint[1],...blueprint[2]];
  const dailyIndex=kind==='daily'?missionNumber-1:0;
@@ -210,9 +245,10 @@ function selectQuestions(id,kind){
   // En anglais, déplacer le point de départ chaque jour : 4 réponses
   // courtes, 1 QCM et 1 texte à trous. Les trois défis d'une journée
   // ne reprennent ainsi pas les mêmes questions, ni ceux de la veille.
-  const serial=subject==='en'&&kind==='daily'?Math.floor(Date.parse(dayString(id.slice(4,12))+'T12:00:00Z')/86400000):0;
+  const serial=['en','sv'].includes(subject)&&kind==='daily'?Math.floor(Date.parse(dayString(id.slice(4,12))+'T12:00:00Z')/86400000):0;
   const index=subject==='en'&&kind==='daily'?
    serial*(format==='short'?4:1)+(used[k]||0):
+   subject==='sv'&&kind==='daily'?serial*(format==='mc'?3:format==='short'?2:1)+(used[k]||0):
    hash(rotationSeed+'|'+k)%options.length+(used[k]||0);
   used[k]=(used[k]||0)+1;
   const seed=hash(rotationSeed+'|'+k+'|'+index);
@@ -254,11 +290,12 @@ export function mixedMission(id){
  const period=daily?dayString(daily[1]):sunday?dayString(sunday[1]):id;
  const questions=selectQuestions(id,kind);
  const four=withEnglish(id,kind);
+ const five=withSvt(id,kind);
  const count=kind==='daily'?10:20;
  if(questions.length!==count)throw Error('Défi incomplet');
  return {id,title:kind==='daily'?'Défi du jour · Mission '+(Number(daily[2])-(daily[1]==='20261113'?3:0))+' / 3':
-   kind==='weekly'?'Grand défi du samedi · '+(four?'Quatre':'Trois')+' matières':'Grand défi du dimanche · Révisions depuis la rentrée',
-  description:count+' questions mélangées : espagnol, mathématiques, physique-chimie'+(four?', anglais':'')+'. Rédaction et raisonnement.',
+   kind==='weekly'?'Grand défi du samedi · '+(five?'Cinq':four?'Quatre':'Trois')+' matières':'Grand défi du dimanche · Révisions depuis la rentrée',
+  description:count+' questions mélangées : espagnol, mathématiques, physique-chimie'+(four?', anglais':'')+(five?', SVT':'')+'. Rédaction et raisonnement.',
   level:kind==='daily'?'Mission quotidienne':kind==='weekly'?'Contrôle du samedi':'Grand contrôle du dimanche',
   subject:'Défis',lesson:questions[0].lessonId,kind,category:'challenge',period,
   questionBank:'mixed-202611-v1',
