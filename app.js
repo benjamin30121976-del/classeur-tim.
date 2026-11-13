@@ -777,6 +777,12 @@ if(old){
  }
  const locked=old.correctionStatus==='pending-parent'||old.correctionLocked===true;
  const disclosed=old.correctionStatus==='released'&&Array.isArray(old.answers)&&old.answers.length===ex.questions.length;
+ // Relecture volontaire du résultat : jamais de nouvelle validation ni de nouveaux XP.
+ if(disclosed&&!window.__TIM_PARENT&&!window.__TIM_GUEST&&Number.isFinite(old.xp)&&
+    ex.kind!=='translation-help-log'&&!window.TIM_EXERCISE?.school?.(ex)){
+  root.append(button('Revoir l’animation de ma note et de mes XP',
+    ()=>window.TIM_ANIMATIONS?.playResult?.(ex,old),'mission-launch replay-result-animation'));
+ }
  const retry=()=>button('Actualiser ma note et mon corrigé',async()=>{
   try{await window.__TIM_BRIDGE.refresh();openExercise(id);}
   catch(err){alert('Résultat enregistré, mais correction temporairement inaccessible : '+String(err?.message||err));}
