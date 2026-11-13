@@ -109,3 +109,37 @@ test('Orthographe espagnole : un accent manquant donne un demi-point',()=>{
   assert.equal(marked.answers[index].points,0.5);
  }
 });
+
+test('Six matières du 23 novembre : 30 questions de HG distinctes sur cinq jours sans remplacer les copies précédentes',()=>{
+ const generated=[];
+ for(const day of ['23','24','25','26','27']){
+  for(const slot of ['01','02','03']){
+   const id='DAY_202611'+day+'_'+slot,mission=mixedMission(id);
+   assert.ok(mission,id);
+   assert.equal(mission.questions.length,10);
+   const subjects=['Espagnol','Mathématiques','Physique-chimie','Anglais','SVT','Histoire-géographie'];
+   const stats=Object.fromEntries(subjects.map(x=>[x,mission.questions.filter(q=>q.subject===x).length]));
+   assert.ok(Object.values(stats).every(n=>n>=1),id+' matière manquante');
+   assert.equal(stats['Histoire-géographie'],2,id);
+   assert.equal(Object.values(stats).reduce((a,b)=>a+b,0),10);
+   assert.deepEqual(Object.fromEntries(['mc','fill','short','reason'].map(x=>[x,mission.questions.filter(q=>q.format===x).length])),
+    {mc:2,fill:3,short:3,reason:2});
+   const correct=keyAnswers(mission);
+   assert.equal(gradeMixedMission(mission,correct).score,10,id);
+   assert.ok(publicMixedMission(mission).questions.every(q=>
+    !['right','why','also','answer','parts'].some(k=>k in q)));
+   generated.push(...mission.questions.filter(q=>q.subject==='Histoire-géographie').map(q=>q.sourceId));
+  }
+ }
+ assert.equal(generated.length,30);
+ assert.equal(new Set(generated).size,30,'Aucune répétition des 30 questions HG dans la semaine');
+ for(const id of ['DAY_20261113_04','DAY_20261116_01','DAY_20261120_03','WEEK_2026W47','SUNDAY_20261122']){
+  const mission=mixedMission(id);
+  assert.equal(mission.questions.filter(x=>x.subject==='Histoire-géographie').length,0,'Ancien défi à préserver : '+id);
+ }
+ for(const id of ['WEEK_2026W48','SUNDAY_20261129']){
+  const mission=mixedMission(id);
+  assert.equal(mission.questions.length,20);
+  assert.equal(mission.questions.filter(x=>x.subject==='Histoire-géographie').length,4,id);
+ }
+});
