@@ -273,6 +273,117 @@ function renderPhysicsExerciseDirectory(root,toolbar){
   section.append(list);root.append(section);
  }
 }
+/* Anglais : les mêmes cartes d'exercices que pour la physique-chimie,
+   sans confondre questionnaires BIS et documents authentiques de l'ENT. */
+const ENGLISH_SERIES={
+ EN_BIS01:['Comprendre les mots','Appliquer la chronologie','Rédiger des réponses'],
+ EN_BIS02:['Reconnaître les noms en -ness','Appliquer la règle','Écrire sans modèle']
+};
+const ENGLISH_CHAPTERS=['Vacances et prétérit','Personnalité','Similitudes et présentation','Musique et vocabulaire','Actions passées et simultanéité'];
+function englishSeriesFor(bis){
+ return ENGLISH_SERIES[bis.id]||['Comprendre et rédiger'];
+}
+function openEnglishTrainingFromExercises(id,lessonId,title){
+ if(!/^ENQ_L0[1-7]_0[1-3]$/.test(id)||!window.TIM_ENGLISH_TRAINING?.mount){
+  alert('Le questionnaire interactif d’anglais est momentanément indisponible.');
+  return;
+ }
+ exerciseSubject='Anglais';
+ page('exercices');
+ const index=document.getElementById('exercise-index'),detail=document.getElementById('exercise-detail');
+ index.classList.add('hide');
+ const root=clear(detail);root.classList.add('active');
+ root.append(button('← Retour aux exercices d’anglais',()=>{
+  detail.classList.remove('active');index.classList.remove('hide');
+  renderExerciseIndex();scrollTop();
+ },'plain back'));
+ root.append(E('p','lesson-type-label bis','ANGLAIS · ENTRAÎNEMENT INTERACTIF'));
+ root.append(E('h2','',title));
+ root.append(E('p','intro',window.__TIM_PARENT?
+  'Essai Parent : dix questions et leur correction, sans enregistrer de tentative, note ou XP pour Tim.':
+  'Dix questions · une seule tentative pour Tim · note et correction détaillées après validation.'));
+ root.append(button('Revoir cette leçon avant l’exercice',()=>{page('matieres');renderMatiere('Anglais',lessonId);},'plain'));
+ const slot=E('div','en-global-training-slot');root.append(slot);
+ Promise.resolve(window.TIM_ENGLISH_TRAINING.mount(id,slot)).catch(error=>{
+  slot.replaceChildren(notice('Questionnaire indisponible : '+String(error?.message||error)));
+ });
+ scrollTop();
+}
+function renderEnglishExerciseDirectory(root,toolbar){
+ const finder=document.getElementById('exercise-search').closest('.toolrow');
+ finder.classList.add('hide');root.className='clicklist';
+ toolbar.append(button('← Toutes les matières',()=>{
+  exerciseSubject='';exerciseGroup='';exerciseMode='';
+  renderExerciseIndex();scrollTop();
+ },'group-back'),E('h3','','🇬🇧 Anglais — mes exercices'));
+ const pack=window.TIM_ANGLAIS_PACK;
+ const bis=Array.isArray(pack?.bis)?pack.bis:[];
+ if(!bis.length){
+  root.append(notice('Le répertoire des leçons d’anglais est indisponible. Aucun exercice ne peut être lancé.'));
+  return;
+ }
+ const total=bis.reduce((n,b)=>n+englishSeriesFor(b).length,0);
+ document.getElementById('exercise-count').textContent='Anglais · '+total+' exercices interactifs · 9 documents ENT';
+ root.append(E('p','exercise-type-prompt',window.__TIM_PARENT?
+  'Choisissez un exercice précis : vous pourrez répondre en mode essai Parent, sans modifier les résultats ni XP de Tim.':
+  'Choisis le chapitre et l’exercice. Réponds directement dans le classeur ; une seule validation et correction détaillée.'));
+ for(const chapter of ENGLISH_CHAPTERS){
+  const lessons=bis.filter(b=>b.group===chapter);
+  if(!lessons.length)continue;
+  const section=E('section','pc-exercise-lesson');
+  section.style.cssText='margin:14px 0 18px;padding:15px;background:#f8faff;color:#253d60;border:1px solid #cbd8e7;border-radius:15px';
+  section.append(E('h3','','🇬🇧 '+chapter));
+  for(const lesson of lessons){
+   const title=String(lesson.title||'Leçon BIS');
+   section.append(E('h4','',title));
+   section.append(button('Revoir la leçon BIS',()=>{page('matieres');renderMatiere('Anglais',lesson.id);},'plain'));
+   const list=E('div','clicklist');list.style.cssText='display:grid;gap:9px;margin:10px 0 16px';
+   for(const [ix,caption] of englishSeriesFor(lesson).entries()){
+    const id='ENQ_L'+lesson.id.slice(-2)+'_0'+(ix+1);
+    list.append(cardAction('Exercice '+(ix+1)+' — '+caption,
+     window.__TIM_PARENT?'10 questions · essai Parent · 0 XP':'10 questions · note et corrigé immédiats',
+     'Thème : '+title+' · Exercice BIS créé pour s’entraîner, et non une fiche originale ENT.',
+     ()=>openEnglishTrainingFromExercises(id,lesson.id,title)));
+   }
+   section.append(list);
+  }
+  root.append(section);
+ }
+ const docs=Array.isArray(pack.attachments)?pack.attachments:[];
+ const ent=E('section','pc-official-ent-list');
+ ent.style.cssText='margin:18px 0;padding:15px;background:#edf5fd;color:#243f61;border:1px solid #aac6e1;border-radius:14px';
+ ent.append(E('h3','','Documents et corrections du professeur (ENT) · '+docs.length));
+ ent.append(E('p','','Ce sont les pièces originales récupérées dans l’ENT. Certaines sont des leçons ou des corrigés, et non des formulaires notés. Elles restent consultables dans le compte privé.'));
+ const byTarget=new Map();
+ for(const file of docs){if(!byTarget.has(file.target))byTarget.set(file.target,[]);byTarget.get(file.target).push(file);}
+ for(const [target,items] of byTarget){
+  const row=E('details','pc-doc-row');row.style.cssText='margin:9px 0;padding:10px;border:1px solid #c2d3e5;border-radius:10px;background:#fff';
+  const date=target.slice(-8),day=date.slice(6,8)+'/'+date.slice(4,6);
+  row.append(E('summary','',''+day+' — '+items.map(i=>i.name).join(' · ')));
+  const slot=E('div');row.append(slot);
+  row.addEventListener('toggle',()=>{
+   if(!row.open||row.dataset.loaded==='yes')return;
+   row.dataset.loaded='yes';
+   if(window.TIM_ENGLISH_DOCUMENTS?.render)
+    Promise.resolve(window.TIM_ENGLISH_DOCUMENTS.render(target,slot)).catch(e=>slot.append(notice('Document indisponible : '+(e.message||e))));
+   else slot.append(notice('Lecteur des documents ENT momentanément indisponible.'));
+  });
+  ent.append(row);
+ }
+ root.append(ent);
+ const homework=Array.isArray(pack.homework)?pack.homework:[];
+ if(homework.length){
+  const listing=E('details','panel');
+  listing.style.cssText='padding:14px;margin:12px 0';
+  listing.append(E('summary','','Consignes et devoirs de l’ENT · '+homework.length+' entrées'));
+  listing.append(E('p','','L’ENT contient ces consignes. Cela ne prouve pas que les exercices ont été réalisés ni corrigés par Tim.'));
+  for(const task of homework){
+   const day=String(task.due||'').slice(8,10)+'/'+String(task.due||'').slice(5,7);
+   listing.append(E('p','',day+' — '+task.title+(task.content?' : '+task.content:'')));
+  }
+  root.append(listing);
+ }
+}
 function renderMathOfficialExercises(root,toolbar){
  const finder=document.getElementById('exercise-search').closest('.toolrow');
  finder.classList.add('hide');root.className='clicklist';
@@ -300,11 +411,7 @@ function renderExerciseIndex(){
  const extras=clear(document.getElementById('recommended-extra'));
  const bases=DATA.exercises.filter(e=>!window.TIM_EXERCISE.challenge(e));
  if(exerciseSubject==='Physique-chimie'){renderPhysicsExerciseDirectory(root,toolbar);return;}
- if(exerciseSubject==='Anglais'){
-  root.replaceChildren(button('← Toutes les matières',()=>{exerciseSubject='';renderExerciseIndex();},'plain'),E('h3','','Anglais — 11 exercices BIS'));
-  root.append(E('p','','Ouvre une leçon d’anglais, puis l’onglet Entraînement pour choisir un exercice de 10 questions.'));
-  root.append(button('Voir les exercices d’anglais',()=>{page('matieres');renderMatiere('Anglais');},'plain'));return;
- }
+ if(exerciseSubject==='Anglais'){renderEnglishExerciseDirectory(root,toolbar);return;}
  if(exerciseSubject==='Mathématiques'){renderMathOfficialExercises(root,toolbar);return;}
  if(!exerciseSubject){
   finder.classList.add('hide');root.className='matter-grid';
@@ -822,11 +929,15 @@ function dailyMissionPanel(){
  const content=E('div','daily-loup-content');
  content.append(E('p','daily-loup-eyebrow','MISSION · DU LUNDI AU VENDREDI'));
  content.append(E('h2','','DÉFI DU JOUR'));
- const mixed=meta.dailyBankStatus==='mixed'||meta.dailyBankStatus==='three-subjects';
- content.append(E('p','daily-loup-summary',meta.dailyBankStatus==='three-subjects'?
+ const mixed=['mixed','three-subjects','four-subjects'].includes(meta.dailyBankStatus);
+ content.append(E('p','daily-loup-summary',meta.dailyBankStatus==='four-subjects'?
+  '3 missions de 10 questions · Anglais, espagnol, maths et physique-chimie mélangés · Réponses écrites et corrections.':
+  meta.dailyBankStatus==='three-subjects'?
   '3 missions de 10 questions · Espagnol, maths et physique-chimie mélangés · Rédaction, raisonnement et relecture.':
   mixed?'3 défis par jour · 10 questions chacun · 2 QCM et 8 réponses écrites · une seule validation par défi.':
   '3 défis possibles par jour · 10 questions chacun · une seule validation par défi.'));
+ if(meta.today<'2026-11-16'&&meta.dailyBankStatus==='three-subjects')
+  content.append(E('p','daily-loup-future','L’anglais rejoint les trois autres matières dès le lundi 16 novembre. Les défis déjà proposés restent inchangés.'));
  if(!mixed&&meta.today>='2026-11-11'&&ids.length)content.append(
   E('p','daily-loup-unavailable','Les nouveaux défis à réponses écrites sont momentanément indisponibles ; les défis classiques restent accessibles.'));
  const scores=E('div','daily-xp-scale');
@@ -888,6 +999,17 @@ function missionCard(kind){
  else actions.append(button(window.__TIM_PARENT?(ex?.questionBank==='mixed-202611-v1'?'Essai Parent (sans XP)':'Prévisualiser le défi'):'LANCER LE DÉFI',async()=>{if(!sunday)await window.TIM_ANIMATIONS?.play?.('saturday');openExercise(ex.id);},'mission-launch'));
  c.append(actions);return c;
 }
+
+function englishHomeExercises(){
+ const area=E('section','panel english-home-quick');
+ area.style.cssText='margin:15px 0;padding:15px;border:1px solid #5a97af;border-radius:15px;background:#182d46';
+ area.append(E('h3','','🇬🇧 Anglais — exercices de révision'));
+ area.append(E('p','','11 exercices interactifs, dont des entraînements sur le prétérit, la musique et le suffixe -ness.'));
+ const openAll=()=>{exerciseSubject='Anglais';exerciseGroup='';exerciseMode='';page('exercices');};
+ area.append(button('Ouvrir les 11 exercices d’anglais',openAll,'plain'));
+ area.append(button('Prétérit simple et BE-ING · 10 questions',()=>openEnglishTrainingFromExercises('ENQ_L07_01','EN_BIS07','Prétérit simple et prétérit BE-ING'),'plain'));
+ return area;
+}
 function makeSoundSettings(){const zone=E('div','sound-settings');zone.append(E('span','','🔊 Bruit des touches : '));
  const selector=E('select');selector.setAttribute('aria-label','Son des boutons');for(const [value,name] of [['bulle','Bulle · pop'],['arcade','Tir arcade · pew'],['muet','Sans bruit']])selector.add(new Option(name,value));selector.value=window.TIM_SOUND?.mode||'bulle';selector.addEventListener('change',()=>window.TIM_SOUND?.setMode(selector.value));zone.append(selector);return zone;
 }
@@ -901,7 +1023,7 @@ function renderHome(){
   root.append(notice('Accès provisoire : le serveur des cours est indisponible. Les leçons et les défis sont consultables, mais la validation des réponses et les XP sont suspendus sur cet appareil. Actualise la page pour rétablir le compte complet.'));
  else if(window.__TIM_ADDONS_INCOMPLETE)
   root.append(notice('Certaines fiches complémentaires n’ont pas pu être chargées. Les cours principaux et les défis restent accessibles. Actualise le classeur pour retrouver toutes les fiches.'));
- root.append(dailyMissionPanel(),...(window.__TIM_GUEST?[]:[makeXPPanel()]),makeRewardsTile(),makeSoundSettings(),bonusMissionPanel(true),missionCard('weekly'),missionCard('sunday'));
+ root.append(dailyMissionPanel(),englishHomeExercises(),...(window.__TIM_GUEST?[]:[makeXPPanel()]),makeRewardsTile(),makeSoundSettings(),bonusMissionPanel(true),missionCard('weekly'),missionCard('sunday'));
  root.append(E('h2','home-section-title','Que veux-tu travailler ?'));
  const cards=E('div','home-grid');
  for(const o of [{name:'Matières',sub:'Cours classés par matière',icon:'▦',cls:'cours',dest:'matieres'},
