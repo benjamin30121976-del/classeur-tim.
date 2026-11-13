@@ -46,6 +46,10 @@ function contribution(a,ex){if(!ex)return 0;
  }
  // Le bonus +5 est ajouté aux points de l’épreuve (-2 à +3), comme avant V12.
  if(isChallenge(ex))return contributionV9(a,ex);
+ // Une leçon d'entraînement suit exclusivement les XP réellement attribués
+ // lors de sa validation, sans recalculer ni augmenter les anciennes copies.
+ if(ex.kind==='training'&&(ex.category==='school'||ex.category==='training'))
+  return Number.isFinite(a.xp)?Math.max(0,Math.min(1,a.xp)):0;
  if(window.TIM_EXERCISE?.school(ex))return 0;
  if(window.TIM_EXERCISE?.mode(ex,a.date)==='upcoming')return 0;
  return bonusPoints(a);
