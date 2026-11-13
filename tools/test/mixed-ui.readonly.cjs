@@ -39,8 +39,10 @@ const assert=require('node:assert/strict');
   await page.getByRole('button',{name:/Question 4 ·/}).click();
   assert.match(await page.locator('.mix-progress').innerText(),/Question 4 \/ 10/);
   await page.evaluate(q=>{window.__TIM_PARENT=true;window.TIM_MIXED_UI.open(q,{})},exercise);
+  assert.match(await page.locator('.mix-panel').innerText(),/Essai Parent/);
+  await page.getByRole('button',{name:'Commencer mon essai Parent'}).click();
   assert.equal(await page.locator('.mix-panel').count(),1);
-  assert.ok(await page.locator('input:disabled').count()>=1);
+  assert.ok(await page.locator('input:not(:disabled),textarea:not(:disabled)').count()>=1);
   assert.equal(errors.length,0,'Erreur JavaScript dans l’interface : '+errors.join(','));
   console.log('PASS : mobile 390 px, préparation, 10 questions, 2 raisonnements, traduction, relecture, retour question, aperçu parent, zéro validation.');
  }finally{await browser.close();}
