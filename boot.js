@@ -1034,7 +1034,7 @@ async function startSession(user){
    await loadSpanishProgress();
    return {submitted:true,xp:response.data.xp,cloudSaved:true};
   },
-  submit:async(id,values)=>{
+  submit:async(id,values,options={})=>{
    if(window.__TIM_GUEST||activeUser.uid!==TIM_UID)throw Error('Seul Tim peut valider les exercices.');
    const ex=window.__TIM_DATA.exercises.find(q=>q.id===id);
    if(!ex||!Array.isArray(values)||values.length!==ex.questions.length)throw Error('Exercice ou réponses invalides.');
