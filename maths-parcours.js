@@ -453,6 +453,10 @@ async function viewTraining(id){
   if(!context&&task.questions.some(q=>dependsOnMissingData.test(q.prompt)&&!embeddedData.test(q.prompt)))
    throw Error('Une question renvoie à un programme ou à une figure dont l’énoncé manque. Exercice suspendu, aucune tentative utilisée.');
   if(window.__TIM_PARENT){holder.innerHTML='<h3>Aperçu Parent · 10 questions (lecture seule)</h3><p>Ces questions ne sont pas les réponses correctes. Aucune tentative n’est créée lors de cet aperçu.</p>'+task.questions.map((q,i)=>'<section class="spx-training-question"><h4>Question '+(i+1)+' / 10</h4>'+readableMathPrompt(q.prompt)+'<ul>'+q.choices.map(c=>'<li>'+esc(c)+'</li>').join('')+'</ul></section>').join('');return;}
+  // Nouvelle tentative seulement, après vérification du serveur et hors aperçu Parent.
+  try{await window.TIM_ANIMATIONS?.playOpening?.();}
+  catch(error){console.warn('Animation maths ignorée',error);}
+  if(!holder?.isConnected)return;
   holder.innerHTML='<h3>À toi de jouer</h3>'+
    (context?'<section class="spx-panel"><h3>Énoncé à consulter pour les dix questions</h3><p style="white-space:pre-wrap">'+esc(context)+'</p></section>':'')+
    '<p class="math-one-try">Une seule validation. Tu peux changer tes réponses jusqu’à l’envoi.</p>'+
@@ -488,6 +492,9 @@ async function viewTraining(id){
     if(!record?.submitted||record.id!==testId||record.bankVersion!==task.bankVersion||!Number.isFinite(record.xp))throw Error('Confirmation serveur incomplète.');
     grades.attempts=[record,...grades.attempts.filter(a=>a.id!==testId)];
     resultPage(record);
+    // Montrer les XP confirmés par le serveur, sans recalcul ni écriture.
+    try{await window.TIM_ANIMATIONS?.playResult?.({kind:'training'},record);}
+    catch(error){console.warn('Animation XP maths ignorée',error);}
    }catch(e){
     await refreshProgress();
     const done=grades.attempts.find(a=>a.id===testId);
