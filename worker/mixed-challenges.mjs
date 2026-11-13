@@ -69,10 +69,16 @@ const B={
      ['Théorème de Pythagore','Théorème de Thalès','Aire du triangle'],0,[a*a,b*b,'+',c*c],c,'cm',
      'Pythagore : BC² = AB² + AC² = '+(a*a)+' + '+(b*b)+' = '+(c*c)+'. Donc BC = '+c+' cm.',
      {diagram:'triangle',dimensions:[a,b],lesson:'MBIS06'});},
-   s=>{const d=4+s%3,v=3*d;return reason(
-     'Une bibliothèque possède '+d+' rayons de 3 livres chacun. Combien de livres y a-t-il au total ?',
-     ['Multiplier le nombre de rayons par 3','Additionner 3 au nombre de rayons','Diviser le nombre de rayons par 3'],0,[d,3,'×',v],v,'livres',
-     d+' groupes de 3 livres représentent '+d+' × 3 = '+v+' livres.',{lesson:'MBIS13'});},
+   s=>{const k=1+s%3,ad=4*k,ab=8*k,ae=3*k,ac=6*k;return reason(
+     'Dans le triangle ABC, D est sur [AB] et E sur [AC], dans le même ordre. AD = '+ad+
+     ' cm, AB = '+ab+' cm, AE = '+ae+' cm et AC = '+ac+
+     ' cm. Les droites (DE) et (BC) sont-elles parallèles ? Justifie.',
+     ['Utiliser la réciproque de Thalès','Utiliser Pythagore','Calculer uniquement le périmètre'],0,
+     [ad,ab,'÷',ae,ac],'parallèles','',
+     'Les points sont alignés dans le même ordre et AD/AB = '+ad+'/'+ab+
+     ' = 1/2, tandis que AE/AC = '+ae+'/'+ac+
+     ' = 1/2. Les rapports sont égaux : par la réciproque de Thalès, (DE) et (BC) sont parallèles.',
+     {lesson:'MBIS16'});},
    s=>{const a=2+s%3,b=3+s%4,v=a*(b+2);return reason(
      'Un programme de calcul demande de prendre '+b+', d’ajouter 2, puis de multiplier le résultat par '+a+'. Quel nombre obtient-on ?',
      ['Calculer ('+b+' + 2) × '+a,'Calculer '+b+' + (2 × '+a+')','Calculer ('+b+' × 2) + '+a],0,[b,2,'+',a,'×',v],v,'',
