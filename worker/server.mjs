@@ -149,7 +149,7 @@ async function submitExercise(db,uid,payload){
     questionIndex:c.questionIndex,before:c.before,after:c.after
    })),reviewChangeCount:reviewChanges.length}:{})
  };
- const autoRelease=isMissionId(id)||exercise.kind==='bonus-day';
+ const autoRelease=isMissionId(id)||exercise.kind==='bonus-day'||(exercise.kind==='training'&&evaluated.needsReview!==true);
  const pending={
   exerciseId:id,authorUid:uid,policyVersion:18,xp:points,correctionStatus:autoRelease?'released':'pending-parent'
  };
@@ -189,12 +189,25 @@ async function releaseCorrection(db,uid,payload){
  ],tx);
  return {saved:true,id:payload.id,released:payload.released};
 }
+/* Les entraînements déjà validés avant la correction du blocage Parent
+   se relisent sans toucher aux notes, XP ni documents enregistrés.
+   Les devoirs nécessitant une correction humaine restent protégés. */
 async function releasedCorrections(db,uid){
  permitted(uid,'tim');
  const [attempts,releases]=await Promise.all([db.list('attempts',1000),db.list('releasedCorrections',1000)]);
  const allowed=new Set(releases.filter(x=>x.data?.released===true).map(x=>x.id));
- const released=attempts.filter(x=>x.data?.authorUid===uid&&x.data.correctionStatus==='released'&&allowed.has(x.id));
- const entries=await Promise.all(released.map(async x=>({id:x.id,details:await db.get('privateAttempts/'+x.id)})));
+ const owned=attempts.filter(x=>x.data?.authorUid===uid);
+ const legacy=owned.filter(x=>!allowed.has(x.id)&&x.data?.correctionStatus==='pending-parent');
+ const eligible=await Promise.all(legacy.map(async x=>{
+  try{
+   const {exercise}=await resolveExercise(db,x.id);
+   return exercise?.kind==='training'?x.id:null;
+  }catch{return null;}
+ }));
+ for(const id of eligible)if(id)allowed.add(id);
+ const entries=await Promise.all(owned.filter(x=>allowed.has(x.id)&&
+  (x.data.correctionStatus==='released'||eligible.includes(x.id)))
+  .map(async x=>({id:x.id,details:await db.get('privateAttempts/'+x.id)})));
  return {corrections:entries.filter(x=>x.details).map(x=>({
   id:x.id,answers:x.details.answers||[],score:x.details.score,total:x.details.total,translationHelpCount:x.details.translationHelpCount??null
  }))};
