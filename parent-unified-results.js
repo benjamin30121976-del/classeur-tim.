@@ -16,6 +16,7 @@ function subjectOf(id,ex){
  if(/^ME_ENT_(PROGRAMMES|THALES3)$/.test(id))return 'Mathématiques';
  if(/^PCQ_L0[1-7]_0[1-3]$/.test(id))return 'Physique-chimie';
  if(/^ENQ_L0[1-7]_0[1-3]$/.test(id))return 'Anglais';
+  if(/^SVQ_L0[1-7]_0[1-2]$/.test(id))return 'SVT';
  if(/^PC_ENT_(CTRL1|MOLECULES)$/.test(id))return 'Physique-chimie';
  if(/^(DAY_|WEEK_|SUNDAY_)/.test(id))return 'Défis';
  return ex?.subject||'Autre matière';
@@ -39,6 +40,7 @@ function lessonOf(id,record,ex){
   return window.__TIM_DATA?.lessons?.find(x=>x.id===ref)?.title||'Leçon '+id.slice(5,7);
  }
  if(/^ENQ_L0[1-7]_0[1-3]$/.test(id)){const ref=record?.lessonId||('EN_BIS'+id.slice(5,7));return window.TIM_ANGLAIS_PACK?.bis?.find(x=>x.id===ref)?.title||window.__TIM_DATA?.lessons?.find(x=>x.id===ref)?.title||'Leçon d’anglais';}
+  if(/^SVQ_L0[1-7]_0[1-2]$/.test(id)){const ref=record?.lessonId||('SVT_BIS'+id.slice(5,7));return window.TIM_SVT_PACK?.bis?.find(x=>x.id===ref)?.title||'Leçon SVT';}
  if(/^PC_ENT_/.test(id))return record?.source||'Fiche originale du professeur';
  if(/^ME_ENT_/.test(id))return record?.source||'Fiche ENT de maths de Mme Pialet';
  return window.__TIM_DATA?.lessons?.find(x=>x.id===ex?.lesson)?.title||ex?.lesson||'';
@@ -77,10 +79,11 @@ async function allRecords(){
   bridge.parentReport?.(),
   bridge.physicsTrainingProgress?.(),
   bridge.englishTrainingProgress?.(),
+  bridge.svtTrainingProgress?.(),
   bridge.physicsEntProgress?.(),
   bridge.mathEntProgress?.()
  ]);
- const [spanish,math,oldSpanish,report,physics,english,physEnt,mathEnt]=responses.map(x=>x.status==='fulfilled'?x.value:null);
+ const [spanish,math,oldSpanish,report,physics,english,svt,physEnt,mathEnt]=responses.map(x=>x.status==='fulfilled'?x.value:null);
  const map=new Map(),add=(record,kind)=>{
   const x=makeRecord(record,kind);if(!x)return;
   const prev=map.get(x.id);
@@ -92,6 +95,7 @@ async function allRecords(){
  for(const r of math?.attempts||[])add(r,'math');
  for(const r of physics?.attempts||[])add(r,'physics');
  for(const r of english?.attempts||[])add(r,'english');
+  for(const r of svt?.attempts||[])add(r,'svt');
  for(const r of physEnt?.attempts||[])add(r,'physicsEnt');
  for(const r of mathEnt?.attempts||[])add(r,'mathEnt');
  for(const r of report?.attempts||[])if(!map.has(r.id))add(r,'parentSummary');
@@ -102,13 +106,14 @@ async function allRecords(){
  if(responses[3].status==='rejected')warnings.push('Archives Parent : indisponibles');
  if(responses[4].status==='rejected')warnings.push('Physique-chimie : suivi momentanément indisponible');
  if(responses[5].status==='rejected')warnings.push('Anglais : suivi momentanément indisponible');
- if(responses[6].status==='rejected')warnings.push('Exercices ENT de physique : suivi momentanément indisponible');
- if(responses[7].status==='rejected')warnings.push('Exercices ENT de maths : suivi momentanément indisponible');
+  if(responses[6].status==='rejected')warnings.push('SVT : suivi momentanément indisponible');
+ if(responses[7].status==='rejected')warnings.push('Exercices ENT de physique : suivi momentanément indisponible');
+ if(responses[8].status==='rejected')warnings.push('Exercices ENT de maths : suivi momentanément indisponible');
  return {records:[...map.values()].sort((a,b)=>String(b.date).localeCompare(String(a.date))),warnings};
 }
 async function loadDetails(record){
- if(!['spanishEnt','physics','english','physicsEnt','mathEnt'].includes(record.kind)||record.items.length)return record.items;
- const result=record.kind==='english'?await window.__TIM_BRIDGE.englishTrainingProgress(record.id):record.kind==='physics'
+ if(!['spanishEnt','physics','english','svt','physicsEnt','mathEnt'].includes(record.kind)||record.items.length)return record.items;
+ const result=record.kind==='svt'?await window.__TIM_BRIDGE.svtTrainingProgress(record.id):record.kind==='english'?await window.__TIM_BRIDGE.englishTrainingProgress(record.id):record.kind==='physics'
   ?await window.__TIM_BRIDGE.physicsTrainingProgress(record.id)
   :record.kind==='physicsEnt'?await window.__TIM_BRIDGE.physicsEntProgress(record.id)
   :record.kind==='mathEnt'?await window.__TIM_BRIDGE.mathEntProgress(record.id)
