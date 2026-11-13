@@ -809,17 +809,16 @@ async function startSession(user){
     if(!trackingSaved){
      const helpId='TRH_'+id;
      try{
-      const already=await getDoc(doc(db,'attempts',helpId));
-      if(already.exists())trackingSaved=true;
-      else{
-       const saved=await cloudCallable('submitTimExercise')({
-        id:helpId,answers:[String(localReport.translationHelpCount)]
-       });
-       trackingSaved=saved.data?.submitted===true&&Number(saved.data?.xp)===0;
-      }
+      // Une lecture Firestore d'un document absent serait interdite à Tim
+      // par les règles existantes ; créer directement via la fonction déjà
+      // autorisée. "already-exists" protège toute tentative supplémentaire.
+      const saved=await cloudCallable('submitTimExercise')({
+       id:helpId,answers:[String(localReport.translationHelpCount)]
+      });
+      trackingSaved=saved.data?.submitted===true&&Number(saved.data?.xp)===0;
      }catch(helpError){
       // Si la réponse réseau s'est perdue, l'enregistrement a pu réussir.
-      // Ne jamais créer deux copies. Le Parent consultera la fiche privée.
+      // Tim peut lire uniquement ses tentatives effectivement créées.
       try{
        const check=await getDoc(doc(db,'attempts',helpId));
        trackingSaved=check.exists();
