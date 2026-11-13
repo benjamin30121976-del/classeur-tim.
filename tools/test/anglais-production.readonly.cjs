@@ -18,9 +18,11 @@ const email=process.env.TIM_PARENT_EMAIL,password=process.env.TIM_PARENT_PASSWOR
   await page.locator('#login-password').fill(password);
   await page.locator('#login-button').click();
   await page.waitForFunction(()=>document.body.classList.contains('ready')&&Boolean(window.__TIM_DATA)&&Boolean(window.__TIM_BRIDGE?.englishTrainingTask),null,{timeout:60000});
-  // Le masque d'introduction empêche les clics de navigation sur mobile.
+  // L'animation démarre avec un léger décalage après l'authentification.
+  // Attendre son apparition avant de cliquer sur le bouton prévu par l'app.
+  await page.locator('#intro-screen').waitFor({state:'visible',timeout:9000}).catch(()=>{});
   if(await page.locator('#intro-screen').isVisible()){
-   await page.locator('#intro-skip').click({timeout:8000});
+   await page.locator('#intro-skip').click({timeout:9000});
    await page.locator('#intro-screen').waitFor({state:'hidden',timeout:10000});
   }
   const report=await page.evaluate(async()=>{
