@@ -18,6 +18,8 @@ function cleanAnswer(value){
  return String(value??'').toLowerCase().normalize('NFKD')
  .replace(/[\u0300-\u036f]/g,'')
  .replace(/[−–—]/g,'-')
+ .replace(/[‘’]/g,"'")
+ .replace(/[.!?]+$/g,'')
  .replace(/[\s\u00a0]/g,'')
  .replace(/[()]/g,'')
  .trim();
