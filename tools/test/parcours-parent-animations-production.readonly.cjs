@@ -12,6 +12,11 @@ const readActions=new Set([
  'getSpanishTrainingProgress','getTimReleasedCorrections','getMathEntProgress',
  'getMathTrainingProgress','getSpanishEntTrainingProgress','getPhysicsTrainingProgress',
  'getPhysicsEntProgress','getSpanishEntTrainingTask','getMathTrainingTask',
+ 'getEnglishTrainingTask','getEnglishTrainingProgress',
+ 'getSvtTrainingTask','getSvtTrainingProgress',
+ 'getHgTrainingTask','getHgTrainingProgress',
+ 'getFrTrainingTask','getFrTrainingProgress',
+ 'getTimCourseContent',
  'getMathEntTask','getPhysicsTrainingTask','getPhysicsEntTask',
  'previewMixedChallenge'
 ]);
