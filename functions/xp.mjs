@@ -1,6 +1,19 @@
 /* Barème XP V18 des missions. Aucune modification des notes déjà enregistrées. */
+/* Exercices d'entraînement liés à une leçon, distincts des devoirs ENT.
+   Une seule validation : 7/10 → +1, 5/10 → +0,5, moins de 5 → 0.
+   Pas de pénalité, pas de modification rétroactive des notes. */
+export function lessonTrainingPoints(score,total=10){
+ if(!Number.isFinite(score)||!Number.isFinite(total)||total<=0||score<0||score>total)
+  throw Error('Invalid lesson exercise score');
+ const p=score/total;
+ return p>=0.7?1:p>=0.5?0.5:0;
+}
 export function rawPoints({kind,category,score,total,needsReview}) {
- if(!category||category==='school'||needsReview||!total||category==='training')return 0;
+ if(!category||needsReview||!total)return 0;
+ // Les relevés privés, les devoirs ENT et les défis sont exclus de ce barème.
+ if(kind==='training'&&(category==='school'||category==='training'))
+  return lessonTrainingPoints(score,total);
+ if(category==='school'||category==='training')return 0;
  const p=Math.max(0,Math.min(1,score/total));
  // Défi bonus du jour : 5 XP dès 70 %. L'ancien barème Parent est conservé.
  if(kind==='bonus-day')return p>=.7?5:0;
