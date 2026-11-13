@@ -1200,7 +1200,7 @@ async function startSession(user){
       match?window.TIM_SPANISH_EDU?.[match[2]]:
       window.__TIM_DATA?.lessons?.find(l=>l.id===ex?.lesson);
     const isMission=gradedMission(item.id);
-    const subject=mathMatch?'Mathématiques':match?'Espagnol':isMission?'Défi · 3 matières':(ex?.subject||'Exercice');
+    const subject=mathMatch?'Mathématiques':match?'Espagnol':isMission?(ex?.questionBank==='mixed-202611-v1'?'Défi · 3 matières':'Défi · Espagnol'):(ex?.subject||'Exercice');
     const lessonTitle=lesson?.name||lesson?.title||'';
     const exerciseTitle=match?(match[1]==='Q'?'QCM ':'Écriture ')+Number(match[3]):mathMatch?'Évaluation de la sous-leçon · '+mathMatch[1]:(item.title||'Exercice');
     const heading=document.createElement('strong');heading.textContent=subject+(lessonTitle?' · '+lessonTitle:'');
