@@ -27,6 +27,8 @@ for(const id of ['DAY_20261116_01','DAY_20261116_02','DAY_20261116_03',
   const tally=Object.fromEntries(['mc','fill','short','reason'].map(t=>[t,mission.questions.filter(q=>q.format===t).length]));
   assert.deepEqual(tally,daily?{mc:2,fill:3,short:3,reason:2}:{mc:4,fill:6,short:6,reason:4});
   assert.equal(new Set(mission.questions.map(q=>q.sourceId)).size,mission.questions.length);
+  const levels=Object.fromEntries(['facile','moyenne','difficile'].map(d=>[d,mission.questions.filter(q=>q.difficulty===d).length]));
+  assert.deepEqual(levels,daily?{facile:3,moyenne:4,difficile:3}:{facile:6,moyenne:8,difficile:6});
   const publicTask=publicMixedMission(mission);
   assert.ok(publicTask.questions.every(q=>!('right' in q)&&!('why' in q)&&!('also' in q)&&!('parts' in q)&&!('answer' in q)));
   const answers=keyAnswers(mission),report=gradeMixedMission(mission,answers);
@@ -69,4 +71,23 @@ test('Les questions écrites fausses sont corrigées avec une explication',()=>{
  assert.equal(report.answers[i].correct,false);
  assert.ok(report.answers[i].explanation.length>15);
  assert.equal(report.score,9);
+});
+
+test('Orthographe espagnole : un accent manquant donne un demi-point',()=>{
+ const mission=mixedMission('DAY_20261116_01'),answers=keyAnswers(mission);
+ const index=mission.questions.findIndex(q=>q.subject==='Espagnol'&&q.type==='text'&&/[áéíóúñ]/i.test(q.right));
+ if(index<0){
+  // La rotation déterministe peut choisir uniquement des phrases sans accents.
+  const other=mixedMission('DAY_20261116_02');
+  const j=other.questions.findIndex(q=>q.subject==='Espagnol'&&q.type==='text'&&/[áéíóúñ]/i.test(q.right));
+  assert.ok(j>=0);
+  const res=keyAnswers(other);
+  res[j]=other.questions[j].right.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const marked=gradeMixedMission(other,res);
+  assert.equal(marked.answers[j].points,0.5);
+ }else{
+  answers[index]=mission.questions[index].right.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const marked=gradeMixedMission(mission,answers);
+  assert.equal(marked.answers[index].points,0.5);
+ }
 });
