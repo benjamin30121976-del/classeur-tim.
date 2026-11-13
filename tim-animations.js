@@ -62,7 +62,7 @@
     value.textContent=xpLabel(xp);award.append(value);
     if(Number.isFinite(options.score)&&Number.isFinite(options.total)){
      const grade=document.createElement('span');grade.className='tim-anim-award-grade';
-     grade.textContent='Note : '+options.score+' / '+options.total;
+     grade.textContent='Note : '+options.score.toLocaleString('fr-FR')+' / '+options.total.toLocaleString('fr-FR');
      award.append(grade);
     }
    }
