@@ -34,9 +34,9 @@ async function render(target,slot){
 function parentImport(){
  const pane=E('section');pane.className='panel';
  if(!window.__TIM_PARENT||window.__TIM_GUEST)return pane;
- add(pane,'h3','Documents originaux d’français — import privé');
- add(pane,'p','Sélectionne le ZIP « ENT-Tim-Francais-pieces-jointes-12-11-2026.zip ». Les quatorze fichiers sont associés aux bonnes dates de cours, sans modifier les originaux ni les notes.');
- const input=E('input');input.type='file';input.accept='.zip,application/zip';input.setAttribute('aria-label','ZIP des 14 documents ENT d’français');input.style.cssText='display:block;max-width:100%;margin:12px 0';
+ add(pane,'h3','Documents originaux de français — import privé');
+ add(pane,'p','Sélectionne le ZIP « ENT-Tim-Francais-pieces-jointes-12-11-2026.zip ». Les 14 fichiers sont associés aux bonnes dates de cours, sans modifier les originaux ni les notes.');
+ const input=E('input');input.type='file';input.accept='.zip,application/zip';input.setAttribute('aria-label','ZIP des 14 documents ENT de français');input.style.cssText='display:block;max-width:100%;margin:12px 0';
  const status=add(pane,'p','Aucun fichier sélectionné.');
  const go=E('button','Importer les 14 fichiers dans le classeur privé');go.type='button';go.className='plain';go.disabled=true;
  let zip=null;
