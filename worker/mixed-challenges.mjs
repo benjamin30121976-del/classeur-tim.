@@ -314,7 +314,7 @@ function selectQuestions(id,kind){
    serial*(format==='short'?4:1)+(used[k]||0):
    subject==='sv'&&kind==='daily'?serial*(format==='mc'?3:format==='short'?2:1)+(used[k]||0):
    subject==='hg'&&kind==='daily'?serial*(format==='mc'?3:format==='fill'?2:1)+(used[k]||0):
-   subject==='fr'&&kind==='daily'?serial*(format==='fill'?3:2)+(used[k]||0):
+   subject==='fr'&&kind==='daily'?((serial-20787)*3+(Number(id.slice(-2))-1))*2+(used[k]||0):
    hash(rotationSeed+'|'+k)%options.length+(used[k]||0);
   used[k]=(used[k]||0)+1;
   const seed=hash(rotationSeed+'|'+k+'|'+index);
