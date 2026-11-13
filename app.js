@@ -372,7 +372,23 @@ function renderExerciseIndex(){
 }
 function answerValue(input){if(input.type==='radio'){const chosen=document.querySelector('input[name="'+input.name+'"]:checked');return chosen?chosen.value:'';}return input.value;}
 function freeOrTextAnswer(question,answer){if(question.type==='free')return null;const correct=question.type==='mc'?String(question.right)===String(answer):[question.right,...(question.also||[])].some(x=>norm(x)===norm(answer));return correct;}
-function openExercise(id){const ex=exerciseBy(id);if(!ex)return;const existing=attemptFor(id),completedChallenge=Boolean(existing&&['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind));window.__TIM_OPEN_EXERCISE_ID=id;page('exercices');document.getElementById('exercise-index').classList.add('hide');const root=clear(document.getElementById('exercise-detail'));root.classList.add('active');root.append(button('← Retour aux exercices',()=>{root.classList.remove('active');document.getElementById('exercise-index').classList.remove('hide');renderExerciseIndex();scrollTop();},'plain back'));root.append(badge(ex.level),E('h2','',ex.title),E('p','intro',exerciseDescription(ex)));
+function openExercise(id){const ex=exerciseBy(id);if(!ex)return;
+ if(ex.questionBank==='mixed-202611-v1'&&window.TIM_MIXED_UI?.open){
+  const existing=attemptFor(id);
+  window.TIM_MIXED_UI.open(ex,{
+   old:existing,
+   onReturn:()=>{renderExerciseIndex();scrollTop();},
+   onReload:()=>openExercise(id),
+   onSaved:async(saved)=>{
+    if(!saved||!Array.isArray(saved.answers)||saved.answers.length!==ex.questions.length)
+     throw Error('Le serveur n’a pas confirmé le corrigé. Actualiser sans recommencer.');
+    window.__CLOUD_ATTEMPTS.push(saved);
+    const note=window.__TIM_BRIDGE.notifyAlert?.(id,saved);if(note?.catch)note.catch(()=>{});
+    v7NewAttempt(saved);openExercise(id);
+   }
+  });return;
+ }
+ const existing=attemptFor(id),completedChallenge=Boolean(existing&&['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind));window.__TIM_OPEN_EXERCISE_ID=id;page('exercices');document.getElementById('exercise-index').classList.add('hide');const root=clear(document.getElementById('exercise-detail'));root.classList.add('active');root.append(button('← Retour aux exercices',()=>{root.classList.remove('active');document.getElementById('exercise-index').classList.remove('hide');renderExerciseIndex();scrollTop();},'plain back'));root.append(badge(ex.level),E('h2','',ex.title),E('p','intro',exerciseDescription(ex)));
 if(ex.kind==='daily'&&ex.questionBank==='spanish-ent-v1'){
  root.append(E('p','small','Révision de plusieurs leçons d’espagnol : vocabulaire, phrases, traduction et conjugaison.'));
  root.append(button('Revoir les leçons d’espagnol',()=>{page('matieres');renderMatiere('Espagnol');},'plain'));
