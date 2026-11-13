@@ -3,6 +3,7 @@
    Les leçons 1 et 2 ont chacune trois exercices ; les cinq autres ont un exercice de dix questions. */
 import {ENGLISH_QUESTIONS} from './english-questions.mjs';
 import {EXTRA_ENGLISH_QUESTIONS} from './english-extra.mjs';
+import {sameShortAnswer} from './short-answer-equivalence.mjs';
 
 export const ENGLISH_BANK_VERSION='en-20261113-v2';
 const LESSONS=[...ENGLISH_QUESTIONS,...EXTRA_ENGLISH_QUESTIONS];
@@ -13,16 +14,6 @@ function context(id){
  const m=RE.exec(String(id||''));if(!m)return null;
  if(Number(m[1])>2&&Number(m[2])!==1)return null;
  return {lesson:Number(m[1]),series:Number(m[2]),lessonId:'EN_BIS'+m[1],id};
-}
-function cleanAnswer(value){
- return String(value??'').toLowerCase().normalize('NFKD')
- .replace(/[\u0300-\u036f]/g,'')
- .replace(/[−–—]/g,'-')
- .replace(/[‘’]/g,"'")
- .replace(/[.!?]+$/g,'')
- .replace(/[\s\u00a0]/g,'')
- .replace(/[()]/g,'')
- .trim();
 }
 function validQuestions(){
  for(let j=0;j<LESSONS.length;j++){
@@ -75,12 +66,15 @@ export function gradeEnglishTask(id,answers,bankVersion){
   const answer=answers[i];
   if(q.kind==='qcm' && (!Number.isInteger(answer)||answer<0||answer>3))throw Error('invalid-qcm-answer');
   if(q.kind==='text' && (typeof answer!=='string'||!answer.trim()||answer.length>80))throw Error('invalid-text-answer');
-  const correct=q.kind==='qcm'?answer===q.right:q.accepted.some(a=>cleanAnswer(a)===cleanAnswer(answer));
+  const correct=q.kind==='qcm'?answer===q.right:sameShortAnswer(answer,q.expected,q.accepted.slice(1),{english:true});
+  const response=q.kind==='qcm'?q.choices[answer]:answer;
+  const explanation=correct?q.explanation:
+   q.kind==='qcm'?'Tu as choisi « '+response+' ». La bonne réponse est « '+q.expected+' ». '+q.explanation:
+   'La forme écrite « '+response+' » n’est pas une réponse attendue pour cette consigne. Modèle : « '+q.expected+' ». '+q.explanation;
   return {questionIndex:i,kind:q.kind,prompt:q.prompt,
-   response:q.kind==='qcm'?q.choices[answer]:answer,
-   expected:q.expected,correct,points:correct?1:0,
-   feedback:correct?'Réponse correcte. '+q.explanation:'À revoir : '+q.explanation,
-   explanation:q.explanation,category:task.lessonId};
+   response,expected:q.expected,correct,points:correct?1:0,
+   feedback:correct?'Réponse correcte. '+q.explanation:'À revoir : '+explanation,
+   explanation,category:task.lessonId};
  });
  const wrong=items.filter(x=>!x.correct);
  return {id,lessonId:task.lessonId,series:task.series,title:task.title,score:10-wrong.length,total:10,
