@@ -996,15 +996,17 @@ function dailyMissionPanel(){
  const content=E('div','daily-loup-content');
  content.append(E('p','daily-loup-eyebrow','MISSION · DU LUNDI AU VENDREDI'));
  content.append(E('h2','','DÉFI DU JOUR'));
- const mixed=['mixed','three-subjects','four-subjects'].includes(meta.dailyBankStatus);
- content.append(E('p','daily-loup-summary',meta.dailyBankStatus==='four-subjects'?
+ const mixed=['mixed','three-subjects','four-subjects','five-subjects'].includes(meta.dailyBankStatus);
+ content.append(E('p','daily-loup-summary',meta.dailyBankStatus==='five-subjects'?
+  '3 missions de 10 questions · SVT, anglais, espagnol, maths et physique-chimie mélangés · 2 questions par matière.':
+  meta.dailyBankStatus==='four-subjects'?
   '3 missions de 10 questions · Anglais, espagnol, maths et physique-chimie mélangés · Réponses écrites et corrections.':
   meta.dailyBankStatus==='three-subjects'?
   '3 missions de 10 questions · Espagnol, maths et physique-chimie mélangés · Rédaction, raisonnement et relecture.':
   mixed?'3 défis par jour · 10 questions chacun · 2 QCM et 8 réponses écrites · une seule validation par défi.':
   '3 défis possibles par jour · 10 questions chacun · une seule validation par défi.'));
  if(meta.today<'2026-11-16'&&meta.dailyBankStatus==='three-subjects')
-  content.append(E('p','daily-loup-future','L’anglais rejoint les trois autres matières dès le lundi 16 novembre. Les défis déjà proposés restent inchangés.'));
+  content.append(E('p','daily-loup-future','L’anglais et la SVT rejoignent les trois autres matières dès le lundi 16 novembre. Les défis déjà proposés restent inchangés.'));
  if(!mixed&&meta.today>='2026-11-11'&&ids.length)content.append(
   E('p','daily-loup-unavailable','Les nouveaux défis à réponses écrites sont momentanément indisponibles ; les défis classiques restent accessibles.'));
  const scores=E('div','daily-xp-scale');
