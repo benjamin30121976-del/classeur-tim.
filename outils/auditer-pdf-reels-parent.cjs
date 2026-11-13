@@ -261,6 +261,34 @@ async function verify(browser,device,viewport){
    const root=roots[roots.length-1];
    return root?.querySelector('canvas')?.width>0&&/^Page \d+ \/ \d+$/.test(root.querySelector('.pc-pdf-toolbar span')?.textContent||'');
   },null,{timeout:35000});
+  // Vérifier les quatre séances ayant des originaux et les quatre devoirs :
+  // 10 PDF dans les cours ENT + 4 PDF de devoirs repris en BIS = 14 rattachements.
+  for(const [lessonId,entCount,bisCount] of [
+   ['FR_ENT_20260917',1,1],
+   ['FR_ENT_20261001',3,4],
+   ['FR_ENT_20261015',3,4],
+   ['FR_ENT_20261112',3,5]
+  ]){
+   await page.evaluate(id=>window.TIM_PEDAGOGY_NAVIGATE('Français',id),lessonId);
+   const current=page.locator('#matieres-content details.tim-es-lesson[open]').first();
+   await current.waitFor({state:'visible',timeout:12000});
+   await page.waitForFunction(n=>{
+    const root=document.querySelector('#matieres-content details.tim-es-lesson[open]');
+    return root?.querySelectorAll('.pc-inline-pdf').length===n;
+   },entCount,{timeout:30000});
+   assert((await current.locator('.pc-inline-pdf').count())===entCount,
+     device+' : nombre de PDF incorrect dans le cours ENT '+lessonId);
+   await current.locator('button[data-tab="bis"]').click();
+   await page.waitForFunction(n=>{
+    const root=document.querySelector('#matieres-content details.tim-es-lesson[open]');
+    return root?.querySelectorAll('.pc-inline-pdf').length===n;
+   },bisCount,{timeout:30000});
+   assert((await current.locator('.pc-inline-pdf').count())===bisCount,
+     device+' : nombre de PDF incorrect dans la leçon BIS '+lessonId);
+   assert((await current.locator('button:has-text("Afficher ici le document du professeur")').count())===0,
+     device+' : un PDF exige encore un clic manuel '+lessonId);
+  }
+  console.log('OK '+device+' : Français, 14/14 rattachements contrôlés dans les 4 séances ENT et BIS.');
   console.log('OK '+device+' : Français original et BIS, PDF affichés sans clic et devoir du 26/11 rattaché.');
   assert(popupCount===0,'Le lecteur a ouvert un onglet exterieur');
   console.log('OK '+device+' : aucune nouvelle fenetre ou onglet.');
