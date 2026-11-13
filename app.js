@@ -283,10 +283,13 @@ const ENGLISH_CHAPTERS=['Vacances et prétérit','Personnalité','Similitudes et
 function englishSeriesFor(bis){
  return ENGLISH_SERIES[bis.id]||['Comprendre et rédiger'];
 }
-function openEnglishTrainingFromExercises(id,lessonId,title){
+async function openEnglishTrainingFromExercises(id,lessonId,title){
  if(!/^ENQ_L0[1-7]_0[1-3]$/.test(id)||!window.TIM_ENGLISH_TRAINING?.mount){
   alert('Le questionnaire interactif d’anglais est momentanément indisponible.');
   return;
+ }
+ if(!window.__TIM_PARENT&&!window.__TIM_GUEST&&!attemptFor(id)){
+  try{await window.TIM_ANIMATIONS?.playOpening?.();}catch(error){console.warn('Ouverture sans animation',error);}
  }
  exerciseSubject='Anglais';
  page('exercices');
@@ -700,7 +703,15 @@ function renderExerciseIndex(){
 }
 function answerValue(input){if(input.type==='radio'){const chosen=document.querySelector('input[name="'+input.name+'"]:checked');return chosen?chosen.value:'';}return input.value;}
 function freeOrTextAnswer(question,answer){if(question.type==='free')return null;const correct=question.type==='mc'?String(question.right)===String(answer):[question.right,...(question.also||[])].some(x=>norm(x)===norm(answer));return correct;}
-function openExercise(id){const ex=exerciseBy(id);if(!ex)return;
+function openExercise(id,options={}){const ex=exerciseBy(id);if(!ex)return;
+ // Seulement à l'entrée d'un exercice neuf du compte élève.
+ // Pas de nouvelle lecture lors des corrections, consultations ou actualisations.
+ if(!options.skipOpening&&!window.__TIM_PARENT&&!window.__TIM_GUEST&&!attemptFor(id)&&window.TIM_ANIMATIONS?.playOpening){
+  Promise.resolve().then(()=>window.TIM_ANIMATIONS.playOpening())
+   .catch(error=>console.warn('Animation d’ouverture ignorée',error))
+   .then(()=>openExercise(id,{skipOpening:true}));
+  return;
+ }
  if(ex.questionBank==='mixed-202611-v1'&&window.TIM_MIXED_UI?.open){
   page('exercices');window.__TIM_OPEN_EXERCISE_ID=id;
   // Un essai Parent ne doit jamais afficher ni consommer la copie de Tim.
@@ -708,13 +719,14 @@ function openExercise(id){const ex=exerciseBy(id);if(!ex)return;
   window.TIM_MIXED_UI.open(ex,{
    old:existing,
    onReturn:()=>{renderExerciseIndex();scrollTop();},
-   onReload:()=>openExercise(id),
+   onReload:()=>openExercise(id,{skipOpening:true}),
    onSaved:async(saved)=>{
     if(!saved||!Array.isArray(saved.answers)||saved.answers.length!==ex.questions.length)
      throw Error('Le serveur n’a pas confirmé le corrigé. Actualiser sans recommencer.');
     window.__CLOUD_ATTEMPTS.push(saved);
     const note=window.__TIM_BRIDGE.notifyAlert?.(id,saved);if(note?.catch)note.catch(()=>{});
-    v7NewAttempt(saved);openExercise(id);
+    v7NewAttempt(saved);openExercise(id,{skipOpening:true});
+     try{await window.TIM_ANIMATIONS?.playResult?.(ex,saved);}catch(error){console.warn('Récompense non affichée',error);}
    }
   });return;
  }
@@ -793,12 +805,12 @@ if(old){
   const notification=window.__TIM_BRIDGE.notifyAlert?.(id,saved);
   if(notification?.catch)notification.catch(()=>{});
   const d=drafts();delete d[id];save(DRAFT_KEY,d);v7NewAttempt(saved);
-  // Un défi affiche son BILAN (note, XP, correction) directement, sans alerte XP seule.
-  const isChallenge=['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind);
+  // Afficher le bilan déjà sauvegardé avant de révéler les XP du serveur.
+  // Aucune nouvelle validation : note, copie et XP restent inchangés.
   try{
-   if(isChallenge)await window.TIM_ANIMATIONS?.playResult?.(ex,saved);
-   else alert('Devoir envoyé. '+(saved.xp>=0?'+':'')+saved.xp+' XP. '+(saved.correctionStatus==='released'?'Correction disponible.':'Correction en attente du parent.'));
-   openExercise(id);
+   openExercise(id,{skipOpening:true});
+   try{await window.TIM_ANIMATIONS?.playResult?.(ex,saved);}
+   catch(error){console.warn('Récompense non affichée',error);}
   }catch(renderError){
    console.error('Affichage du résultat indisponible :',renderError);
    root.replaceChildren();
