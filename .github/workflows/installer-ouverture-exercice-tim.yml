@@ -4,7 +4,7 @@ on:
     branches:
       - animations-entree-revelation-xp-20261113
     paths:
-      - 'Tim_Ouverture_Exercice_Splash_Tan_Tan_V6_Moins_Aigue.mp4'
+      - 'Tim_Ouverture_Exercice_V6_A_Importer.zip'
 permissions:
   contents: write
 jobs:
@@ -14,27 +14,31 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: true
-      - name: Contrôler le MP4 V6 validé et son audio
+      - name: Extraire le MP4 validé et contrôler vidéo + audio
         shell: bash
         run: |
           set -euo pipefail
-          src='Tim_Ouverture_Exercice_Splash_Tan_Tan_V6_Moins_Aigue.mp4'
-          test -f "$src"
-          printf '%s  %s\n' '77394bf218ed8484357cbee6065569121527838718003bbfd04462fe887fb4e1' "$src" | sha256sum --check --status
-          ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,height -of default=nw=1 "$src"
-          ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=nw=1 "$src"
+          archive='Tim_Ouverture_Exercice_V6_A_Importer.zip'
+          media='Tim_Ouverture_Exercice_Splash_Tan_Tan_V6_Moins_Aigue.mp4'
+          test -f "$archive"
+          test "$(unzip -Z1 "$archive" | wc -l)" -eq 1
+          unzip -Z1 "$archive" | grep -Fx "$media"
           mkdir -p assets/animations
-          cp "$src" "assets/animations/$src"
-      - name: Enregistrer uniquement le média sur cette branche
+          unzip -p "$archive" "$media" > "assets/animations/$media"
+          printf '%s  %s\n' '77394bf218ed8484357cbee6065569121527838718003bbfd04462fe887fb4e1' "assets/animations/$media" | sha256sum --check --status
+          ffprobe -v error -select_streams v:0 -show_entries stream=codec_name,width,height -of default=nw=1 "assets/animations/$media"
+          ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=nw=1 "assets/animations/$media"
+      - name: Installer sans toucher à main ni aux données scolaires
         shell: bash
         run: |
           set -euo pipefail
-          src='Tim_Ouverture_Exercice_Splash_Tan_Tan_V6_Moins_Aigue.mp4'
+          archive='Tim_Ouverture_Exercice_V6_A_Importer.zip'
+          media='Tim_Ouverture_Exercice_Splash_Tan_Tan_V6_Moins_Aigue.mp4'
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add "assets/animations/$src"
-          git rm -f -- "$src"
+          git add "assets/animations/$media"
+          git rm -f -- "$archive"
           if ! git diff --cached --quiet; then
-            git commit -m "Installer ouverture exercice splash V6 validée"
+            git commit -m "Installer splash V6 avec musique validée"
             git push
           fi
