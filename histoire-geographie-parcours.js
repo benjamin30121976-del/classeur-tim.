@@ -65,13 +65,17 @@ function session(course,bis,pack){
   if(tab==='ent'){
    add(pane,'h3','1 · Séance ENT du professeur');
    add(pane,'p','Référence ENT '+course.entId+' · '+fr(course.date),'subtle');
-   if(course.summary){
-    add(pane,'p','Résumé fidèle du contenu connu dans l’archive, et non transcription intégrale du cours original.','lesson-caution');
+   if(course.originalText){
+    add(pane,'h4','Transcription du texte ENT archivé');
+    add(pane,'p',course.originalText);
+    add(pane,'p','Le texte du professeur est conservé tel qu’archivé. Les précisions historiques ou institutionnelles figurent dans la leçon BIS.','lesson-caution');
+   }else if(course.summary){
+    add(pane,'p','Résumé des informations disponibles dans l’ENT : le texte complet de cette séance n’a pas été retrouvé.','lesson-caution');
     add(pane,'p',course.summary);
    }else add(pane,'p','Cette séance est inscrite à l’ENT, mais aucun cours détaillé n’est fourni dans l’archive.');
    const due=pack.homework.filter(h=>h.due===course.date);
    if(due.length){add(pane,'h4','Consignes prévues pour cette date');
-    for(const h of due)add(pane,'p',h.title+' : '+h.content);
+    for(const h of due){add(pane,'p',h.title+' : '+h.content);if(h.originalText){add(pane,'h4','Texte original donné à copier dans l’ENT');add(pane,'p',h.originalText);}}
     add(pane,'p','Les travaux cochés dans l’ENT ne prouvent pas que les corrections individuelles sont connues.');}
    const area=E('div');pane.append(area);window.TIM_HG_DOCUMENTS?.render(course.id,area);
   }else if(tab==='bis'){
@@ -84,7 +88,7 @@ function session(course,bis,pack){
    add(pane,'h3','4 · Exercices et documents ENT du professeur');
    const tasks=pack.homework.filter(h=>h.due===course.date);
    if(!tasks.length)add(pane,'p','Pas d’exercice détaillé du professeur rattaché à cette séance.');
-   for(const h of tasks)add(pane,'p','Consigne pour le '+fr(h.due)+' — '+h.title+' : '+h.content);
+   for(const h of tasks){add(pane,'p','Consigne pour le '+fr(h.due)+' — '+h.title+' : '+h.content);if(h.originalText){add(pane,'h4','Transcription ENT à recopier');add(pane,'p',h.originalText);}}
    const attached=pack.attachments.filter(d=>d.target===course.id);
    if(attached.length){add(pane,'p','Document original : '+attached.map(d=>d.name).join(' ; '));const area=E('div');pane.append(area);window.TIM_HG_DOCUMENTS?.render(course.id,area);}
    if(/schéma|carte|tableau/i.test(course.title)&&!attached.length)add(pane,'p','La carte, le schéma ou le tableau exact n’est pas joint dans la collecte. Aucun exercice ENT inventé.');
