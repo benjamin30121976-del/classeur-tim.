@@ -1,0 +1,29 @@
+name: Vérifier barème XP en production Cloudflare
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'worker/server.mjs'
+      - 'functions/xp.mjs'
+      - 'tools/test/lesson-xp-live-status.cjs'
+      - '.github/workflows/verifier-bareme-live.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  lecture-seule:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier le code sans accéder aux résultats
+        run: |
+          node --check worker/server.mjs
+          node --check functions/xp.mjs
+          node --check tools/test/lesson-xp-live-status.cjs
+          node --test functions/test/xp.test.mjs worker/test/lesson-training-xp.test.mjs
+      - name: Confirmer la publication du barème Cloudflare sans authentification
+        run: node tools/test/lesson-xp-live-status.cjs
