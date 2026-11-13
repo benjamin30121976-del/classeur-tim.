@@ -1,0 +1,41 @@
+name: Audit Parent et animations sans impact Tim
+on:
+  push:
+    branches: [test-sans-impact-tim-20261114]
+    paths:
+      - 'tools/test/parcours-parent-animations-production.readonly.cjs'
+      - '.github/workflows/test-parent-animations-sans-impact.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verifier-sans-ecriture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
+      TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+      TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Contrôler la syntaxe
+        run: node --check tools/test/parcours-parent-animations-production.readonly.cjs
+      - name: Installer Chromium avec Playwright
+        run: |
+          npm install --prefix /tmp/tim-test-sans-impact --no-audit --no-fund playwright
+          /tmp/tim-test-sans-impact/node_modules/.bin/playwright install --with-deps chromium
+      - name: Naviguer sur le site publié (Parent en simulation, animations fictives)
+        env:
+          NODE_PATH: /tmp/tim-test-sans-impact/node_modules
+        run: node tools/test/parcours-parent-animations-production.readonly.cjs
+      - name: Archiver le rapport sans données scolaires ni identifiants
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: controle-parent-animations-sans-impact
+          path: audit-production-tim-sans-impact/
+          retention-days: 3
+          if-no-files-found: warn
