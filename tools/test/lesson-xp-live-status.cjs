@@ -12,8 +12,8 @@ const pause=ms=>new Promise(resolve=>setTimeout(resolve,ms));
    const response=await fetch(url,{cache:'no-store',signal:AbortSignal.timeout(9000)});
    const data=response.ok?await response.json():null;
    last=JSON.stringify({status:response.status,platform:data?.platform,
-    ready:data?.available,lessonTrainingXpPolicy:data?.lessonTrainingXpPolicy,mixedChallengesVersion:data?.mixedChallengesVersion});
-   if(response.ok&&data?.platform==='cloudflare-pages'&&data?.available===true&&data.lessonTrainingXpPolicy===target&&data.mixedChallengesVersion==='mixed-202611-v1'){
+    ready:data?.available,lessonTrainingXpPolicy:data?.lessonTrainingXpPolicy,mixedChallengesVersion:data?.mixedChallengesVersion,mixedDailyRollout:data?.mixedDailyRollout});
+   if(response.ok&&data?.platform==='cloudflare-pages'&&data?.available===true&&data.lessonTrainingXpPolicy===target&&data.mixedChallengesVersion==='mixed-202611-v1'&&data.mixedDailyRollout==='2026-11-13-separate-ids'){
     console.log('PASS : serveur Cloudflare en ligne avec barème '+target+' et défis mélangés version mixed-202611-v1 ; aucune donnée personnelle consultée.');
     return;
    }
