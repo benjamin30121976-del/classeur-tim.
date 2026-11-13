@@ -715,7 +715,7 @@ async function startSession(user){
   },
   mathNov12Preview:async(id,answers)=>{
    if(activeUser?.uid!==PARENT_UID)throw Error('Essai réservé au Parent.');
-   const {mathNov12Score}=await import('./maths-12nov-training.mjs?v=thales-12nov-v1');
+   const {mathNov12Score}=await import('./maths-12nov-training.mjs?v=thales-xp-7-5-0-v2');
    const r=mathNov12Score(id,answers);
    if(!r)throw Error('Dix réponses sont nécessaires.');
    return {...r,practice:true,saved:false,xp:0};
@@ -729,7 +729,7 @@ async function startSession(user){
    if(!ex||ex.questions?.length!==10)throw Error('Exercice mathématique manquant dans Firebase.');
    // Charger le corrigé avant l'écriture définitive ; ne jamais envoyer la
    // même tentative une deuxième fois si l'accusé de réception est incertain.
-   const {mathNov12Score}=await import('./maths-12nov-training.mjs?v=thales-12nov-v1');
+   const {mathNov12Score}=await import('./maths-12nov-training.mjs?v=thales-xp-7-5-0-v2');
    const grade=mathNov12Score(id,answers);
    if(!grade)throw Error('Les dix réponses sont nécessaires.');
    const response=await cloudCallable('submitTimExercise')({id,answers});
@@ -796,7 +796,7 @@ async function startSession(user){
         (typeof v==='string'&&v.trim().length>0&&v.length<=200))))
     throw Error('Les dix réponses espagnoles sont nécessaires.');
    if(window.TIM_ES12_STUDY?.isId(id)){
-    const {nov12Evaluate}=await import('./espagnol-12nov-correction.mjs?v=import-parent-12nov-v1');
+    const {nov12Evaluate}=await import('./espagnol-12nov-correction.mjs?v=espagnol-xp-7-5-0-v2');
     const report=nov12Evaluate(id,answers,translationsUsed);
     if(!report)throw Error('Les dix réponses sont nécessaires pour vérifier l’essai Parent.');
     return {...report,practice:true,saved:false,xp:0};
@@ -821,7 +821,7 @@ async function startSession(user){
     if(exercise?.questions?.length!==10)throw Error('L’exercice du 12 novembre est absent de Firestore.');
     // Précharger la correction avant la soumission pour éviter un échec d'affichage
     // après une validation serveur déjà irréversible.
-    const {nov12Evaluate}=await import('./espagnol-12nov-correction.mjs?v=import-parent-12nov-v1');
+    const {nov12Evaluate}=await import('./espagnol-12nov-correction.mjs?v=espagnol-xp-7-5-0-v2');
     const localReport=nov12Evaluate(id,answers,translationsUsed);
     if(!localReport)throw Error('Les dix réponses sont nécessaires.');
     const receipt=await cloudCallable('submitTimExercise')({id,answers,translationsUsed});
@@ -1360,7 +1360,7 @@ async function startSession(user){
  document.getElementById('account-name').textContent=isParent?'Espace parent — compte connecté':'Espace Tim — compte connecté';
  document.querySelectorAll('[data-nav="parent"]').forEach(el=>el.hidden=!isParent);
  document.getElementById('logout-button').onclick=()=>signOut(auth);
- const sc=document.createElement('script');sc.src='./app.js?v=espagnol-lecons-auto-20261112-v2';sc.onerror=()=>{stopApp();message('Le module pédagogique du classeur n’a pas chargé.');};
+ const sc=document.createElement('script');sc.src='./app.js?v=lecons-xp-7-5-0-v19';sc.onerror=()=>{stopApp();message('Le module pédagogique du classeur n’a pas chargé.');};
  sc.addEventListener('load',()=>{try{if(document.querySelector('.mission-hero'))window.TIM_INTRO_SHOW?.();}catch(e){console.warn('Animation d’ouverture indisponible :',e);}});
  document.body.append(sc);appLoaded=true;
 }
