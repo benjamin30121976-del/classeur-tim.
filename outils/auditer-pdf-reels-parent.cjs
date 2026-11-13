@@ -245,7 +245,7 @@ async function verify(browser,device,viewport){
   await page.waitForFunction(()=>{
    const c=document.querySelector('#matieres-content details.tim-es-lesson[open] .pc-inline-pdf canvas');
    const txt=document.querySelector('#matieres-content details.tim-es-lesson[open] .pc-inline-pdf .pc-pdf-toolbar span')?.textContent||'';
-   return c?.width>0&&c?.height>0&&/^Page \\d+ \\/ \\d+$/.test(txt);
+   return c?.width>0&&c?.height>0&&/^Page \d+ \/ \d+$/.test(txt);
   },null,{timeout:35000});
   await frenchLesson.locator('button[data-tab="bis"]').click();
   await page.waitForFunction(()=>{
@@ -259,7 +259,7 @@ async function verify(browser,device,viewport){
   await page.waitForFunction(()=>{
    const roots=document.querySelectorAll('#matieres-content details.tim-es-lesson[open] .pc-inline-pdf');
    const root=roots[roots.length-1];
-   return root?.querySelector('canvas')?.width>0&&/^Page \\d+ \\/ \\d+$/.test(root.querySelector('.pc-pdf-toolbar span')?.textContent||'');
+   return root?.querySelector('canvas')?.width>0&&/^Page \d+ \/ \d+$/.test(root.querySelector('.pc-pdf-toolbar span')?.textContent||'');
   },null,{timeout:35000});
   console.log('OK '+device+' : Français original et BIS, PDF affichés sans clic et devoir du 26/11 rattaché.');
   assert(popupCount===0,'Le lecteur a ouvert un onglet exterieur');
