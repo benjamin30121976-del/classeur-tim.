@@ -1,8 +1,8 @@
 {
   "mode": "lecture-seule-parent",
   "site": "https://classeur-tim-v16.pages.dev/",
-  "scope": "Audit lecture seule espagnol : 13 lecons, 39 exercices via serveur, ouverture des neuf PDF originaux dans Firebase, affichage mobile et ordinateur. Ne soumettre aucun exercice.",
+  "scope": "Audit bonus maths après import : vérifier sur le compte Parent les sept bonus TIMBONUSM01 à TIMBONUSM07, l'inventaire des matières et les exercices ; aucune validation.",
   "launch_on_update": true,
   "note": "Tester avec Chromium Playwright via GitHub Actions sans TinyFish. Aucune modification aux donnees de Tim, aucune validation ni envoi de reponses.",
-  "checkVersion": "audit-espagnol-documents-exercices-mobile-20261110"
+  "checkVersion": "audit-bonus-maths-7-20261113"
 }
