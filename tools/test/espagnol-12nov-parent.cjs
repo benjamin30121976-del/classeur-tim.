@@ -64,6 +64,18 @@ async function check(browser,name,viewport){
    assert.equal(check.present,3,'Les trois exercices importés sont masqués dans la version V16.');
    assert.equal(check.taskLength,10,'L’exercice 14 ne se charge pas depuis Firestore.');
    assert.equal(check.noOriginalAnswers,true,'La lecture publique de la fiche contient des réponses.');
+   const tracking=await page.evaluate(async()=>{
+    const {getApp}=await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js');
+    const {getFirestore,doc,getDoc}=await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js');
+    const db=getFirestore(getApp());
+    const ids=['TRH_ESE_L14_01','TRH_ESE_L14_02','TRH_ESE_L14_03'];
+    const snaps=await Promise.all(ids.map(id=>getDoc(doc(db,'exercises',id))));
+    const records=snaps.map(x=>x.exists()?JSON.parse(x.data().payloadJson||'{}'):null);
+    return {count:records.filter(x=>x?.kind==='translation-help-log'&&x?.category==='school'&&x.questions?.length===1).length,
+      hidden:!(window.__TIM_DATA?.exercises||[]).some(x=>ids.includes(x.id))};
+   });
+   assert.equal(tracking.count,3,'Les trois compteurs privés du 12 novembre sont absents de Firebase.');
+   assert.equal(tracking.hidden,true,'Les fiches techniques de suivi ne doivent pas apparaître dans les exercices.');
    const {nov12ForParentImport}=await import('../../functions/spanish-nov12-training.mjs');
    for(const exercise of nov12ForParentImport()){
     const answers=exercise.questions.map(q=>q.type==='mc'?Number(q.right):String(q.right));
@@ -76,7 +88,7 @@ async function check(browser,name,viewport){
     assert.equal(report.translationHelpCount,2);
     assert.equal(report.items?.length,10);
    }
-   console.log('PASS Parent : 3 exercices du 12 novembre visibles, 30 corrections 10/10 simulées, compteur 2/10 vérifié, aucune note ni XP enregistrés.');
+   console.log('PASS Parent : 3 exercices, 3 suivis privés 0 XP cachés, 30 corrections simulées et compteur 2/10 vérifié, aucune note enregistrée.');
   }
   // Passer complètement l'animation AVANT de naviguer vers la matière,
   // car le bouton "Passer" peut lui-même renvoyer à l'accueil.
