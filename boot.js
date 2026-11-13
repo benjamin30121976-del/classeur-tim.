@@ -800,6 +800,56 @@ async function startSession(user){
    else if(!Array.isArray(r.data?.attempts))throw Error('Résultats de anglais indisponibles.');
    return r.data;
   },
+  /* SVT — correction côté serveur, copies et essais privés. */
+  svtTrainingTask:async(id)=>{
+   if(!/^SVQ_L0[1-7]_0[1-2]$/.test(String(id||'')))throw Error('Exercice de SVT inconnu.');
+   const r=await cloudCallable('getSvtTrainingTask')({id});
+   if(!r.data?.task||r.data.task.questions?.length!==10||
+      r.data.task.questions.some(q=>!['qcm','text'].includes(q.kind)))
+    throw Error('Les dix questions de SVT ne sont pas disponibles.');
+   return r.data;
+  },
+  svtTrainingSubmit:async(id,answers,bankVersion)=>{
+   if(activeUser?.uid!==TIM_UID)throw Error('Seul Tim peut valider un exercice.');
+   if(!/^SVQ_L0[1-7]_0[1-2]$/.test(String(id||''))||
+      !Array.isArray(answers)||answers.length!==10||
+      answers.some(x=>!((Number.isInteger(x)&&x>=0&&x<=3)||
+        (typeof x==='string'&&x.trim()&&x.length<=120))))
+    throw Error('Les dix réponses sont obligatoires.');
+   if(typeof bankVersion!=='string'||!bankVersion.startsWith('svt-'))
+    throw Error('Questionnaire périmé, recharge la page.');
+   const r=await cloudCallable('submitSvtTraining')({id,answers,bankVersion});
+   if(!r.data?.submitted||!Number.isInteger(r.data?.score)||r.data.score<0||r.data.score>10||
+      !Array.isArray(r.data.items)||r.data.items.length!==10||
+      ![0,0.5,1].includes(r.data.xp)||r.data.bankVersion!==bankVersion)
+    throw Error('La note et la correction n’ont pas été confirmées.');
+   return r.data;
+  },
+  /* Un essai sur le compte Parent ne crée aucun résultat dans le dossier de Tim. */
+  svtTrainingPreviewSubmit:async(id,answers,bankVersion)=>{
+   if(activeUser?.uid!==PARENT_UID)throw Error('Mode essai réservé au compte Parent.');
+   if(!/^SVQ_L0[1-7]_0[1-2]$/.test(String(id||''))||
+      !Array.isArray(answers)||answers.length!==10||
+      answers.some(x=>!((Number.isInteger(x)&&x>=0&&x<=3)||
+        (typeof x==='string'&&x.trim()&&x.length<=120))))
+    throw Error('Les dix réponses sont obligatoires.');
+   if(typeof bankVersion!=='string'||!bankVersion.startsWith('svt-'))
+    throw Error('Questionnaire périmé, recharge la page.');
+   const r=await cloudCallable('previewSvtTraining')({id,answers,bankVersion});
+   if(r.data?.practice!==true||r.data.saved!==false||r.data?.xp!==0||
+      !Number.isInteger(r.data.score)||r.data.score<0||r.data.score>10||
+      !Array.isArray(r.data.items)||r.data.items.length!==10)
+    throw Error('La correction de simulation Parent est indisponible.');
+   return r.data;
+  },
+  svtTrainingProgress:async(id)=>{
+   if(activeUser?.uid!==TIM_UID&&activeUser?.uid!==PARENT_UID)
+    throw Error('Accès aux notes réservé à Tim et au Parent.');
+   const r=await cloudCallable('getSvtTrainingProgress')(id?{id}:{});
+   if(id){if(!('attempt' in (r.data||{})))throw Error('Copie indisponible.');}
+   else if(!Array.isArray(r.data?.attempts))throw Error('Résultats de SVT indisponibles.');
+   return r.data;
+  },
   /* 12 novembre, Thalès : même service submitTimExercise et mêmes collections
      attempts / privateAttempts que les exercices déjà publiés.
      Les réponses ne sont corrigées localement qu'après la validation serveur. */
