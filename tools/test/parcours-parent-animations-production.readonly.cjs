@@ -36,7 +36,7 @@ async function routeSafe(route){
    return route.continue();
   if(url.hostname==='firestore.googleapis.com' &&
      (/(?:batchGet|runQuery|runAggregationQuery|listen)$/i.test(url.pathname) ||
-      /\/Firestore\/Listen\/channel$/i.test(url.pathname)))
+      /\/Firestore\/Listen\/channel/i.test(url.pathname)))
    return route.continue();
   if(url.pathname==='/api/tim'){
    let payload={};try{payload=req.postDataJSON()||{};}catch{}
