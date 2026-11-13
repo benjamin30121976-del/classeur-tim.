@@ -573,11 +573,28 @@ function renderFrExerciseDirectory(root,toolbar){
  for(const h of pack.homework)ent.append(E('p','',h.due.slice(8,10)+'/'+h.due.slice(5,7)+' — '+h.title+' : '+h.content));
  root.append(ent);
  if(pack.attachments?.length){
-  const original=E('section','panel');
-  original.style.cssText='margin:12px 0;padding:14px';
-  original.append(E('h3','','Fichier original du professeur : '+pack.attachments[0].name));
-  original.append(button('Ouvrir la séance du 12 novembre',()=>{page('matieres');renderMatiere('Français','FR_ENT_20260923');},'plain'));
-  root.append(original);
+  const originals=E('details','panel');
+  originals.style.cssText='margin:14px 0;padding:14px';
+  originals.append(E('summary','','PDF originaux de M. Simiez · '+pack.attachments.length+' références ENT'));
+  originals.append(E('p','','Ces documents sont des fiches de travail du professeur et non des exercices créés. Certains fichiers sont des exemplaires identiques rattachés à des séances différentes.'));
+  const groups=new Map();
+  for(const doc of pack.attachments){
+   if(!groups.has(doc.target))groups.set(doc.target,[]);
+   groups.get(doc.target).push(doc);
+  }
+  for(const [target,docs] of groups){
+   const row=E('details','fr-document-row');
+   row.style.cssText='margin:9px 0;padding:10px;background:#f5faff;color:#284052;border-radius:10px';
+   row.append(E('summary','',docs[0].date.slice(8,10)+'/'+docs[0].date.slice(5,7)+' — '+docs.map(d=>d.name).join(' · ')));
+   const slot=E('div');row.append(slot);
+   row.addEventListener('toggle',()=>{
+    if(!row.open||row.dataset.loaded==='yes')return;
+    row.dataset.loaded='yes';
+    Promise.resolve(window.TIM_FR_DOCUMENTS?.render(target,slot)).catch(e=>slot.append(notice('Document indisponible : '+String(e.message||e))));
+   });
+   originals.append(row);
+  }
+  root.append(originals);
  }
 }
 function renderMathOfficialExercises(root,toolbar){
