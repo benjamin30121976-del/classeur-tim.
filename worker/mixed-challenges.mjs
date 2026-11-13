@@ -157,12 +157,17 @@ const BLUEPRINT=[
  [['pc','reason'],['es','fill'],['ma','short'],['pc','mc'],['es','short'],['ma','reason'],['pc','fill'],['es','mc'],['pc','short'],['ma','fill']]
 ];
 function lessonFor(q,subject){return q.lesson||(subject==='es'?'L14':subject==='ma'?'MBIS13':subject==='en'?'EN_BIS07':'PC_BIS01');}
-/* Préserver les questions et copies jusqu'au 15 novembre.
+/* Deux questions d'anglais par défi quotidien à partir du 16 novembre.
+   Préserver les questions et copies jusqu'au 15 novembre.
    Anglais ne paraît que dans les missions à partir du 16 novembre. */
 const FOUR_BLUEPRINT=BLUEPRINT.map((day,index)=>day.map(([subject,format],position)=>{
+
  if(index===0&&position===0)return ['en','mc'];
+ if(index===0&&position===6)return ['en','short'];
  if(index===1&&position===2)return ['en','short'];
+ if(index===1&&position===7)return ['en','short'];
  if(index===2&&position===1)return ['en','fill'];
+ if(index===2&&position===8)return ['en','short'];
  return [subject,format];
 }));
 function withEnglish(id,kind){
@@ -182,7 +187,8 @@ function selectQuestions(id,kind){
   for(const [subject,format] of earlier)used[subject+'-'+format]=(used[subject+'-'+format]||0)+1;
  for(let i=0;i<items.length;i++){
   const [subject,format]=items[i],k=subject+'-'+format;
-  const options=B[subject][format],index=(hash(rotationSeed+'|'+k)%options.length)+(used[k]||0);
+  const options=B[subject][format],index=subject==='en'&&kind==='daily'
+   ?(used[k]||0)%options.length:(hash(rotationSeed+'|'+k)%options.length)+(used[k]||0);
   used[k]=(used[k]||0)+1;
   const seed=hash(rotationSeed+'|'+k+'|'+index);
   const question=options[index%options.length](seed);
