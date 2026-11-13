@@ -61,14 +61,19 @@ function showBis(root,bis){
 function courseTabs(course,bis,pack){
  const details=E('details',undefined,'tim-es-lesson');
  details.style.cssText='background:#18243c;border:1px solid #5b6983;border-radius:13px;margin:10px 0;padding:12px';
- details.append(E('summary',date(course.date)+' — '+course.title));
+ details.append(E('summary',course.synthetic?'Leçon BIS — '+course.title+' (sans séance ENT propre)':date(course.date)+' — '+course.title));
  const tabs=E('div');tabs.style.cssText='display:flex;flex-wrap:wrap;gap:4px;margin:10px 0';
  const content=E('section','', 'panel');content.style.cssText='margin-top:8px';details.append(tabs,content);
  let selected=null;
  function openTab(tab){
   selected=tab;content.replaceChildren();
   for(const t of tabs.children){const active=t.dataset.tab===tab;t.style.background=active?'#d8fc67':'#34415e';t.style.color=active?'#152039':'#fff';}
-  if(tab==='ent'){
+  if(tab==='ent'&&course.synthetic){
+   add(content,'h3','1 · Repères ENT — aucune séance consacrée exclusivement à cette fiche');
+   add(content,'p','La leçon BIS « '+course.title+' » est une fiche pédagogique de révision. Le cours du 14 septembre est classé dans « Barrières et contamination ». Aucun cours original du professeur n’est inventé ici.');
+   const due=pack.homework.filter(h=>h.due===course.date);
+   for(const item of due)add(content,'p','Consigne ENT associée à cette période : '+item.title+' — '+item.content);
+  }else if(tab==='ent'){
    add(content,'h3','1 · Leçon ENT — Mme Vidon');
    add(content,'p','Séance '+date(course.date)+' · référence '+course.entId,'subtle');
    add(content,'p','Synthèse du contenu relevé dans l’archive ENT. Ce résumé n’est pas une transcription littérale complète ; la copie originale demeure dans l’archive privée.','lesson-caution');
@@ -94,7 +99,7 @@ function courseTabs(course,bis,pack){
    if(!tasks.length)add(content,'p','Aucun exercice du professeur détaillé dans le relevé de cette séance.');
    const docs=pack.attachments.filter(d=>d.target===course.id);
    if(docs.length){add(content,'p','Pièce originale : '+docs.map(d=>d.name).join(' ; '));const slot=E('div');content.append(slot);window.TIM_SVT_DOCUMENTS?.render(course.id,slot);}
-   if(course.date==='2026-09-14'||course.date==='2026-09-22')add(content,'p','Les tableaux ou graphiques originaux mentionnés dans l’ENT ne sont pas présents dans l’archive. Aucun exercice officiel n’a été inventé.');
+   if(!course.synthetic&&(course.date==='2026-09-14'||course.date==='2026-09-22'))add(content,'p','Les tableaux ou graphiques originaux mentionnés dans l’ENT ne sont pas présents dans l’archive. Aucun exercice officiel n’a été inventé.');
   }else if(tab==='train'){
    add(content,'h3','5 · Exercices d’entraînement BIS');
    add(content,'p','Deux exercices de 10 questions par leçon : reconnaître les notions, puis écrire des réponses. Note sur 10 et corrigé immédiat. Une seule tentative pour Tim ; essai Parent sans enregistrer.');
@@ -112,7 +117,7 @@ function courseTabs(course,bis,pack){
  for(const [tab,label] of [['ent','Leçon ENT'],['bis','Leçon BIS'],['help','Je n’ai pas compris'],['entex','Exercices ENT'],['train','Entraînement']]){
   const b=button(label,()=>openTab(tab));b.dataset.tab=tab;tabs.append(b);
  }
- details.addEventListener('toggle',()=>{if(details.open&&!selected)openTab('ent');});
+ details.addEventListener('toggle',()=>{if(details.open&&!selected)openTab(course.synthetic?'bis':'ent');});
  return {details,openTab};
 }
 function render(root,opts={}){
@@ -129,6 +134,15 @@ function render(root,opts={}){
   const box=E('details',undefined,'chapter-section');box.style.cssText='border:1px solid #51617c;padding:12px;margin:13px 0;border-radius:13px';
   box.append(E('summary',chapter+' · '+rows.length+' séance(s) · '+bis.length+' BIS'));
   const list=E('div');box.append(list);
+  if(!rows.length&&bis.length){
+   for(const b of bis){
+    const item=courseTabs({id:b.id,date:b.date,title:b.title,original:'',entId:'',synthetic:true},[b],pack);
+    list.append(item.details);
+    if(opts.openLessonId===b.id){
+     box.open=true;item.details.open=true;item.openTab('bis');
+    }
+   }
+  }
   for(const course of rows){
    const item=courseTabs(course,bis,pack);list.append(item.details);
    if(opts.openLessonId===course.id||opts.openLessonId===course.entId||Boolean(associated&&associated.id===course.id)){
