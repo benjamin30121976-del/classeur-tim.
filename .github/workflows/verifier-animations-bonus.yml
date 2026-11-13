@@ -10,6 +10,7 @@ on:
       - 'functions/index.mjs'
       - 'functions/xp.mjs'
       - 'scripts/test-animations-bonus.mjs'
+      - 'scripts/test-animation-entree-xp.mjs'
       - 'scripts/test-animations-dimanche.mjs'
       - 'scripts/corriger_animation_dimanche.py'
       - 'assets/animations/Tim_Dimanche_Hologramme_20XP_Gagne.gif'
@@ -33,4 +34,5 @@ jobs:
           node --check functions/index.mjs
           node --check functions/xp.mjs
           node scripts/test-animations-bonus.mjs
+          node --test scripts/test-animation-entree-xp.mjs
           node --test scripts/test-animations-dimanche.mjs
