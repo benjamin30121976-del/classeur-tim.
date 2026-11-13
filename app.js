@@ -816,9 +816,10 @@ function dailyMissionPanel(){
  const content=E('div','daily-loup-content');
  content.append(E('p','daily-loup-eyebrow','MISSION · DU LUNDI AU VENDREDI'));
  content.append(E('h2','','DÉFI DU JOUR'));
- const mixed=meta.dailyBankStatus==='mixed';
- content.append(E('p','daily-loup-summary',mixed?
-  '3 défis par jour · 10 questions chacun · 2 QCM et 8 réponses écrites · une seule validation par défi.':
+ const mixed=meta.dailyBankStatus==='mixed'||meta.dailyBankStatus==='three-subjects';
+ content.append(E('p','daily-loup-summary',meta.dailyBankStatus==='three-subjects'?
+  '3 missions de 10 questions · Espagnol, maths et physique-chimie mélangés · Rédaction, raisonnement et relecture.':
+  mixed?'3 défis par jour · 10 questions chacun · 2 QCM et 8 réponses écrites · une seule validation par défi.':
   '3 défis possibles par jour · 10 questions chacun · une seule validation par défi.'));
  if(!mixed&&meta.today>='2026-11-11'&&ids.length)content.append(
   E('p','daily-loup-unavailable','Les nouveaux défis à réponses écrites sont momentanément indisponibles ; les défis classiques restent accessibles.'));
