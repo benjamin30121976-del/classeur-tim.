@@ -589,6 +589,26 @@ async function startSession(user){
   document.dispatchEvent(new Event('tim-spanish-training-progress'));
   return window.__TIM_SPANISH_PROGRESS;
  };
+ /* Reprise du compteur existant : une question traduite = un point de suivi.
+    Ce relevé est privé, sans note ni XP et réutilise submitTimExercise. */
+ async function persistNov12TranslationHelp(id,count){
+  if(activeUser?.uid!==TIM_UID||!/^ESE_L14_0[1-3]$/.test(String(id||''))||
+     !Number.isInteger(count)||count<0||count>10)return false;
+  const helpId='TRH_'+id;
+  try{
+   const saved=await cloudCallable('submitTimExercise')({id:helpId,answers:[String(count)]});
+   return saved.data?.submitted===true&&Number(saved.data?.xp)===0;
+  }catch(error){
+   // En cas de réponse perdue, regarder si cette tentative existe désormais.
+   // Une tentative absente peut renvoyer permission-denied pour le compte Tim.
+   try{
+    const stored=await getDoc(doc(db,'attempts',helpId));
+    if(stored.exists())return true;
+   }catch(_){}
+   console.warn('Compteur privé du 12 novembre non confirmé',error?.code||error?.message);
+   return false;
+  }
+ }
  window.__TIM_BRIDGE={
   /* Physique-chimie : deux véritables fiches ENT avec correction privée. */
   physicsEntTask:async(id)=>{
@@ -806,26 +826,7 @@ async function startSession(user){
     // les trois fiches sont exclues des listes de résultats et des XP.
     let trackingSaved=receipt.data.translationTrackingSaved===true&&
       receipt.data.translationHelpCount===localReport.translationHelpCount;
-    if(!trackingSaved){
-     const helpId='TRH_'+id;
-     try{
-      // Une lecture Firestore d'un document absent serait interdite à Tim
-      // par les règles existantes ; créer directement via la fonction déjà
-      // autorisée. "already-exists" protège toute tentative supplémentaire.
-      const saved=await cloudCallable('submitTimExercise')({
-       id:helpId,answers:[String(localReport.translationHelpCount)]
-      });
-      trackingSaved=saved.data?.submitted===true&&Number(saved.data?.xp)===0;
-     }catch(helpError){
-      // Si la réponse réseau s'est perdue, l'enregistrement a pu réussir.
-      // Tim peut lire uniquement ses tentatives effectivement créées.
-      try{
-       const check=await getDoc(doc(db,'attempts',helpId));
-       trackingSaved=check.exists();
-      }catch(_){}
-      if(!trackingSaved)console.warn('Compteur de traduction à resynchroniser',helpError?.code||helpError?.message);
-     }
-    }
+    if(!trackingSaved)trackingSaved=await persistNov12TranslationHelp(id,localReport.translationHelpCount);
     const report={...localReport,submitted:true,xp:0,translationHelpSyncPending:!trackingSaved};
     window.TIM_ES12_STUDY.remember(id,report);
     try{await fetchAttempts(window.__TIM_DATA);}catch(error){
@@ -859,7 +860,18 @@ async function startSession(user){
      return {attempt:result};
     }
     const local=window.TIM_ES12_STUDY.saved(id);
-    if(local)return {attempt:local};
+    if(local){
+     // Une fois la copie validée, réessayer uniquement le relevé privé manquant,
+     // sans refaire ni re-noter l'exercice de Tim.
+     if(local.translationHelpSyncPending===true&&Number.isInteger(local.translationHelpCount)){
+      const saved=await persistNov12TranslationHelp(id,local.translationHelpCount);
+      if(saved){
+       local.translationHelpSyncPending=false;
+       window.TIM_ES12_STUDY.remember(id,local);
+      }
+     }
+     return {attempt:local};
+    }
     const released=known?.correctionStatus==='released'&&known.answers?.length===10;
     return {attempt:released?window.TIM_ES12_STUDY.officialReport(id,known):null};
    }
