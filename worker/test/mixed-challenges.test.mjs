@@ -15,15 +15,19 @@ function keyAnswers(mission){
 }
 for(const id of ['DAY_20261113_04','DAY_20261113_05','DAY_20261113_06','DAY_20261116_01','DAY_20261116_02','DAY_20261116_03',
  'DAY_20261117_01','DAY_20261117_02','DAY_20261117_03',
- 'WEEK_2026W46','SUNDAY_20261115']){
- test('Mission '+id+' : trois matières, questions vérifiables, aucune réponse publique',()=>{
+ 'WEEK_2026W46','SUNDAY_20261115','WEEK_2026W47','SUNDAY_20261122']){
+ test('Mission '+id+' : matières, questions vérifiables, aucune réponse publique',()=>{
   assert.equal(isMixedMissionId(id),true);
   const mission=mixedMission(id),daily=mission.kind==='daily';
   assert.equal(mission.questions.length,daily?10:20);
-  const subjects=Object.fromEntries(['Espagnol','Mathématiques','Physique-chimie'].map(s=>[
+  const four=/^DAY_2026111[67]_/.test(id)||id==='WEEK_2026W47'||id==='SUNDAY_20261122';
+  const subjects=Object.fromEntries(['Espagnol','Mathématiques','Physique-chimie',...(four?['Anglais']:[])].map(s=>[
    s,mission.questions.filter(q=>q.subject===s).length
   ]));
-  assert.deepEqual(Object.values(subjects).sort((a,b)=>a-b),daily?[3,3,4]:[6,7,7]);
+  assert.equal(Object.values(subjects).reduce((x,y)=>x+y,0),mission.questions.length);
+  assert.ok(Object.values(subjects).every(x=>x>=1));
+  if(four)assert.equal(subjects.Anglais,daily?1:2);
+  else assert.deepEqual(Object.values(subjects).sort((a,b)=>a-b),daily?[3,3,4]:[6,7,7]);
   const tally=Object.fromEntries(['mc','fill','short','reason'].map(t=>[t,mission.questions.filter(q=>q.format===t).length]));
   assert.deepEqual(tally,daily?{mc:2,fill:3,short:3,reason:2}:{mc:4,fill:6,short:6,reason:4});
   assert.equal(new Set(mission.questions.map(q=>q.sourceId)).size,mission.questions.length);
