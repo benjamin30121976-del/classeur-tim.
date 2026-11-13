@@ -800,11 +800,33 @@ async function startSession(user){
     const receipt=await cloudCallable('submitTimExercise')({id,answers,translationsUsed});
     if(receipt.data?.submitted!==true||Number(receipt.data?.xp)!==0)
      throw Error('La validation Firebase n’a pas été confirmée. Ne recommence pas avant de vérifier la copie.');
-    // La version déjà publiée de submitTimExercise peut encore ignorer
-    // translationsUsed. Conserver le compte local sans prétendre qu'il est
-    // synchronisé avec le Parent tant que le serveur ne l'a pas confirmé.
-    const trackingSaved=receipt.data.translationTrackingSaved===true&&
+    // Utiliser d'abord l'enregistrement direct si le serveur l'a confirmé.
+    // Sinon : enregistrer le même compte via une fiche PRIVÉE de suivi 0 XP,
+    // avec la fonction submitTimExercise déjà active. Ce n'est pas un devoir :
+    // les trois fiches sont exclues des listes de résultats et des XP.
+    let trackingSaved=receipt.data.translationTrackingSaved===true&&
       receipt.data.translationHelpCount===localReport.translationHelpCount;
+    if(!trackingSaved){
+     const helpId='TRH_'+id;
+     try{
+      const already=await getDoc(doc(db,'attempts',helpId));
+      if(already.exists())trackingSaved=true;
+      else{
+       const saved=await cloudCallable('submitTimExercise')({
+        id:helpId,answers:[String(localReport.translationHelpCount)]
+       });
+       trackingSaved=saved.data?.submitted===true&&Number(saved.data?.xp)===0;
+      }
+     }catch(helpError){
+      // Si la réponse réseau s'est perdue, l'enregistrement a pu réussir.
+      // Ne jamais créer deux copies. Le Parent consultera la fiche privée.
+      try{
+       const check=await getDoc(doc(db,'attempts',helpId));
+       trackingSaved=check.exists();
+      }catch(_){}
+      if(!trackingSaved)console.warn('Compteur de traduction à resynchroniser',helpError?.code||helpError?.message);
+     }
+    }
     const report={...localReport,submitted:true,xp:0,translationHelpSyncPending:!trackingSaved};
     window.TIM_ES12_STUDY.remember(id,report);
     try{await fetchAttempts(window.__TIM_DATA);}catch(error){
