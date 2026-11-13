@@ -49,7 +49,7 @@ const B={
    s=>{const a=2+s%4,b=3+(s>>2)%3;return txt('Calcule : '+a+'³ = ?',String(a*a*a),'Une puissance 3 signifie multiplier le nombre par lui-même trois fois.','fill');},
    s=>{const a=3+s%4,b=2+(s>>1)%3;return txt('Calcule : '+a+' × ('+b+' + 2) = ?',String(a*(b+2)),'On commence par effectuer le calcul entre parenthèses.','fill');},
    s=>{const a=2+s%3,b=4+s%5;return txt('Réduis : '+a+'x + '+b+'x = ?',(a+b)+'x','On additionne les coefficients des termes de même nature.','fill',[''+(a+b)+' x']);},
-   s=>{const a=3+s%4,b=2+s%3;return txt('Calcule : '+a+'/'+(a*b)+' × '+b+' = ?','1/'+a,'On simplifie le produit des fractions.','fill',[],{difficulty:'medium'});}
+   s=>{const a=3+s%4,b=2+s%3;return txt('Calcule : '+a+'/'+(a*b)+' × '+b+' = ?','1','On simplifie la fraction '+a+'/'+(a*b)+' en 1/'+b+', puis on multiplie par '+b+'.','fill',[],{difficulty:'medium'});}
   ],
   short:[
    s=>{const a=2+s%4,b=3+s%5;return txt('Développe puis réduis : '+a+'(x + '+b+').',a+'x + '+(a*b),'La distributivité multiplie chaque terme entre parenthèses par '+a+'.','short',[a+'x+'+(a*b),a+'*x+'+(a*b)]);},
@@ -155,9 +155,18 @@ function selectQuestions(id,kind){
    sourceId:'mix-'+subject+'-'+format+'-'+index,skill:TITLES[subject]+': '+format,
    difficulty:['facile','moyenne','difficile'][hash(id+'|diff|'+i)%3]});
  }
- // Mélanger sujets et difficultés tout en conservant 2 QCM, 3 phrases à
- // compléter, 3 réponses courtes et 2 raisonnements dans chaque série de 10.
- return selected.map((q,i)=>({q,order:hash(id+'|ordre|'+i)})).sort((a,b)=>a.order-b.order).map(x=>x.q);
+ // Deux QCM, trois textes à compléter, trois réponses courtes,
+ // deux raisonnements pour dix questions. Chaque série contient exactement
+ // 3 questions faciles, 4 intermédiaires et 3 exigeantes, mélangées.
+ const ordered=selected.map((q,i)=>({q,order:hash(id+'|ordre|'+i)}))
+  .sort((a,b)=>a.order-b.order).map(x=>x.q);
+ const seen={mc:0,fill:0,short:0,reason:0};
+ return ordered.map(q=>{
+  const ordinal=seen[q.format]++,difficulty=q.format==='mc'?'facile':
+    q.format==='fill'?(ordinal%(kind==='daily'?3:3)===0?'facile':'moyenne'):
+    q.format==='short'?(ordinal%3===2?'difficile':'moyenne'):'difficile';
+  return {...q,difficulty};
+ });
 }
 export function isMixedMissionId(id){
  const daily=/^DAY_(20\d{6})_(0[1-3])$/.exec(String(id||''));
