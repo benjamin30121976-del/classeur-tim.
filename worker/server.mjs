@@ -447,7 +447,7 @@ async function previewMathEntTask(db,uid,payload){
  if(!mathEntId(id)||!Array.isArray(answers)||answers.length>20)throw new ApiFault(400,'invalid-math-ent-answers');
  if(payload?.bankVersion!==MATH_ENT_VERSION)throw new ApiFault(409,'stale-math-ent-bank');
  let result;
- try{result=gradeMathEnt(id,answers,payload.bankVersion);}
+ try{result=gradeMathEnt(id,answers,payload.bankVersion,{allowBlank:true});}
  catch{throw new ApiFault(400,'invalid-math-ent-answers');}
  return {...result,xp:0,practice:true,submitted:false,saved:false,
   message:'Essai Parent non enregistré, aucun résultat de Tim modifié.'};
