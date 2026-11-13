@@ -1,6 +1,6 @@
 /* Entraînements espagnols, une seule validation, synchronisés par Firebase.
    Mode invité : lecture seule. Parent : consultation des notes/corrections.
-   Pas de remise à zéro, aucun XP, pas de correction inventée si serveur indisponible. */
+   Pas de remise à zéro, XP +1/+0,5/0 selon la note si la copie est enregistrée, pas de correction inventée si serveur indisponible. */
 (()=>{'use strict';
 const ENGINE=window.TIM_SPANISH_TRAINING_ENGINE;
 const COURSE=()=>window.TIM_SPANISH_EDU||{};
@@ -25,16 +25,16 @@ function storeLocal(report,answers){
  try{
   const saved=readLocal();
   if(saved[report.id])return saved[report.id];
-  const item={...report,answers,submitted:true,localOnly:!report.cloudSaved,xp:0,submittedAt:new Date().toISOString()};
+  const item={...report,answers,submitted:true,localOnly:!report.cloudSaved,xp:report.cloudSaved?Number(report.xp||0):0,submittedAt:new Date().toISOString()};
   saved[report.id]=item;localStorage.setItem(COMPLETED_KEY,JSON.stringify(saved));
   return item;
  }catch(error){throw Error("Stockage local indisponible. Les réponses restent en brouillon, mais aucun exercice n’a été validé.");}
 }
-function markCloudSaved(id){
+function markCloudSaved(id,serverXp){
  try{
   const x=readLocal();
   if(!x[id]||x[id].cloudSaved)return;
-  x[id]={...x[id],localOnly:false,cloudSaved:true};
+  x[id]={...x[id],localOnly:false,cloudSaved:true,xp:Number.isFinite(serverXp)?serverXp:Number(x[id].xp||0)};
   localStorage.setItem(COMPLETED_KEY,JSON.stringify(x));
  }catch(e){}
 }
@@ -47,15 +47,17 @@ async function syncPending(){
  syncing=true;
  try{
   for(const [id,item] of entries){
-   if((progress().attempts||[]).some(a=>a.id===id)){markCloudSaved(id);continue;}
+   const known=(progress().attempts||[]).find(a=>a.id===id);
+    if(known){markCloudSaved(id,known.xp);continue;}
    if(!Array.isArray(item.answers)||item.answers.length!==10)continue;
    try{
     const report=await window.__TIM_BRIDGE.trainingSubmit(id,item.answers);
-    if(report?.submitted)markCloudSaved(id);
+    if(report?.submitted)markCloudSaved(id,report.xp);
    }catch(error){
     if(String(error.code||"").includes("already-exists")){
      await window.__TIM_BRIDGE.trainingProgress();
-     if((progress().attempts||[]).some(a=>a.id===id))markCloudSaved(id);
+     const restored=(progress().attempts||[]).find(a=>a.id===id);
+      if(restored)markCloudSaved(id,restored.xp);
     }
    }
   }
@@ -88,7 +90,7 @@ function mount(root,{lesson,onBack,onHelp,onLesson}){
      '<span aria-hidden="true">›</span></button>';
    }).join('');
   slot.innerHTML=header+section('Q')+section('W')+
-   '<p class="spx-note">Une seule tentative par exercice. Après validation, tu peux relire les réponses et les corrections, mais pas recommencer. Les XP restent réservés aux bonus.</p>';
+   '<p class="spx-note">Une seule tentative par exercice. Après validation, tu peux relire les réponses et les corrections, mais pas recommencer. Chaque exercice peut rapporter +1, +0,5 ou 0 XP selon la note ; les défis ont un barème distinct.</p>';
   slot.querySelectorAll('[data-training-id]').forEach(b=>b.onclick=()=>openExercise(b.dataset.trainingId));
  }
  function openExercise(id){
@@ -108,7 +110,7 @@ function mount(root,{lesson,onBack,onHelp,onLesson}){
   }).join('');
   slot.innerHTML='<button class="spx-training-back" type="button" id="spx-training-return">← Liste des exercices</button>'+
    '<h3>'+title+' — '+esc(COURSE()[lesson].name)+'</h3>'+
-   '<p class="spx-training-reminder">Une seule validation définitive. Tu pourras ensuite consulter la correction et la note, sans rejouer. Aucun XP.</p>'+
+   '<p class="spx-training-reminder">Une seule validation définitive. Tu pourras ensuite consulter la correction et la note, sans rejouer. +1 XP dès 7/10, +0,5 dès 5/10, sinon 0 XP.</p>'+
    '<p class="spx-training-method"><strong>Méthode :</strong> '+esc(GUIDE()?.DATA?.[lesson]?.steps?.[0]||'Lis bien la consigne avant de répondre.')+' Les mises en situation libres restent accessibles depuis la page précédente.</p>'+
    (['unavailable','local'].includes(progress().status)&&isTim()?'<p class="spx-training-warning">Sauvegarde provisoire sur ce téléphone seulement : synchronisation avec le compte Tim en attente.</p>':'')+
    (!canAnswer?'<p class="spx-training-warning">Seul le compte Tim peut répondre et enregistrer une note.</p>':'')+
@@ -142,7 +144,7 @@ function mount(root,{lesson,onBack,onHelp,onLesson}){
      const report=await window.__TIM_BRIDGE.trainingSubmit(id,values);
      if(!report?.submitted||!report.cloudSaved)throw Error('Confirmation serveur incomplète.');
      const scored=ENGINE.evaluateSpanishTask(task,values);
-     const local=storeLocal({...scored,mode:task.mode,series:task.series,lessonId:task.lesson,cloudSaved:true},values);
+     const local=storeLocal({...scored,mode:task.mode,series:task.series,lessonId:task.lesson,cloudSaved:true,xp:report.xp},values);
      clearDraft(id);drawReview(local);
     }catch(error){
      // Vérifier d'abord si le serveur a bien enregistré la tentative malgré
@@ -170,7 +172,7 @@ function mount(root,{lesson,onBack,onHelp,onLesson}){
   if(!Array.isArray(record.items)||record.items.length!==10){
    slot.innerHTML='<button class="spx-training-back" type="button" id="spx-training-return">← Liste des exercices</button>'+
     '<h3>Exercice terminé · '+(task.mode==='Q'?'QCM ':'Écriture ')+task.series+'</h3>'+
-    '<p class="spx-training-score">Exercice enregistré dans le compte · 0 XP</p>'+
+    '<p class="spx-training-score">Exercice enregistré dans le compte · '+esc(Number(record.xp||0).toLocaleString('fr-FR'))+' XP</p>'+ 
     '<p class="spx-note">Cet exercice ne peut pas être rejoué. Ses réponses ne sont pas disponibles sur cet appareil. Le Parent peut consulter son bilan.</p>';
    slot.querySelector('#spx-training-return').onclick=drawList;
    return;
@@ -182,7 +184,7 @@ function mount(root,{lesson,onBack,onHelp,onLesson}){
     '<p>Ma réponse : '+esc(answerText(item,i))+'</p>').join('')+'</details>';
   slot.innerHTML='<button class="spx-training-back" type="button" id="spx-training-return">← Liste des exercices</button>'+
    '<h3>Exercice terminé · '+(task.mode==='Q'?'QCM ':'Écriture ')+task.series+'</h3>'+
-   '<p class="spx-training-score">'+(record.localOnly?'Résultat conservé sur cet appareil : ':'Résultat enregistré dans le compte : ')+record.score+' / 10 · 0 XP</p>'+
+   '<p class="spx-training-score">'+(record.localOnly?'Résultat conservé sur cet appareil : ':'Résultat enregistré dans le compte : ')+record.score+' / 10 · '+(record.localOnly?'XP à confirmer':esc(Number(record.xp||0).toLocaleString('fr-FR'))+' XP')+'</p>'+
    (record.localOnly?'<p class="spx-training-warning">Résultat conservé localement. Il sera synchronisé avec le compte Tim dès que Firebase sera disponible.</p>':'')+
    '<p class="spx-note">'+(perfect?'10/10 : toutes les réponses sont correctes. Aucune correction nécessaire.':'Une seule tentative. Les erreurs sont expliquées ci-dessous.')+'</p>'+
    review+
