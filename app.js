@@ -511,7 +511,7 @@ function renderHgExerciseDirectory(root,toolbar){
   const original=E('section','panel');
   original.style.cssText='margin:12px 0;padding:14px';
   original.append(E('h3','','Fichier original du professeur : '+pack.attachments[0].name));
-  original.append(button('Ouvrir la séance du 23 septembre',()=>{page('matieres');renderMatiere('Histoire-géographie','Histoire-géographie_ENT_20261103');},'plain'));
+  original.append(button('Ouvrir la séance du 23 septembre',()=>{page('matieres');renderMatiere('Histoire-géographie','HG_ENT_20260923');},'plain'));
   root.append(original);
  }
 }
@@ -1152,7 +1152,7 @@ function svtHomeExercises(){
  const area=E('section','panel svt-home-quick');
  area.style.cssText='margin:14px 0;padding:14px;border:1px solid #529f91;border-radius:14px;background:#183f48';
  area.append(E('h3','','🌱 SVT — Leçons et exercices'));
- area.append(E('p','','7 leçons illustrées · 14 exercices de dix questions · cours ENT de Mme Baudoux.'));
+ area.append(E('p','','7 leçons illustrées · 14 exercices de dix questions · cours ENT de Mme Vidon.'));
  area.append(button('Ouvrir les 14 exercices SVT',()=>{exerciseSubject='SVT';exerciseGroup='';exerciseMode='';page('exercices');},'plain'));
  area.append(button('Phagocytose · questionnaire de 10 questions',()=>openSvtTrainingFromExercises('SVQ_L07_01','SVT_BIS07','Phagocytose'),'plain'));
  return area;
@@ -1161,7 +1161,7 @@ function hgHomeExercises(){
  const area=E('section','panel hg-home-quick');
  area.style.cssText='margin:14px 0;padding:14px;border:1px solid #529f91;border-radius:14px;background:#183f48';
  area.append(E('h3','','🌍 Histoire-géographie — Leçons et exercices'));
- area.append(E('p','','8 leçons illustrées · 16 exercices de dix questions · cours ENT de Mme Vidon.'));
+ area.append(E('p','','8 leçons illustrées · 16 exercices de dix questions · cours ENT de Mme Baudoux.'));
  area.append(button('Ouvrir les 16 exercices Histoire-géographie',()=>{exerciseSubject='Histoire-géographie';exerciseGroup='';exerciseMode='';page('exercices');},'plain'));
  area.append(button('Institutions européennes · questionnaire de 10 questions',()=>openHgTrainingFromExercises('HGQ_L08_01','HG_BIS08','Institutions européennes'),'plain'));
  return area;
