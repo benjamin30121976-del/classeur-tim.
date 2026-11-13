@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 
 const source=readFileSync(new URL('../../app.js',import.meta.url),'utf8');
-const start=source.indexOf('function openExercise(id){');
+const start=source.search(/function openExercise\(id(?:,options=\{\})?\)\{/);
 const end=source.indexOf("\ndocument.getElementById('exercise-search')",start);
 assert.ok(start>=0&&end>start,'Correction manquante dans app.js');
 const code=source.slice(start,end);
