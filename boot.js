@@ -161,7 +161,7 @@ async function publishCoursePack(pack){
   seen.add(v.id);
  }
  const supportedLessons=new Set([...window.__TIM_DATA.lessons.map(x=>x.id),...(pack.lessons||[]).map(x=>x.id)]);
- for(const ex of pack.exercises||[]){if(!supportedLessons.has(ex.lesson))throw Error('Leçon associée introuvable : '+ex.lesson);}
+ for(const ex of pack.exercises||[]){if(!supportedLessons.has(ex.lesson)&&!(ex.kind==='bonus-day'&&['ENT-EQUATIONS','ENT-FACTORISATION'].includes(ex.lesson)))throw Error('Leçon associée introuvable : '+ex.lesson);}
  await runTransaction(db,async tx=>{
   const refs=entries.map(([type,v])=>doc(db,type,v.id));
   const snaps=[];for(const ref of refs)snaps.push(await tx.get(ref));
