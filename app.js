@@ -839,7 +839,9 @@ function dailyMissionPanel(){
    buttons.append(E('p','daily-loup-unavailable','Mission '+(i+1)+' : pas assez de questions disponibles.'));
    continue;
   }
-  const label=done?'Mission '+(i+1)+' · Terminée'+(done.score!==null?' · '+done.score+'/10':'')+' · '+Number(done.xp||0).toLocaleString('fr-FR')+' XP':'Mission '+(i+1)+' · Commencer';
+  const label=window.__TIM_PARENT&&ex.questionBank==='mixed-202611-v1'?
+    'Mission '+(i+1)+' · Essai Parent (sans XP)':
+    done?'Mission '+(i+1)+' · Terminée'+(done.score!==null?' · '+done.score+'/10':'')+' · '+Number(done.xp||0).toLocaleString('fr-FR')+' XP':'Mission '+(i+1)+' · Commencer';
   const b=button(label,()=>openExercise(id),'daily-loup-launch'+(done?' done':''));
   if(window.__TIM_GUEST&&!done){b.disabled=true;b.title='Connexion nécessaire pour répondre';}
   buttons.append(b);
@@ -878,7 +880,7 @@ function missionCard(kind){
  else if(done)actions.append(badge('✓ Déjà validé · '+(done.score===null?'correction en attente':done.score+'/'+done.total),'green'),button('Voir ma validation',()=>openExercise(ex.id),'small-cta'));
  else if(!open)actions.append(badge(sunday?'Disponible dimanche':'Disponible samedi'));
  else if(window.__TIM_GUEST)actions.append(badge('Lecture seule · invité'));
- else actions.append(button(window.__TIM_PARENT?'Prévisualiser le défi':'LANCER LE DÉFI',async()=>{if(!sunday)await window.TIM_ANIMATIONS?.play?.('saturday');openExercise(ex.id);},'mission-launch'));
+ else actions.append(button(window.__TIM_PARENT?(ex?.questionBank==='mixed-202611-v1'?'Essai Parent (sans XP)':'Prévisualiser le défi'):'LANCER LE DÉFI',async()=>{if(!sunday)await window.TIM_ANIMATIONS?.play?.('saturday');openExercise(ex.id);},'mission-launch'));
  c.append(actions);return c;
 }
 function makeSoundSettings(){const zone=E('div','sound-settings');zone.append(E('span','','🔊 Bruit des touches : '));
