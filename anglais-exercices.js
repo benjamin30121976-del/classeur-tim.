@@ -190,7 +190,7 @@ async function renderProgress(where){
  try{
   const r=await bridge().englishTrainingProgress();
   const rows=r?.attempts||[];
-  where.replaceChildren(E('p','',rows.length+' / 6 exercices BIS validés. Une seule tentative par exercice.'));
+  where.replaceChildren(E('p','',rows.length+' / 11 exercices BIS validés. Une seule tentative par exercice.'));
   if(!rows.length){where.append(E('p','','Aucune note de anglais enregistrée pour le moment.'));return;}
   for(const item of rows){
    const block=E('details','pc-progress-item');block.style.cssText=st.group;
