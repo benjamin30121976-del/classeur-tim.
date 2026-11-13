@@ -1,0 +1,38 @@
+name: Vérifier les trois matières dans les missions en production
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'tools/test/mixed-daily-production.readonly.cjs'
+      - 'boot.js'
+      - 'worker/mixed-challenges.mjs'
+      - 'worker/server.mjs'
+      - 'app.js'
+      - 'index.html'
+      - '.github/workflows/verifier-defis-production-13nov.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  ecrans-en-lecture-seule:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+      TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
+      TIM_STUDENT_EMAIL: ${{ secrets.TIM_STUDENT_EMAIL }}
+      TIM_STUDENT_PASSWORD: ${{ secrets.TIM_STUDENT_PASSWORD }}
+      TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer Chromium pour la lecture seule
+        run: |
+          npm install --prefix /tmp/mixed-daily-readonly --no-audit --no-fund playwright
+          /tmp/mixed-daily-readonly/node_modules/.bin/playwright install chromium
+      - name: Vérifier les missions des comptes Parent et Tim sans envoi
+        env:
+          NODE_PATH: /tmp/mixed-daily-readonly/node_modules
+        run: node tools/test/mixed-daily-production.readonly.cjs
