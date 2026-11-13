@@ -889,7 +889,10 @@ function renderHome(){
  const copy=E('div','mission-copy');copy.append(E('div','shout','CLASSEUR · 3e'),E('h1','','CHOISIS TA MISSION'),E('p','','Cours, défis et progression. À toi de jouer.'));
  copy.append(button('Choisir une matière →',()=>page('matieres'),'lobo-go'));hero.append(copy);const wolf=E('img','mission-wolf');wolf.src='./assets/loup-accueil.webp';wolf.alt='Le loup jongleur du classeur';hero.append(wolf);// Défis quotidiens rétablis avec les images originales du parent.
  root.append(hero);
- if(window.__TIM_ADDONS_INCOMPLETE)root.append(notice('Certaines fiches complémentaires n’ont pas pu être chargées. Les cours principaux et les défis restent accessibles. Actualise le classeur plus tard pour retrouver toutes les fiches.'));
+ if(window.__TIM_READONLY_FALLBACK)
+  root.append(notice('Accès provisoire : le serveur des cours est indisponible. Les leçons et les défis sont consultables, mais la validation des réponses et les XP sont suspendus sur cet appareil. Actualise la page pour rétablir le compte complet.'));
+ else if(window.__TIM_ADDONS_INCOMPLETE)
+  root.append(notice('Certaines fiches complémentaires n’ont pas pu être chargées. Les cours principaux et les défis restent accessibles. Actualise le classeur pour retrouver toutes les fiches.'));
  root.append(dailyMissionPanel(),...(window.__TIM_GUEST?[]:[makeXPPanel()]),makeRewardsTile(),makeSoundSettings(),bonusMissionPanel(true),missionCard('weekly'),missionCard('sunday'));
  root.append(E('h2','home-section-title','Que veux-tu travailler ?'));
  const cards=E('div','home-grid');
