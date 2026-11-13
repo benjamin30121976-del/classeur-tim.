@@ -29,3 +29,16 @@ test('correction complète sur 10 et résumé pour chaque exercice',()=>{
   assert.equal(mathNov12Score(ex.id,[]),null);
  }
 });
+
+
+test('barème maths BIS : 7/10 = +1 XP, 5/10 = +0,5 XP et 4/10 = 0 XP',()=>{
+ for(const ex of mathNov12ForParentImport().exercises){
+  const correct=ex.questions.map(q=>Number(q.right));
+  for(const [n,expected] of [[0,1],[3,1],[4,0.5],[5,0.5],[6,0]]){
+   const answers=correct.map((value,i)=>i<n?(value+1)%4:value);
+   const result=mathNov12Score(ex.id,answers);
+   assert.equal(result.score,10-n);
+   assert.equal(result.xp,expected);
+  }
+ }
+});
