@@ -40,8 +40,9 @@
  // on affiche quand même le résultat confirmé par le serveur.
  function play(key,options={}){
   const xp=typeof options.xp==='number'&&Number.isFinite(options.xp)?options.xp:null;
-  const hasMedia=Boolean(files[key]);
-  if((!hasMedia&&xp===null)||!motionOK()||!document.body)return Promise.resolve();
+  // En mode mouvement réduit, la récompense reste consultable sans animation.
+  const hasMedia=motionOK()&&Boolean(files[key]);
+  if((!hasMedia&&xp===null)||!document.body)return Promise.resolve();
   close();
   return new Promise(resolve=>{
    const layer=document.createElement('div');layer.className='tim-anim-overlay';

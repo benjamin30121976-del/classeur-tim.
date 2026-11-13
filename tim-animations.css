@@ -4,7 +4,8 @@
 .tim-anim-media{display:block;max-width:100%;width:min(88vw,520px);max-height:75dvh;object-fit:contain;border-radius:18px;box-shadow:0 18px 48px #0009;background:#0b1930}
 .tim-anim-skip{font:750 15px system-ui,sans-serif;color:#fff;background:#223956;border:1px solid #8fb8d4;border-radius:12px;padding:12px 20px;min-height:48px;cursor:pointer}
 .tim-anim-skip:focus-visible{outline:3px solid #88e6ed;outline-offset:3px}
-@media (prefers-reduced-motion:reduce){.tim-anim-overlay{display:none!important}}
+/* Le mode mouvement réduit cache la vidéo, pas la note/les XP statiques. */
+@media (prefers-reduced-motion:reduce){.tim-anim-overlay{display:flex!important}.tim-anim-media{display:none!important}}
 
 /* Écran vertical d'ouverture et seconde phase de dévoilement XP. */
 .tim-anim-media[hidden],.tim-anim-award[hidden]{display:none!important}

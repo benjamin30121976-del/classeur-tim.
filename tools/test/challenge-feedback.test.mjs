@@ -88,3 +88,18 @@ test('Une validation montre le résultat directement sans alerte XP isolée',asy
  assert.ok(texts.includes('Ta note : 1/2'));
  assert.ok(texts.includes('Correction détaillée : 1/2'));
 });
+
+test("Revoir une animation n'enregistre aucune nouvelle tentative et garde les XP existants",async()=>{
+ const h=harness(structuredClone(result));
+ let called=0,seen=null;
+ h.window.TIM_ANIMATIONS={playResult:async(ex,saved)=>{called++;seen={id:ex.id,xp:saved.xp};}};
+ const original=JSON.stringify(h.window.__CLOUD_ATTEMPTS);
+ h.openExercise(h.exercise.id);
+ const replay=all(h.detail).find(x=>x.cls?.includes('replay-result-animation'));
+ assert.ok(replay,'Bouton de relecture XP absent de la copie déjà terminée');
+ await replay.listeners.click();
+ assert.equal(called,1);
+ assert.deepEqual(seen,{id:h.exercise.id,xp:-1});
+ assert.equal(JSON.stringify(h.window.__CLOUD_ATTEMPTS),original,'Copie/XP modifiés en rejouant seulement la vidéo');
+ assert.ok(!all(h.detail).some(x=>x.textContent==='Valider définitivement cet exercice'));
+});
