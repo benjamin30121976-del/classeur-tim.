@@ -11,7 +11,7 @@ function render(slot,id,back){
  const result=report=>{
   if(!slot.isConnected)return;
   const questions=Array.isArray(report.items)?report.items:[];
-  slot.innerHTML='<h3>Note : '+esc(report.score)+' / 10 · 0 XP</h3>'+
+  slot.innerHTML='<h3>Note : '+esc(report.score)+' / 10 · '+esc(Number(report.xp??0).toLocaleString('fr-FR'))+' XP</h3>'+
    '<p>Exercice terminé. Une seule validation. Les réponses restent consultables.</p>'+
    '<p>'+questions.filter(x=>x.correct).length+' bonnes réponses sur '+questions.length+'.</p>'+
    questions.map((q,i)=>'<section class="spx-training-question math12-correction"><h4>Question '+(i+1)+' — '+(q.correct?'Réussie':'À revoir')+'</h4>'+
