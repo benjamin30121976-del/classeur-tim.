@@ -214,6 +214,8 @@ function open(ex,ctx={}){
    item.append(E('p','Explication : '+String(a.explanation||'Relis la leçon pour comprendre.')));
    const dg=draw(q,true);if(dg)item.append(dg);
    item.append(E('p','À revoir : '+(q.lessonId||'leçon correspondante'),'mix-muted'));
+   if(q.lessonId&&typeof window.TIM_PEDAGOGY_NAVIGATE==='function')
+    item.append(btn('Ouvrir la leçon correspondante',()=>window.TIM_PEDAGOGY_NAVIGATE(q.subject,q.lessonId),'mix-link'));
    copy.append(item);
   }
   host.append(copy);focus();
