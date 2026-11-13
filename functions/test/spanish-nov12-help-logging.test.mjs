@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {rawPoints} from '../xp.mjs';
+import {grade} from '../grading.mjs';
 import {SPANISH_NOV12_HELP_IDS,spanishNov12HelpId,spanishNov12HelpExercises,readSpanishNov12HelpCount} from '../spanish-nov12-help-logging.mjs';
 
 test('trois enregistrements de suivi distincts des exercices, et 0 XP dans le moteur serveur',()=>{
@@ -12,8 +13,12 @@ test('trois enregistrements de suivi distincts des exercices, et 0 XP dans le mo
   assert.equal(doc.category,'school');
   assert.equal(doc.questions.length,1);
   assert.equal(doc.questions[0].type,'text');
-  for(const score of [0,1]){
-   assert.equal(rawPoints({kind:doc.kind,category:doc.category,score,total:1,needsReview:false}),0);
+  for(const count of [0,1,2,9,10]){
+   const answer=String(count);
+   const key={questions:doc.questions.map(q=>({right:q.right,why:q.why}))};
+   const result=grade(doc,key,[answer]);
+   assert.equal(result.answers[0].response,answer,'Le nombre traduit doit être conservé dans la copie privée.');
+   assert.equal(rawPoints({kind:doc.kind,category:doc.category,score:result.score,total:result.total,needsReview:false}),0);
   }
  }
 });
