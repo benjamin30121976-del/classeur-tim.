@@ -68,6 +68,9 @@ const site=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
   await page.locator('#home-content .fr-home-quick button').first().click();
   assert.equal(await page.locator('#exercise-list .fr-exercise-lesson').count(),11);
   assert.equal(await page.locator('#exercise-list .fr-exercise-lesson .tile').count(),22);
+  const docGroups=await page.locator('#exercise-list .fr-document-row').count();
+  assert.equal(docGroups,8,'Les 14 PDF originaux doivent être listés par cours ou devoir.');
+
   await page.locator('#exercise-list .fr-exercise-lesson .tile').first().click();
   await page.locator('#exercise-detail .tim-es-question-page').waitFor({timeout:20000});
   assert.match(await page.locator('#exercise-detail').innerText(),/Question 1 sur 10/);
