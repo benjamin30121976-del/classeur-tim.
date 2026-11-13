@@ -646,6 +646,26 @@ async function getSpanishEntTrainingProgress(db,uid,payload){
    .sort((a,b)=>String(b.submittedAt).localeCompare(String(a.submittedAt)))};
 }
 
+/* Simulation pédagogique : Parent seulement, sans accès ni écriture Firestore.
+   L'exercice et le corrigé sont reconstitués exclusivement sur le Worker.
+   Toutes les questions peuvent être testées, même avec une copie incomplète. */
+async function previewMixedChallenge(db,uid,payload){
+ permitted(uid,'parent');
+ const id=payload?.id,answers=payload?.answers,translationsUsed=payload?.translationsUsed||[];
+ if(!isMixedMissionId(id))throw new ApiFault(400,'invalid-mixed-preview');
+ const mission=mixedMission(id);
+ if(!mission||!Array.isArray(answers)||answers.length!==mission.questions.length||
+    answers.some(x=>typeof x!=='string'||x.length>2000)||
+    !Array.isArray(translationsUsed)||translationsUsed.length>mission.questions.length||
+    translationsUsed.some((v,i)=>typeof v!=='boolean'||
+      (v===true&&mission.questions[i]?.subject!=='Espagnol')))
+  throw new ApiFault(400,'invalid-mixed-preview');
+ let graded;
+ try{graded=gradeMixedMission(mission,answers,translationsUsed,{allowIncomplete:true});}
+ catch{throw new ApiFault(400,'invalid-mixed-preview');}
+ return {...graded,id,practice:true,saved:false,submitted:false,xp:0,
+  message:'Simulation Parent non enregistrée : aucun résultat, aucune tentative, aucun XP de Tim modifié.'};
+}
 async function getMixedChallengePlan(db,uid){
  allowedFamily(uid);
  const plan=mixedPlan(new Date());
@@ -675,6 +695,7 @@ const ACTIONS={
  previewPhysicsTraining:previewPhysicsTraining,
  getSpanishDailyMissions:getSpanishDailyMissions,
  getMixedChallengePlan:getMixedChallengePlan,
+ previewMixedChallenge:previewMixedChallenge,
  getSpanishEntTrainingTask:getSpanishEntTrainingTask,
  submitSpanishEntTraining:submitSpanishEntTraining,
  getSpanishEntTrainingProgress:getSpanishEntTrainingProgress,
@@ -692,7 +713,7 @@ const ACTIONS={
 export async function handleRequest(request,env){
  const url=new URL(request.url);
  if(url.pathname==='/api/status'&&request.method==='GET')
-  return respond({available:Boolean(env.FIREBASE_SERVICE_ACCOUNT),platform:'cloudflare-pages',lessonTrainingXpPolicy:'7-5-0-v1',mixedChallengesVersion:'mixed-202611-v1',mixedDailyRollout:'2026-11-13-separate-ids',features:{physicsParentPreview:true,physicsEntInteractive:true,physicsEntOriginalTasks:2,mathEntInteractive:true,mathEntOriginalTasks:2,spanishParentPreview:true}});
+  return respond({available:Boolean(env.FIREBASE_SERVICE_ACCOUNT),platform:'cloudflare-pages',lessonTrainingXpPolicy:'7-5-0-v1',mixedChallengesVersion:'mixed-202611-v1',mixedDailyRollout:'2026-11-13-separate-ids',features:{physicsParentPreview:true,physicsEntInteractive:true,physicsEntOriginalTasks:2,mathEntInteractive:true,mathEntOriginalTasks:2,spanishParentPreview:true,mixedParentPreview:true}});
  if(url.pathname!=='/api/tim')return respond({error:'not-found'},404);
  try{
   if(request.method!=='POST')throw new ApiFault(405,'method-not-allowed');
@@ -713,4 +734,4 @@ export async function handleRequest(request,env){
   return respond({error:code},status);
  }
 }
-export const TESTABLE={previewSpanishEntTraining,getMathEntTask,submitMathEntTask,previewMathEntTask,getMathEntProgress,getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,getMixedChallengePlan,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
+export const TESTABLE={previewSpanishEntTraining,getMathEntTask,submitMathEntTask,previewMathEntTask,getMathEntProgress,getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,getMixedChallengePlan,previewMixedChallenge,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
