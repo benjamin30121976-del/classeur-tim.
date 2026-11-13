@@ -263,7 +263,7 @@ function conclusionCorrect(input,q){
  if(q.unit==='livres'&&!/livre/.test(s))return false;
  return true;
 }
-export function gradeMixedMission(mission,responses,translationsUsed=[]){
+export function gradeMixedMission(mission,responses,translationsUsed=[],{allowIncomplete=false}={}){
  if(!mission||mission.questionBank!=='mixed-202611-v1'||
   !Array.isArray(responses)||responses.length!==mission.questions.length)throw Error('Réponses invalides');
  let score=0;
@@ -271,15 +271,24 @@ export function gradeMixedMission(mission,responses,translationsUsed=[]){
   const raw=String(responses[i]??'');
   if(raw.length>2000)throw Error('Réponse trop longue');
   if(q.type==='reason'){
+   if(allowIncomplete&&!raw.trim())return {question:q.q,response:'',correct:false,points:0,
+    expected:q.why,methodResponse:'Sans réponse',calculationResponse:'',conclusionResponse:'',
+    methodCorrect:false,calculationCorrect:false,conclusionCorrect:false,skill:q.skill,
+    subject:q.subject,lessonId:q.lessonId,explanation:'Question sans réponse. '+q.why};
    let object;try{object=JSON.parse(raw);}catch{throw Error('Raisonnement incomplet');}
-   const method=Number(object.m),calc=String(object.c||''),conclusion=String(object.s||'');
-   if(!Number.isInteger(method)||method<0||method>=q.methods.length||!calc.trim()||!conclusion.trim())
+   if(!object||typeof object!=='object'||Array.isArray(object))throw Error('Raisonnement incomplet');
+   const hasMethod=object.m!==undefined&&object.m!==null&&String(object.m).trim()!=='';
+   const method=hasMethod?Number(object.m):NaN,calc=String(object.c||''),conclusion=String(object.s||'');
+   if(!allowIncomplete&&(!Number.isInteger(method)||method<0||method>=q.methods.length||!calc.trim()||!conclusion.trim()))
     throw Error('Raisonnement incomplet');
-   const methodOk=method===q.right,calcOk=calcCorrect(calc,q),conclusionOk=conclusionCorrect(conclusion,q);
+   if(allowIncomplete&&hasMethod&&(!Number.isInteger(method)||method<0||method>=q.methods.length))
+    throw Error('Méthode invalide');
+   const methodOk=hasMethod&&method===q.right,calcOk=calc.trim()?calcCorrect(calc,q):false,
+    conclusionOk=conclusion.trim()?conclusionCorrect(conclusion,q):false;
    const points=(methodOk?0.5:0)+(calcOk?0.25:0)+(conclusionOk?0.25:0);
    score+=points;
    return {question:q.q,response:raw,correct:points===1,points,expected:q.why,
-    methodResponse:q.methods[method],calculationResponse:calc,conclusionResponse:conclusion,
+    methodResponse:hasMethod?q.methods[method]:'Sans réponse',calculationResponse:calc,conclusionResponse:conclusion,
     methodCorrect:methodOk,calculationCorrect:calcOk,conclusionCorrect:conclusionOk,
     skill:q.skill,subject:q.subject,lessonId:q.lessonId,explanation:q.why};
   }
