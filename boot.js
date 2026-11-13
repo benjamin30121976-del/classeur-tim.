@@ -469,7 +469,7 @@ async function startSession(user){
   if(!snapshot.exists()){showImport();return;}
   content=decodeFromFirestore(snapshot.data());
  }else{
-  try{const response=await cloudCallable('getTimCourseContent')({});content=decodeFromFirestore(response.data.content);serverAdditions=response.data.additions;}
+  try{const response=await cloudCallable('getTimCourseContent')({});content=decodeFromFirestore(response.data.content);serverAdditions=response.data.additions;window.__TIM_ADDONS_INCOMPLETE=response.data.additionsIncomplete===true;}
   catch(e){message('Chargement des cours de Tim impossible : '+(e.message||'Firebase'));return;}
  }
  if(!Array.isArray(content.lessons)||!Array.isArray(content.exercises)){message('Le contenu du cours est incomplet.');return;}
