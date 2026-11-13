@@ -4,6 +4,7 @@ on:
     branches: [main, integration-svt-20261113]
     paths:
       - 'svt-*.js'
+      - 'tools/test/svt-production.readonly.cjs'
       - 'worker/svt-*.mjs'
       - 'worker/test/svt-training.test.mjs'
       - 'worker/mixed-challenges.mjs'
@@ -34,3 +35,24 @@ jobs:
           node --test worker/test/svt-training.test.mjs worker/test/mixed-challenges.test.mjs worker/test/mixed-parent-preview.test.mjs worker/test/corrections-pedagogiques.test.mjs worker/test/physics-training.test.mjs worker/test/math-training.test.mjs
       - name: Résumé
         run: echo 'Tests terminés sans validation réelle d’une tentative de Tim.' >> "$GITHUB_STEP_SUMMARY"
+  navigateur-parent:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+      TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
+      TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Préparer Chromium pour le compte Parent
+        run: |
+          npm install --prefix /tmp/tim-svt --no-audit --no-fund playwright
+          /tmp/tim-svt/node_modules/.bin/playwright install chromium
+      - name: Contrôler la SVT en production sans envoi de copie Tim
+        env:
+          NODE_PATH: /tmp/tim-svt/node_modules
+        run: node tools/test/svt-production.readonly.cjs
