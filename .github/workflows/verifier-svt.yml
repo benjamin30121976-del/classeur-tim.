@@ -1,0 +1,36 @@
+name: Vérifier la cinquième matière SVT
+on:
+  push:
+    branches: [main, integration-svt-20261113]
+    paths:
+      - 'svt-*.js'
+      - 'worker/svt-*.mjs'
+      - 'worker/test/svt-training.test.mjs'
+      - 'worker/mixed-challenges.mjs'
+      - 'worker/test/mixed-challenges.test.mjs'
+      - 'worker/server.mjs'
+      - 'boot.js'
+      - 'app.js'
+      - 'parent-unified-results.js'
+      - 'index.html'
+      - '.github/workflows/verifier-svt.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  svt-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier la syntaxe
+        run: |
+          for f in svt-pack.js svt-documents.js svt-parcours.js svt-exercices.js app.js boot.js parent-unified-results.js worker/server.mjs worker/svt-questions.mjs worker/svt-training.mjs worker/mixed-challenges.mjs; do node --check "$f"; done
+      - name: Vérifier la banque, le serveur, les comptes et les anciens défis
+        run: |
+          node --test worker/test/svt-training.test.mjs worker/test/mixed-challenges.test.mjs worker/test/mixed-parent-preview.test.mjs worker/test/corrections-pedagogiques.test.mjs worker/test/physics-training.test.mjs worker/test/math-training.test.mjs
+      - name: Résumé
+        run: echo 'Tests terminés sans validation réelle d’une tentative de Tim.' >> "$GITHUB_STEP_SUMMARY"
