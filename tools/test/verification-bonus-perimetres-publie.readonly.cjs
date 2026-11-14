@@ -44,7 +44,16 @@ const ID='TIMBONUSPERIM20261114';
   assert.equal(summary.count,10);
   assert.equal(summary.reasoning,2);
   await page.evaluate(()=>document.querySelector('[data-nav="exercices"]').click());
-  await page.locator('#exercise-list .bonus-spotlight').waitFor({timeout:15000});
+  const nav=await page.evaluate(()=>({
+   active:document.querySelector('.page.active')?.id||'none',
+   content:(document.querySelector('#exercise-list')?.innerText||'').slice(0,250),
+   spotlightCount:document.querySelectorAll('#exercise-list .bonus-spotlight').length,
+   bonusPool:window.TIM_BONUS?.state(window.__TIM_DATA.exercises,[])?.chosen?.length??null,
+   errorsVisible:(document.querySelector('#exercise-list')?.innerText||'').includes('Aucun exercice bonus')
+  }));
+  console.log('NAVIGATION_BONUS_DIAGNOSTIC '+JSON.stringify(nav));
+  if(nav.spotlightCount===0)throw Error('Le panneau bonus n a pas été construit par la navigation');
+  await page.locator('#exercise-list .bonus-spotlight').waitFor({state:'attached',timeout:4000});
   const math=page.locator('#exercise-list .bonus-spotlight .bonus-mission-item').filter({hasText:'Mathématiques'}).first();
   assert.equal(await math.count(),1,'Matière Mathématiques absente des bonus affichés');
   await math.evaluate(el=>el.click());
