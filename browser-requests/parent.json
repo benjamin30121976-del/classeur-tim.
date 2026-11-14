@@ -1,8 +1,8 @@
 {
   "mode": "lecture-seule-parent",
   "site": "https://classeur-tim-v16.pages.dev/",
-  "scope": "Audit bonus maths après import : vérifier sur le compte Parent les sept bonus TIMBONUSM01 à TIMBONUSM07, l'inventaire des matières et les exercices ; aucune validation.",
+  "scope": "Vérification du correctif de sélection JSON sur Android dans l'espace Parent (lecture seule) : attribut accept absent, fichier de type application/octet-stream reconnu, aucun bouton de publication activé.",
   "launch_on_update": true,
-  "note": "Tester avec Chromium Playwright via GitHub Actions sans TinyFish. Aucune modification aux donnees de Tim, aucune validation ni envoi de reponses.",
-  "checkVersion": "audit-bonus-maths-7-20261113"
+  "note": "Chromium/Playwright existant, connexion Parent sécurisée ; test JSON fictif chargé en mémoire uniquement, puis vidé. Ne toucher à aucune note, copie, tentative ou XP de Tim.",
+  "checkVersion": "controle-import-json-android-20261114"
 }
