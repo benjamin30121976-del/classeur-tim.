@@ -31,7 +31,7 @@ jobs:
           node --check functions/grading.mjs
           node --check functions/xp.mjs
       - name: Tests de sécurité et de notation dans une base fictive
-        run: node --test tools/test/cloudflare-spark-backend.test.mjs tools/test/cloudflare-spark-auth.test.mjs worker/test/mth12-bank-diagnostics.test.mjs
+        run: node --test tools/test/cloudflare-spark-backend.test.mjs tools/test/cloudflare-spark-auth.test.mjs worker/test/mth12-bank-diagnostics.test.mjs worker/test/mth12-question10-fix.test.mjs
       - name: Confirmer le branchement conditionnel côté navigateur
         run: |
           node - <<'NODE'
