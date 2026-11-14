@@ -1,11 +1,19 @@
 name: Importer les exercices maths du 12 novembre par Parent
 on:
+  pull_request:
+    paths:
+      - 'outils/publier-maths-12nov-via-parent.cjs'
+      - 'outils/mth12-question10-guard.cjs'
+      - 'tools/test/maths-12nov-question10-guard.test.cjs'
+      - '.github/workflows/importer-maths-12nov-via-parent.yml'
   push:
     branches: [main]
     paths:
       - 'maths-12nov-training.mjs'
       - 'tools/test/maths-12nov-training.test.mjs'
       - 'outils/publier-maths-12nov-via-parent.cjs'
+      - 'outils/mth12-question10-guard.cjs'
+      - 'tools/test/maths-12nov-question10-guard.test.cjs'
       - '.github/workflows/importer-maths-12nov-via-parent.yml'
   workflow_dispatch:
 permissions:
@@ -18,6 +26,7 @@ jobs:
       TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
       TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
       TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
+      TIM_MTH12_Q10_MODE: ${{ github.event_name == 'pull_request' && 'verify' || github.event_name == 'push' && 'fix' || 'legacy-import' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,7 +36,9 @@ jobs:
         run: |
           node --check maths-12nov-training.mjs
           node --check outils/publier-maths-12nov-via-parent.cjs
-          node --test tools/test/maths-12nov-training.test.mjs
+          node --check outils/mth12-question10-guard.cjs
+          node --check tools/test/maths-12nov-question10-guard.test.cjs
+          node --test tools/test/maths-12nov-training.test.mjs tools/test/maths-12nov-question10-guard.test.cjs
       - name: Vérifier le compte Parent
         run: |
           test -n "$TIM_PARENT_EMAIL" || { echo "::error::Connexion Parent manquante"; exit 1; }
@@ -37,7 +48,7 @@ jobs:
           mkdir -p /tmp/tim-math12
           npm install --prefix /tmp/tim-math12 --no-audit --no-fund playwright
           /tmp/tim-math12/node_modules/.bin/playwright install --with-deps chromium
-      - name: Importer par le compte Parent dans Firestore
+      - name: Précontrôler en PR, ou corriger uniquement Q10 sur main (Parent)
         env:
           NODE_PATH: /tmp/tim-math12/node_modules
         run: node outils/publier-maths-12nov-via-parent.cjs
