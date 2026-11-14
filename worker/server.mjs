@@ -294,11 +294,11 @@ export async function getMathTrainingTask(db,uid,payload,env){
  allowedFamily(uid);
  const id=payload?.id;
  if(!mathId(id))throw new ApiFault(400,'invalid-exercise');
- const existing=await db.get('mathTrainingAttempts/'+id);
+ const existing=uid===PARENT_UID?null:await db.get('mathTrainingAttempts/'+id);
  let task;
  try{task=await mathPublicTaskPrivate(env,id,db);}
  catch{throw new ApiFault(503,'math-bank-unavailable');}
- return {task,completed:Boolean(existing&&existing.authorUid===TIM_UID)};
+ return {task,completed:uid===PARENT_UID?null:Boolean(existing&&existing.authorUid===TIM_UID),completionVerified:uid!==PARENT_UID};
 }
 export async function submitMathTraining(db,uid,payload,env){
  permitted(uid,'tim');
@@ -362,8 +362,9 @@ async function getPhysicsTrainingTask(db,uid,payload){
  const id=payload?.id;
  if(!physicsTrainingId(id))throw new ApiFault(400,'invalid-physics-exercise');
  const task=physicsPublicTask(id);
+ if(uid===PARENT_UID)return {task,completed:null,completionVerified:false};
  const old=await db.get('physicsTrainingAttempts/'+id);
- return {task,completed:Boolean(old&&old.authorUid===TIM_UID)};
+ return {task,completed:Boolean(old&&old.authorUid===TIM_UID),completionVerified:true};
 }
 async function submitPhysicsTraining(db,uid,payload){
  permitted(uid,'tim');
@@ -442,8 +443,9 @@ async function getEnglishTrainingTask(db,uid,payload){
  const id=payload?.id;
  if(!englishTrainingId(id))throw new ApiFault(400,'invalid-physics-exercise');
  const task=englishPublicTask(id);
+ if(uid===PARENT_UID)return {task,completed:null,completionVerified:false};
  const old=await db.get('englishTrainingAttempts/'+id);
- return {task,completed:Boolean(old&&old.authorUid===TIM_UID)};
+ return {task,completed:Boolean(old&&old.authorUid===TIM_UID),completionVerified:true};
 }
 async function submitEnglishTraining(db,uid,payload){
  permitted(uid,'tim');
@@ -523,8 +525,9 @@ async function getSvtTrainingTask(db,uid,payload){
  const id=payload?.id;
  if(!svtTrainingId(id))throw new ApiFault(400,'invalid-svt-exercise');
  const task=svtPublicTask(id);
+ if(uid===PARENT_UID)return {task,completed:null,completionVerified:false};
  const old=await db.get('svtTrainingAttempts/'+id);
- return {task,completed:Boolean(old&&old.authorUid===TIM_UID)};
+ return {task,completed:Boolean(old&&old.authorUid===TIM_UID),completionVerified:true};
 }
 async function submitSvtTraining(db,uid,payload){
  permitted(uid,'tim');
@@ -604,8 +607,9 @@ async function getHgTrainingTask(db,uid,payload){
  const id=payload?.id;
  if(!hgTrainingId(id))throw new ApiFault(400,'invalid-hg-exercise');
  const task=hgPublicTask(id);
+ if(uid===PARENT_UID)return {task,completed:null,completionVerified:false};
  const old=await db.get('hgTrainingAttempts/'+id);
- return {task,completed:Boolean(old&&old.authorUid===TIM_UID)};
+ return {task,completed:Boolean(old&&old.authorUid===TIM_UID),completionVerified:true};
 }
 async function submitHgTraining(db,uid,payload){
  permitted(uid,'tim');
@@ -685,8 +689,9 @@ async function getFrTrainingTask(db,uid,payload){
  const id=payload?.id;
  if(!frTrainingId(id))throw new ApiFault(400,'invalid-fr-exercise');
  const task=frPublicTask(id);
+ if(uid===PARENT_UID)return {task,completed:null,completionVerified:false};
  const old=await db.get('frTrainingAttempts/'+id);
- return {task,completed:Boolean(old&&old.authorUid===TIM_UID)};
+ return {task,completed:Boolean(old&&old.authorUid===TIM_UID),completionVerified:true};
 }
 async function submitFrTraining(db,uid,payload){
  permitted(uid,'tim');
