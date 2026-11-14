@@ -3,7 +3,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {TESTABLE} from '../../worker/server.mjs';
 import {TIM_UID,PARENT_UID,ApiFault} from '../../worker/auth.mjs';
-import {fromFields} from '../../worker/firestore.mjs';
+import {fromFields,inspectFirestoreRead} from '../../worker/firestore.mjs';
 
 function fakeDB(initial={}){
  const docs=new Map(Object.entries(initial));
@@ -118,4 +118,31 @@ test('Les anciennes corrections d’espagnol restent privées tant que le Parent
  assert.equal(tim.attempts.length,1);
  assert.equal(tim.attempts[0].items.length,0);
  assert.equal(parent.attempts[0].items.length,1);
+});
+
+test('Sonde Firestore : ne retourne que deux statuts HTTP sans lire de documents ni écrire',async()=>{
+ const calls=[];
+ const result=await inspectFirestoreRead('JETON_FICTIF',async(url,options)=>{
+  calls.push({url:String(url),method:options.method,auth:options.headers.Authorization});
+  return new Response('',{status:String(url).includes('__tim_health__')?404:401});
+ });
+ assert.deepEqual(result,{documentHttpStatus:404,collectionHttpStatus:401,readOnly:true});
+ assert.equal(calls.length,2);
+ assert.ok(calls[0].url.endsWith('/__tim_health__/readonly_probe'));
+ assert.match(calls[1].url,/hgTrainingAttempts\\?pageSize=1/);
+ assert.ok(calls.every(c=>c.method==='GET'&&c.auth==='Bearer JETON_FICTIF'));
+ assert.equal(JSON.stringify(result).includes('JETON_FICTIF'),false);
+ const network=await inspectFirestoreRead('JETON_FICTIF',async()=>{throw Error('réseau indisponible');});
+ assert.deepEqual(network,{documentHttpStatus:0,collectionHttpStatus:0,readOnly:true});
+});
+
+test('Sonde Firestore : accessible uniquement au Parent, zéro mutation de base',async()=>{
+ let calls=0;
+ const db={probe:async()=>{calls++;return {documentHttpStatus:404,collectionHttpStatus:403,readOnly:true}}};
+ await assert.rejects(()=>TESTABLE.getFirestoreReadDiagnostics(db,TIM_UID),e=>e.status===403);
+ assert.equal(calls,0,'Tim ne peut pas déclencher la sonde');
+ const response=await TESTABLE.getFirestoreReadDiagnostics(db,PARENT_UID);
+ assert.deepEqual(response,{readOnly:true,documentHttpStatus:404,collectionHttpStatus:403});
+ assert.equal(calls,1);
+ assert.deepEqual(Object.keys(response).sort(),['collectionHttpStatus','documentHttpStatus','readOnly'].sort());
 });
