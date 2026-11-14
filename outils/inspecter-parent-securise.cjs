@@ -8,6 +8,7 @@ const EMAIL=process.env.TIM_PARENT_EMAIL||'';
 const PASSWORD=process.env.TIM_PARENT_PASSWORD||'';
 const URL=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
 const TARGET_IMPORT_ONLY=(()=>{try{return /controle-import-json-android/.test(JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion||'');}catch{return false;}})();
+const TARGET_BONUS_AUDIT=(()=>{try{return /controle-bonus-parent-20261114/.test(JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion||'');}catch{return false;}})();
 const output=path.join(process.cwd(),'browser-parent-results');
 fs.mkdirSync(output,{recursive:true});
 const data={site:URL,date:new Date().toISOString(),checks:[],devices:[],notes:[],pageErrors:[],subjectInventory:[],educationInventory:[],lessonIndex:[],exerciseIndex:[],integrity:[]};
@@ -61,6 +62,70 @@ async function inspect(browser,label,viewport){
     check(label+' menu Parent visible',stats.parentNav);
     check(label+' lecons chargees',stats.lessons>0,'Nombre : '+stats.lessons);
     check(label+' défi du jour supprimé du classeur',stats.dailyChallenges===0,'Défis quotidiens visibles : '+stats.dailyChallenges);
+
+    if(TARGET_BONUS_AUDIT){
+      // Audit du vrai site Cloudflare, de la session Parent et des figures publiques.
+      // Lecture seule : aucune réponse, copie individuelle, identifiant, note ou XP journalisés.
+      const ids=['TIMBONUSM03','TIMBONUSM05','TIMBONUSPERIM20261114'];
+      const figureAudit=await page.evaluate(ids=>{
+        const figures=window.TIM_BONUS_FIGURES;
+        return ids.map(id=>{
+          const ex=(window.__TIM_DATA?.exercises||[]).find(x=>x.id===id);
+          let count=0;
+          if(ex&&figures?.render)for(let i=0;i<ex.questions.length;i++){
+            const node=figures.render(ex,i);
+            if(node?.querySelector('svg[role="img"]'))count++;
+          }
+          return {id,found:!!ex,total:ex?.questions?.length||0,figures:count};
+        });
+      },ids);
+      for(const row of figureAudit)check(label+' figures publiees '+row.id,
+        row.found&&row.total===10&&row.figures===10,
+        'Exercice present : '+row.found+' ; questions : '+row.total+' ; figures : '+row.figures);
+      for(const id of ids){
+        try{
+          await page.evaluate(id=>window.openExercise(id,{skipOpening:true}),id);
+          const state=await page.evaluate(()=>{
+            const root=document.querySelector('#exercise-detail.active');
+            return {opened:!!root,questions:root?.querySelectorAll('.q').length||0,
+              figures:root?.querySelectorAll('figure svg[role="img"]').length||0,
+              completed:!!root?.querySelector('.challenge-result-summary'),
+              overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};
+          });
+          check(label+' ouverture bonus '+id,state.opened,
+            'Questions visibles : '+state.questions+' ; figures : '+state.figures+' ; deja termine : '+state.completed);
+          check(label+' bonus mobile sans debordement '+id,state.overflow<=16,
+            'Debordement horizontal : '+state.overflow+' px');
+          // Pas de capture ici : un défi terminé peut contenir la copie privée de Tim.
+        }catch(e){check(label+' ouverture bonus '+id,false,String(e.message||e).slice(0,100));}
+      }
+      await page.locator('[data-nav="parent"]:visible').first().click({timeout:9000});
+      const present=await page.evaluate(()=>{
+        const root=document.querySelector('#parent-content');
+        const labels=[...(root?.querySelectorAll('button')||[])].map(x=>x.textContent||'');
+        return {
+          panel:!!root?.querySelector('.tim-parent-unified'),
+          refresh:labels.some(x=>x.includes('Actualiser tous les résultats')),
+          export:labels.some(x=>x.includes('Exporter le bilan complet'))
+        };
+      });
+      check(label+' tableau Parent unique',present.panel);
+      check(label+' bouton actualisation des copies',present.refresh);
+      check(label+' bouton export complet',present.export);
+      await page.waitForFunction(()=>{
+        const root=document.querySelector('#parent-content .tim-parent-unified');
+        if(!root)return true;
+        return /exercice\\(s\\) enregistré\\(s\\)|Chargement impossible/.test(root.textContent||'')||
+          !/Chargement des résultats|Actualisation des résultats sécurisés/.test(root.textContent||'');
+      },null,{timeout:19000}).catch(()=>{});
+      const loading=await page.evaluate(()=>{
+        const root=document.querySelector('#parent-content .tim-parent-unified');
+        const text=root?.textContent||'';
+        return !root||!/Chargement des résultats|Actualisation des résultats sécurisés/.test(text);
+      });
+      check(label+' tableau Parent sort du chargement',loading);
+      return;
+    }
     if(label==='ordinateur'){
       try{
         const a=await page.evaluate(async()=>{
