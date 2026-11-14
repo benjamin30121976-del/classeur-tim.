@@ -60,7 +60,7 @@ function mountTimThalesSource(){
 }
 function viewTimReciproqueThales(){
  selected='TIM_RECIPROQUE_THALES_BIS';group=GROUPS[3];
- draw(header('Leçon BIS · La réciproque de Thalès','Explication pédagogique du cours du jeudi 12 novembre, distincte du texte officiel du professeur.')+
+ draw(header('Leçon BIS · La réciproque de Thalès','Méthode du jeudi 12 novembre appliquée aux exercices du vendredi 13. Leçon BIS distincte des textes ENT originaux.')+
  back('Retour au chapitre Thalès')+
  '<article class="spx-panel math-reading-lesson">'+
  '<section class="math-reading-section"><h3>1 · Comprendre à quoi ça sert</h3><p>La réciproque de Thalès sert à <strong>prouver que deux droites sont parallèles</strong>, à partir de longueurs connues. Le théorème de Thalès fait l’inverse : si les droites sont parallèles, il permet d’écrire des rapports égaux.</p></section>'+ 
@@ -72,14 +72,19 @@ function viewTimReciproqueThales(){
  '<section class="math-reading-section"><h3>4 · Exemple corrigé</h3><p>AD = 3 cm, AB = 5 cm, AE = 4,2 cm et AC = 7 cm.</p><ol><li>AD / AB = 3 / 5 = <strong>0,6</strong>.</li><li>AE / AC = 4,2 / 7 = <strong>0,6</strong>.</li><li>Les rapports sont égaux et les points sont alignés dans le même ordre. Donc <strong>(DE) // (BC)</strong>.</li></ol></section>'+
  '<section class="math-reading-section"><h3>5 · Je n’ai pas compris</h3><p>Imagine deux côtés d’un triangle. Tu compares la proportion parcourue sur chacun : 3 sur 5 d’un côté, 4,2 sur 7 de l’autre. Les deux représentent 60 % : la petite barre DE est alors parallèle à la base BC, si les points sont correctement alignés.</p><p><strong>Erreur à éviter :</strong> ne pas comparer AD / AC avec AE / AB. Les côtés doivent se correspondre. Ne pas conclure à partir du dessin seul.</p></section>'+
  '<section class="math-reading-section"><h3>6 · Et si les rapports sont différents ?</h3><p>Par exemple : 3 / 5 = 0,6 mais 5 / 7 ≈ 0,714. Les rapports ne sont pas égaux ; si les points sont bien alignés, <strong>(DE) n’est pas parallèle à (BC)</strong> (contraposée de Thalès).</p></section>'+
+ '<section class="math-reading-section"><h3>7 · Appliquer la leçon aux exercices du 13 novembre</h3><p>Le cours du professeur indique seulement « Exercices sur la réciproque de Thalès ». Voici deux <strong>exemples BIS créés pour apprendre</strong>, et non les exercices du livre. Dans les deux cas, A, D, B sont alignés dans cet ordre et A, E, C sont alignés dans cet ordre.</p>'+
+ '<p><strong>Exemple A : prouver que (DE) et (BC) sont parallèles.</strong> AD = 4 cm ; AB = 10 cm ; AE = 6 cm ; AC = 15 cm. Je calcule : AD/AB = 4/10 = 0,4 ; AE/AC = 6/15 = 0,4. Ces deux rapports sont égaux. Donc, <strong>d’après la réciproque du théorème de Thalès, (DE) est parallèle à (BC)</strong>.</p>'+
+ '<p><strong>Exemple B : prouver que les droites ne sont pas parallèles.</strong> AD = 3 cm ; AB = 9 cm ; AE = 5 cm ; AC = 12 cm. Je calcule : AD/AB = 3/9 = 1/3 et AE/AC = 5/12. Comme ces rapports sont différents, <strong>d’après la contraposée du théorème de Thalès, (DE) n’est pas parallèle à (BC)</strong>.</p></section>'+
+ '<section class="math-reading-section"><h3>8 · Comment rédiger une démonstration complète</h3><ol><li><strong>Situation :</strong> « Les points A, D, B et A, E, C sont alignés dans le même ordre. »</li><li><strong>Calculs :</strong> « AD/AB = 4/10 = 0,4 » et « AE/AC = 6/15 = 0,4 ».</li><li><strong>Comparaison :</strong> « Les rapports sont égaux. »</li><li><strong>Conclusion justifiée :</strong> « Donc, d’après la réciproque du théorème de Thalès, (DE) est parallèle à (BC). »</li></ol><p>Ne rédige pas seulement « oui » : écris les fractions, les calculs, la comparaison et la conclusion avec le nom du théorème.</p></section>'+
+ '<section class="math-reading-section"><h3>9 · Je n’ai pas compris ?</h3><p>Repère d’abord les paires : <strong>AD va avec AB</strong>, et <strong>AE va avec AC</strong>. Pour chaque paire, calcule petit segment divisé par grand segment. Si les rapports sont égaux ET que les points sont alignés dans le même ordre, utilise la réciproque. S’ils sont différents, utilise la contraposée.</p><p>Un dessin peut aider à placer les lettres, mais il ne remplace jamais les calculs. Tu peux écrire les rapports sous forme de fractions pour éviter les erreurs d’arrondi.</p></section>'+
  '<section class="math-reading-section"><h3>Devoir donné pour vendredi 13 novembre</h3><p><strong>Finir l’exercice 25 p.253.</strong> L’énoncé du manuel n’est pas présent dans l’archive ENT ; il n’est pas reproduit ici.</p></section>'+
  '</article>'+
- '<section class="spx-panel math12-exercises"><h3>Mes 3 exercices BIS — 12 novembre</h3><p>10 questions chacun, une seule validation, note sur 10, correction et +1 / +0,5 / 0 XP selon la note. Ces exercices d’entraînement ne remplacent pas le devoir 25 p.253 du manuel (énoncé absent de l’ENT).</p><div class="spx-quick-links">'+
+ '<section class="spx-panel math12-exercises"><h3>Mes trois entraînements BIS · cours des 12 et 13 novembre</h3><p>10 questions chacun, une seule validation, note sur 10, correction et +1 / +0,5 / 0 XP selon la note. Ces exercices d’entraînement ne remplacent pas le devoir 25 p.253 du manuel (énoncé absent de l’ENT).</p><div class="spx-quick-links">'+
  btn('data-math-nov12-ex','MTH12_01','Exercice 1 — Comprendre la méthode')+
  btn('data-math-nov12-ex','MTH12_02','Exercice 2 — Calculer les rapports')+
  btn('data-math-nov12-ex','MTH12_03','Exercice 3 — Rédiger et conclure')+
  '</div></section>'+
- '<div class="math-reading-actions">'+btn('data-math-open-original','TIM_ENT_20261112','Relire le texte exact du cours ENT du 12 novembre')+'</div>',()=>category(GROUPS[3]));
+ '<div class="math-reading-actions">'+btn('data-math-open-original','TIM_ENT_20261112','Relire la leçon ENT du 12 novembre')+btn('data-math-open-original','TIM_ENT_20261113','Voir la séance ENT du 13 novembre')+'</div>',()=>category(GROUPS[3]));
  wire();
  mountTimThalesSource();
 }
@@ -87,7 +92,7 @@ function viewTimMathNov12Exercise(id){
  if(!/^MTH12_0[1-3]$/.test(String(id||'')))return;
  selected=id;group=GROUPS[3];
  const name={MTH12_01:'Comprendre la méthode',MTH12_02:'Calculer et comparer',MTH12_03:'Rédiger et conclure'}[id];
- draw(header('Exercice du 12 novembre — '+name,'Réciproque de Thalès · 10 questions · une seule tentative · +1 / +0,5 / 0 XP')+
+ draw(header('Exercice BIS de Thalès — '+name,'Réciproque de Thalès · 10 questions · une seule tentative · +1 / +0,5 / 0 XP')+
  back('Retour à la leçon du 12 novembre')+
  '<section class="spx-panel" id="math12-exercise-slot"><p>Chargement des dix questions…</p></section>',viewTimReciproqueThales);
  const slot=root?.querySelector('#math12-exercise-slot');
