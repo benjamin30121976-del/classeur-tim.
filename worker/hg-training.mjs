@@ -1,9 +1,9 @@
-/* HG — 16 exercices (8 chapitres × 2 questionnaires de 10 questions).
+/* HG — 18 exercices (9 chapitres × 2 questionnaires de 10 questions).
    Corrections et bonnes réponses exclusivement côté serveur. */
 import {HG_QCM,HG_WRITTEN} from './hg-questions.mjs';
 import {sameShortAnswer} from './short-answer-equivalence.mjs';
 export const HG_BANK_VERSION='hg-20261113-v1';
-const RE=/^HGQ_L(0[1-8])_0([1-2])$/;
+const RE=/^HGQ_L(0[1-9])_0([1-2])$/;
 const LABELS=['Je comprends les notions','Je rédige et j’applique'];
 function context(id){
  const match=RE.exec(String(id||''));
@@ -12,8 +12,8 @@ function context(id){
 }
 export function hgTrainingId(id){return Boolean(context(id));}
 function validate(){
- if(HG_QCM.length!==8||HG_WRITTEN.length!==8)throw Error('8 chapitres HG exigés');
- for(let c=0;c<8;c++){
+ if(HG_QCM.length!==9||HG_WRITTEN.length!==9)throw Error('9 chapitres HG exigés');
+ for(let c=0;c<9;c++){
   if(HG_QCM[c].length!==10||HG_WRITTEN[c].length!==10)throw Error('10 questions par questionnaire HG');
   for(const [q,right,wrong,why] of HG_QCM[c]){
    if(!q?.trim()||!right?.trim()||!why?.trim()||wrong.length!==3||
@@ -70,4 +70,4 @@ export function gradeHgTask(id,answers,bankVersion){
   xp:0,items,errorCounts:wrong.length?{[task.lessonId]:wrong.length}:{},
   lessonToReview:wrong.length?task.lessonId:null,bankVersion:HG_BANK_VERSION};
 }
-export const HG_BANK_TEST={validate,allIds:()=>Array.from({length:8},(_,i)=>[1,2].map(s=>'HGQ_L0'+(i+1)+'_0'+s)).flat()};
+export const HG_BANK_TEST={validate,allIds:()=>Array.from({length:9},(_,i)=>[1,2].map(s=>'HGQ_L0'+(i+1)+'_0'+s)).flat()};
