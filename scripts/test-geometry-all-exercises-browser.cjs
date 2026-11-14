@@ -34,6 +34,12 @@ const pyth={id:'M26PYT1001',kind:'school',subject:'Mathématiques',title:'Archiv
 (async()=>{
  const {mathNov12ForParentImport}=await import('../maths-12nov-training.mjs');
  const original=mathNov12ForParentImport().exercises;
+ const {mathPublicTask}=await import('../worker/maths-training-curriculum.mjs');
+ const mathsData=JSON.parse(fs.readFileSync(path.join(dir,'maths-bis-data.js'),'utf8').split('=').slice(1).join('=').trim().replace(/;\\s*$/,''));
+ const lessons=Object.fromEntries(mathsData.lessons.map(x=>[x.id,x.title]));
+ const tasks=Array.from({length:23},(_,i)=>mathPublicTask('MT'+String(i+1).padStart(2,'0'))).map(t=>({
+  ...t,hint:lessons[t.lessonId]||'',subject:'Mathématiques'
+ }));
  const browser=await chromium.launch({headless:true});
  try{
   for(const [device,viewport] of [['android',{width:390,height:844}],['bureau',{width:1280,height:900}]]){
@@ -42,6 +48,12 @@ const pyth={id:'M26PYT1001',kind:'school',subject:'Mathématiques',title:'Archiv
    await page.setContent('<!DOCTYPE html><html lang="fr"><meta charset="utf-8"><style>*{box-sizing:border-box}body{margin:0;padding:15px;background:#15203b;color:#f7f9fe;font:16px Arial}.panel{background:#fff;color:#25344a;border-radius:15px;padding:16px}figure{color:#25344a}.q{padding:15px;border-bottom:1px solid #aab}.qtitle{font-size:21px;font-weight:bold}.choose{display:block}</style><div id="exercise-index"></div><div id="exercise-detail"></div></html>');
    await page.addScriptTag({content:geometry});
    await page.addScriptTag({content:legacy});
+   const inventory=await page.evaluate(tasks=>tasks.map(t=>{
+    const figures=t.questions.map(q=>!!window.TIM_GEOMETRY_DIAGRAMS.renderPrompt(q.prompt,t.hint));
+    return {id:t.id,withFigure:figures.filter(Boolean).length,total:t.questions.length,
+     missing:t.questions.map((q,i)=>({prompt:q.prompt,fig:figures[i]})).filter(x=>!x.fig).map(x=>x.prompt.slice(0,110))};
+   }),tasks);
+   if(device==='android')console.log('BANQUE_230_FIGURES '+JSON.stringify(inventory));
    const direct=await page.evaluate(({bd,original,pyth})=>{
     const b=bd.questions.map((_,i)=>window.TIM_BONUS_FIGURES.render(bd,i));
     const bis=original.map(ex=>({
