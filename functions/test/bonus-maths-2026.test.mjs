@@ -52,7 +52,15 @@ test('orthographe mathématique et justification écrite sans correction humaine
  const math=BONUS_MATH_2026[3],q=math.questions[2];
  const a=asSubmission(math);a[2]='-2x - 6';
  assert.equal(evaluate(math,a).answers[2].correct,true);
- assert.throws(()=>evaluate(math,asSubmission(math).map((r,i)=>i===6?'5x - 7 ||| court':r)),/Reasoning missing/);
+ assert.throws(()=>evaluate(math,asSubmission(math).map((r,i)=>i===6?'5x - 7 ||| ':r)),/Reasoning missing/);
+ // Une justification mathématique courte est recevable ; seule sa vérité
+ // n'est pas prétendue automatiquement vérifiée par la machine.
+ const terse=asSubmission(math);
+ terse[6]='5x - 7 ||| 6x-8-x+1';
+ const terseGrade=evaluate(math,terse);
+ assert.equal(terseGrade.answers[6].correct,true);
+ assert.equal(terseGrade.answers[6].reasoningAssessment,'not-automatically-graded');
+ assert.equal(terseGrade.answers[6].points,1);
  const good=evaluate(math,asSubmission(math));
  assert(good.answers[6].reasoning.includes('Je détaille'));
 });
