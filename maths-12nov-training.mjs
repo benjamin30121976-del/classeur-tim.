@@ -3,6 +3,10 @@
    Importés par compte Parent dans la collection exercices Firebase existante. */
 const Q=(prompt,choices,right,why)=>({prompt,choices,right,why});
 export const MATH12_IDS=['MTH12_01','MTH12_02','MTH12_03'];
+// Compatibilité des exercices déjà enregistrés : ne jamais corriger l'ancienne
+// question 10 avec le barème de la nouvelle question tant que Firebase n'a
+// pas été mis à jour sans toucher aux tentatives existantes.
+const LEGACY_MTH12_03_Q10=Q('Le professeur a demandé l’exercice 25 p.253, mais son énoncé n’est pas dans l’ENT. Comment le classeur doit-il le présenter ?',['Inventer les mesures de la page','Indiquer que l’énoncé manque et proposer des exercices distincts','Prétendre que ces questions sont l’exercice officiel','Marquer le devoir comme réalisé'],1,'Les trois séries sont des exercices pédagogiques originaux, pas une reproduction du devoir 25 p.253.');
 const SERIES=[
  [
   Q('À quoi sert la réciproque du théorème de Thalès ?',['Prouver que deux droites sont parallèles','Calculer une aire','Mesurer un angle au rapporteur','Prouver que deux droites sont perpendiculaires'],0,'La réciproque permet de démontrer un parallélisme à partir de rapports de longueurs égaux et d’alignements correctement vérifiés.'),
@@ -65,13 +69,29 @@ export function mathNov12PublicTask(id,exercise){
  return {id,lessonId:'MTH12',title:exercise.title,
   questions:exercise.questions.map((q,i)=>({number:i+1,prompt:q.q,choices:q.options}))};
 }
-export function mathNov12Score(id,answers){
+export function mathNov12Score(id,answers,storedExercise){
  const pack=mathNov12ForParentImport();
  const ex=pack.exercises.find(x=>x.id===id);
  if(!ex||!Array.isArray(answers)||answers.length!==10||answers.some(x=>!Number.isInteger(x)||x<0||x>3))return null;
- const items=ex.questions.map((q,i)=>({prompt:q.q,response:q.options[answers[i]],
-   expected:q.options[Number(q.right)],correct:answers[i]===Number(q.right),
-   explanation:q.why,category:q.skill,points:answers[i]===Number(q.right)?1:0}));
+ const rows=ex.questions.map(q=>({prompt:q.q,choices:q.options,right:Number(q.right),why:q.why,skill:q.skill}));
+ if(storedExercise!==undefined){
+  // Le serveur valide la version actuellement stockée. Refuser de produire
+  // une correction locale si énoncés et réponses ne sont pas identiques.
+  if(storedExercise?.id!==id||!Array.isArray(storedExercise.questions)||storedExercise.questions.length!==10)return null;
+  for(let i=0;i<10;i++){
+   const actual=storedExercise.questions[i],expected=rows[i];
+   const equal=q=>String(actual?.q||actual?.prompt||'')===q.prompt&&
+    Array.isArray(actual?.options)&&JSON.stringify(actual.options)===JSON.stringify(q.choices);
+   if(equal(expected))continue;
+   if(id==='MTH12_03'&&i===9&&equal(LEGACY_MTH12_03_Q10)){
+    rows[i]={prompt:LEGACY_MTH12_03_Q10.prompt,choices:LEGACY_MTH12_03_Q10.choices,
+     right:LEGACY_MTH12_03_Q10.right,why:LEGACY_MTH12_03_Q10.why,skill:'Réciproque de Thalès'};
+   }else return null;
+  }
+ }
+ const items=rows.map((q,i)=>({prompt:q.prompt,response:q.choices[answers[i]],
+  expected:q.choices[q.right],correct:answers[i]===q.right,
+  explanation:q.why,category:q.skill,points:answers[i]===q.right?1:0}));
  const score=items.filter(x=>x.correct).length;
  return {id,lessonId:'MTH12',score,total:10,xp:score>=7?1:score>=5?0.5:0,
   items,errors:items.filter(x=>!x.correct).length};
