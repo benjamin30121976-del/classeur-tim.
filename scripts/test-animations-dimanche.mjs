@@ -32,13 +32,17 @@ function skip(overlay){
 
 test('Dimanche: le MP4 à 20 XP seulement, sinon dévoilement du montant réel',async()=>{
  const {api,overlays}=animationHarness();
- for(const amount of [0,10,14]){
+ for(const [amount,filename] of [[0,'Tim_Animation_0XP_Toc_Toc_Paume.mp4'],[10,'loup-defi-original.webp'],[14,'loup-sunday-anime.webp']]){
   const running=api.playResult({kind:'sunday'},{xp:amount,score:15,total:20});
   const overlay=last(overlays),card=overlay.children[0];
   const media=find(card,n=>n.tagName==='VIDEO'||n.tagName==='IMG');
-  assert.equal(media,undefined,'ne pas présenter le film de +20 XP pour un autre score');
+  assert.ok(media,'un média adapté au score existe');
+  assert.ok(media.src.endsWith(filename),'média correspondant au gain réel de '+amount+' XP');
+  assert.ok(!media.src.includes('Tim_Defi_Du_Dimanche_20XP_Original.mp4'),'ne jamais afficher le film de 20 XP pour un autre gain');
   const award=find(card,n=>n.className==='tim-anim-award');
-  assert.equal(award.hidden,false);
+  assert.equal(award.hidden,true);
+  media.onerror();
+  assert.equal(award.hidden,false,'les XP réels apparaissent après le média');
   assert.equal(find(award,n=>n.tagName==='STRONG').textContent,api.xpLabel(amount));
   skip(overlay);await running;
  }
