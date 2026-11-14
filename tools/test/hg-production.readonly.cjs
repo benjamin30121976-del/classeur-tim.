@@ -49,6 +49,33 @@ const site=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
    }catch{return {requestHttpStatus:0,error:'diagnostic-indisponible'};}
   });
   console.log('DIAGNOSTIC_FIRESTORE_HTTP_STATUTS_SEULEMENT '+JSON.stringify(diag));
+  /* Même si Google limite Firestore (429), le Parent peut consulter
+     les questions et corriger un essai SANS enregistrement ni XP. */
+  const practice=await page.evaluate(async()=>{
+   const bridge=window.__TIM_BRIDGE;
+   const results=[];
+   for(const [id,taskMethod,previewMethod] of [
+    ['HGQ_L09_01','hgTrainingTask','hgTrainingPreviewSubmit'],
+    ['SVQ_L07_01','svtTrainingTask','svtTrainingPreviewSubmit']
+   ]){
+    try{
+     const result=await bridge[taskMethod](id),task=result?.task;
+     const answers=(task?.questions||[]).map(q=>q.kind==='qcm'?0:'réponse de vérification');
+     const corrected=await bridge[previewMethod](id,answers,task.bankVersion);
+     results.push({id,questions:task.questions.length,practice:corrected.practice,
+      saved:corrected.saved,xp:corrected.xp,corrections:corrected.items?.length||0});
+    }catch(e){results.push({id,error:String(e?.message||e).slice(0,120)});}
+   }
+   return results;
+  });
+  console.log('SIMULATIONS_PARENT_SANS_ECRITURE '+JSON.stringify(practice));
+  for(const result of practice){
+   assert.equal(result.questions,10,'Questionnaire Parent indisponible : '+result.id);
+   assert.equal(result.practice,true);
+   assert.equal(result.saved,false);
+   assert.equal(result.xp,0);
+   assert.equal(result.corrections,10);
+  }
   const before=await page.evaluate(()=>window.__TIM_BRIDGE.hgTrainingProgress());
   const results=await page.evaluate(async()=>{
    const pack=window.TIM_HG_PACK,bridge=window.__TIM_BRIDGE;

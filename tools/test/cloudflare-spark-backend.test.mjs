@@ -146,3 +146,45 @@ test('Sonde Firestore : accessible uniquement au Parent, zéro mutation de base'
  assert.equal(calls,1);
  assert.deepEqual(Object.keys(response).sort(),['collectionHttpStatus','documentHttpStatus','readOnly'].sort());
 });
+
+
+test('En cas de HTTP 429, le Parent peut pratiquer sans écrire et sans inventer la copie Tim',async()=>{
+ const db={
+  async get(){throw new ApiFault(503,'firestore-limit-429');},
+  async list(){throw Error('Firestore LIST interdit dans cette simulation Parent');},
+  async transaction(){throw Error('Transaction interdite dans cette simulation Parent');},
+  async commit(){throw Error('Écriture interdite dans cette simulation Parent');}
+ };
+ for(const [name,method,id] of [
+  ['HG','getHgTrainingTask','HGQ_L09_01'],
+  ['SVT','getSvtTrainingTask','SVQ_L07_01'],
+  ['Physique','getPhysicsTrainingTask','PCQ_L01_01'],
+  ['Anglais','getEnglishTrainingTask','ENQ_L01_01'],
+  ['Français','getFrTrainingTask','FRQ_L01_01']
+ ]){
+  const result=await TESTABLE[method](db,PARENT_UID,{id});
+  assert.equal(result.task?.questions?.length,10,name);
+  assert.equal(result.completed,null,name);
+  assert.equal(result.completionVerified,false,name);
+  assert.equal(result.task.questions.some(q=>['right','expected','accepted','explanation'].some(k=>Object.hasOwn(q,k))),false,name);
+  await assert.rejects(()=>TESTABLE[method](db,TIM_UID,{id}),e=>e.code==='firestore-limit-429',name+' Tim ne doit pas valider sans suivi');
+ }
+ const previewTask=await TESTABLE.getHgTrainingTask(db,PARENT_UID,{id:'HGQ_L09_01'});
+ const graded=await TESTABLE.previewHgTraining(db,PARENT_UID,{
+  id:'HGQ_L09_01',answers:Array(10).fill(0),bankVersion:previewTask.task.bankVersion
+ });
+ assert.equal(graded.practice,true);
+ assert.equal(graded.saved,false);
+ assert.equal(graded.xp,0);
+ assert.equal(graded.items.length,10);
+});
+
+
+test('Firestore sain : le Parent conserve le statut de copie terminée, sans régression',async()=>{
+ const db={get:async()=>({authorUid:TIM_UID})};
+ const result=await TESTABLE.getHgTrainingTask(db,PARENT_UID,{id:'HGQ_L09_01'});
+ assert.equal(result.completed,true);
+ assert.equal('completionVerified' in result,false);
+ const broken={get:async()=>{throw Error('panne inconnue');}};
+ await assert.rejects(()=>TESTABLE.getHgTrainingTask(broken,PARENT_UID,{id:'HGQ_L09_01'}),/panne inconnue/);
+});

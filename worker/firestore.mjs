@@ -78,7 +78,8 @@ export async function firestore(env){
   },...(body?{body:JSON.stringify(body)}:{})});
   if(response.status===404)return null;
   if(!response.ok){
-   if(response.status===409)throw new ApiFault(409,'already-exists');
+   if(response.status===429)throw new ApiFault(503,'firestore-limit-429');
+    if(response.status===409)throw new ApiFault(409,'already-exists');
    if(response.status===403)throw new ApiFault(503,'firestore-service-permission');
    throw new ApiFault(502,'firestore-service-error');
   }
@@ -95,7 +96,10 @@ export async function firestore(env){
    url.searchParams.set('pageSize',String(limit));
    if(pageToken)url.searchParams.set('pageToken',pageToken);
    const resp=await fetch(url,{headers:{Authorization:'Bearer '+token}});
-   if(!resp.ok)throw new ApiFault(502,'firestore-list-error');
+   if(!resp.ok){
+     if(resp.status===429)throw new ApiFault(503,'firestore-limit-429');
+     throw new ApiFault(502,'firestore-list-error');
+    }
    const data=await resp.json();
    for(const doc of data.documents||[]){
     result.push({id:String(doc.name||'').split('/').pop(),data:fromDocument(doc)});
