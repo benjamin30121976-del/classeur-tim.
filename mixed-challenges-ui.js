@@ -14,7 +14,10 @@ function answered(q,answer){
 }
 function label(tag,text){const x=E(tag,text);x.classList.add('mix-label');return x;}
 function draw(q,after=false){
- if(!q.diagram)return null;
+ if(!q.diagram){
+   if(q.subject==='Mathématiques')return window.TIM_GEOMETRY_DIAGRAMS?.renderPrompt?.(q.q,q.lesson||'')||null;
+   return null;
+  }
  const area=E('div',undefined,'mix-diagram'),ns='http://www.w3.org/2000/svg';
  const svg=document.createElementNS(ns,'svg');svg.setAttribute('viewBox','0 0 300 145');
  svg.setAttribute('role','img');svg.setAttribute('aria-label',q.diagram==='atom'?'Schéma du noyau et des particules de l’atome':q.diagram==='water'?'Schéma de molécules d’eau':q.diagram==='rectangle'?'Rectangle avec dimensions':'Triangle rectangle avec longueurs');
