@@ -877,6 +877,15 @@ if(!old && !window.__TIM_PARENT && controls.length>1){
  }
 scrollTop();}
 function renderFeedback(ex,t,root){
+ function showWrittenMethod(container,answer){
+  const d=answer.reasoningDetails;
+  if(d){
+   container.append(E('p','','Calcul écrit : '+safe(d.calculation||'')));
+   container.append(E('p','','Phrase-réponse écrite : '+safe(d.conclusion||'')));
+  }else if(answer.reasoning){
+   container.append(E('p','','Raisonnement écrit : '+safe(answer.reasoning)));
+  }
+ }
  const isChallenge=['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind);
  const isBonusDay=ex.kind==='bonus-day';
  const box=E('section','result'+(t.needsReview?' waiting':''));
@@ -894,6 +903,7 @@ function renderFeedback(ex,t,root){
   const q=ex.questions[i]||{},given=q.type==='mc'?(q.options?.[Number(a.response)]??a.response):a.response;
   const row=E('div','separated');
   row.append(E('strong','',(i+1)+'. '+safe(a.question||q.q||'Question')),E('p','','Ma réponse : '+safe(given)));
+  showWrittenMethod(row,a);
   review.append(row);
  }
  if(!isBonusDay)box.append(review);
@@ -902,7 +912,11 @@ function renderFeedback(ex,t,root){
   const q=ex.questions[i]||{},p=E('div','feedback');
   const given=q.type==='mc'?(q.options?.[Number(a.response)]??a.response):a.response;
   p.append(E('strong','',(i+1)+'. '+safe(a.question||q.q||'Question')),E('p','','Ta réponse : '+safe(given)));
-  if(a.correct!==null)p.append(E('p',a.correct?'correct':'wrong',a.correct?'Bonne réponse.':a.points===0.5?'Réponse presque correcte : 0,5/1 (accent ou ponctuation).':'Réponse à revoir.'));
+  showWrittenMethod(p,a);
+  if(a.correct!==null)p.append(E('p',a.correct?'correct':'wrong',
+   a.correct?'Bonne réponse.':a.points===0.5?
+    (q.reasoningCheck?.kind==='rectangle-perimeter-v1'?'Réponse partiellement correcte : 0,5/1 (résultat ou raisonnement à revoir).':'Réponse presque correcte : 0,5/1 (accent ou ponctuation).'):
+    'Réponse à revoir.'));
   if(a.correct===false){
    p.append(E('p','correct','Réponse attendue : '+safe(a.expected)));
    const explanation=safe(a.explanation).trim()||'Compare les mots, leur ordre et les terminaisons avec la réponse attendue. Relis la leçon pour comprendre la règle.';
