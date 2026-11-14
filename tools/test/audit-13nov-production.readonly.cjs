@@ -119,8 +119,8 @@
        const firebaseDirect=await page.evaluate(async()=>{
          try{
            const {getApp}=await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js');
-           const {getFirestore,doc,getDoc}=await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js');
-           const snapshot=await getDoc(doc(getFirestore(getApp()),'content','main'));
+           const {getFirestore,doc,getDocFromServer}=await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js');
+           const snapshot=await getDocFromServer(doc(getFirestore(getApp()),'content','main'));
            return {ok:true,exists:snapshot.exists()};
          }catch(e){return {ok:false,code:String(e?.code||e?.name||'unknown').slice(0,80)};}
        });
