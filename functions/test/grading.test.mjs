@@ -37,3 +37,14 @@ test('bonus maths : accepter un résultat exact rédigé comme une phrase',()=>{
   assert.equal(graded.score,0,'Réponse incorrecte créditée : '+response);
  }
 });
+
+test('une méthode non interprétée automatiquement ne doit pas être déclarée validée',()=>{
+ const ex={kind:'bonus-day',subject:'Mathématiques',questions:[{q:'Développe 2(x+3)',type:'text',reasoningRequired:true}]};
+ const key={questions:[{right:'2x+6',why:'2(x+3)=2x+6'}]};
+ const result=grade(ex,key,['2x+6 ||| 2x+3+3']);
+ assert.equal(result.score,1);
+ assert.equal(result.answers[0].correct,true);
+ assert.equal(result.answers[0].reasoningAssessment,'not-automatically-graded');
+ assert.equal(result.answers[0].reasoning,'2x+3+3');
+ assert.throws(()=>grade(ex,key,['2x+6 ||| ']),/Reasoning missing/);
+});
