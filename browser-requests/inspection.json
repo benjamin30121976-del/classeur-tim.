@@ -13,28 +13,37 @@
     {
       "type": "nav",
       "page": "home",
-      "name": "accueil-nouvelle-presentation"
+      "name": "accueil-bonus-20261114-final"
     },
     {
       "type": "click",
-      "selector": ".mission-hero .lobo-go",
-      "name": "ouvrir-bonus-devoirs"
+      "selector": ".mission-hero .lobo-go:has-text('Ouvrir mes exercices bonus')",
+      "name": "nouveau-bouton-confirmation"
+    },
+    {
+      "type": "screenshot",
+      "name": "message-bonus-sans-exercice-lisible"
+    },
+    {
+      "type": "click",
+      "selector": "#exercise-list .notice:has-text('Aucun exercice bonus')",
+      "name": "message-bonus-affiche"
     },
     {
       "type": "nav",
       "page": "matieres",
-      "name": "cours-ranges-matieres"
+      "name": "matieres-conservees"
     },
     {
       "type": "nav",
       "page": "exercices",
-      "name": "exercices-ranges"
+      "name": "exercices-conserves"
     },
     {
       "type": "nav",
       "page": "home",
-      "name": "retour-accueil"
+      "name": "accueil-final"
     }
   ],
-  "note": "Contrôle Chromium après publication PR #62 : affichage accueil, ouverture du nouveau carré de bonus, accès Matières et Exercices. Lecture seule en Invité ; aucune validation ni écriture Tim."
+  "note": "Contrôle final du nouvel accueil après correctif de contraste PR #63 : lire captures desktop/mobile, confirmer nouveau bouton et message bonus. Lecture seule, Invité, aucun résultat Tim modifié."
 }
