@@ -12,38 +12,24 @@
   "actions": [
     {
       "type": "nav",
-      "page": "home",
-      "name": "accueil-bonus-20261114-final"
-    },
-    {
-      "type": "click",
-      "selector": ".mission-hero .lobo-go:has-text('Ouvrir mes exercices bonus')",
-      "name": "nouveau-bouton-confirmation"
-    },
-    {
-      "type": "screenshot",
-      "name": "message-bonus-sans-exercice-lisible"
-    },
-    {
-      "type": "click",
-      "selector": "#exercise-list .notice:has-text('Aucun exercice bonus')",
-      "name": "message-bonus-affiche"
-    },
-    {
-      "type": "nav",
-      "page": "matieres",
-      "name": "matieres-conservees"
-    },
-    {
-      "type": "nav",
       "page": "exercices",
-      "name": "exercices-conserves"
+      "name": "exercices-baremes-publies"
+    },
+    {
+      "type": "click",
+      "selector": "#exercise-list .exercise-v12-overview-button.school",
+      "name": "ouvrir-devoirs-sans-mention-zero-xp"
     },
     {
       "type": "nav",
       "page": "home",
-      "name": "accueil-final"
+      "name": "accueil-nouveaux-xp"
+    },
+    {
+      "type": "click",
+      "selector": ".mission-hero .lobo-go",
+      "name": "bonus-devoirs-texte-xp"
     }
   ],
-  "note": "Contrôle final du nouvel accueil après correctif de contraste PR #63 : lire captures desktop/mobile, confirmer nouveau bouton et message bonus. Lecture seule, Invité, aucun résultat Tim modifié."
+  "note": "Contrôle en mode Invité après publication PR #65. Vérifier les libellés des XP de chaque exercice et du premier carré, en Chromium bureau/mobile. Aucun exercice validé et aucune écriture sur Tim."
 }
