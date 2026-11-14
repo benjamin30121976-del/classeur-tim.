@@ -15,6 +15,8 @@ permissions:
   contents: read
 jobs:
   ecrans-en-lecture-seule:
+    # Garder le contrôle de production à la demande pour préserver les quotas.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
