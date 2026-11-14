@@ -70,7 +70,8 @@ export function numericMathAnswerMatches(actual,expected,prompt=''){
     (!simplestFraction(original)||!original.includes('/')))return false;
  if(/\b(?:perimetre|contour|tour|bord)\b/.test(task)&&/\b(?:aire|surface)\b/.test(original))return false;
  if(/\b(?:aire|surface)\b/.test(task)&&/\bperimetre\b/.test(original))return false;
- const chain=original.replace(/^(?:(?:le|la|l')\s*)?(?:perimetre|contour|longueur|aire|surface|resultat|reponse|valeur|mesure)\s*(?:est|vaut|mesure|fait|donne|de|:|=)*\s*/, '')
+ const chain=original
+  .replace(/^(?:(?:le|la|l')\s*)?(?:perimetre|contour|longueur|aire|surface|resultat|reponse|valeur|mesure)(?:\s+(?:du rectangle|de l'affiche|de la figure|du cadre))?\s*(?:(?:est|vaut|mesure|fait|donne)(?:\s+de)?|:|=)?\s*/, '')
   .replace(/^(?:(?:on|je|nous)\s*(?:trouve|obtient|calcule)|il\s*(?:faut|reste)|cela\s*(?:fait|donne)|donc|ainsi)\s*(?:de|:|=)*\s*/,'')
   .replace(/^(?:p|a|bc)\s*=\s*/,'');
  const parts=chain.split('=').map(s=>s.trim()).filter(Boolean);
