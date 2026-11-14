@@ -195,11 +195,12 @@
   return finish(sv,'Schéma non à l’échelle.');
  }
  function render(ex,index){
-  if(!ex||ex.kind!=='bonus-day'||ex.subject!=='Mathématiques')return null;
+  if(!ex||ex.subject!=='Mathématiques')return null;
+  if(ex.kind!=='bonus-day')return window.TIM_GEOMETRY_DIAGRAMS?.render?.(ex,index)||null;
   const configs=ex.id==='TIMBONUSM03'?PYTHAGORE:
     ex.id==='TIMBONUSM05'?THALES:
     ex.id==='TIMBONUSPERIM20261114'?RECTANGLES:null;
-  if(!configs||!configs[index])return null;
+  if(!configs||!configs[index])return window.TIM_GEOMETRY_DIAGRAMS?.render?.(ex,index)||null;
   const fig=document.createElement('figure');
   fig.className='tim-math-bonus-figure';
   fig.style.cssText='margin:12px 0 18px;max-width:570px;padding:6px;border:1px solid #8daac4;border-radius:15px;background:#f8fbff;color:#1b3047';
