@@ -30,6 +30,20 @@ const validId=id=>typeof id==='string'&&/^[A-Za-z][A-Za-z0-9_-]{1,35}$/.test(id)
 function permitted(uid,required){
  if(uid!==(required==='parent'?PARENT_UID:TIM_UID))throw new ApiFault(403,'forbidden');
 }
+/* Pendant une limite Google 429, le Parent peut lire les questions en mode
+   essai sans écrire; l'état de la copie reste INCONNU, jamais inventé.
+   Pour Tim, tout échec Firestore est bloquant afin de protéger la tentative unique. */
+async function exerciseCompletion(db,uid,path){
+ try{
+  const old=await db.get(path);
+  return {completed:Boolean(old&&old.authorUid===TIM_UID)};
+ }catch(e){
+  if(uid===PARENT_UID&&e instanceof ApiFault&&e.code==='firestore-limit-429')
+   return {completed:null,completionVerified:false};
+  throw e;
+ }
+}
+
 function parisDate(date){
  const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date);
  const x=t=>parts.find(p=>p.type===t)?.value;
@@ -294,11 +308,11 @@ export async function getMathTrainingTask(db,uid,payload,env){
  allowedFamily(uid);
  const id=payload?.id;
  if(!mathId(id))throw new ApiFault(400,'invalid-exercise');
- const existing=uid===PARENT_UID?null:await db.get('mathTrainingAttempts/'+id);
+ const state=await exerciseCompletion(db,uid,'mathTrainingAttempts/'+id);
  let task;
  try{task=await mathPublicTaskPrivate(env,id,db);}
  catch{throw new ApiFault(503,'math-bank-unavailable');}
- return {task,completed:uid===PARENT_UID?null:Boolean(existing&&existing.authorUid===TIM_UID),completionVerified:uid!==PARENT_UID};
+ return {task,...state};
 }
 export async function submitMathTraining(db,uid,payload,env){
  permitted(uid,'tim');
@@ -362,9 +376,7 @@ async function getPhysicsTrainingTask(db,uid,payload){
  const id=payload?.id;
  if(!physicsTrainingId(id))throw new ApiFault(400,'invalid-physics-exercise');
  const task=physicsPublicTask(id);
- if(uid===PARENT_UID)return {task,completed:null,completionVerified:false};
- const old=await db.get('physicsTrainingAttempts/'+id);
- return {task,completed:Boolean(old&&old.authorUid===TIM_UID),completionVerified:true};
+ return {task,...await exerciseCompletion(db,uid,'physicsTrainingAttempts/'+id)};
 }
 async function submitPhysicsTraining(db,uid,payload){
  permitted(uid,'tim');
@@ -443,9 +455,7 @@ async function getEnglishTrainingTask(db,uid,payload){
  const id=payload?.id;
  if(!englishTrainingId(id))throw new ApiFault(400,'invalid-physics-exercise');
  const task=englishPublicTask(id);
- if(uid===PARENT_UID)return {task,completed:null,completionVerified:false};
- const old=await db.get('englishTrainingAttempts/'+id);
- return {task,completed:Boolean(old&&old.authorUid===TIM_UID),completionVerified:true};
+ return {task,...await exerciseCompletion(db,uid,'englishTrainingAttempts/'+id)};
 }
 async function submitEnglishTraining(db,uid,payload){
  permitted(uid,'tim');
@@ -525,9 +535,7 @@ async function getSvtTrainingTask(db,uid,payload){
  const id=payload?.id;
  if(!svtTrainingId(id))throw new ApiFault(400,'invalid-svt-exercise');
  const task=svtPublicTask(id);
- if(uid===PARENT_UID)return {task,completed:null,completionVerified:false};
- const old=await db.get('svtTrainingAttempts/'+id);
- return {task,completed:Boolean(old&&old.authorUid===TIM_UID),completionVerified:true};
+ return {task,...await exerciseCompletion(db,uid,'svtTrainingAttempts/'+id)};
 }
 async function submitSvtTraining(db,uid,payload){
  permitted(uid,'tim');
@@ -607,9 +615,7 @@ async function getHgTrainingTask(db,uid,payload){
  const id=payload?.id;
  if(!hgTrainingId(id))throw new ApiFault(400,'invalid-hg-exercise');
  const task=hgPublicTask(id);
- if(uid===PARENT_UID)return {task,completed:null,completionVerified:false};
- const old=await db.get('hgTrainingAttempts/'+id);
- return {task,completed:Boolean(old&&old.authorUid===TIM_UID),completionVerified:true};
+ return {task,...await exerciseCompletion(db,uid,'hgTrainingAttempts/'+id)};
 }
 async function submitHgTraining(db,uid,payload){
  permitted(uid,'tim');
@@ -689,9 +695,7 @@ async function getFrTrainingTask(db,uid,payload){
  const id=payload?.id;
  if(!frTrainingId(id))throw new ApiFault(400,'invalid-fr-exercise');
  const task=frPublicTask(id);
- if(uid===PARENT_UID)return {task,completed:null,completionVerified:false};
- const old=await db.get('frTrainingAttempts/'+id);
- return {task,completed:Boolean(old&&old.authorUid===TIM_UID),completionVerified:true};
+ return {task,...await exerciseCompletion(db,uid,'frTrainingAttempts/'+id)};
 }
 async function submitFrTraining(db,uid,payload){
  permitted(uid,'tim');
