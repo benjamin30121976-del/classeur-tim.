@@ -3,12 +3,14 @@
    Ne valide aucun exercice, ne modifie aucun score ni tentative.
 */
 const {chromium}=require('playwright');
+const {existsSync}=require('node:fs');
 const assert=require('node:assert/strict');
 const URL='https://classeur-tim-v16.pages.dev/';
 const ID='TIMBONUSPERIM20261114';
 (async()=>{
  assert(process.env.TIM_PARENT_EMAIL&&process.env.TIM_PARENT_PASSWORD,'Secrets Parent indisponibles');
- const browser=await chromium.launch({headless:true});
+ const executable=['/usr/bin/google-chrome','/usr/bin/google-chrome-stable','/usr/bin/chromium'].find(existsSync);
+ const browser=await chromium.launch({headless:true,...(executable?{executablePath:executable}:{})});
  try{
   const page=await browser.newPage({viewport:{width:390,height:844},locale:'fr-FR',reducedMotion:'reduce'});
   const errors=[];page.on('pageerror',e=>errors.push(String(e.message).slice(0,120)));
