@@ -188,3 +188,50 @@ test('Firestore sain : le Parent conserve le statut de copie terminée, sans ré
  const broken={get:async()=>{throw Error('panne inconnue');}};
  await assert.rejects(()=>TESTABLE.getHgTrainingTask(broken,PARENT_UID,{id:'HGQ_L09_01'}),/panne inconnue/);
 });
+
+test('Sonde HTTP 429 : un code Google et délai seulement, aucune donnée ni message privé',async()=>{
+ const secret='TOKEN_TEST_NON_VISIBLE';
+ const result=await inspectFirestoreRead(secret,async(url,options)=>{
+  assert.equal(options.method,'GET');
+  return new Response(JSON.stringify({
+   error:{status:'RESOURCE_EXHAUSTED',message:'Donnée privée interdite',
+    details:[{reason:'RATE_LIMIT_EXCEEDED',
+      metadata:{documentId:'SECRET_PRIVE',quota_limit_value:'secret'}}
+    ]}
+  }),{status:429,headers:{'retry-after':'120'}});
+ });
+ assert.equal(result.documentHttpStatus,429);
+ assert.equal(result.collectionHttpStatus,429);
+ assert.equal(result.documentGoogleStatus,'RESOURCE_EXHAUSTED');
+ assert.equal(result.collectionGoogleReason,'RATE_LIMIT_EXCEEDED');
+ assert.equal(result.documentRetryAfterSeconds,120);
+ assert.equal(result.collectionRetryAfterSeconds,120);
+ const out=JSON.stringify(result);
+ assert.equal(out.includes(secret),false);
+ assert.equal(out.includes('Donnée privée'),false);
+ assert.equal(out.includes('SECRET_PRIVE'),false);
+ assert.equal(out.includes('metadata'),false);
+});
+
+test('Sonde HTTP 429 : rejet des codes arbitraires et des délais non numériques',async()=>{
+ const result=await inspectFirestoreRead('TEST',async()=>new Response(JSON.stringify({
+  error:{status:'mes données privées',details:[{reason:'secret/key=abc'}]}
+ }),{status:429,headers:{'retry-after':'tomorrow'}}));
+ assert.deepEqual(result,{documentHttpStatus:429,collectionHttpStatus:429,readOnly:true});
+});
+
+test('Diagnostic Parent : n’expose que les statuts et les enums validées',async()=>{
+ const db={probe:async()=>({
+  documentHttpStatus:429,collectionHttpStatus:429,readOnly:true,
+  documentGoogleStatus:'RESOURCE_EXHAUSTED',
+  collectionGoogleReason:'RATE_LIMIT_EXCEEDED',
+  collectionRetryAfterSeconds:180,
+  secret:'NE_PAS_RENVOYER',
+  collectionGoogleStatus:'mauvais message avec espaces'
+ })};
+ const result=await TESTABLE.getFirestoreReadDiagnostics(db,PARENT_UID);
+ assert.deepEqual(result,{readOnly:true,documentHttpStatus:429,collectionHttpStatus:429,
+  documentGoogleStatus:'RESOURCE_EXHAUSTED',
+  collectionGoogleReason:'RATE_LIMIT_EXCEEDED',collectionRetryAfterSeconds:180});
+ assert.equal(JSON.stringify(result).includes('NE_PAS_RENVOYER'),false);
+});
