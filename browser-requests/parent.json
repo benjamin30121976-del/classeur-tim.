@@ -1,8 +1,8 @@
 {
   "mode": "lecture-seule-parent",
   "site": "https://classeur-tim-v16.pages.dev/",
-  "scope": "Test final du véritable sélecteur de fichiers JSON Android et du message de chargement local, sans publication.",
+  "scope": "Contrôle du site Cloudflare réel en session Parent : figures bonus maths, lisibilité mobile et boutons de copies/export. Lecture seule.",
   "launch_on_update": true,
-  "note": "Chromium Parent bureau et mobile. Aucun clic Publier, aucune écriture Firebase.",
-  "checkVersion": "controle-import-json-android-20261114-final-v2"
+  "note": "Chromium Parent bureau + Android 390px, aucune soumission, aucune capture de résultats individuels.",
+  "checkVersion": "controle-bonus-parent-20261114-v1"
 }
