@@ -771,7 +771,7 @@ if(ex.kind==='bonus-day'){
 if(ex.instructions&&!completedChallenge){const instructions=E('div','note info',ex.instructions);instructions.style.cssText='white-space:pre-line;font-size:16px;line-height:1.65;margin:12px 0;padding:16px;border:2px solid #e9b84a;border-radius:14px';root.append(instructions);}
 if(!completedChallenge)root.append(makeAttachmentPanel('exercise',ex.id));if(!window.__TIM_GUEST&&!ex.kind&&!attemptFor(ex.id)){
  const mode=window.TIM_EXERCISE.mode(ex);
- const modeInfo=notice(mode==='school'?'📚 DEVOIR DE L’ÉCOLE · 0 XP. Ton parent débloquera la correction.':mode==='bonus'?'⭐ EXERCICE BONUS · 100 % = +2 XP ; dès 60 % = +1 XP ; sinon 0. Maximum +3 XP par jour.':'Cet exercice n’est pas encore disponible.');modeInfo.id='tim-exercise-mode-info';root.append(modeInfo);
+ const modeInfo=notice(mode==='school'?'📚 DEVOIR DE L’ÉCOLE · 0 XP. Ton parent débloquera la correction.':mode==='bonus'?'⭐ EXERCICE BONUS · 100 % = +2 XP ; dès 60 % = +1 XP ; sinon 0. Aucun plafond quotidien.':'Cet exercice n’est pas encore disponible.');modeInfo.id='tim-exercise-mode-info';root.append(modeInfo);
 }
 if(window.__TIM_GUEST){root.append(notice('Visite en lecture seule : tu peux voir les questions, mais tu ne peux ni répondre ni valider.','guest-preview'));
  for(const [i,q] of ex.questions.entries()){const row=E('div','q');row.append(E('strong','',(i+1)+'. '+q.q));if(q.type==='mc'){const ul=E('ul');for(const option of q.options)ul.append(E('li','',option));row.append(ul);}root.append(row);}return;}
@@ -1205,7 +1205,7 @@ function makeRewardsTile(){const b=E('button','reward-open');b.type='button';
   body.append(E('p','','Les XP des défis sont comptés du lundi au dimanche. Le compteur hebdomadaire revient à zéro le lundi. La récompense est à valider et à verser par le parent ; les montants ne se cumulent pas.'));
   const table=E('table'),heads=E('tr');for(const t of ['XP de la semaine','Récompense'])heads.append(E('th','',t));table.append(heads);
   for(const [score,amount] of [[19,'2 €'],[38,'5 €'],[75,'10 €']]){const row=E('tr');row.append(E('td','',score+' XP'),E('td','',amount));table.append(row);}body.append(table);
-  const p=E('ul');for(const t of ['Défi du samedi (20 questions) : 17–20 = +10 XP ; 15–16 = +7 XP ; 12–14 = +4 XP ; 10–11 = +1 XP ; 8–9 = 0 XP ; 0–7 = −1 XP.','Défi du dimanche (20 questions sur la rentrée) : mêmes paliers que samedi, doublés pour atteindre 20 XP maximum.','Devoirs scolaires ENT : 0 XP. Entraînements des leçons de mathématiques et d’espagnol : 7 à 10/10 = +1 XP ; 5 à 6/10 = +0,5 XP ; 0 à 4/10 = 0 XP. Exercice bonus libre : maximum +3 XP par jour.','Une seule validation par défi du week-end. Les résultats et les XP déjà acquis restent enregistrés.','À chaque lundi, seul le compteur hebdomadaire repart à zéro : les notes, copies, trophées et XP de niveau restent enregistrés.','Les récompenses ne sont pas versées automatiquement ; le parent valide le montant.'])p.append(E('li','',t));body.append(p);
+  const p=E('ul');for(const t of ['Défi du samedi (20 questions) : 17–20 = +10 XP ; 15–16 = +7 XP ; 12–14 = +4 XP ; 10–11 = +1 XP ; 8–9 = 0 XP ; 0–7 = −1 XP.','Défi du dimanche (20 questions sur la rentrée) : mêmes paliers que samedi, doublés pour atteindre 20 XP maximum.','Devoirs scolaires ENT : 0 XP. Entraînements des leçons de mathématiques et d’espagnol : 7 à 10/10 = +1 XP ; 5 à 6/10 = +0,5 XP ; 0 à 4/10 = 0 XP. Exercices bonus libres : pas de plafond quotidien de XP.','Une seule validation par défi du week-end. Les résultats et les XP déjà acquis restent enregistrés.','À chaque lundi, seul le compteur hebdomadaire repart à zéro : les notes, copies, trophées et XP de niveau restent enregistrés.','Les récompenses ne sont pas versées automatiquement ; le parent valide le montant.'])p.append(E('li','',t));body.append(p);
   if(!window.__TIM_GUEST){const st=xpInfo();body.append(E('p','','Cette semaine : '+st.week.toLocaleString('fr-FR')+' XP. Récompense actuelle : '+st.reward+' €.'));}
   dialog.setAttribute('tabindex','-1');if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');dialog.scrollTop=0;dialog.focus({preventScroll:true});
  });return b;}
@@ -1503,7 +1503,7 @@ function __timRefreshCalendar(){
   const el=document.getElementById('exercices');if(el?.classList.contains('active')){
    renderExerciseIndex();
    const tip=document.getElementById('tim-exercise-mode-info');const ex=exerciseBy(window.__TIM_OPEN_EXERCISE_ID);
-   if(tip&&ex){const mode=window.TIM_EXERCISE.mode(ex);tip.textContent=mode==='bonus'?'⭐ EXERCICE BONUS · 100 % = +2 XP ; dès 60 % = +1 XP ; sinon 0. Maximum +3 XP par jour.':mode==='school'?'📚 DEVOIR DE L’ÉCOLE · 0 XP.':'Pas encore disponible.';}
+   if(tip&&ex){const mode=window.TIM_EXERCISE.mode(ex);tip.textContent=mode==='bonus'?'⭐ EXERCICE BONUS · 100 % = +2 XP ; dès 60 % = +1 XP ; sinon 0. Aucun plafond quotidien.':mode==='school'?'📚 DEVOIR DE L’ÉCOLE · 0 XP.':'Pas encore disponible.';}
   }
   if(document.getElementById('home')?.classList.contains('active'))renderHome();
  }
