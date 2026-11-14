@@ -1,8 +1,8 @@
 {
   "mode": "lecture-seule-parent",
   "site": "https://classeur-tim-v16.pages.dev/",
-  "scope": "Contrôle du site Cloudflare réel en session Parent : figures bonus maths, lisibilité mobile et boutons de copies/export. Lecture seule.",
+  "scope": "Audit ciblé Parent en lecture seule : réponse(s) du défi du samedi 14 novembre 2026, raisonnements et difficulté des exercices bonus maths. Aucun résultat individuel dans les rapports.",
   "launch_on_update": true,
-  "note": "Chromium Parent bureau + Android 390px, aucune soumission, aucune capture de résultats individuels.",
-  "checkVersion": "controle-bonus-parent-20261114-v1"
+  "note": "Récupération des corrections existantes sans répondre à un exercice ; questions et données de Tim non sauvegardées.",
+  "checkVersion": "audit-defi-samedi-bonus-20261115-v1"
 }
