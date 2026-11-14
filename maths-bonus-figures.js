@@ -214,7 +214,7 @@
  }
  function displayPrompt(ex,index,fallback){
   const prompts=ex?.kind==='bonus-day'&&ex?.subject==='Mathématiques'?PROMPTS[ex.id]:null;
-  return prompts?.[index]||fallback;
+  return prompts?.[index]||window.TIM_GEOMETRY_DIAGRAMS?.displayPrompt?.(ex,index,fallback)||fallback;
  }
  window.TIM_BONUS_FIGURES=Object.freeze({render,displayPrompt});
 })();
