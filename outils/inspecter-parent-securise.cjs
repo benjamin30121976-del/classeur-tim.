@@ -87,15 +87,22 @@ async function inspect(browser,label,viewport){
           await page.evaluate(id=>window.openExercise(id,{skipOpening:true}),id);
           const state=await page.evaluate(()=>{
             const root=document.querySelector('#exercise-detail.active');
+            const question=root?.querySelector('.q');
+            const fig=root?.querySelector('.tim-math-bonus-figure svg');
             return {opened:!!root,questions:root?.querySelectorAll('.q').length||0,
               figures:root?.querySelectorAll('figure svg[role="img"]').length||0,
               completed:!!root?.querySelector('.challenge-result-summary'),
+              styled:!!root?.classList.contains('math-bonus-detail'),
+              whiteCard:question?getComputedStyle(question).backgroundColor==='rgb(255, 255, 255)':false,
+              figureResponsive:fig?getComputedStyle(fig).maxWidth==='100%':false,
               overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};
           });
           check(label+' ouverture bonus '+id,state.opened,
             'Questions visibles : '+state.questions+' ; figures : '+state.figures+' ; deja termine : '+state.completed);
           check(label+' bonus mobile sans debordement '+id,state.overflow<=16,
             'Debordement horizontal : '+state.overflow+' px');
+          check(label+' CSS PR75 des exercices '+id,state.styled&&state.whiteCard&&state.figureResponsive,
+            'Classe nouvelle : '+state.styled+' ; fond clair : '+state.whiteCard+' ; figure adaptée : '+state.figureResponsive);
           // Pas de capture ici : un défi terminé peut contenir la copie privée de Tim.
         }catch(e){check(label+' ouverture bonus '+id,false,String(e.message||e).slice(0,100));}
       }
@@ -106,12 +113,17 @@ async function inspect(browser,label,viewport){
         return {
           panel:!!root?.querySelector('.tim-parent-unified'),
           refresh:labels.some(x=>x.includes('Actualiser tous les résultats')),
-          export:labels.some(x=>x.includes('Exporter le bilan complet'))
+          export:labels.some(x=>x.includes('Exporter le bilan complet')),
+          newLayout:(()=>{
+            const row=root?.querySelector('.tim-parent-unified .toolrow');
+            return row&&getComputedStyle(row).display==='grid';
+          })()
         };
       });
       check(label+' tableau Parent unique',present.panel);
       check(label+' bouton actualisation des copies',present.refresh);
       check(label+' bouton export complet',present.export);
+      check(label+' disposition Parent PR75',present.newLayout);
       await page.waitForFunction(()=>{
         const root=document.querySelector('#parent-content .tim-parent-unified');
         if(!root)return true;
