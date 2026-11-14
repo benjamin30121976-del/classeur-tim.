@@ -1,9 +1,18 @@
 name: Vérifier les défis pédagogiques mélangés
 on:
+  pull_request:
+    paths:
+      - 'worker/mixed-challenges.mjs'
+      - 'worker/math-answer-equivalence.mjs'
+      - 'worker/test/mixed-pedagogie-20261115.test.mjs'
+      - 'mixed-challenges-ui.js'
+      - '.github/workflows/verifier-defis-mixtes.yml'
   push:
     branches: [main]
     paths:
       - 'worker/mixed-challenges.mjs'
+      - 'worker/math-answer-equivalence.mjs'
+      - 'worker/test/mixed-pedagogie-20261115.test.mjs'
       - 'worker/server.mjs'
       - 'worker/test/mixed-challenges.test.mjs'
       - 'worker/test/mixed-parent-preview.test.mjs'
@@ -31,12 +40,13 @@ jobs:
       - name: Vérifier la syntaxe des modules
         run: |
           node --check worker/mixed-challenges.mjs
+          node --check worker/math-answer-equivalence.mjs
           node --check worker/server.mjs
           node --check mixed-challenges-ui.js
           node --check boot.js
           node --check app.js
       - name: Vérifier les 30 questions, 3 matières, notes et traductions
-        run: node --test worker/test/mixed-challenges.test.mjs worker/test/mixed-parent-preview.test.mjs worker/test/course-fallback.test.mjs
+        run: node --test worker/test/mixed-challenges.test.mjs worker/test/mixed-pedagogie-20261115.test.mjs worker/test/mixed-parent-preview.test.mjs worker/test/course-fallback.test.mjs
       - name: Vérifier les règles historiques des XP
         run: node --test functions/test/xp.test.mjs
       - name: Résumé
