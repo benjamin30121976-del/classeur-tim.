@@ -8,6 +8,7 @@ on:
     paths:
       - 'browser-requests/parent.json'
       - 'outils/inspecter-parent-securise.cjs'
+      - 'outils/auditer-defis-samedi-parent.cjs'
       - '.github/workflows/inspection-parent-authentifie.yml'
   workflow_dispatch:
 permissions:
@@ -35,6 +36,7 @@ jobs:
           node --check worker/maths-training-extra.mjs
           node --check worker/test/math-training.test.mjs
           node --check outils/inspecter-parent-securise.cjs
+          node --check outils/auditer-defis-samedi-parent.cjs
       - name: Tester les 23 évaluations et la sécurité des tentatives
         run: node --test worker/test/math-training.test.mjs
       - name: Verifier la configuration des secrets sans les afficher
