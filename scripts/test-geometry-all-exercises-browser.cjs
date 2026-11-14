@@ -32,8 +32,25 @@ const pyth={id:'M26PYT1001',kind:'school',subject:'Mathématiques',title:'Archiv
   {q:'Quel est son périmètre ?'},{q:'Quelle est son aire ?'}
  ]};
 (async()=>{
- const {mathNov12ForParentImport}=await import('../maths-12nov-training.mjs');
+ const {mathNov12ForParentImport,mathNov12Score}=await import('../maths-12nov-training.mjs');
  const original=mathNov12ForParentImport().exercises;
+ const current=original.find(x=>x.id==='MTH12_03');
+ const legacy=structuredClone(current);
+ legacy.questions[9]={
+  q:'Le professeur a demandé l’exercice 25 p.253, mais son énoncé n’est pas dans l’ENT. Comment le classeur doit-il le présenter ?',
+  options:['Inventer les mesures de la page','Indiquer que l’énoncé manque et proposer des exercices distincts','Prétendre que ces questions sont l’exercice officiel','Marquer le devoir comme réalisé']
+ };
+ const sample=Array(10).fill(0);
+ const oldGrade=mathNov12Score('MTH12_03',sample,legacy);
+ const newGrade=mathNov12Score('MTH12_03',sample,current);
+ assert(oldGrade&&newGrade,'Compatibilité des banques Thalès absente');
+ assert.equal(oldGrade.items[9].correct,false,'Ancienne question : index 0 doit être faux');
+ assert.equal(newGrade.items[9].correct,true,'Nouvelle question : index 0 doit être vrai');
+ assert.match(oldGrade.items[9].expected,/énoncé manque/);
+ assert.match(newGrade.items[9].expected,/réciproque de Thalès/);
+ const unknown=structuredClone(current);unknown.questions[9].q='Question non autorisée';
+ assert.equal(mathNov12Score('MTH12_03',sample,unknown),null,'Une banque inconnue ne doit jamais être notée avec un autre corrigé');
+ console.log('OK compatibilité Thalès : ancien et nouveau questionnaire, barèmes séparés, banque inconnue refusée.');
  const {mathPublicTask,mathTask,gradeMathTask}=await import('../worker/maths-training-curriculum.mjs');
  const mathsData=JSON.parse(fs.readFileSync(path.join(dir,'maths-bis-data.js'),'utf8').split('=').slice(1).join('=').trim().replace(/;$/,''));
  const lessons=Object.fromEntries(mathsData.lessons.map(x=>[x.id,x.title]));
