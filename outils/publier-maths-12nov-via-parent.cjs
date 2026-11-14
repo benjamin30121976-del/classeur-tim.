@@ -16,11 +16,18 @@ async function question10Snapshot(page){
   const {getFirestore,doc,getDoc}=await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js');
   const db=getFirestore(getApp());
   const names=['exercises','attempts','privateAttempts','publicExercises','answerKeys','releasedCorrections'];
-  const records=await Promise.all(names.map(name=>getDoc(doc(db,name,'MTH12_03'))));
+  const records=await Promise.all(names.map(async name=>{
+   try{
+    const snap=await getDoc(doc(db,name,'MTH12_03'));
+    return {name,exists:snap.exists(),payloadJson:name==='exercises'&&snap.exists()?snap.data()?.payloadJson:null};
+   }catch(error){return {name,error:String(error?.code||'read-failed').slice(0,90)};}
+  }));
+  const failed=records.filter(x=>x.error);
+  if(failed.length)return {error:failed.map(x=>x.name+':'+x.error).join(', ')};
   return {
-   payloadJson:records[0].exists()?records[0].data()?.payloadJson:null,
-   flags:{attempt:records[1].exists(),privateAttempt:records[2].exists(),
-    publicExercise:records[3].exists(),answerKey:records[4].exists(),releasedCorrection:records[5].exists()}
+   payloadJson:records[0].payloadJson,
+   flags:{attempt:records[1].exists,privateAttempt:records[2].exists,
+    publicExercise:records[3].exists,answerKey:records[4].exists,releasedCorrection:records[5].exists}
   };
  });
 }
@@ -28,6 +35,7 @@ async function checkOrFixQuestion10(page,mode,pack){
  if(mode!=='verify'&&mode!=='fix')throw Error('Mode de contrôle invalide');
  const expected=pack.exercises.find(x=>x.id==='MTH12_03');
  const before=await question10Snapshot(page);
+ if(before.error)throw Error('STOP : lectures Firebase refusées : '+before.error+'. Aucune écriture.');
  const plan=planQuestion10(before.payloadJson,expected,before.flags);
  console.log('QUESTION10 PRECONTROLE : '+plan.status+' ; tentatives présentes : '+Boolean(before.flags.attempt||before.flags.privateAttempt)+'.');
  if(plan.status==='already-corrected'){
