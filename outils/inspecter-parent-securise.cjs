@@ -9,6 +9,7 @@ const PASSWORD=process.env.TIM_PARENT_PASSWORD||'';
 const URL=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
 const TARGET_IMPORT_ONLY=(()=>{try{return /controle-import-json-android/.test(JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion||'');}catch{return false;}})();
 const TARGET_BONUS_AUDIT=(()=>{try{return /controle-bonus-parent-20261114/.test(JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion||'');}catch{return false;}})();
+const TARGET_WEEKEND_AUDIT=(()=>{try{return /audit-defi-samedi-bonus-20261115/.test(JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion||'');}catch{return false;}})();
 const output=path.join(process.cwd(),'browser-parent-results');
 fs.mkdirSync(output,{recursive:true});
 const data={site:URL,date:new Date().toISOString(),checks:[],devices:[],notes:[],pageErrors:[],subjectInventory:[],educationInventory:[],lessonIndex:[],exerciseIndex:[],integrity:[]};
@@ -62,6 +63,10 @@ async function inspect(browser,label,viewport){
     check(label+' menu Parent visible',stats.parentNav);
     check(label+' lecons chargees',stats.lessons>0,'Nombre : '+stats.lessons);
     check(label+' défi du jour supprimé du classeur',stats.dailyChallenges===0,'Défis quotidiens visibles : '+stats.dailyChallenges);
+
+    if(label==='ordinateur'&&TARGET_WEEKEND_AUDIT){
+      await require('./auditer-defis-samedi-parent.cjs')(page,check);
+    }
 
     if(TARGET_BONUS_AUDIT){
       // Audit du vrai site Cloudflare, de la session Parent et des figures publiques.
