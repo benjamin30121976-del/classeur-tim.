@@ -113,9 +113,7 @@ async function inspect(browser,label,viewport){
         'Figures : '+inventory.bisFigures+'/'+inventory.bisTotal+' (question sur manuel exclue)');
       check(label+' ancien exercice Pythagore',inventory.pythTotal===3&&inventory.pythFigures===3,
         'Figures : '+inventory.pythFigures+'/'+inventory.pythTotal);
-      if(inventory.existing&&typeof window.openExercise==='undefined'){
-        check(label+' rendu de l onglet Exercices',false,'Ouvreur absent');
-      }else if(inventory.existing){
+      if(inventory.existing){
         try{
           await page.evaluate(()=>window.openExercise('BD1611_MA01',{skipOpening:true}));
           const display=await page.evaluate(()=>{
