@@ -1,7 +1,7 @@
 name: Vérifier la sixième matière Histoire-Géographie
 on:
   push:
-    branches: [main, integration-histoire-geographie-20261113]
+    branches: [main, integration-histoire-geographie-20261113, correctif-hg09-diagnostic-firestore-20261114]
     paths:
       - 'histoire-geographie-*.js'
       - 'worker/hg-*.mjs'
@@ -14,6 +14,7 @@ on:
       - 'index.html'
       - 'parent-unified-results.js'
       - 'tools/test/hg-production.readonly.cjs'
+      - 'tools/test/preview-firestore-diagnostic.readonly.cjs'
       - '.github/workflows/verifier-histoire-geographie.yml'
   workflow_dispatch:
 permissions:
@@ -36,13 +37,13 @@ jobs:
       - name: Résumé
         run: echo 'Aucune tentative réelle de Tim n’a été consommée.' >> "$GITHUB_STEP_SUMMARY"
   navigateur-parent:
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/correctif-hg09-diagnostic-firestore-20261114'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
       TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
       TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
-      TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
+      TIM_SITE_URL: ${{ github.ref == 'refs/heads/correctif-hg09-diagnostic-firestore-20261114' && 'https://d11ed780.classeur-tim-v16.pages.dev/' || 'https://classeur-tim-v16.pages.dev/' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -55,4 +56,9 @@ jobs:
       - name: Contrôler le compte Parent sans écriture
         env:
           NODE_PATH: /tmp/tim-hg/node_modules
-        run: node tools/test/hg-production.readonly.cjs
+        run: |
+          if [ "$GITHUB_REF" = "refs/heads/correctif-hg09-diagnostic-firestore-20261114" ]; then
+            node tools/test/preview-firestore-diagnostic.readonly.cjs
+          else
+            node tools/test/hg-production.readonly.cjs
+          fi
