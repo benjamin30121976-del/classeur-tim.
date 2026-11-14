@@ -91,7 +91,7 @@ async function inspect(browser,label,viewport){
         });
         const count=audit.geometry.reduce((n,x)=>n+x.matching.length,0);
         const withFigure=audit.geometry.reduce((n,x)=>n+x.matching.filter(q=>q.hasFigure).length,0);
-        console.log('GEOMETRY_QUESTIONS_AUDIT '+JSON.stringify({totalMath:audit.totalMath,totalGeometryExercises:audit.geometry.length,totalGeometryQuestions:count,figures:withFigure,exact:audit.exact,exercises:audit.geometry}));
+        console.log('GEOMETRY_QUESTIONS_AUDIT '+JSON.stringify({totalMath:audit.totalMath,totalGeometryExercises:audit.geometry.length,totalGeometryQuestions:count,figures:withFigure,exact:audit.exact,target:audit.target,exercises:audit.geometry}));
         check('Inventaire questions geometriques existantes',audit.geometry.length>0,
          'Exercices '+audit.geometry.length+' ; questions '+count+' ; figures existantes '+withFigure);
       }
