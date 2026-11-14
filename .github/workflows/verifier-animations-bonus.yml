@@ -8,6 +8,9 @@ on:
       - 'anglais-exercices.js'
       - 'tim-animations.css'
       - 'app.js'
+      - 'index.html'
+      - 'maths-bonus-figures.js'
+      - 'scripts/test-bonus-figures-browser.cjs'
       - 'boot.js'
       - 'xp-rules.js'
       - 'functions/index.mjs'
@@ -34,6 +37,8 @@ jobs:
         run: |
           node --check tim-animations.js
           node --check app.js
+          node --check maths-bonus-figures.js
+          node --check scripts/test-bonus-figures-browser.cjs
           node --check maths-parcours.js
           node --check anglais-exercices.js
           node --check espagnol-training-ui.js
@@ -56,6 +61,7 @@ jobs:
         run: |
           node scripts/test-animation-browser.cjs
           node scripts/test-bonus-perimetres-browser.cjs
+          node scripts/test-bonus-figures-browser.cjs
       - name: Archiver les captures des animations
         if: always()
         uses: actions/upload-artifact@v4
