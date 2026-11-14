@@ -9,6 +9,7 @@ const PASSWORD=process.env.TIM_PARENT_PASSWORD||'';
 const URL=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
 const TARGET_IMPORT_ONLY=(()=>{try{return /controle-import-json-android/.test(JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion||'');}catch{return false;}})();
 const TARGET_BONUS_AUDIT=(()=>{try{return /controle-bonus-parent-20261114/.test(JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion||'');}catch{return false;}})();
+const TARGET_GEOMETRY_POST77=(()=>{try{return /audit-geometrie-pr77-production/.test(JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion||'');}catch{return false;}})();
 const output=path.join(process.cwd(),'browser-parent-results');
 fs.mkdirSync(output,{recursive:true});
 const data={site:URL,date:new Date().toISOString(),checks:[],devices:[],notes:[],pageErrors:[],subjectInventory:[],educationInventory:[],lessonIndex:[],exerciseIndex:[],integrity:[]};
@@ -63,6 +64,81 @@ async function inspect(browser,label,viewport){
     check(label+' lecons chargees',stats.lessons>0,'Nombre : '+stats.lessons);
     check(label+' défi du jour supprimé du classeur',stats.dailyChallenges===0,'Défis quotidiens visibles : '+stats.dailyChallenges);
 
+
+    if(TARGET_GEOMETRY_POST77){
+      // Vrai site Cloudflare, session Parent, ordinateur + Android 390 px.
+      // Aucun clic de validation, aucune copie/identité/note/XP ni réponse individuelle enregistrée.
+      await page.waitForFunction(()=>!!window.TIM_BONUS_FIGURES?.render && !!window.TIM_GEOMETRY_DIAGRAMS?.renderPrompt,null,{timeout:16000}).catch(()=>{});
+      const inventory=await page.evaluate(()=>{
+        const exercises=window.__TIM_DATA?.exercises||[];
+        const renderer=window.TIM_BONUS_FIGURES;
+        const generic=window.TIM_GEOMETRY_DIAGRAMS;
+        const id='BD1611_MA01',ex=exercises.find(x=>x.id===id);
+        const result={newModule:!!generic?.renderPrompt,existing:!!ex,
+          total:ex?.questions?.length||0,images:0,missing:[],q1DoesNotRevealAnswer:false,
+          q5NoFakeParallel:false,q8ParallelGiven:false,bisTotal:0,bisFigures:0,
+          pythTotal:0,pythFigures:0};
+        if(ex&&renderer?.render){
+          const figures=ex.questions.map((_,i)=>renderer.render(ex,i));
+          result.images=figures.filter(f=>f?.querySelector('svg[role="img"]')).length;
+          result.missing=figures.flatMap((f,i)=>f?.querySelector('svg[role="img"]')?[]:[i+1]);
+          result.q1DoesNotRevealAnswer=/aucun parall[eé]lisme n.est marqu[eé]/i.test(figures[0]?.textContent||'');
+          result.q5NoFakeParallel=/aucun parall[eé]lisme n.est marqu[eé]/i.test(figures[4]?.textContent||'');
+          result.q8ParallelGiven=/indiqu[eé]es parall[eè]les/i.test(figures[7]?.textContent||'');
+        }
+        for(const id of ['MTH12_01','MTH12_02','MTH12_03']){
+          const exercise=exercises.find(x=>x.id===id);
+          if(!exercise)continue;
+          for(const q of exercise.questions||[]){
+            result.bisTotal++;
+            if(generic?.renderPrompt?.(q.q||q.prompt||'',exercise.title)?.querySelector('svg[role="img"]'))result.bisFigures++;
+          }
+        }
+        const pyth=exercises.find(x=>x.id==='M26PYT1001');
+        for(let i=0;i<(pyth?.questions||[]).length;i++){
+          result.pythTotal++;
+          if(renderer?.render(pyth,i)?.querySelector('svg[role="img"]'))result.pythFigures++;
+        }
+        return result;
+      });
+      check(label+' module geometrie PR77 publie',inventory.newModule);
+      check(label+' devoir Thales du 16 novembre present',inventory.existing&&inventory.total===10,
+        'Questions : '+inventory.total);
+      check(label+' dix schemas des dix questions du vrai devoir Thales',inventory.images===10&&inventory.missing.length===0,
+        'Figures : '+inventory.images+'/'+inventory.total+' ; questions sans figure : '+inventory.missing.join(','));
+      check(label+' reciproque Q1 sans conclusion devoilee',inventory.q1DoesNotRevealAnswer);
+      check(label+' reciproque Q5 sans paralleles inventees',inventory.q5NoFakeParallel);
+      check(label+' Q8 marque paralleles donnes dans enonce',inventory.q8ParallelGiven);
+      check(label+' trois series BIS Thales',inventory.bisTotal===30&&inventory.bisFigures===29,
+        'Figures : '+inventory.bisFigures+'/'+inventory.bisTotal+' (question sur manuel exclue)');
+      check(label+' ancien exercice Pythagore',inventory.pythTotal===3&&inventory.pythFigures===3,
+        'Figures : '+inventory.pythFigures+'/'+inventory.pythTotal);
+      if(inventory.existing&&typeof window.openExercise==='undefined'){
+        check(label+' rendu de l onglet Exercices',false,'Ouvreur absent');
+      }else if(inventory.existing){
+        try{
+          await page.evaluate(()=>window.openExercise('BD1611_MA01',{skipOpening:true}));
+          const display=await page.evaluate(()=>{
+            const root=document.querySelector('#exercise-detail.active'),questions=[...(root?.querySelectorAll('.q')||[])];
+            const rect=root?.getBoundingClientRect();
+            const all=questions.map(q=>{
+              const fig=q.querySelector('figure'),svg=fig?.querySelector('svg[role="img"]');
+              return {present:!!svg,visible:!!fig&&getComputedStyle(fig).display!=='none',
+                fits:!!fig&&fig.getBoundingClientRect().width<=q.getBoundingClientRect().width+1};
+            });
+            return {opened:!!root,total:questions.length,svg:all.filter(x=>x.present).length,
+              visible:all.filter(x=>x.visible).length,fits:all.filter(x=>x.fits).length,
+              overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};
+          });
+          check(label+' 10 figures rendues dans enonces sans validation',
+            display.opened&&display.total===10&&display.svg===10&&display.visible===10,
+            'Questions : '+display.total+' ; SVG visibles : '+display.visible);
+          check(label+' toutes figures adaptees ecran',display.fits===10&&display.overflow<=16,
+            'Figures dans largeur : '+display.fits+'/10 ; debordement horizontal : '+display.overflow+' px');
+        }catch(error){check(label+' rendu questions du devoir',false,String(error?.message||error).slice(0,130));}
+      }
+      return;
+    }
     if(TARGET_BONUS_AUDIT){
       // Audit du vrai site Cloudflare, de la session Parent et des figures publiques.
       // Lecture seule : aucune réponse, copie individuelle, identifiant, note ou XP journalisés.
