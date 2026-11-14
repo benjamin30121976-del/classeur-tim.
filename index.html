@@ -101,6 +101,17 @@ button.back{background:transparent;border:0;border-radius:10px;margin-bottom:8px
 .group-picker .group-card:nth-child(4) .group-icon{background:#f2e9ff;color:#7651aa}
 #cours #lesson-topic,#exercices #exercise-topic{display:none}
 @media(max-width:350px){.group-picker{grid-template-columns:1fr}.group-card{min-height:104px}}
+/* Page d'exercice : accès direct à la première question, sans page de présentation. */
+#exercices:has(#exercise-detail.active)>.pagehead{display:none}
+#exercise-detail.exercise-direct{padding-top:8px}
+#exercise-detail.exercise-direct>.exercise-compact-title{font-size:clamp(20px,4.2vw,25px);line-height:1.22;margin:2px 0 10px}
+#exercise-detail.exercise-direct>.back{margin-bottom:7px}
+#exercise-detail .exercise-extra{border:1px solid var(--border);border-radius:12px;margin:0 0 12px;background:var(--surface);color:var(--text)}
+#exercise-detail .exercise-extra>summary{cursor:pointer;padding:9px 13px;font-size:14px;font-weight:750}
+#exercise-detail .exercise-extra-content{padding:5px 13px 14px}
+#exercise-detail .exercise-extra-content>.intro{margin:10px 0}
+#exercise-detail .exercise-extra-content>.attachment-panel{margin-top:10px}
+
 /* Quiz: une question par écran et progression */
 .quiz-progress{scroll-margin-top:78px;margin:8px 0 16px;background:#fff;padding:15px;border:1px solid #e4e8f0;border-radius:15px}
 .quiz-progress .quiz-row{display:flex;align-items:center;justify-content:space-between;gap:12px;color:#47556e;font-size:12px;font-weight:800;margin-bottom:10px}
