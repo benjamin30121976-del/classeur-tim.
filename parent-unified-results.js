@@ -58,7 +58,9 @@ function questionItems(raw){
   correct:a.correct??null,
   points:a.points,
   explanation:a.explanation||a.feedback||'',
-  category:a.category||''
+  category:a.category||'',
+  reasoning:a.reasoning||'',
+  reasoningDetails:a.reasoningDetails||null
  }));
 }
 function perfect(r,items){return isExact(r.score)&&isExact(r.total)&&Number(r.total)>0&&Number(r.score)===Number(r.total)&&items.length>0&&items.every(x=>x.correct===true);}
@@ -145,6 +147,10 @@ function renderDetails(slot,record,items){
   const line=el('div','separated');
   cell(line,'strong','',(i+1)+'. '+item.question);
   cell(line,'p','', 'Réponse de Tim : '+item.response);
+  if(item.reasoningDetails){
+   cell(line,'p','','Calcul de Tim : '+String(item.reasoningDetails.calculation||''));
+   cell(line,'p','','Phrase-réponse de Tim : '+String(item.reasoningDetails.conclusion||''));
+  }else if(item.reasoning)cell(line,'p','','Raisonnement de Tim : '+String(item.reasoning));
   if(item.correct===false||item.points===0.5){
    cell(line,'p','wrong',item.points===0.5?'Réponse partiellement correcte':'Réponse incorrecte');
    cell(line,'p','correct','Réponse attendue : '+item.expected);
