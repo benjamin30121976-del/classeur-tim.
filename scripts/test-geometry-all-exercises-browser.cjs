@@ -34,9 +34,37 @@ const pyth={id:'M26PYT1001',kind:'school',subject:'Mathématiques',title:'Archiv
 (async()=>{
  const {mathNov12ForParentImport}=await import('../maths-12nov-training.mjs');
  const original=mathNov12ForParentImport().exercises;
- const {mathPublicTask}=await import('../worker/maths-training-curriculum.mjs');
+ const {mathPublicTask,mathTask,gradeMathTask}=await import('../worker/maths-training-curriculum.mjs');
  const mathsData=JSON.parse(fs.readFileSync(path.join(dir,'maths-bis-data.js'),'utf8').split('=').slice(1).join('=').trim().replace(/;$/,''));
  const lessons=Object.fromEntries(mathsData.lessons.map(x=>[x.id,x.title]));
+ assert.equal(mathsData.lessons.length,23,'Leçons BIS incomplètes');
+ const required=['Objectif','Comprendre','Méthode étape par étape','Exemples corrigés','Schéma explicatif','Comment rédiger le résultat','Erreur fréquente'];
+ mathsData.lessons.forEach((l,i)=>{
+  assert.equal(l.id,'MBIS'+String(i+1).padStart(2,'0'));
+  for(const name of required)assert.equal(l.blocks.filter(b=>b.h===name).length,1,l.id+' : rubrique '+name+' manquante');
+  assert(l.blocks.find(b=>b.h==='Comment rédiger le résultat')?.body.length>100,l.id+' : aide à la rédaction trop courte');
+  assert(l.help?.simple&&l.help?.steps?.length>=3&&l.help?.example,l.id+' : parcours d’aide incomplet');
+ });
+ for(let n=1;n<=23;n++){
+  const id='MT'+String(n).padStart(2,'0'),task=mathTask(id);
+  assert.equal(task.questions.length,10,id+' : série incomplète');
+  for(const q of task.questions){
+   assert(q.prompt.length>=10&&q.explanation?.length>=15,id+' : énoncé ou correction insuffisants');
+   assert.equal(q.choices.length,4,id+' : mauvais nombre de choix');
+   assert.equal(new Set(q.choices.map(x=>x.normalize('NFKC').trim().toLowerCase())).size,4,id+' : réponses doublées');
+   assert.equal(q.choices[q.correctIndex],q.expected,id+' : bonne réponse décalée');
+   assert.equal(q.feedbackByIndex.filter(Boolean).length,3,id+' : correction des mauvaises réponses incomplète');
+  }
+  const right=task.questions.map(q=>q.correctIndex);
+  const perfect=gradeMathTask(id,right);
+  assert.equal(perfect.score,10,id+' : notation 10/10 incorrecte');
+  for(let shift=1;shift<=3;shift++){
+   const wrong=gradeMathTask(id,task.questions.map(q=>(q.correctIndex+shift)%4));
+   assert.equal(wrong.score,0,id+' : notation 0/10 incorrecte');
+   assert(wrong.items.every(x=>!x.correct&&x.explanation.length>=20&&x.expected),id+' : corrections des erreurs incomplètes');
+  }
+ }
+ console.log('OK 23 leçons BIS, 23 aides à la rédaction, 230 questions, 690 erreurs simulées en mémoire (0 écriture).');
  const tasks=Array.from({length:23},(_,i)=>mathPublicTask('MT'+String(i+1).padStart(2,'0'))).map(t=>({
   ...t,hint:lessons[t.lessonId]||'',subject:'Mathématiques'
  }));
@@ -87,7 +115,7 @@ const pyth={id:'M26PYT1001',kind:'school',subject:'Mathématiques',title:'Archiv
    assert.match(direct.q5Data,/AN\s*:\s*6/,'Q5 : mesure AN absente');
    assert(!direct.q5Data.includes('indiquées parallèles'),'Q5 : ne pas présenter le parallélisme comme une donnée');
    assert(direct.q8Given.includes('indiquées parallèles'),'Q8 : reconnaître les parallèles fournies');
-   assert.deepEqual(direct.bis.map(x=>x.present.filter(Boolean).length),[10,10,9],'Les 30 questions BIS de Thalès doivent être couvertes sauf le sujet absent du manuel');
+   assert.deepEqual(direct.bis.map(x=>x.present.filter(Boolean).length),[10,10,10],'Les 30 questions BIS de Thalès doivent désormais avoir un schéma');
    assert.deepEqual(direct.pyth,[true,true,true],'Les trois questions de l’archive Pythagore sont sans figure');
    assert(direct.pythLabels[1].includes('4,2 cm'),'Les dimensions du triangle doivent rester visibles pour la question suivante.');
    await page.evaluate(({source,ex})=>{
@@ -116,7 +144,7 @@ const pyth={id:'M26PYT1001',kind:'school',subject:'Mathématiques',title:'Archiv
    await page.locator('#exercise-detail .q').first().screenshot({
     path:path.join(output,'devoir-thales-question1-'+device+'.png'),animations:'disabled'
    });
-   console.log('OK '+device+': 10/10 devoir Thalès, 29/30 BIS (une question sur le manuel sans figure), 3/3 archive Pythagore ; rendu Exercices 10/10 ; aucune tentative.');
+   console.log('OK '+device+': 10/10 devoir Thalès, 30/30 BIS, 3/3 archive Pythagore ; rendu Exercices 10/10 ; aucune tentative.');
    await page.close();
   }
  }finally{await browser.close();}
