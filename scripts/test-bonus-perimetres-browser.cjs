@@ -72,7 +72,26 @@ const code=app.slice(start,end);
    assert(!after.includes('Revoir la leçon :'),'Lien fictif présent dans la correction');
    assert.equal(await page.getByText('Valider définitivement cet exercice').count(),0,'Tentative rejouable');
    await page.screenshot({path:path.join(out,'bonus-perimetres-'+name+'-corrige.png'),fullPage:true});
-   console.log('OK Chromium '+name+' : 10 questions, aucune aide avant, correction de 5 erreurs, XP, aucun lien fictif ni revalidation.');
+   // Simulation d'une réponse numérique exacte avec calcul FAUX : 0,5/1.
+   const perfectAnswers=ex.questions.map(q=>q.reasoningCheck?
+    String(q.right)+' ||| '+JSON.stringify({
+     calculation:q.reasoningCheck.unit==='cm'?'2*(8+4)=24':'2*(9+6)=30',
+     conclusion:q.reasoningCheck.unit==='cm'?
+      'Le périmètre du rectangle est de 24 cm.':'Il faut 30 m de clôture pour entourer le potager.'
+    }):String(q.right));
+   perfectAnswers[8]=String(ex.questions[8].right)+' ||| '+JSON.stringify({
+    calculation:'8 × 4 = 32',conclusion:'Le périmètre du rectangle est de 24 cm.'
+   });
+   const partial=grade(ex,{questions:ex.questions.map(q=>({right:q.right,also:q.also||[],why:q.why}))},perfectAnswers);
+   assert.equal(partial.score,9.5,'La mauvaise démarche ne doit jamais valoir 1/1');
+   await open({...saved,score:partial.score,xp:5,answers:partial.answers});
+   const partialText=await page.locator('#exercise-detail').innerText();
+   assert(partialText.includes('Ta note : 9,5/10'),'Note partielle au format français absente');
+   assert(partialText.includes('Réponse partiellement correcte : 0,5/1'),'Signalement du raisonnement incorrect absent');
+   assert(partialText.includes('Ton résultat numérique est juste'),'Explication ciblée absente');
+   assert(!partialText.includes('Revoir la leçon :'),'Lien fictif dans la correction partielle');
+   await page.screenshot({path:path.join(out,'bonus-perimetres-'+name+'-raisonnement-partiel.png'),fullPage:true});
+   console.log('OK Chromium '+name+' : dix questions, corrections, crédit partiel d un calcul faux et zéro lien fictif.');
    await page.close();
   }
  }finally{await browser.close();}
