@@ -13,58 +13,43 @@
     {
       "type": "nav",
       "page": "matieres",
-      "name": "ouvrir-matieres"
-    },
-    {
-      "type": "click",
-      "selector": "#matieres-content button.matter-card:has-text('Mathématiques')",
-      "name": "maths-13"
-    },
-    {
-      "type": "click",
-      "selector": "[data-math-open-original='TIM_ENT_20261113']",
-      "name": "maths-cours-original-13"
-    },
-    {
-      "type": "click",
-      "selector": "[data-math-reciproque]",
-      "name": "maths-bis-thales-13"
-    },
-    {
-      "type": "nav",
-      "page": "matieres",
-      "name": "retour-matieres-hg"
+      "name": "liste-matieres"
     },
     {
       "type": "click",
       "selector": "#matieres-content button.matter-card:has-text('Histoire-géographie')",
-      "name": "histoire-13"
+      "name": "ouvrir-histoire"
     },
     {
       "type": "click",
-      "selector": "#matieres-content details.chapter-section:last-of-type details.tim-es-lesson button:has-text('Leçon BIS')",
-      "name": "bis-nazisme"
+      "selector": "#matieres-content details.chapter-section:has-text('Nazisme') details.tim-es-lesson button:has-text('Leçon BIS')",
+      "name": "lire-bis-nazisme"
+    },
+    {
+      "type": "click",
+      "selector": "#matieres-content details.chapter-section:has-text('Nazisme') details.tim-es-lesson button:has-text('Je n’ai pas compris')",
+      "name": "aides-nazisme"
     },
     {
       "type": "nav",
       "page": "matieres",
-      "name": "retour-matieres-svt"
+      "name": "retour-liste"
     },
     {
       "type": "click",
       "selector": "#matieres-content button.matter-card:has-text('SVT')",
-      "name": "svt-13"
+      "name": "ouvrir-svt"
     },
     {
       "type": "click",
-      "selector": "#matieres-content details.chapter-section:last-of-type details.tim-es-lesson button:has-text('Leçon BIS')",
-      "name": "bis-phagocytose"
+      "selector": "#matieres-content details.chapter-section:has-text('Phagocytose') details.tim-es-lesson button:has-text('Leçon BIS')",
+      "name": "lire-bis-phagocytose"
     },
     {
       "type": "click",
-      "selector": "#matieres-content details.chapter-section:last-of-type details.tim-es-lesson button:has-text('Je n’ai pas compris')",
-      "name": "svt-aides"
+      "selector": "#matieres-content details.chapter-section:has-text('Phagocytose') details.tim-es-lesson button:has-text('Je n’ai pas compris')",
+      "name": "aides-phagocytose"
     }
   ],
-  "note": "Contrôle Chromium après publication du 13 novembre, lecture seule Invité mobile et bureau : Thalès, nazisme, phagocytose. Aucun compte Tim/Parent utilisé, aucune validation."
+  "note": "Deuxième contrôle Chromium ciblé après publication : HG nazisme et SVT phagocytose en Invité sur mobile et bureau. Mathématiques désactivées intentionnellement en Invité ; contrôle authentifié distinct. Aucune validation ni modification de résultats."
 }
