@@ -1,8 +1,8 @@
 {
   "mode": "lecture-seule-parent",
   "site": "https://classeur-tim-v16.pages.dev/",
-  "scope": "Contrôle du site Cloudflare réel en session Parent : figures bonus maths, lisibilité mobile et boutons de copies/export. Lecture seule.",
+  "scope": "Audit de publication PR77 : schémas du devoir réel BD1611_MA01 et séries Thalès, en session Parent Chromium ; aucun essai ni écriture.",
   "launch_on_update": true,
-  "note": "Chromium Parent bureau + Android 390px, aucune soumission, aucune capture de résultats individuels.",
-  "checkVersion": "controle-bonus-parent-20261114-v1"
+  "note": "Contrôle automatique ordinateur et Android 390px ; seules les métadonnées et présences de figures sont imprimées.",
+  "checkVersion": "audit-geometrie-pr77-production-v1"
 }
