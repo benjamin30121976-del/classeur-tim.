@@ -129,7 +129,7 @@ test('Sonde Firestore : ne retourne que deux statuts HTTP sans lire de documents
  assert.deepEqual(result,{documentHttpStatus:404,collectionHttpStatus:401,readOnly:true});
  assert.equal(calls.length,2);
  assert.ok(calls[0].url.endsWith('/__tim_health__/readonly_probe'));
- assert.match(calls[1].url,/hgTrainingAttempts\\?pageSize=1/);
+ assert.match(calls[1].url,/hgTrainingAttempts\?pageSize=1/);
  assert.ok(calls.every(c=>c.method==='GET'&&c.auth==='Bearer JETON_FICTIF'));
  assert.equal(JSON.stringify(result).includes('JETON_FICTIF'),false);
  const network=await inspectFirestoreRead('JETON_FICTIF',async()=>{throw Error('réseau indisponible');});
