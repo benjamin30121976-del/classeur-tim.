@@ -873,7 +873,7 @@ if(old){
    root.append(notice('Ton exercice est enregistré, mais le résultat n’a pas pu s’afficher. Tu ne dois pas le recommencer.'));
    root.append(button('Ouvrir ma note et mon corrigé',()=>openExercise(id),'mission-launch'));
   }
-},'btn');root.append(E('p','small','Une seule validation. Pour les défis, la note et la correction sont immédiates ; les devoirs scolaires restent à 0 XP et sous contrôle du parent.'),submit);}
+},'btn');root.append(E('p','small','Une seule validation. Note et correction immédiates pour les réponses automatiquement corrigées. Les XP dépendent du barème de chaque exercice.'),submit);}
 if(!old && !window.__TIM_PARENT && controls.length>1){
   const questionNodes=[...form.querySelectorAll('.q')];
   const submit=root.querySelector('button.btn');
@@ -908,6 +908,7 @@ function renderFeedback(ex,t,root){
  box.append(E('h3','',isBonusDay?(perfect?'Aucune erreur à corriger.':'Voir mes erreurs corrigées'):
   perfect?'Toutes les réponses sont correctes — aucune correction nécessaire.':
   t.needsReview?'Rédaction enregistrée — à revoir':'Correction détaillée : '+Number(t.score).toLocaleString('fr-FR')+'/'+Number(t.total).toLocaleString('fr-FR')));
+ if(!isChallenge&&Number.isFinite(t.score)&&Number.isFinite(t.total))box.append(E('p','result-score','Ta note : '+Number(t.score).toLocaleString('fr-FR')+'/'+Number(t.total).toLocaleString('fr-FR')));
  box.append(E('p','subtle','Validé le '+new Date(t.date).toLocaleString('fr-FR')+'. Les réponses sont verrouillées sur tous les appareils.'));
  // Questions et réponses toujours relisibles, sans expliquer les réponses déjà correctes.
  const review=E('details','summary-details');
