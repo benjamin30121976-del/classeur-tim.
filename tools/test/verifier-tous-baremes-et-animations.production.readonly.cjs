@@ -152,8 +152,13 @@ async function runBrowser(mobile){
       'bonus-parent:9','bonus-day:5'].includes(spec.kind+':'+score)){
       await overlay.screenshot({path:path.join(OUT,'defi-'+spec.kind+'-'+String(score).replace('.','_')+'.png')});
     }
-    await overlay.getByRole('button',{name:'Voir ma correction'}).click();
-    await overlay.waitFor({state:'detached'});
+    // L'écran se ferme automatiquement après l'affichage. Si le délai a
+    // expiré, ne pas attendre pendant 30 s un bouton déjà supprimé.
+    await page.evaluate(()=>{
+      const button=document.querySelector('.tim-anim-overlay .tim-anim-skip');
+      if(button&&button.textContent==='Voir ma correction')button.click();
+    });
+    await overlay.waitFor({state:'detached',timeout:5000});
     displayed++;
    }
   }
