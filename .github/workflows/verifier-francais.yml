@@ -34,7 +34,8 @@ jobs:
         run: |
           node --test worker/test/fr-training.test.mjs worker/test/mixed-challenges.test.mjs worker/test/mixed-parent-preview.test.mjs worker/test/corrections-pedagogiques.test.mjs worker/test/hg-training.test.mjs worker/test/svt-training.test.mjs worker/test/physics-training.test.mjs worker/test/math-training.test.mjs
   navigateur-parent:
-    if: github.ref == 'refs/heads/main'
+    # Les tests unitaires restent automatiques ; contrôle authentifié sur demande.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
