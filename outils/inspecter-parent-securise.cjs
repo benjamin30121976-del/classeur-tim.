@@ -91,7 +91,7 @@ async function inspect(browser,label,viewport){
           if(!exercise)continue;
           for(const q of exercise.questions||[]){
             result.bisTotal++;
-            if(generic?.renderPrompt?.(q.q||q.prompt||'',exercise.title)?.querySelector('svg[role="img"]'))result.bisFigures++;
+            if(generic?.renderPrompt?.(q.q||q.prompt||'','Réciproque de Thalès')?.querySelector('svg[role="img"]'))result.bisFigures++;
           }
         }
         const pyth=exercises.find(x=>x.id==='M26PYT1001');
