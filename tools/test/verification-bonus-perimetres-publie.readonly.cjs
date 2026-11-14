@@ -43,7 +43,17 @@ const ID='TIMBONUSPERIM20261114';
   assert.equal(summary.enabled,true);
   assert.equal(summary.count,10);
   assert.equal(summary.reasoning,2);
-  await page.evaluate(()=>document.querySelector('[data-nav="exercices"]').click());
+  const intro=page.locator('#intro-screen');
+  if(await intro.isVisible()){
+    const skip=page.locator('#intro-silent');
+    if(await skip.isVisible())await skip.evaluate(el=>el.click());
+    await intro.waitFor({state:'hidden',timeout:15000});
+  }
+  const navBtn=page.locator('[data-nav="exercices"]').first();
+  console.log('AVANT_NAVIGATION '+JSON.stringify({
+    disabled:await navBtn.isDisabled(),introVisible:await intro.isVisible()
+  }));
+  await navBtn.evaluate(el=>el.click());
   const nav=await page.evaluate(()=>({
    active:document.querySelector('.page.active')?.id||'none',
    content:(document.querySelector('#exercise-list')?.innerText||'').slice(0,250),
