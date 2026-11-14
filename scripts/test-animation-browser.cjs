@@ -17,7 +17,10 @@ const fixture=`<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta 
 <button id="opening">Ouvrir un exercice neuf</button>
 <button id="plus25">Résultat +2,5 XP</button>
 <button id="plus3">Résultat +3 XP</button>
-<button id="bonus">Résultat bonus +5 XP</button>
+<button id="bonus">Résultat bonus Parent +5 XP</button>
+<button id="bonus-day">Résultat bonus du jour +5 XP</button>
+<button id="weekly">Résultat samedi +10 XP</button>
+<button id="weekly-partial">Résultat samedi +7 XP</button>
 <script>window.TIM_SOUND={on:true};window.TIM_EXERCISE={school:()=>false};</script>
 <script src="/tim-animations.js"></script>
 <script>
@@ -25,6 +28,9 @@ document.getElementById('opening').onclick=()=>window.TIM_ANIMATIONS.playOpening
 document.getElementById('plus25').onclick=()=>window.TIM_ANIMATIONS.playResult({kind:'training'},{xp:2.5,score:8,total:10,correctionStatus:'released'});
 document.getElementById('plus3').onclick=()=>window.TIM_ANIMATIONS.playResult({kind:'daily'},{xp:3,score:10,total:10,correctionStatus:'released'});
 document.getElementById('bonus').onclick=()=>window.TIM_ANIMATIONS.playResult({kind:'bonus-parent'},{xp:5,score:9,total:10,correctionStatus:'released'});
+document.getElementById('bonus-day').onclick=()=>window.TIM_ANIMATIONS.playResult({kind:'bonus-day'},{xp:5,score:7,total:10,correctionStatus:'released'});
+document.getElementById('weekly').onclick=()=>window.TIM_ANIMATIONS.playResult({kind:'weekly'},{xp:10,score:17,total:20,correctionStatus:'released'});
+document.getElementById('weekly-partial').onclick=()=>window.TIM_ANIMATIONS.playResult({kind:'weekly'},{xp:7,score:15,total:20,correctionStatus:'released'});
 </script></body></html>`;
 const server=http.createServer((req,res)=>{
  try {
@@ -75,12 +81,38 @@ const close=()=>new Promise(resolve=>server.close(resolve));
    assert.ok(await page.getByText('Voir ma correction').isVisible(),'Bouton correction absent');
    await page.getByText('Voir ma correction').click();
    await page.locator('.tim-anim-overlay').waitFor({state:'detached'});
-   await page.locator('#bonus').click();
-   await page.locator('.tim-anim-award-value').getByText('+5 XP',{exact:true}).waitFor();
-   await page.screenshot({path:path.join(output,tag+'-bonus-5.png')});
-   await page.getByText('Voir ma correction').click();
+   for(const [id,clip,xp,note] of [
+    ['bonus','Tim_Defi_Bonus_5XP.gif','+5 XP','Note : 9 / 10'],
+    ['bonus-day','Tim_Defi_Bonus_5XP.gif','+5 XP','Note : 7 / 10'],
+    ['weekly','Tim_Defi_Du_Samedi_10XP.gif','+10 XP','Note : 17 / 20']
+   ]){
+    await page.locator('#'+id).click();
+    const gif=page.locator('.tim-anim-overlay img.tim-anim-media');
+    await gif.waitFor({timeout:5000});
+    assert.ok((await gif.getAttribute('src')).endsWith(clip),'GIF erroné '+id);
+    await page.waitForFunction(()=>{
+      const i=document.querySelector('.tim-anim-overlay img.tim-anim-media');
+      return i&&i.complete&&i.naturalWidth>0;
+    },null,{timeout:12000});
+    assert.equal(await page.locator('.tim-anim-award:not([hidden])').count(),0,
+     'Montant affiché avant le GIF '+id);
+    await page.screenshot({path:path.join(output,tag+'-'+id+'-gif.png')});
+    // Fin de l'animation simulée, sans modifier les données scolaires.
+    await gif.evaluate(e=>e.dispatchEvent(new Event('error')));
+    await page.locator('.tim-anim-award:not([hidden])').waitFor({timeout:5000});
+    assert.equal(await page.locator('.tim-anim-award-value').innerText(),xp);
+    assert.equal(await page.locator('.tim-anim-award-grade').innerText(),note);
+    await page.screenshot({path:path.join(output,tag+'-'+id+'-resultat.png')});
+    await page.getByRole('button',{name:'Voir ma correction'}).click();
+    await page.locator('.tim-anim-overlay').waitFor({state:'detached'});
+   }
+   await page.locator('#weekly-partial').click();
+   assert.equal(await page.locator('.tim-anim-overlay video,.tim-anim-overlay img').count(),0,
+    'Ne pas montrer +10 XP pour une note de 15/20');
+   assert.equal(await page.locator('.tim-anim-award-value').innerText(),'+7 XP');
+   await page.getByRole('button',{name:'Voir ma correction'}).click();
    await page.locator('.tim-anim-overlay').waitFor({state:'detached'});
-   console.log('OK - Chromium '+tag+' : ouverture MP4, bouton Passer, GIF +2,5, XP et retour correction.');
+   console.log('OK - Chromium '+tag+' : ouverture, +2,5, bonus +5 et samedi +10, montants conditionnels.');
    await context.close();
   }
   // Le réglage Android "réduire les animations" ne doit pas cacher la note et les XP.
@@ -95,6 +127,11 @@ const close=()=>new Promise(resolve=>server.close(resolve));
   await accessible.screenshot({path:path.join(output,'android-mouvement-reduit-note-xp.png')});
   await accessible.getByRole('button',{name:'Voir ma correction'}).click();
   await accessible.locator('.tim-anim-overlay').waitFor({state:'detached'});
+  await accessible.locator('#weekly').click();
+  assert.equal(await accessible.locator('.tim-anim-overlay video,.tim-anim-overlay img').count(),0,
+    'GIF indésirable en mode mouvement réduit');
+  assert.equal(await accessible.locator('.tim-anim-award-value').innerText(),'+10 XP');
+  await accessible.getByRole('button',{name:'Voir ma correction'}).click();
   await reduced.close();
   console.log('OK - Chromium Android mouvement réduit : note et XP visibles sans animation.');
   assert.deepEqual(errors,[],'Erreurs JavaScript du navigateur');
