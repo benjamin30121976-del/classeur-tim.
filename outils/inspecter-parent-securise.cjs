@@ -84,7 +84,10 @@ async function inspect(browser,label,viewport){
             if(matching.length)out.push({id:ex.id,title:ex.title,total:qs.length,matching});
           }
           const exact=out.flatMap(ex=>ex.matching.filter(q=>/même ordre à partir de A|si AM\/AB = AN\/AC|quelle conclusion permet la réciproque/i.test(q.preview)).map(q=>({id:ex.id,q:q.i,title:ex.title,preview:q.preview})));
-          return {totalMath:exercises.length,geometry:out,exact};
+          const target=exercises.filter(ex=>/^(BD1611_MA01|MTH12_0[1-3]|M26PYT1001|M26BRV1102)$/.test(ex.id)).map(ex=>({
+            id:ex.id,title:ex.title,questions:(ex.questions||[]).map((q,i)=>({i:i+1,prompt:String(q.q||q.prompt||'').slice(0,440)}))
+          }));
+          return {totalMath:exercises.length,geometry:out,exact,target};
         });
         const count=audit.geometry.reduce((n,x)=>n+x.matching.length,0);
         const withFigure=audit.geometry.reduce((n,x)=>n+x.matching.filter(q=>q.hasFigure).length,0);
