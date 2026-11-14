@@ -17,6 +17,10 @@ on:
       - '.github/workflows/verifier-animations-bonus.yml'
       - 'index.html'
       - 'maths-bonus-figures.js'
+      - 'maths-geometry-general.js'
+      - 'maths-12nov-ui.js'
+      - 'mixed-challenges-ui.js'
+      - 'scripts/test-geometry-all-exercises-browser.cjs'
       - 'scripts/test-bonus-figures-browser.cjs'
       - 'boot.js'
       - 'xp-rules.js'
@@ -45,6 +49,10 @@ jobs:
           node --check tim-animations.js
           node --check app.js
           node --check maths-bonus-figures.js
+          node --check maths-geometry-general.js
+          node --check scripts/test-geometry-all-exercises-browser.cjs
+          node --check maths-12nov-ui.js
+          node --check mixed-challenges-ui.js
           node --check scripts/test-bonus-figures-browser.cjs
           node --check maths-parcours.js
           node --check anglais-exercices.js
@@ -70,6 +78,7 @@ jobs:
           node scripts/test-animation-browser.cjs
           node scripts/test-bonus-perimetres-browser.cjs
           node scripts/test-bonus-figures-browser.cjs
+          node scripts/test-geometry-all-exercises-browser.cjs
       - name: Archiver les captures des animations
         if: always()
         uses: actions/upload-artifact@v4
