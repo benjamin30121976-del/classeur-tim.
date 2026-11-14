@@ -23,3 +23,28 @@ test('V16: strips punctuation in short text',()=>{
 test('V16: rejects unsupported question type',()=>{
  assert.throws(()=>grade({questions:[{q:'x',type:'unknown'}]},{questions:[{right:'x'}]},['x']));
 });
+
+
+test('bonus maths : accepter un résultat exact rédigé comme une phrase',()=>{
+ const bonus={kind:'bonus-day',subject:'Mathématiques',questions:[{q:'Calcule le périmètre du rectangle 8 cm par 4 cm.',type:'text'}]};
+ const key={questions:[{right:'24 cm',also:['24']}]};
+ for(const response of ['24 cm','Le périmètre est de 24 cm.','P = 24 cm','On obtient 24 cm','24']){
+  const graded=grade(bonus,key,[response]);
+  assert.equal(graded.score,1,'Réponse correcte non reconnue : '+response);
+ }
+ for(const response of ['La surface fait 24 cm.','Il ne faut pas 24 cm','24 m','32 cm','24 cm ou 32 cm']){
+  const graded=grade(bonus,key,[response]);
+  assert.equal(graded.score,0,'Réponse incorrecte créditée : '+response);
+ }
+});
+
+test('une méthode non interprétée automatiquement ne doit pas être déclarée validée',()=>{
+ const ex={kind:'bonus-day',subject:'Mathématiques',questions:[{q:'Développe 2(x+3)',type:'text',reasoningRequired:true}]};
+ const key={questions:[{right:'2x+6',why:'2(x+3)=2x+6'}]};
+ const result=grade(ex,key,['2x+6 ||| 2x+3+3']);
+ assert.equal(result.score,1);
+ assert.equal(result.answers[0].correct,true);
+ assert.equal(result.answers[0].reasoningAssessment,'not-automatically-graded');
+ assert.equal(result.answers[0].reasoning,'2x+3+3');
+ assert.throws(()=>grade(ex,key,['2x+6 ||| ']),/Reasoning missing/);
+});

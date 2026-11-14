@@ -104,7 +104,8 @@ function checkConclusion(text,expected,unit){
  const quantity=new RegExp('(?:^|[^\\d])'+expected+'\\s*(?:'+units+')(?![\\w²^])','i');
  const context=/\b(?:p[ée]rim[èe]tre|contour|tour|bord|baguette|cl[ôo]ture|entourer|encadrer)\b/i;
  const sentence=/\b(?:il|le|la|on|nous|je)\b/i;
- return s.length>=16&&quantity.test(s)&&context.test(s)&&sentence.test(s)&&
+ return s.length>=7&&quantity.test(s)&&!/(?:^|\b)(?:surface|aire)(?:\b|$)/i.test(s)&&
+  (context.test(s)||sentence.test(s)||/^\s*p\s*[:=]/i.test(s))&&
   !/\b(?:n['’]est pas|ne mesure pas)\b/i.test(s);
 }
 export function assessRectanglePerimeterReasoning(raw,{length,width,unit}={}){

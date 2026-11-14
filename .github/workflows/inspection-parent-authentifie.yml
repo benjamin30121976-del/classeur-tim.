@@ -4,6 +4,11 @@ on:
     branches: [main]
     paths:
       - 'browser-requests/parent.json'
+  pull_request:
+    paths:
+      - 'browser-requests/parent.json'
+      - 'outils/inspecter-parent-securise.cjs'
+      - '.github/workflows/inspection-parent-authentifie.yml'
   workflow_dispatch:
 permissions:
   contents: read

@@ -27,17 +27,17 @@ const out=path.join(process.cwd(),'test-espagnol-results');fs.mkdirSync(out,{rec
     await subject.locator('.spx-card[data-category="'+index+'"]').click();
    };
    await selectSpanish();
-   // Interface espagnole actuelle : 13 leçons, 3 exercices chacune.
+   // Interface espagnole actuelle : 14 leçons, 3 exercices chacune.
    // Ce contrôle ne touche ni aux cours ni aux résultats ; il remplace le
    // parcours historique à six rubriques seulement quand l'interface moderne
    // est réellement présente.
    const modern=await page.evaluate(()=>Boolean(window.TIM_SPANISH_ENT_EXACT&&window.TIM_SPANISH_SIMPLIFIED));
    if(modern){
-    await page.waitForFunction(()=>document.querySelectorAll('#matieres-content .tim-es-lesson').length===13,{timeout:20000});
+    await page.waitForFunction(()=>document.querySelectorAll('#matieres-content .tim-es-lesson').length===14,null,{timeout:20000});
     const cards=subject.locator('.tim-es-lesson');
-    if(await cards.count()!==13)throw Error('13 leçons espagnoles attendues');
+    if(await cards.count()!==14)throw Error('14 leçons espagnoles attendues');
     let trainingCount=0;
-    for(let i=0;i<13;i++){
+    for(let i=0;i<14;i++){
      const card=cards.nth(i);
      await card.locator(':scope > summary').click();
      if(!await card.evaluate(node=>node.open))throw Error('Leçon '+(i+1)+' ne s’ouvre pas directement');
@@ -54,9 +54,9 @@ const out=path.join(process.cwd(),'test-espagnol-results');fs.mkdirSync(out,{rec
      if(await choices.count()!==3)throw Error('Trois entraînements manquants pour la leçon '+(i+1));
      trainingCount+=await choices.count();
      await card.locator('.tim-es-back').click();
-     if(await cards.filter({visible:true}).count()!==13)throw Error('Retour à la liste des 13 leçons impossible');
+     if(await cards.filter({visible:true}).count()!==14)throw Error('Retour à la liste des 14 leçons impossible');
     }
-    if(trainingCount!==39)throw Error('39 exercices espagnols attendus');
+    if(trainingCount!==42)throw Error('42 exercices espagnols attendus');
     const first=cards.first();
     await first.locator(':scope > summary').click();
     const text=await first.locator('.tim-es-reading').innerText();
@@ -103,8 +103,8 @@ const out=path.join(process.cwd(),'test-espagnol-results');fs.mkdirSync(out,{rec
     await page.screenshot({path:path.join(out,device+'-mathematiques-lecture.png'),fullPage:true});
     await math.evaluate(node=>node.remove());
     if(errors.length)throw Error('Erreurs JavaScript : '+errors.join(' / '));
-    await page.screenshot({path:path.join(out,device+'-espagnol-13-lecons.png'),fullPage:true});
-    console.log('OK '+device+': 13 leçons, 39 exercices, aide, mode visiteur non validant');
+    await page.screenshot({path:path.join(out,device+'-espagnol-14-lecons.png'),fullPage:true});
+    console.log('OK '+device+': 14 leçons, 42 exercices, aide, mode visiteur non validant');
     await page.close();
     continue;
    }

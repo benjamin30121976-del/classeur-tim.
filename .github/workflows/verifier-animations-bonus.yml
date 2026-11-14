@@ -8,6 +8,13 @@ on:
       - 'anglais-exercices.js'
       - 'tim-animations.css'
       - 'app.js'
+      - 'functions/grading.mjs'
+      - 'functions/perimeter-reasoning.mjs'
+      - 'functions/test/grading.test.mjs'
+      - 'functions/test/bonus-perimetres-tim-20261114.test.mjs'
+      - 'parent-unified-results.js'
+      - 'tools/test/parent-unified-results.test.cjs'
+      - '.github/workflows/verifier-animations-bonus.yml'
       - 'index.html'
       - 'maths-bonus-figures.js'
       - 'scripts/test-bonus-figures-browser.cjs'
@@ -49,6 +56,7 @@ jobs:
           node scripts/test-animations-bonus.mjs
           node --test scripts/test-animation-entree-xp.mjs
           node --test tools/test/challenge-feedback.test.mjs
+          node --test functions/test/grading.test.mjs functions/test/bonus-maths-2026.test.mjs tools/test/parent-unified-results.test.cjs
           node --test scripts/test-animations-dimanche.mjs
       - name: Installer Chromium avec Playwright (controle lecture seule)
         run: |

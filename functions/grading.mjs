@@ -5,6 +5,32 @@ export const normalize = value => String(value ?? '').normalize('NFD').replace(/
 export const normalizeMath = value => String(value ?? '').toLowerCase().trim()
  .replace(/[−–—]/g,'-').replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]/g,ch=>'^'+'⁰¹²³⁴⁵⁶⁷⁸⁹'.indexOf(ch))
  .replace(/\s+/g,'').replace(/,/g,'.').replace(/[×·]/g,'*');
+
+/* Une réponse mathématique exacte peut être rédigée sous forme de phrase.
+ * N'accepter que la valeur attendue, éventuellement précédée d'un libellé clair.
+ * Ne jamais prendre le dernier nombre d'un calcul approximatif comme preuve. */
+function mathWrittenAnswerMatches(expected, written, question){
+ const expectedMath=normalizeMath(expected);
+ const actual=normalizeMath(written);
+ if(actual===expectedMath)return true;
+ const value=String(written??'').trim().replace(/[.!]\s*$/,'');
+ const prompt=String(question?.q||'');
+ if(/\bp[ée]rim[èe]tre\b/i.test(prompt)&&/\b(?:aire|surface)\b/i.test(value))return false;
+ if(/\b(?:aire|surface)\b/i.test(prompt)&&/\bp[ée]rim[èe]tre\b/i.test(value))return false;
+ if(/\b(?:pas|faux|incorrect|environ|approximativement)\b/i.test(value))return false;
+ const patterns=[
+  /^(?:le|la|l['’])\s*(?:périmètre|résultat|longueur|distance|réponse|valeur|mesure|fraction|aire|surface)\s*(?:(?:est|vaut|mesure|fait|donne)\s*(?:de\s*)?|[:=]\s*)/i,
+  /^(?:on\s+(?:trouve|obtient|calcule)|je\s+(?:trouve|calcule)|j['’]obtiens|il\s+(?:faut|reste|y\s+a)|cela\s+(?:fait|donne)|donc|ainsi)\s*(?:[:=]|de)?\s*/i,
+  /^(?:p|ac|bc|df|hi|kl|np)\s*[:=]\s*/i
+ ];
+ for(const re of patterns){
+  if(!re.test(value))continue;
+  const candidate=value.replace(re,'').trim();
+  if(candidate&&normalizeMath(candidate)===expectedMath)return true;
+ }
+ return false;
+}
+
 export function grade(exercise, key, responses) {
  if (!exercise || !key || !Array.isArray(exercise.questions) || !Array.isArray(key.questions) || !Array.isArray(responses)) throw new Error('Invalid exercise');
  if (exercise.questions.length !== key.questions.length || responses.length !== exercise.questions.length || responses.length > 30) throw new Error('Invalid answer count');
@@ -16,13 +42,13 @@ export function grade(exercise, key, responses) {
   const response=separator>=0?rawResponse.slice(0,separator):rawResponse;
   const reasoning=separator>=0?rawResponse.slice(separator+5):'';
   const structuredPerimeter=isMathBonus&&question.reasoningCheck?.kind==='rectangle-perimeter-v1';
-  if(isMathBonus&&question.reasoningRequired&&!structuredPerimeter&&reasoning.trim().length<8)throw new Error('Reasoning missing');
+  if(isMathBonus&&question.reasoningRequired&&!structuredPerimeter&&!reasoning.trim())throw new Error('Reasoning missing');
   if(rawResponse.length>10000)throw new Error('Answer too long');
   const secret=key.questions[i];
   let correct=null;
   if(question.type==='mc')correct=String(secret.right)===response;
   else if(question.type==='text'){
-   correct=[secret.right,...(secret.also||[])].some(x=>(isMathBonus?normalizeMath(x):normalize(x))===(isMathBonus?normalizeMath(response):normalize(response)));
+   correct=[secret.right,...(secret.also||[])].some(x=>isMathBonus?mathWrittenAnswerMatches(x,response,question):normalize(x)===normalize(response));
    if(isMathBonus&&!correct){const normalized=normalizeMath(response),expected=normalizeMath(secret.right);if(expected.startsWith('x=')&&normalized===expected.slice(2))correct=true;}
   }
   else if(question.type==='free')needsReview=true;
@@ -49,7 +75,7 @@ export function grade(exercise, key, responses) {
   }
   if(correct!==null){total++;score+=points;}
   return {question:question.q,response,correct,points,expected:question.type==='mc'?question.options?.[Number(secret.right)]:secret.right,skill:question.skill||'',explanation,
-   ...(isMathBonus&&question.reasoningRequired?{reasoning}: {}),
+   ...(isMathBonus&&question.reasoningRequired?{reasoning,...(!structuredPerimeter?{reasoningAssessment:'not-automatically-graded'}:{reasoningAssessment:'checked'})}: {}),
    ...(reasoningDetails?{reasoningDetails}:{})};
  });
  return {score,total,needsReview,answers};

@@ -761,7 +761,7 @@ function openExercise(id,options={}){const ex=exerciseBy(id);if(!ex)return;
    }
   });return;
  }
- const existing=attemptFor(id),completedChallenge=Boolean(existing&&['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind));window.__TIM_OPEN_EXERCISE_ID=id;page('exercices');document.getElementById('exercise-index').classList.add('hide');const root=clear(document.getElementById('exercise-detail'));root.classList.add('active');root.append(button('← Retour aux exercices',()=>{root.classList.remove('active');document.getElementById('exercise-index').classList.remove('hide');renderExerciseIndex();scrollTop();},'plain back'));root.append(badge(ex.level),E('h2','',ex.title),E('p','intro',exerciseDescription(ex)));
+ const existing=attemptFor(id),completedChallenge=Boolean(existing&&['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind));window.__TIM_OPEN_EXERCISE_ID=id;page('exercices');document.getElementById('exercise-index').classList.add('hide');const root=clear(document.getElementById('exercise-detail'));root.classList.add('active');root.classList.toggle('math-bonus-detail',ex.kind==='bonus-day'&&ex.subject==='Mathématiques');root.append(button('← Retour aux exercices',()=>{root.classList.remove('active');document.getElementById('exercise-index').classList.remove('hide');renderExerciseIndex();scrollTop();},'plain back'));root.append(badge(ex.level),E('h2','',ex.title),E('p','intro',exerciseDescription(ex)));
 if(ex.kind==='bonus-day'){
  // Pas d'indice ni de renvoi à une leçon avant la validation d'un défi bonus.
 }else if(ex.kind==='daily'&&ex.questionBank==='spanish-ent-v1'){
@@ -799,7 +799,7 @@ ex.questions.forEach((question,i)=>{const row=E('div','q');row.append(E('div','q
 function values(){return controls.map(c=>c.kind==='mc'?(document.querySelector('input[name="'+c.name+'"]:checked')?.value??''):
  c.kind==='reasoning'?c.node.value.trim()+' ||| '+c.work.value.trim():
  c.kind==='reasoning-v2'?c.node.value.trim()+' ||| '+JSON.stringify({calculation:c.work.value.trim(),conclusion:c.conclusion.value.trim()}):c.node.value.trim());}
-function reasoningReady(c){return c.kind==='reasoning'?(!!c.node.value.trim()&&c.work.value.trim().length>=8):
+function reasoningReady(c){return c.kind==='reasoning'?(!!c.node.value.trim()&&!!c.work.value.trim()):
  c.kind==='reasoning-v2'?(!!c.node.value.trim()&&!!c.work.value.trim()&&!!c.conclusion.value.trim()):true;}
 function saveDraft(){if(old)return;const d=drafts();d[id]=values();save(DRAFT_KEY,d);}
 if(old){
@@ -904,6 +904,8 @@ function renderFeedback(ex,t,root){
   }else if(answer.reasoning){
    container.append(E('p','','Raisonnement écrit : '+safe(answer.reasoning)));
   }
+  if(answer.reasoningAssessment==='not-automatically-graded')
+   container.append(E('p','subtle','Le résultat a été noté automatiquement. La démarche écrite est conservée, mais son exactitude n’a pas été évaluée par le correcteur.'));
  }
  const isChallenge=['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind);
  const isBonusDay=ex.kind==='bonus-day';
@@ -932,9 +934,10 @@ function renderFeedback(ex,t,root){
   const given=q.type==='mc'?(q.options?.[Number(a.response)]??a.response):a.response;
   p.append(E('strong','',(i+1)+'. '+safe(correctedPrompt(i,a.question||q.q||'Question'))));correctedFigure(p,i);p.append(E('p','','Ta réponse : '+safe(given)));
   showWrittenMethod(p,a);
-  if(a.correct!==null)p.append(E('p',a.correct?'correct':'wrong',
-   a.correct?'Bonne réponse.':a.points===0.5?
-    (q.reasoningCheck?.kind==='rectangle-perimeter-v1'?'Réponse partiellement correcte : 0,5/1 (résultat ou raisonnement à revoir).':'Réponse presque correcte : 0,5/1 (accent ou ponctuation).'):
+  const partial=Number.isFinite(Number(a.points))&&Number(a.points)>0&&Number(a.points)<1;
+  if(a.correct!==null)p.append(E('p',a.correct?'correct':partial?'subtle':'wrong',
+   a.correct?'Bonne réponse.':partial?
+    'Réponse partiellement correcte : '+Number(a.points).toLocaleString('fr-FR')+'/1 (voir l’explication).':
     'Réponse à revoir.'));
   if(a.correct===false){
    p.append(E('p','correct','Réponse attendue : '+safe(a.expected)));

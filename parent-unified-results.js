@@ -60,9 +60,11 @@ function questionItems(raw){
   explanation:a.explanation||a.feedback||'',
   category:a.category||'',
   reasoning:a.reasoning||'',
+  reasoningAssessment:a.reasoningAssessment||'',
   reasoningDetails:a.reasoningDetails||null
  }));
 }
+const isPartial=item=>Number.isFinite(Number(item.points))&&item.points!==null&&item.points!==undefined&&Number(item.points)>0&&Number(item.points)<1;
 function perfect(r,items){return isExact(r.score)&&isExact(r.total)&&Number(r.total)>0&&Number(r.score)===Number(r.total)&&items.length>0&&items.every(x=>x.correct===true);}
 function makeRecord(raw,kind){
  const id=String(raw?.id||'');if(!id)return null;
@@ -78,18 +80,24 @@ function makeRecord(raw,kind){
 }
 async function allRecords(){
  const bridge=window.__TIM_BRIDGE||{};
+ // Une source réseau bloquée ne doit pas figer toute la liste des copies.
+ const safeRead=promise=>new Promise((resolve,reject)=>{
+  let done=false;
+  const timer=setTimeout(()=>{if(!done){done=true;reject(new Error('Lecture indisponible après 12 secondes'));}},12000);
+  Promise.resolve(promise).then(v=>{if(!done){done=true;clearTimeout(timer);resolve(v);}},e=>{if(!done){done=true;clearTimeout(timer);reject(e);}});
+ });
  const responses=await Promise.allSettled([
-  bridge.spanishEntTrainingProgress?.(),
-  bridge.mathTrainingProgress?.(),
-  bridge.trainingProgress?.(),
-  bridge.parentReport?.(),
-  bridge.physicsTrainingProgress?.(),
-  bridge.englishTrainingProgress?.(),
-  bridge.svtTrainingProgress?.(),
-  bridge.hgTrainingProgress?.(),
-  bridge.frTrainingProgress?.(),
-  bridge.physicsEntProgress?.(),
-  bridge.mathEntProgress?.()
+  safeRead(bridge.spanishEntTrainingProgress?.()),
+  safeRead(bridge.mathTrainingProgress?.()),
+  safeRead(bridge.trainingProgress?.()),
+  safeRead(bridge.parentReport?.()),
+  safeRead(bridge.physicsTrainingProgress?.()),
+  safeRead(bridge.englishTrainingProgress?.()),
+  safeRead(bridge.svtTrainingProgress?.()),
+  safeRead(bridge.hgTrainingProgress?.()),
+  safeRead(bridge.frTrainingProgress?.()),
+  safeRead(bridge.physicsEntProgress?.()),
+  safeRead(bridge.mathEntProgress?.())
  ]);
  const [spanish,math,oldSpanish,report,physics,english,svt,hg,fr,physEnt,mathEnt]=responses.map(x=>x.status==='fulfilled'?x.value:null);
  const map=new Map(),add=(record,kind)=>{
@@ -139,21 +147,25 @@ function renderDetails(slot,record,items){
  if(!items.length){cell(slot,'p','small','Les questions et réponses de cette copie ne sont pas encore disponibles.');return;}
  const isPerfect=perfect(record,items);
  cell(slot,'p','small',isPerfect?'Toutes les réponses sont correctes. Aucune correction nécessaire.':'Questions et réponses de Tim. Seules les erreurs sont expliquées.');
- const errors=items.filter(a=>a.correct===false||a.points===0.5);
- const strengths=items.length-errors.length;
- cell(slot,'p','small','Réussites : '+strengths+' / '+items.length+' · Erreurs : '+errors.length+(record.lesson?' · Leçon : '+record.lesson:''));
- if(errors.length&&record.lesson)cell(slot,'p','small','À revoir : '+record.lesson);
+ const partial=items.filter(isPartial);
+ const errors=items.filter(a=>a.correct===false&&!isPartial(a));
+ const strengths=items.filter(a=>a.correct===true&&!isPartial(a)).length;
+ cell(slot,'p','small','Réussites : '+strengths+' / '+items.length+' · Réponses partielles : '+partial.length+' · Erreurs : '+errors.length+(record.lesson?' · Leçon : '+record.lesson:''));
+ if((errors.length||partial.length)&&record.lesson)cell(slot,'p','small','À revoir : '+record.lesson);
  items.forEach((item,i)=>{
   const line=el('div','separated');
   cell(line,'strong','',(i+1)+'. '+item.question);
   cell(line,'p','', 'Réponse de Tim : '+item.response);
+  if(item.expected!==undefined&&item.expected!==null&&item.expected!=='')cell(line,'p','subtle','Réponse attendue : '+item.expected);
+  if(item.points!==undefined&&item.points!==null&&Number.isFinite(Number(item.points)))cell(line,'p','small','Points attribués : '+Number(item.points).toLocaleString('fr-FR')+'/1');
   if(item.reasoningDetails){
    cell(line,'p','','Calcul de Tim : '+String(item.reasoningDetails.calculation||''));
    cell(line,'p','','Phrase-réponse de Tim : '+String(item.reasoningDetails.conclusion||''));
   }else if(item.reasoning)cell(line,'p','','Raisonnement de Tim : '+String(item.reasoning));
-  if(item.correct===false||item.points===0.5){
-   cell(line,'p','wrong',item.points===0.5?'Réponse partiellement correcte':'Réponse incorrecte');
-   cell(line,'p','correct','Réponse attendue : '+item.expected);
+  if(item.reasoningAssessment==='not-automatically-graded')cell(line,'p','subtle','Résultat noté automatiquement ; la démarche écrite est conservée sans évaluation automatique de son exactitude.');
+  if(item.correct===false||isPartial(item)){
+   cell(line,'p',isPartial(item)?'subtle':'wrong',
+    isPartial(item)?'Réponse partiellement correcte ('+Number(item.points).toLocaleString('fr-FR')+'/1)':'Réponse incorrecte');
    cell(line,'p','subtle','Explication : '+(item.explanation||'Revoir cette question avec la leçon.'));
   }
   slot.append(line);
@@ -213,7 +225,7 @@ function render(root){
  exportButton.addEventListener('click',async()=>{
   exportButton.disabled=true;
   try{
-   for(const r of results)if(['spanishEnt','physics','physicsEnt','mathEnt'].includes(r.kind)&&!r.items.length){try{await loadDetails(r)}catch{}}
+   for(const r of results)if(['spanishEnt','physics','physicsEnt','mathEnt','english','svt','hg','fr'].includes(r.kind)&&!r.items.length){try{await loadDetails(r)}catch{}}
    const payload={exportedAt:new Date().toISOString(),records:results.map(r=>({
     id:r.id,subject:r.subject,lesson:r.lesson,title:r.title,date:r.date,score:r.score,total:r.total,xp:r.xp,
     questions:r.items

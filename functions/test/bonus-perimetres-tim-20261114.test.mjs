@@ -178,3 +178,16 @@ test('raisonnement structuré : calcul et phrase nécessaires',()=>{
  answers[9]='30 m ||| '+JSON.stringify({calculation:'9+6+9+6=30',conclusion:''});
  assert.throws(()=>evaluate(answers),/Reasoning missing/);
 });
+
+
+test('une conclusion courte mais mathématiquement précise ne perd pas de point',()=>{
+ const q=ex.questions[8];
+ for(const conclusion of ['P = 24 cm','On trouve 24 cm','Le périmètre est de 24 cm']){
+  const answers=responses();
+  answers[8]=String(q.right)+' ||| '+JSON.stringify({
+   calculation:'8 + 4 + 8 + 4 = 24',conclusion
+  });
+  const out=evaluate(answers).answers[8];
+  assert.equal(out.points,1,'Bonne conclusion refusée : '+conclusion+' / '+out.explanation);
+ }
+});
