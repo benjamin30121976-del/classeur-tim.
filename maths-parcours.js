@@ -13,7 +13,7 @@ const GROUPS=[
  {name:'Révisions et évaluations',start:22,end:23,keywords:/evaluation|controle|revisio|correction/}
 ];
 
-/* Compléments ENT vérifiés jusqu'au 12/11/2026 : lecture seule, sans notes ni XP. */
+/* Compléments ENT vérifiés jusqu'au 13/11/2026 : lecture seule, sans notes ni XP. */
 const TIM_ENT_NEW=[
  {id:'TIM_ENT_20261106',date:'2026-11-06',title:'6 novembre — Automatismes 5 et factorisation',chapter:'Calcul littéral',teacher:'Test 5 sur les automatismes Leçon : factoriser une expression littérale',work:'Finir de corriger son évaluation',source:'Séance ENT 10099~6402971 ; devoir ENT 10099~214457',note:'Ces informations figuraient dans l’export ENT du 10 novembre, après les premières captures prises pendant la séance.'},
  {id:'TIM_ENT_20261109',date:'2026-11-09',title:'9 novembre — Correction et factorisation',chapter:'Calcul littéral',teacher:'Correction du test 5 sur les automatismes Correction ex 35 p.77 Exercices sur la factorisation : n°36 et 37 p.77',work:'Faire exercice n°35 p.77',source:'Séance ENT 10099~6402906 ; devoir ENT 10099~214606',note:'Les énoncés et corrigés officiels de la page 77 ne sont pas disponibles.'},
@@ -21,7 +21,12 @@ const TIM_ENT_NEW=[
   teacher:'Leçon : la réciproque de Thalès',
   work:'Pour vendredi 13 novembre : Finir l’exercice 25 p.253.',
   source:'Séance ENT 10099~6402938 ; contenu 10099~215177 ; devoir ENT 10099~215178',
-  note:'Aucun PDF joint à cette séance. L’énoncé de l’exercice 25 p.253 n’est pas fourni dans l’export ENT ; seul le numéro est attesté.'}
+  note:'Aucun PDF joint à cette séance. L’énoncé de l’exercice 25 p.253 n’est pas fourni dans l’export ENT ; seul le numéro est attesté.'},
+ {id:'TIM_ENT_20261113',date:'2026-11-13',title:'13 novembre — Exercices sur la réciproque de Thalès',chapter:'Thalès',
+  teacher:'Exercices sur la réciproque de Thalès',
+  work:'Travaux après la séance : exercices pour lundi 16, jeudi 19 et lundi 23 novembre. Les énoncés ne figurent pas dans cette collecte.',
+  source:'Séance ENT 10099~6402972 ; contenu 10099~215379 ; devoirs après séance 10099~215381 (16/11), 10099~215380 (19/11), 10099~215382 (23/11). Le devoir 10099~215178 (exercice 25 p.253) était à faire pour cette séance du 13/11',
+  note:'Aucune nouvelle pièce jointe. Les intitulés et échéances sont confirmés par l’agenda, mais pas les énoncés détaillés du manuel.'}
 ];
 function mathEntList(){
  const old=ent.filter(e=>!TIM_ENT_NEW.some(v=>String(e.id)===v.id || String(e.date||'').includes(v.date) || String(e.id)==='M26S'+v.date.slice(5,7)+v.date.slice(8,10)));
@@ -29,7 +34,7 @@ function mathEntList(){
 }
 function viewTimEnt(id){
  const x=TIM_ENT_NEW.find(v=>v.id===id);if(!x)return;
- const isThales=x.id==='TIM_ENT_20261112';
+ const isThales=x.chapter==='Thalès';
  selected=id;group=isThales?GROUPS[3]:GROUPS[2];
  draw(header('Cours ENT · '+x.title,'Texte authentique du cahier de textes de Mme Pialet, séparé des explications BIS.')+
  back('Retour à tous les cours ENT')+
@@ -48,7 +53,7 @@ function mountTimThalesSource(){
  const host=root?.querySelector('[data-tim-thales-original-pdf]');
  if(host&&window.TIM_INLINE_ENT_DOCUMENTS?.mount){
   window.TIM_INLINE_ENT_DOCUMENTS.mount(host,['M26S1009'],{
-   title:'Support du professeur du 9 octobre : théorème de Thalès (déjà archivé, non joint au cours du 12 novembre)',
+   title:'Support antérieur du professeur du 9 octobre : théorème de Thalès (non joint à la séance consultée)',
    filenamePattern:/leçon.*théorème.*thalès\.pdf/i,limit:1,auto:true
   }).catch(()=>{host.textContent='Le PDF de Thalès du 9 octobre est momentanément indisponible.';});
  }
@@ -167,7 +172,7 @@ function home(){
  selected=null;group=null;
  draw(header('Mathématiques','Choisis ton chapitre, puis ta leçon.')+
  back('Toutes les matières')+
- '<section class="spx-panel math-latest-ent" style="margin:14px 0"><h3>Dernier cours ENT · Jeudi 12 novembre</h3><p><strong>La réciproque de Thalès</strong> · devoir pour vendredi 13 novembre : finir l’exercice 25 p.253.</p><div class="spx-quick-links">'+btn('data-math-open-original','TIM_ENT_20261112','Voir le cours ENT du jour')+btn('data-math-reciproque','lesson','Lire la leçon expliquée')+'</div></section>'+
+ '<section class="spx-panel math-latest-ent" style="margin:14px 0"><h3>Dernier cours ENT · Vendredi 13 novembre</h3><p><strong>Exercices sur la réciproque de Thalès</strong> · devoirs annoncés pour les 16, 19 et 23 novembre, sans énoncé détaillé dans l’archive. L’exercice 25 p.253 était à terminer pour le 13.</p><div class="spx-quick-links">'+btn('data-math-open-original','TIM_ENT_20261113','Voir le cours ENT du 13 novembre')+btn('data-math-reciproque','lesson','Lire la leçon expliquée')+'</div></section>'+
  '<div class="math-chapter-list">'+GROUPS.map((g,i)=>{
   const lessons=bis.filter(x=>groupOfId(x.id)===g);
   if(!lessons.length)return '';
@@ -195,7 +200,7 @@ function viewEntChronology(){
  const lessons=mathEntList().slice().sort((a,b)=>lessonDate(a).localeCompare(lessonDate(b),'fr'));
  draw(header('Cours ENT de mathématiques · Chronologie','Les cours originaux de Mme Pialet, sans ajout ni remplacement du contenu officiel.')+
  back('Retour aux chapitres')+
- '<section class="spx-panel"><h3>'+lessons.length+' séances ENT conservées</h3><p>Cours d’origine et mises à jour jusqu’au 12 novembre 2026. Aujourd’hui : réciproque de Thalès ; devoir du 13 novembre : exercice 25 p.253. Les énoncés du manuel ne figurent pas dans l’export.</p>'+
+ '<section class="spx-panel"><h3>'+lessons.length+' séances ENT conservées</h3><p>Cours d’origine et mises à jour jusqu’au 13 novembre 2026. Dernière séance : exercices sur la réciproque de Thalès. Devoir du 13 : exercice 25 p.253 ; travaux prévus les 16, 19 et 23 novembre. Les énoncés détaillés du manuel ne figurent pas dans l’export.</p>'+
  (lessons.length?lessons.map((x,i)=>'<button class="spx-row" type="button" data-math-open-original="'+esc(x.id)+'"><span class="spx-chip">'+(i+1)+'</span><span><strong>'+esc(x.title)+'</strong><small>'+esc(x.date||x.summary||'Cours ENT')+'</small></span></button>').join(''):'<p>Aucun cours ENT retrouvé.</p>')+
  '</section>',home);
  wire();
