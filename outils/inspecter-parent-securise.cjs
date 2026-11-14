@@ -9,7 +9,6 @@ const PASSWORD=process.env.TIM_PARENT_PASSWORD||'';
 const URL=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
 const TARGET_IMPORT_ONLY=(()=>{try{return /controle-import-json-android/.test(JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion||'');}catch{return false;}})();
 const TARGET_BONUS_AUDIT=(()=>{try{return /controle-bonus-parent-20261114/.test(JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion||'');}catch{return false;}})();
-const TARGET_GEOMETRY_AUDIT=(()=>{try{return /controle-toutes-figures-geometrie-20261114/.test(JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion||'');}catch{return false;}})();
 const output=path.join(process.cwd(),'browser-parent-results');
 fs.mkdirSync(output,{recursive:true});
 const data={site:URL,date:new Date().toISOString(),checks:[],devices:[],notes:[],pageErrors:[],subjectInventory:[],educationInventory:[],lessonIndex:[],exerciseIndex:[],integrity:[]};
@@ -64,39 +63,6 @@ async function inspect(browser,label,viewport){
     check(label+' lecons chargees',stats.lessons>0,'Nombre : '+stats.lessons);
     check(label+' défi du jour supprimé du classeur',stats.dailyChallenges===0,'Défis quotidiens visibles : '+stats.dailyChallenges);
 
-
-    if(TARGET_GEOMETRY_AUDIT){
-      if(label==='ordinateur'){
-        const audit=await page.evaluate(()=>{
-          const exercises=(window.__TIM_DATA?.exercises||[]).filter(ex=>ex.subject==='Mathématiques');
-          const matcher=/th[aâ]l[eè]s|r[eé]ciproque|pythagore|triangle|parall[eè]le|p[eé]rim[eè]tre|rectangle|hypot[eé]nuse|g[eé]om[eé]trie|diagonale/i;
-          const out=[];
-          for(const ex of exercises){
-            const qs=ex.questions||[];
-            const matching=[];
-            for(let i=0;i<qs.length;i++){
-              const q=qs[i],prompt=String(q.q||q.prompt||'');
-              if(!matcher.test(prompt))continue;
-              let current=false;
-              try{current=Boolean(window.TIM_BONUS_FIGURES?.render?.(ex,i)?.querySelector('svg'));}catch{}
-              matching.push({i:i+1,hasFigure:current,type:q.type,preview:prompt.slice(0,190)});
-            }
-            if(matching.length)out.push({id:ex.id,title:ex.title,total:qs.length,matching});
-          }
-          const exact=out.flatMap(ex=>ex.matching.filter(q=>/même ordre à partir de A|si AM\/AB = AN\/AC|quelle conclusion permet la réciproque/i.test(q.preview)).map(q=>({id:ex.id,q:q.i,title:ex.title,preview:q.preview})));
-          const target=exercises.filter(ex=>/^(BD1611_MA01|MTH12_0[1-3]|M26PYT1001|M26BRV1102)$/.test(ex.id)).map(ex=>({
-            id:ex.id,title:ex.title,questions:(ex.questions||[]).map((q,i)=>({i:i+1,prompt:String(q.q||q.prompt||'').slice(0,440)}))
-          }));
-          return {totalMath:exercises.length,geometry:out,exact,target};
-        });
-        const count=audit.geometry.reduce((n,x)=>n+x.matching.length,0);
-        const withFigure=audit.geometry.reduce((n,x)=>n+x.matching.filter(q=>q.hasFigure).length,0);
-        console.log('GEOMETRY_QUESTIONS_AUDIT '+JSON.stringify({totalMath:audit.totalMath,totalGeometryExercises:audit.geometry.length,totalGeometryQuestions:count,figures:withFigure,exact:audit.exact,target:audit.target,exercises:audit.geometry}));
-        check('Inventaire questions geometriques existantes',audit.geometry.length>0,
-         'Exercices '+audit.geometry.length+' ; questions '+count+' ; figures existantes '+withFigure);
-      }
-      return;
-    }
     if(TARGET_BONUS_AUDIT){
       // Audit du vrai site Cloudflare, de la session Parent et des figures publiques.
       // Lecture seule : aucune réponse, copie individuelle, identifiant, note ou XP journalisés.
