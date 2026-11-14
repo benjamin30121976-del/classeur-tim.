@@ -60,6 +60,7 @@ function questionItems(raw){
   explanation:a.explanation||a.feedback||'',
   category:a.category||'',
   reasoning:a.reasoning||'',
+  reasoningAssessment:a.reasoningAssessment||'',
   reasoningDetails:a.reasoningDetails||null
  }));
 }
@@ -161,6 +162,7 @@ function renderDetails(slot,record,items){
    cell(line,'p','','Calcul de Tim : '+String(item.reasoningDetails.calculation||''));
    cell(line,'p','','Phrase-réponse de Tim : '+String(item.reasoningDetails.conclusion||''));
   }else if(item.reasoning)cell(line,'p','','Raisonnement de Tim : '+String(item.reasoning));
+  if(item.reasoningAssessment==='not-automatically-graded')cell(line,'p','subtle','Résultat noté automatiquement ; la démarche écrite est conservée sans évaluation automatique de son exactitude.');
   if(item.correct===false||isPartial(item)){
    cell(line,'p',isPartial(item)?'subtle':'wrong',
     isPartial(item)?'Réponse partiellement correcte ('+Number(item.points).toLocaleString('fr-FR')+'/1)':'Réponse incorrecte');
