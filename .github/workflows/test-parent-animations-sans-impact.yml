@@ -6,6 +6,7 @@ on:
       - 'tools/test/parcours-parent-animations-production.readonly.cjs'
       - 'tim-animations.js'
       - 'scripts/test-animation-entree-xp.mjs'
+      - 'scripts/test-animation-browser.cjs'
       - 'tools/test/verifier-tous-baremes-et-animations.production.readonly.cjs'
       - '.github/workflows/test-parent-animations-sans-impact.yml'
   workflow_dispatch:
@@ -30,6 +31,7 @@ jobs:
           node --check tools/test/verifier-tous-baremes-et-animations.production.readonly.cjs
           node --check tim-animations.js
           node --check scripts/test-animation-entree-xp.mjs
+          node --check scripts/test-animation-browser.cjs
       - name: Vérifier le format français des notes et le choix des médias en code local
         run: |
           node scripts/test-animation-entree-xp.mjs
@@ -38,6 +40,10 @@ jobs:
         run: |
           npm install --prefix /tmp/tim-test-sans-impact --no-audit --no-fund playwright
           /tmp/tim-test-sans-impact/node_modules/.bin/playwright install --with-deps chromium
+      - name: Tester les GIF +5 et +10 sur Chromium mobile et ordinateur (branche)
+        env:
+          NODE_PATH: /tmp/tim-test-sans-impact/node_modules
+        run: node scripts/test-animation-browser.cjs
       - name: Vérifier toutes les notes, XP et animations des défis sur Cloudflare
         env:
           NODE_PATH: /tmp/tim-test-sans-impact/node_modules
@@ -51,6 +57,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: controle-parent-animations-sans-impact
-          path: audit-production-tim-sans-impact/
+          path: |
+            audit-production-tim-sans-impact/
+            browser-results/animations-exercices/
           retention-days: 3
           if-no-files-found: warn
