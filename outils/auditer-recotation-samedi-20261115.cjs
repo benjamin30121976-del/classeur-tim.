@@ -17,6 +17,24 @@ module.exports=async function auditCorrectionSamedi(page,check){
     old.answers.some((a,i)=>a.question!==mission.questions[i].q))
    throw Error('Copie historique différente de la banque ; relecture refusée.');
  const fresh=gradeMixedMission(mission,old.answers.map(a=>String(a.response??'')));
+ for(const idx of [11,14]){
+  const value=String(old.answers[idx].response??'').trim();
+  const same=String(mission.questions[idx].right??'');
+  const tokens=value.match(/[+-]?\d+(?:[.,]\d+)?/g)||[];
+  const last=tokens.length?Number(tokens[tokens.length-1].replace(',','.')):NaN;
+  const expected=Number(same);
+  console.log('FORMAT COPIE WEEK_2026W46 Q'+(idx+1)+
+    ' : longueur='+value.length+', nombre-de-nombres='+tokens.length+
+    ', nombre-final-juste='+(last===expected)+
+    ', avec-egalite='+(value.includes('='))+
+    ', avec-calcul='+( /[+×*÷/]/.test(value))+
+    ', texte-libres='+(/[a-zàâéèêëîïôùûüç]/i.test(value))+
+    ', unite-cm='+(/\bcm\b/i.test(value))+
+    ', marqueur-resultat='+(/donc|réponse|reponse|résultat|resultat|on obtient|soit|=/.test(value.toLowerCase()))+
+    ', point-interrogation='+value.includes('?')+
+    ', negation='+(/\b(?:pas|faux|incorrect)\b/i.test(value))+
+    '. Aucun contenu de réponse divulgué.');
+ }
  const changed=[];
  for(let i=0;i<20;i++){
   const before=Number(old.answers[i].points),after=Number(fresh.answers[i].points);
