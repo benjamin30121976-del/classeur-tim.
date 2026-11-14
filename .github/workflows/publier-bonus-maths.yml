@@ -3,6 +3,8 @@ on:
   pull_request:
     paths:
       - 'functions/bonus-maths-2026.mjs'
+      - 'functions/bonus-perimetres-tim-20261114.mjs'
+      - 'functions/test/bonus-perimetres-tim-20261114.test.mjs'
       - 'functions/test/bonus-maths-2026.test.mjs'
       - 'functions/grading.mjs'
       - 'functions/xp.mjs'
@@ -16,6 +18,8 @@ on:
     branches: [main]
     paths:
       - 'functions/bonus-maths-2026.mjs'
+      - 'functions/bonus-perimetres-tim-20261114.mjs'
+      - 'functions/test/bonus-perimetres-tim-20261114.test.mjs'
       - 'functions/test/bonus-maths-2026.test.mjs'
       - 'functions/grading.mjs'
       - 'functions/xp.mjs'
@@ -46,11 +50,13 @@ jobs:
           node --check functions/grading.mjs
           node --check functions/xp.mjs
           node --check functions/bonus-maths-2026.mjs
+          node --check functions/bonus-perimetres-tim-20261114.mjs
           node --check worker/server.mjs
           node --check outils/publier-bonus-maths-via-parent.cjs
       - name: Tester 70 questions, bonnes réponses, copies fausses, XP illimités
         run: |
           node --test functions/test/bonus-maths-2026.test.mjs
+          node --test functions/test/bonus-perimetres-tim-20261114.test.mjs
           node --test functions/test/grading.test.mjs functions/test/xp.test.mjs
   import-parent:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
