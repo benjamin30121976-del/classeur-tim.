@@ -145,7 +145,8 @@ test('Mathématiques : choisir une leçon ouvre son cours complet avant les exer
  const pack=JSON.parse(raw);
  assert.equal(pack.lessons.length,23);
  for(const lesson of pack.lessons){
-  assert.equal(lesson.blocks.length,6,lesson.id+' : six étapes du cours attendues');
+  assert.equal(lesson.blocks.length,7,lesson.id+' : sept rubriques pédagogiques attendues');
+  assert.equal(lesson.blocks.filter(b=>b.h==='Comment rédiger le résultat').length,1,lesson.id+' : rubrique de rédaction absente');
   assert.ok(lesson.blocks.some(b=>b.kind==='svg'),lesson.id+' : schéma absent');
  }
  const category=src.slice(src.indexOf('function category(g){'),src.indexOf('function listPage('));

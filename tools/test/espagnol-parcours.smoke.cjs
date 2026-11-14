@@ -102,7 +102,8 @@ const out=path.join(process.cwd(),'test-espagnol-results');fs.mkdirSync(out,{rec
     if(mathCount!==23)throw Error('Mathématiques : les sous-leçons ne sont pas toutes accessibles');
     await chapterButtons.first().click();
     await math.locator('.math-lesson-entry').first().click();
-    if(await math.locator('.math-reading-section').count()!==6)throw Error('Mathématiques : cours incomplet ou blocs absents');
+    if(await math.locator('.math-reading-section').count()!==7)throw Error('Mathématiques : les 7 rubriques du cours ne sont pas toutes présentes');
+    if(await math.locator('.math-reading-section h3').filter({hasText:'Comment rédiger le résultat'}).count()!==1)throw Error('Mathématiques : méthode de rédaction non visible');
     if(!await math.locator('.math-reading-lesson').isVisible())throw Error('Mathématiques : la leçon ne s’ouvre pas directement');
     if(await math.locator('.math-reading-actions').count()!==1)throw Error('Mathématiques : exercices absents en fin de leçon');
     await math.locator('[data-math-help]').first().click();

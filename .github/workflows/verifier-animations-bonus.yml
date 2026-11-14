@@ -55,6 +55,10 @@ jobs:
           node --check mixed-challenges-ui.js
           node --check scripts/test-bonus-figures-browser.cjs
           node --check maths-parcours.js
+          node --check maths-bis-data.js
+          node --check maths-12nov-training.mjs
+          node --check worker/maths-training-curriculum.mjs
+          node --check worker/maths-training-extra.mjs
           node --check anglais-exercices.js
           node --check espagnol-training-ui.js
           node --check boot.js

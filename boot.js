@@ -982,8 +982,9 @@ async function startSession(user){
   },
   mathNov12Preview:async(id,answers)=>{
    if(activeUser?.uid!==PARENT_UID)throw Error('Essai réservé au Parent.');
-   const {mathNov12Score}=await import('./maths-12nov-training.mjs?v=thales-xp-7-5-0-v2');
-   const r=mathNov12Score(id,answers);
+   const ex=window.__TIM_DATA?.exercises?.find(x=>x.id===id);
+   const {mathNov12Score}=await import('./maths-12nov-training.mjs?v=thales-banque-compatible-20261114-v1');
+   const r=mathNov12Score(id,answers,ex);
    if(!r)throw Error('Dix réponses sont nécessaires.');
    return {...r,practice:true,saved:false,xp:0};
   },
@@ -996,8 +997,8 @@ async function startSession(user){
    if(!ex||ex.questions?.length!==10)throw Error('Exercice mathématique manquant dans Firebase.');
    // Charger le corrigé avant l'écriture définitive ; ne jamais envoyer la
    // même tentative une deuxième fois si l'accusé de réception est incertain.
-   const {mathNov12Score}=await import('./maths-12nov-training.mjs?v=thales-xp-7-5-0-v2');
-   const grade=mathNov12Score(id,answers);
+   const {mathNov12Score}=await import('./maths-12nov-training.mjs?v=thales-banque-compatible-20261114-v1');
+   const grade=mathNov12Score(id,answers,ex);
    if(!grade)throw Error('Les dix réponses sont nécessaires.');
    const response=await cloudCallable('submitTimExercise')({id,answers});
    if(response.data?.submitted!==true||![0,0.5,1].includes(response.data?.xp))
