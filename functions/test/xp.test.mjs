@@ -51,3 +51,27 @@ test('Cinq bonus à 10/10 le même jour apportent bien 10 XP, sans plafond ni mo
  }
  assert.equal(cumul,10);
 });
+
+test('Aucun plafond quotidien pour tous les défis (3 missions du jour, samedi, dimanche, bonus)',()=>{
+ const cases=[
+  {kind:'daily',score:10,total:10,expected:3},
+  {kind:'weekly',score:20,total:20,expected:10},
+  {kind:'sunday',score:20,total:20,expected:20},
+  {kind:'bonus-day',score:10,total:10,expected:5},
+  {kind:'bonus-parent',score:20,total:20,expected:5}
+ ];
+ for(const row of cases){
+  const raw=rawPoints({kind:row.kind,category:'challenge',score:row.score,total:row.total});
+  assert.equal(raw,row.expected,row.kind+' barème');
+  for(const alreadyEarned of [0,3,9,30,75,100]){
+   assert.equal(cappedPoints(raw,alreadyEarned,0,alreadyEarned,alreadyEarned,'challenge'),raw,
+    row.kind+' ne doit pas perdre des XP à cause des gains déjà réalisés');
+  }
+ }
+ let dailyTotal=0;
+ for(let i=0;i<3;i++){
+  const raw=rawPoints({kind:'daily',category:'challenge',score:10,total:10});
+  dailyTotal+=cappedPoints(raw,dailyTotal,0,dailyTotal,0,'challenge');
+ }
+ assert.equal(dailyTotal,9,'trois défis du jour réussis donnent 9 XP');
+});
