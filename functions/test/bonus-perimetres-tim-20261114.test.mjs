@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {Script} from 'node:vm';
 import {BONUS_PERIMETRE_TIM,bonusPerimetreTimPack} from '../bonus-perimetres-tim-20261114.mjs';
 import {grade} from '../grading.mjs';
 import {rawPoints,cappedPoints} from '../xp.mjs';
@@ -76,4 +77,12 @@ test('interface : aucune leçon avant le défi, import sans leçon accepté uniq
  assert(app.includes("if(ex.kind==='bonus-day'){\n // Pas d'indice ni de renvoi à une leçon avant la validation d'un défi bonus."));
  assert(boot.includes("const bonusWithoutLesson=ex.kind==='bonus-day'&&!ex.lesson;"));
  assert(app.includes("if(lesson)p.append(button('Revoir la leçon : '+lesson.title"));
+});
+
+test('import Parent protégé : aucun lancement sans autorisation explicite',()=>{
+ const script=readFileSync(new URL('../../outils/publier-bonus-perimetres-via-parent.cjs',import.meta.url),'utf8');
+ assert.doesNotThrow(()=>new Script(script), 'Syntaxe de l import Parent');
+ assert(script.includes("process.env.TIM_BONUS_PERIMETRES_CONFIRME==='OUI'"));
+ assert(script.includes("bonusPerimetreTimPack()"));
+ assert(script.includes("assert.deepEqual(verified,{found:1,questions:10})"));
 });
