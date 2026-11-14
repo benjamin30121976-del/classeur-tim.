@@ -646,6 +646,15 @@ function renderExerciseIndex(){
  if(exerciseSubject==='Mathématiques'){renderMathOfficialExercises(root,toolbar);return;}
  if(!exerciseSubject){
   finder.classList.add('hide');root.className='matter-grid';
+  if(exerciseMode==='homework-bonus'){
+   root.className='clicklist';
+   document.getElementById('exercise-count').textContent='Exercices bonus des devoirs · 0 XP';
+   toolbar.append(button('← Tous les exercices',()=>{exerciseMode='';renderExerciseIndex();},'group-back'));
+   const homework=bases.filter(e=>e.homeworkBonus===true);
+   if(!homework.length)root.append(notice('Aucun exercice bonus de devoirs n’est encore publié. Les exercices préparés ensemble apparaîtront ici, sans modifier tes devoirs de l’ENT.'));
+   else for(const ex of homework)root.append(cardAction(ex.title,(ex.subject||'Espagnol')+' · Exercice de révision · 0 XP',exerciseDescription(ex),()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));
+   return;
+  }
   if(exerciseMode==='school-all'){
    root.className='clicklist';const schoolwork=bases.filter(e=>window.TIM_EXERCISE.mode(e)==='school');
    document.getElementById('exercise-count').textContent='Devoirs de l’école · 0 XP';toolbar.append(button('← Toutes les matières',()=>{exerciseMode='';renderExerciseIndex();},'group-back'));
@@ -1335,14 +1344,14 @@ function makeSoundSettings(){const zone=E('div','sound-settings');zone.append(E(
 function renderHome(){
  const root=clear(document.getElementById('home-content'));refreshXPHeader();
  const hero=E('section','mission-hero');
- const copy=E('div','mission-copy');copy.append(E('div','shout','CLASSEUR · 3e'),E('h1','','CHOISIS TA MISSION'),E('p','','Cours, défis et progression. À toi de jouer.'));
- copy.append(button('Choisir une matière →',()=>page('matieres'),'lobo-go'));hero.append(copy);const wolf=E('img','mission-wolf');wolf.src='./assets/loup-accueil.webp';wolf.alt='Le loup jongleur du classeur';hero.append(wolf);// Défis quotidiens rétablis avec les images originales du parent.
+ const copy=E('div','mission-copy');copy.append(E('div','shout','RÉVISIONS DES DEVOIRS'),E('h1','','MES DEVOIRS EN BONUS'),E('p','','Des exercices préparés ensemble pour réviser les devoirs. Note et correction, sans XP.'));
+ copy.append(button('Ouvrir mes exercices bonus →',()=>{exerciseSubject='';exerciseGroup='';exerciseMode='homework-bonus';page('exercices');},'lobo-go'));hero.append(copy);const wolf=E('img','mission-wolf');wolf.src='./assets/loup-accueil.webp';wolf.alt='Le loup jongleur du classeur';hero.append(wolf);// Défis quotidiens rétablis avec les images originales du parent.
  root.append(hero);
  if(window.__TIM_READONLY_FALLBACK)
   root.append(notice('Accès provisoire : le serveur des cours est indisponible. Les leçons et les défis sont consultables, mais la validation des réponses et les XP sont suspendus sur cet appareil. Actualise la page pour rétablir le compte complet.'));
  else if(window.__TIM_ADDONS_INCOMPLETE)
   root.append(notice('Certaines fiches complémentaires n’ont pas pu être chargées. Les cours principaux et les défis restent accessibles. Actualise le classeur pour retrouver toutes les fiches.'));
- root.append(dailyMissionPanel(),englishHomeExercises(),svtHomeExercises(),hgHomeExercises(),frHomeExercises(),...(window.__TIM_GUEST?[]:[makeXPPanel()]),makeRewardsTile(),makeSoundSettings(),bonusMissionPanel(true),missionCard('weekly'),missionCard('sunday'));
+ root.append(dailyMissionPanel(),...(window.__TIM_GUEST?[]:[makeXPPanel()]),makeRewardsTile(),makeSoundSettings(),missionCard('weekly'),missionCard('sunday'));
  root.append(E('h2','home-section-title','Que veux-tu travailler ?'));
  const cards=E('div','home-grid');
  for(const o of [{name:'Matières',sub:'Cours classés par matière',icon:'▦',cls:'cours',dest:'matieres'},
