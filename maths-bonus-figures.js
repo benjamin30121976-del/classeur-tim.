@@ -79,6 +79,22 @@
    'Ce potager mesure 9 m sur 6 m. Calcule son périmètre en mètres pour connaître la longueur de clôture nécessaire. Écris le calcul et la phrase-réponse.'
   ]
  };
+ /* Reformulations pédagogiques qui ne révèlent jamais un résultat.
+    Les questions et corrections originales enregistrées restent intactes. */
+ const GUIDES={
+  TIMBONUSM01:'À faire : calcule la fraction demandée. Si l’énoncé demande une fraction irréductible, écris-la sous sa forme simplifiée.',
+  TIMBONUSM02:'À faire : regarde bien la puissance et le signe. Les parenthèses font partie du calcul.',
+  TIMBONUSM03:'À faire : repère sur le dessin le côté demandé. Écris une longueur avec son unité.',
+  TIMBONUSM04:'À faire : écris une expression avec x, en supprimant les parenthèses lorsque la consigne demande de développer.',
+  TIMBONUSM05:'À faire : lis les noms des segments sur le dessin. Le symbole ∥ veut dire « est parallèle à ». Écris la longueur demandée.',
+  TIMBONUSM06:'À faire : trouve la valeur du nombre inconnu x. Vérifie ton résultat dans l’égalité.',
+  TIMBONUSM07:'À faire : écris le calcul sous forme de produit de facteurs. Une expression factorisée garde des parenthèses.',
+  TIMBONUSPERIM20261114:'À faire : distingue le tour du rectangle (longueur en cm ou m) et sa surface (aire en cm² ou m²).'
+ };
+ function taskGuide(ex){
+  if(ex?.kind!=='bonus-day'||ex?.subject!=='Mathématiques')return null;
+  return GUIDES[ex.id]||null;
+ }
  function node(tag,attributes,text){
   const element=document.createElementNS(NS,tag);
   for(const key of Object.keys(attributes||{}))element.setAttribute(key,String(attributes[key]));
@@ -216,5 +232,5 @@
   const prompts=ex?.kind==='bonus-day'&&ex?.subject==='Mathématiques'?PROMPTS[ex.id]:null;
   return prompts?.[index]||window.TIM_GEOMETRY_DIAGRAMS?.displayPrompt?.(ex,index,fallback)||fallback;
  }
- window.TIM_BONUS_FIGURES=Object.freeze({render,displayPrompt});
+ window.TIM_BONUS_FIGURES=Object.freeze({render,displayPrompt,taskGuide});
 })();
