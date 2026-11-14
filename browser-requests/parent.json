@@ -1,8 +1,8 @@
 {
   "mode": "lecture-seule-parent",
   "site": "https://classeur-tim-v16.pages.dev/",
-  "scope": "Test ciblé lecture seule du nouvel import JSON après changement de versions des scripts Cloudflare. Vérifie le champ fichier, le type JSON Android générique et le chargement local sans publication.",
+  "scope": "Diagnostic Chromium Parent lecture seule : DOM du panneau d’import et version app.js servie par Cloudflare.",
   "launch_on_update": true,
-  "note": "Aucune note, tentative ou XP de Tim touché. Test sans cliquer sur Publier.",
-  "checkVersion": "controle-import-json-android-20261114-v3-cache"
+  "note": "Lire seulement les attributs publics du formulaire et la version du JS, aucune publication.",
+  "checkVersion": "controle-import-json-android-20261114-dom"
 }
