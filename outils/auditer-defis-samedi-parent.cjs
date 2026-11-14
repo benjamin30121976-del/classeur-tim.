@@ -76,6 +76,23 @@ module.exports=async function auditerDefisParent(page,check){
      !a.correct&&sameMathValue(literal,String(q.right));
     const containsExpected=q.type==='text'&&!a.correct&&
      lower(q.right).length>=4&&lower(literal).includes(lower(q.right));
+    const exp=String(q.right);
+    const candidateExpression=literal.replace(/\s*(?:cm²?|cm2|m²?|m2|centimètres?|mètres?)\s*\.?$/i,'').trim();
+    const pieces=candidateExpression.split('=').map(x=>x.trim()).filter(Boolean);
+    const correctCalculationRefused=q.type==='text'&&q.subject==='Mathématiques'&&
+      pieces.length>=2&&sameMathValue(pieces[0],exp)&&sameMathValue(pieces.at(-1),exp);
+    const numericResultMentioned=q.type==='text'&&q.subject==='Mathématiques'&&
+      Number.isFinite(expectedNumber)&&new RegExp('(^|[^0-9])'+expectedNumber+'([^0-9]|$)').test(literal);
+    const spanishTokens=lower(literal).split(' ');
+    const possibleSpanish=q.subject==='Espagnol'&&(
+       (q.q.includes('Je vais au collège')&&spanishTokens.includes('voy')&&
+          (spanishTokens.includes('instituto')||spanishTokens.includes('colegio')))||
+       (q.q.includes('Je ne vais jamais')&&spanishTokens.includes('voy')&&
+          (spanishTokens.includes('nunca')||spanishTokens.includes('jamas'))));
+    const physicsKey=q.subject==='Physique-chimie'&&
+      (q.q.includes('charge positive')?'cation':q.q.includes('solide qui apparaît')?'precipite':
+       q.q.includes('apparition de bulles')?'gaz':'');
+    const possiblePhysics=Boolean(physicsKey)&&lower(literal).includes(physicsKey);
     const methodsButNotCalculated=q.type==='reason'&&a.methodCorrect===true&&a.conclusionCorrect===true&&a.calculationCorrect!==true;
     console.log('ÉNONCÉ PUBLIC '+copy.id+' Q'+String(i+1).padStart(2,'0')+': '+q.q);
     console.log('AUDIT '+copy.id+' Q'+String(i+1).padStart(2,'0')+
@@ -83,6 +100,8 @@ module.exports=async function auditerDefisParent(page,check){
       ', partiel='+partial+', méthode-et-conclusion-justes-calcul-refusé='+suspectReason+
       ', nombre-math-correct-refusé='+numericallyRight+', écriture-algébrique-à-revoir='+equivalentAlgebra+
       ', formule-math-équivalente='+equivalentAlgebra+', réponse-modèle-incluse-dans-phrase='+containsExpected+
+      ', calcul-complet-math-juste-refusé='+correctCalculationRefused+', nombre-attendu-présent='+numericResultMentioned+
+      ', formulation-espagnol-possible='+possibleSpanish+', concept-physique-présent='+possiblePhysics+
       ', méthode-conclusion-reconnues='+methodsButNotCalculated+', points-non-nuls='+Boolean(Number(a.points)>0)+'.');
    }
   }
