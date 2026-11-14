@@ -39,7 +39,7 @@ const exercise={
   {q:'15?',type:'text',right:'quinze',also:['15'],why:'Écrire le nombre'}
  ]
 };
-test('Tim valide une seule fois, avec 1 XP selon le barème actuel et note réservée au parent',async()=>{
+test('Tim valide une seule fois, avec 1 XP et correction immédiate selon les règles actuelles',async()=>{
  const db=fakeDB({'exercises/MATH_Q01':exercise});
  const first=await TESTABLE.submitExercise(db,TIM_UID,{id:'MATH_Q01',answers:['0','15']});
  assert.equal(first.submitted,true);
@@ -47,7 +47,8 @@ test('Tim valide une seule fois, avec 1 XP selon le barème actuel et note rése
  assert.equal(db.commits(),1);
  assert.equal(db.docs.get('privateAttempts/MATH_Q01').score,2);
  assert.equal(db.docs.get('privateAttempts/MATH_Q01').total,2);
- assert.equal(db.docs.get('attempts/MATH_Q01').correctionStatus,'pending-parent');
+ assert.equal(db.docs.get('attempts/MATH_Q01').correctionStatus,'released');
+ assert.equal(db.docs.get('releasedCorrections/MATH_Q01').released,true);
  assert.equal(db.docs.get('attempts/MATH_Q01').score,undefined);
  await assert.rejects(()=>TESTABLE.submitExercise(db,TIM_UID,{id:'MATH_Q01',answers:['0','15']}),e=>e.code==='already-exists');
  assert.equal(db.commits(),1);
