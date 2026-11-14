@@ -115,7 +115,13 @@ export const BONUS_PERIMETRE_TIM = {
       "reasoningRequired": true,
       "also": [
         "24"
-      ]
+      ],
+      "reasoningCheck": {
+        "kind": "rectangle-perimeter-v1",
+        "length": 8,
+        "width": 4,
+        "unit": "cm"
+      }
     },
     {
       "type": "text",
