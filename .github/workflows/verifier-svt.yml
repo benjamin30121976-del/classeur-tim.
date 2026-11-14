@@ -36,7 +36,8 @@ jobs:
       - name: Résumé
         run: echo 'Tests terminés sans validation réelle d’une tentative de Tim.' >> "$GITHUB_STEP_SUMMARY"
   navigateur-parent:
-    if: github.ref == 'refs/heads/main'
+    # Ne pas consommer de lectures Firestore lors de chaque validation du code.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
