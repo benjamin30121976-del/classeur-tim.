@@ -4,7 +4,7 @@
    Même disposition et classes que l’Espagnol, une question à la fois. */
 (function(){
 'use strict';
-const RE=/^HGQ_L0[1-8]_0[1-2]$/;
+const RE=/^HGQ_L0[1-9]_0[1-2]$/;
 const E=(tag,cls,txt)=>{
  const a=document.createElement(tag);if(cls)a.className=cls;
  if(txt!==undefined)a.textContent=String(txt);return a;
@@ -49,9 +49,9 @@ function showCorrection(slot,report){
   slot.append(box);
  });
  slot.append(E('p','',parentPractice?'Vous pouvez recommencer cet essai sans toucher aux résultats de Tim.':'L’exercice n’est plus rejouable. Revois la méthode avant la prochaine activité.'));
- const lessonId=/^HG_BIS0[1-8]$/.test(String(report.lessonId||''))?report.lessonId:
-  /^HGQ_L0[1-8]_0[1-2]$/.test(String(report.id||''))?'HG_BIS'+String(report.id).slice(5,7):null;
- const reviewTitles={HG_BIS01:'Première Guerre mondiale',HG_BIS02:'Révolution russe de 1917',HG_BIS03:'URSS de Staline',HG_BIS04:'Aires urbaines et Nîmes',HG_BIS05:'Mobilités et métropoles',HG_BIS06:'République et Constitution',HG_BIS07:'Loi Veil et IVG',HG_BIS08:'Institutions européennes'};
+ const lessonId=/^HG_BIS0[1-9]$/.test(String(report.lessonId||''))?report.lessonId:
+  /^HGQ_L0[1-9]_0[1-2]$/.test(String(report.id||''))?'HG_BIS'+String(report.id).slice(5,7):null;
+ const reviewTitles={HG_BIS01:'Première Guerre mondiale',HG_BIS02:'Révolution russe de 1917',HG_BIS03:'URSS de Staline',HG_BIS04:'Aires urbaines et Nîmes',HG_BIS05:'Mobilités et métropoles',HG_BIS06:'République et Constitution',HG_BIS07:'Loi Veil et IVG',HG_BIS08:'Institutions européennes',HG_BIS09:'Nazisme : dictature et persécutions'};
  if(lessonId){
   if(count)slot.append(E('p','','Partie conseillée à revoir : '+(reviewTitles[lessonId]||'la règle et les exemples')+'.'));
   const reviser=button('Revoir la leçon BIS pour comprendre les erreurs',()=>{

@@ -13,7 +13,7 @@ const GROUPS=[
  {name:'Révisions et évaluations',start:22,end:23,keywords:/evaluation|controle|revisio|correction/}
 ];
 
-/* Compléments ENT vérifiés jusqu'au 12/11/2026 : lecture seule, sans notes ni XP. */
+/* Compléments ENT vérifiés jusqu'au 13/11/2026 : lecture seule, sans notes ni XP. */
 const TIM_ENT_NEW=[
  {id:'TIM_ENT_20261106',date:'2026-11-06',title:'6 novembre — Automatismes 5 et factorisation',chapter:'Calcul littéral',teacher:'Test 5 sur les automatismes Leçon : factoriser une expression littérale',work:'Finir de corriger son évaluation',source:'Séance ENT 10099~6402971 ; devoir ENT 10099~214457',note:'Ces informations figuraient dans l’export ENT du 10 novembre, après les premières captures prises pendant la séance.'},
  {id:'TIM_ENT_20261109',date:'2026-11-09',title:'9 novembre — Correction et factorisation',chapter:'Calcul littéral',teacher:'Correction du test 5 sur les automatismes Correction ex 35 p.77 Exercices sur la factorisation : n°36 et 37 p.77',work:'Faire exercice n°35 p.77',source:'Séance ENT 10099~6402906 ; devoir ENT 10099~214606',note:'Les énoncés et corrigés officiels de la page 77 ne sont pas disponibles.'},
@@ -21,7 +21,12 @@ const TIM_ENT_NEW=[
   teacher:'Leçon : la réciproque de Thalès',
   work:'Pour vendredi 13 novembre : Finir l’exercice 25 p.253.',
   source:'Séance ENT 10099~6402938 ; contenu 10099~215177 ; devoir ENT 10099~215178',
-  note:'Aucun PDF joint à cette séance. L’énoncé de l’exercice 25 p.253 n’est pas fourni dans l’export ENT ; seul le numéro est attesté.'}
+  note:'Aucun PDF joint à cette séance. L’énoncé de l’exercice 25 p.253 n’est pas fourni dans l’export ENT ; seul le numéro est attesté.'},
+ {id:'TIM_ENT_20261113',date:'2026-11-13',title:'13 novembre — Exercices sur la réciproque de Thalès',chapter:'Thalès',
+  teacher:'Exercices sur la réciproque de Thalès',
+  work:'Travaux après la séance : exercices pour lundi 16, jeudi 19 et lundi 23 novembre. Les énoncés ne figurent pas dans cette collecte.',
+  source:'Séance ENT 10099~6402972 ; contenu 10099~215379 ; devoirs après séance 10099~215381 (16/11), 10099~215380 (19/11), 10099~215382 (23/11). Le devoir 10099~215178 (exercice 25 p.253) était à faire pour cette séance du 13/11',
+  note:'Aucune nouvelle pièce jointe. Les intitulés et échéances sont confirmés par l’agenda, mais pas les énoncés détaillés du manuel.'}
 ];
 function mathEntList(){
  const old=ent.filter(e=>!TIM_ENT_NEW.some(v=>String(e.id)===v.id || String(e.date||'').includes(v.date) || String(e.id)==='M26S'+v.date.slice(5,7)+v.date.slice(8,10)));
@@ -29,7 +34,7 @@ function mathEntList(){
 }
 function viewTimEnt(id){
  const x=TIM_ENT_NEW.find(v=>v.id===id);if(!x)return;
- const isThales=x.id==='TIM_ENT_20261112';
+ const isThales=x.chapter==='Thalès';
  selected=id;group=isThales?GROUPS[3]:GROUPS[2];
  draw(header('Cours ENT · '+x.title,'Texte authentique du cahier de textes de Mme Pialet, séparé des explications BIS.')+
  back('Retour à tous les cours ENT')+
@@ -48,14 +53,14 @@ function mountTimThalesSource(){
  const host=root?.querySelector('[data-tim-thales-original-pdf]');
  if(host&&window.TIM_INLINE_ENT_DOCUMENTS?.mount){
   window.TIM_INLINE_ENT_DOCUMENTS.mount(host,['M26S1009'],{
-   title:'Support du professeur du 9 octobre : théorème de Thalès (déjà archivé, non joint au cours du 12 novembre)',
+   title:'Support antérieur du professeur du 9 octobre : théorème de Thalès (non joint à la séance consultée)',
    filenamePattern:/leçon.*théorème.*thalès\.pdf/i,limit:1,auto:true
   }).catch(()=>{host.textContent='Le PDF de Thalès du 9 octobre est momentanément indisponible.';});
  }
 }
 function viewTimReciproqueThales(){
  selected='TIM_RECIPROQUE_THALES_BIS';group=GROUPS[3];
- draw(header('Leçon BIS · La réciproque de Thalès','Explication pédagogique du cours du jeudi 12 novembre, distincte du texte officiel du professeur.')+
+ draw(header('Leçon BIS · La réciproque de Thalès','Méthode du jeudi 12 novembre appliquée aux exercices du vendredi 13. Leçon BIS distincte des textes ENT originaux.')+
  back('Retour au chapitre Thalès')+
  '<article class="spx-panel math-reading-lesson">'+
  '<section class="math-reading-section"><h3>1 · Comprendre à quoi ça sert</h3><p>La réciproque de Thalès sert à <strong>prouver que deux droites sont parallèles</strong>, à partir de longueurs connues. Le théorème de Thalès fait l’inverse : si les droites sont parallèles, il permet d’écrire des rapports égaux.</p></section>'+ 
@@ -67,14 +72,19 @@ function viewTimReciproqueThales(){
  '<section class="math-reading-section"><h3>4 · Exemple corrigé</h3><p>AD = 3 cm, AB = 5 cm, AE = 4,2 cm et AC = 7 cm.</p><ol><li>AD / AB = 3 / 5 = <strong>0,6</strong>.</li><li>AE / AC = 4,2 / 7 = <strong>0,6</strong>.</li><li>Les rapports sont égaux et les points sont alignés dans le même ordre. Donc <strong>(DE) // (BC)</strong>.</li></ol></section>'+
  '<section class="math-reading-section"><h3>5 · Je n’ai pas compris</h3><p>Imagine deux côtés d’un triangle. Tu compares la proportion parcourue sur chacun : 3 sur 5 d’un côté, 4,2 sur 7 de l’autre. Les deux représentent 60 % : la petite barre DE est alors parallèle à la base BC, si les points sont correctement alignés.</p><p><strong>Erreur à éviter :</strong> ne pas comparer AD / AC avec AE / AB. Les côtés doivent se correspondre. Ne pas conclure à partir du dessin seul.</p></section>'+
  '<section class="math-reading-section"><h3>6 · Et si les rapports sont différents ?</h3><p>Par exemple : 3 / 5 = 0,6 mais 5 / 7 ≈ 0,714. Les rapports ne sont pas égaux ; si les points sont bien alignés, <strong>(DE) n’est pas parallèle à (BC)</strong> (contraposée de Thalès).</p></section>'+
+ '<section class="math-reading-section"><h3>7 · Appliquer la leçon aux exercices du 13 novembre</h3><p>Le cours du professeur indique seulement « Exercices sur la réciproque de Thalès ». Voici deux <strong>exemples BIS créés pour apprendre</strong>, et non les exercices du livre. Dans les deux cas, A, D, B sont alignés dans cet ordre et A, E, C sont alignés dans cet ordre.</p>'+
+ '<p><strong>Exemple A : prouver que (DE) et (BC) sont parallèles.</strong> AD = 4 cm ; AB = 10 cm ; AE = 6 cm ; AC = 15 cm. Je calcule : AD/AB = 4/10 = 0,4 ; AE/AC = 6/15 = 0,4. Ces deux rapports sont égaux. Donc, <strong>d’après la réciproque du théorème de Thalès, (DE) est parallèle à (BC)</strong>.</p>'+
+ '<p><strong>Exemple B : prouver que les droites ne sont pas parallèles.</strong> AD = 3 cm ; AB = 9 cm ; AE = 5 cm ; AC = 12 cm. Je calcule : AD/AB = 3/9 = 1/3 et AE/AC = 5/12. Comme ces rapports sont différents, <strong>d’après la contraposée du théorème de Thalès, (DE) n’est pas parallèle à (BC)</strong>.</p></section>'+
+ '<section class="math-reading-section"><h3>8 · Comment rédiger une démonstration complète</h3><ol><li><strong>Situation :</strong> « Les points A, D, B et A, E, C sont alignés dans le même ordre. »</li><li><strong>Calculs :</strong> « AD/AB = 4/10 = 0,4 » et « AE/AC = 6/15 = 0,4 ».</li><li><strong>Comparaison :</strong> « Les rapports sont égaux. »</li><li><strong>Conclusion justifiée :</strong> « Donc, d’après la réciproque du théorème de Thalès, (DE) est parallèle à (BC). »</li></ol><p>Ne rédige pas seulement « oui » : écris les fractions, les calculs, la comparaison et la conclusion avec le nom du théorème.</p></section>'+
+ '<section class="math-reading-section"><h3>9 · Je n’ai pas compris ?</h3><p>Repère d’abord les paires : <strong>AD va avec AB</strong>, et <strong>AE va avec AC</strong>. Pour chaque paire, calcule petit segment divisé par grand segment. Si les rapports sont égaux ET que les points sont alignés dans le même ordre, utilise la réciproque. S’ils sont différents, utilise la contraposée.</p><p>Un dessin peut aider à placer les lettres, mais il ne remplace jamais les calculs. Tu peux écrire les rapports sous forme de fractions pour éviter les erreurs d’arrondi.</p></section>'+
  '<section class="math-reading-section"><h3>Devoir donné pour vendredi 13 novembre</h3><p><strong>Finir l’exercice 25 p.253.</strong> L’énoncé du manuel n’est pas présent dans l’archive ENT ; il n’est pas reproduit ici.</p></section>'+
  '</article>'+
- '<section class="spx-panel math12-exercises"><h3>Mes 3 exercices BIS — 12 novembre</h3><p>10 questions chacun, une seule validation, note sur 10, correction et +1 / +0,5 / 0 XP selon la note. Ces exercices d’entraînement ne remplacent pas le devoir 25 p.253 du manuel (énoncé absent de l’ENT).</p><div class="spx-quick-links">'+
+ '<section class="spx-panel math12-exercises"><h3>Mes trois entraînements BIS · cours des 12 et 13 novembre</h3><p>10 questions chacun, une seule validation, note sur 10, correction et +1 / +0,5 / 0 XP selon la note. Ces exercices d’entraînement ne remplacent pas le devoir 25 p.253 du manuel (énoncé absent de l’ENT).</p><div class="spx-quick-links">'+
  btn('data-math-nov12-ex','MTH12_01','Exercice 1 — Comprendre la méthode')+
  btn('data-math-nov12-ex','MTH12_02','Exercice 2 — Calculer les rapports')+
  btn('data-math-nov12-ex','MTH12_03','Exercice 3 — Rédiger et conclure')+
  '</div></section>'+
- '<div class="math-reading-actions">'+btn('data-math-open-original','TIM_ENT_20261112','Relire le texte exact du cours ENT du 12 novembre')+'</div>',()=>category(GROUPS[3]));
+ '<div class="math-reading-actions">'+btn('data-math-open-original','TIM_ENT_20261112','Relire la leçon ENT du 12 novembre')+btn('data-math-open-original','TIM_ENT_20261113','Voir la séance ENT du 13 novembre')+'</div>',()=>category(GROUPS[3]));
  wire();
  mountTimThalesSource();
 }
@@ -82,7 +92,7 @@ function viewTimMathNov12Exercise(id){
  if(!/^MTH12_0[1-3]$/.test(String(id||'')))return;
  selected=id;group=GROUPS[3];
  const name={MTH12_01:'Comprendre la méthode',MTH12_02:'Calculer et comparer',MTH12_03:'Rédiger et conclure'}[id];
- draw(header('Exercice du 12 novembre — '+name,'Réciproque de Thalès · 10 questions · une seule tentative · +1 / +0,5 / 0 XP')+
+ draw(header('Exercice BIS de Thalès — '+name,'Réciproque de Thalès · 10 questions · une seule tentative · +1 / +0,5 / 0 XP')+
  back('Retour à la leçon du 12 novembre')+
  '<section class="spx-panel" id="math12-exercise-slot"><p>Chargement des dix questions…</p></section>',viewTimReciproqueThales);
  const slot=root?.querySelector('#math12-exercise-slot');
@@ -167,7 +177,7 @@ function home(){
  selected=null;group=null;
  draw(header('Mathématiques','Choisis ton chapitre, puis ta leçon.')+
  back('Toutes les matières')+
- '<section class="spx-panel math-latest-ent" style="margin:14px 0"><h3>Dernier cours ENT · Jeudi 12 novembre</h3><p><strong>La réciproque de Thalès</strong> · devoir pour vendredi 13 novembre : finir l’exercice 25 p.253.</p><div class="spx-quick-links">'+btn('data-math-open-original','TIM_ENT_20261112','Voir le cours ENT du jour')+btn('data-math-reciproque','lesson','Lire la leçon expliquée')+'</div></section>'+
+ '<section class="spx-panel math-latest-ent" style="margin:14px 0"><h3>Dernier cours ENT · Vendredi 13 novembre</h3><p><strong>Exercices sur la réciproque de Thalès</strong> · devoirs annoncés pour les 16, 19 et 23 novembre, sans énoncé détaillé dans l’archive. L’exercice 25 p.253 était à terminer pour le 13.</p><div class="spx-quick-links">'+btn('data-math-open-original','TIM_ENT_20261113','Voir le cours ENT du 13 novembre')+btn('data-math-reciproque','lesson','Lire la leçon expliquée')+'</div></section>'+
  '<div class="math-chapter-list">'+GROUPS.map((g,i)=>{
   const lessons=bis.filter(x=>groupOfId(x.id)===g);
   if(!lessons.length)return '';
@@ -195,7 +205,7 @@ function viewEntChronology(){
  const lessons=mathEntList().slice().sort((a,b)=>lessonDate(a).localeCompare(lessonDate(b),'fr'));
  draw(header('Cours ENT de mathématiques · Chronologie','Les cours originaux de Mme Pialet, sans ajout ni remplacement du contenu officiel.')+
  back('Retour aux chapitres')+
- '<section class="spx-panel"><h3>'+lessons.length+' séances ENT conservées</h3><p>Cours d’origine et mises à jour jusqu’au 12 novembre 2026. Aujourd’hui : réciproque de Thalès ; devoir du 13 novembre : exercice 25 p.253. Les énoncés du manuel ne figurent pas dans l’export.</p>'+
+ '<section class="spx-panel"><h3>'+lessons.length+' séances ENT conservées</h3><p>Cours d’origine et mises à jour jusqu’au 13 novembre 2026. Dernière séance : exercices sur la réciproque de Thalès. Devoir du 13 : exercice 25 p.253 ; travaux prévus les 16, 19 et 23 novembre. Les énoncés détaillés du manuel ne figurent pas dans l’export.</p>'+
  (lessons.length?lessons.map((x,i)=>'<button class="spx-row" type="button" data-math-open-original="'+esc(x.id)+'"><span class="spx-chip">'+(i+1)+'</span><span><strong>'+esc(x.title)+'</strong><small>'+esc(x.date||x.summary||'Cours ENT')+'</small></span></button>').join(''):'<p>Aucun cours ENT retrouvé.</p>')+
  '</section>',home);
  wire();

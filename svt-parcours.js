@@ -46,7 +46,7 @@ function showBis(root,bis){
   add(root,'h4',b.title);
   add(root,'p',b.rule);
   root.append(draw(b.diagram));
-  add(root,'h4','Comprendre en trois étapes');
+  add(root,'h4','Comprendre pas à pas');
   for(const [i,step] of b.steps.entries())add(root,'p',(i+1)+'. '+step);
   add(root,'h4','Exemples guidés');
   for(const [q,a] of b.examples){const block=E('p');block.append(E('strong',q+' — '),document.createTextNode(a));root.append(block);}

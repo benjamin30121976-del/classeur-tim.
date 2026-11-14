@@ -24,10 +24,10 @@ function sampleDb(){
  };
 }
 
-test('HG : 8 leçons, 16 exercices, 160 questions et réponses masquées',()=>{
+test('HG : 9 leçons, 18 exercices, 180 questions et réponses masquées',()=>{
  const ids=HG_BANK_TEST.allIds();
- assert.equal(ids.length,16);
- assert.equal(new Set(ids).size,16);
+ assert.equal(ids.length,18);
+ assert.equal(new Set(ids).size,18);
  for(const id of ids){
   assert.ok(hgTrainingId(id));
   const t=hgTask(id),pub=hgPublicTask(id);
@@ -44,11 +44,13 @@ test('HG : 8 leçons, 16 exercices, 160 questions et réponses masquées',()=>{
   }
  }
  assert.equal(hgTrainingId('HGQ_L01_03'),false);
- assert.equal(hgTrainingId('HGQ_L09_01'),false);
- assert.equal(hgPublicTask('HGQ_L09_01'),null);
+ assert.equal(hgTrainingId('HGQ_L09_01'),true);
+ assert.ok(hgPublicTask('HGQ_L09_01'));
+ assert.equal(hgTrainingId('HGQ_L10_01'),false);
+ assert.equal(hgPublicTask('HGQ_L10_01'),null);
 });
 
-test('HG : les 160 bonnes réponses donnent 10/10 et les 160 fausses 0/10',()=>{
+test('HG : les 180 bonnes réponses donnent 10/10 et les 180 fausses 0/10',()=>{
  for(const id of HG_BANK_TEST.allIds()){
   const task=hgTask(id);
   const correct=task.questions.map(q=>q.kind==='qcm'?q.right:q.expected);
@@ -115,4 +117,18 @@ test('HG : accents, dates exactes et réponse fausse',()=>{
  assert.ok(j>=0);
  answers[j]='1917';
  assert.equal(gradeHgTask('HGQ_L02_02',answers,HG_BANK_VERSION).score,8);
+});
+
+
+test('HG : cours BIS 09 nazisme, énoncés masqués et 20 corrections',()=>{
+ for(const id of ['HGQ_L09_01','HGQ_L09_02']){
+  const task=hgTask(id),pub=hgPublicTask(id);
+  assert.equal(task.lessonId,'HG_BIS09'); assert.equal(task.questions.length,10);
+  assert.equal(pub.questions.every(q=>!('expected' in q||'right' in q||'explanation' in q)),true);
+  const correct=task.questions.map(q=>q.kind==='qcm'?q.right:q.expected);
+  const wrong=task.questions.map(q=>q.kind==='qcm'?(q.right+1)%4:'incorrect');
+  assert.equal(gradeHgTask(id,correct,HG_BANK_VERSION).score,10);
+  const miss=gradeHgTask(id,wrong,HG_BANK_VERSION);
+  assert.equal(miss.score,0);assert.equal(miss.items.filter(q=>!q.correct&&q.explanation.length>=25).length,10);
+ }
 });
