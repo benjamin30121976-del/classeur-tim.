@@ -1,8 +1,8 @@
 {
   "mode": "lecture-seule-parent",
   "site": "https://classeur-tim-v16.pages.dev/",
-  "scope": "Vérification du correctif de sélection JSON sur Android dans l'espace Parent (lecture seule) : attribut accept absent, fichier de type application/octet-stream reconnu, aucun bouton de publication activé.",
+  "scope": "Test ciblé lecture seule du nouvel import JSON après changement de versions des scripts Cloudflare. Vérifie le champ fichier, le type JSON Android générique et le chargement local sans publication.",
   "launch_on_update": true,
-  "note": "Vérifier le champ fichier sans filtre, charger un JSON fictif en mémoire, ne jamais cliquer Publier ni écrire en Firebase. Tests Chromium Parent ordinateur et mobile.",
-  "checkVersion": "controle-import-json-android-20261114-v2"
+  "note": "Aucune note, tentative ou XP de Tim touché. Test sans cliquer sur Publier.",
+  "checkVersion": "controle-import-json-android-20261114-v3-cache"
 }
