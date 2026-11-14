@@ -158,6 +158,21 @@
   if(kind==='triangle')return triangle(full,hint);
   return rectangle(full);
  }
+ const BD1611_PROMPTS=[
+  'Dans le triangle ABC, M est sur [AB] et N sur [AC], dans le même ordre. On sait que AM/AB = AN/AC. Quelle conclusion permet la réciproque de Thalès ?',
+  'A, M, B et A, N, C sont alignés dans cet ordre. AM = 2, AB = 6, AN = 3, AC = 9. (MN) et (BC) sont-elles parallèles ?',
+  'A, M, B et A, N, C sont alignés dans cet ordre. AM = 2, AB = 7, AN = 3, AC = 9. Quelle conclusion peut-on justifier ?',
+  'Même configuration : AM = 4, AB = 12, AN = 5, AC = 15. Quelle égalité de rapports est correcte ?',
+  'M est sur [AB] et N sur [AC], dans le même ordre. AM = 3, AB = 9, AN = 6, AC = 12. (MN) et (BC) sont-elles parallèles ?',
+  'Pourquoi faut-il vérifier que A, M, B et A, N, C sont alignés dans le même ordre ?',
+  'AM/AB = AN/AC. AM = 3 cm, AB = 9 cm et AC = 15 cm. Calcule AN en cm. Écris seulement le nombre.',
+  'On sait déjà que (MN) est parallèle à (BC). Quel résultat mathématique peut-on utiliser en premier ?',
+  'A, M, B et A, N, C sont alignés dans le même ordre. AM/AB = 2/5 et AN/AC = 4/10. Quelle conclusion ?',
+  'Comment rédiger correctement une conclusion avec la réciproque de Thalès ?'
+ ];
+ function displayPrompt(ex,index,fallback){
+  return ex?.id==='BD1611_MA01'&&BD1611_PROMPTS[index]?BD1611_PROMPTS[index]:fallback;
+ }
  function render(ex,index){
   if(!ex||ex.subject!=='Mathématiques')return null;
   const q=ex.questions?.[index];if(!q)return null;
@@ -169,5 +184,5 @@
   }
   return renderPrompt(prompt,hint,shared);
  }
- window.TIM_GEOMETRY_DIAGRAMS=Object.freeze({render,renderPrompt,choose});
+ window.TIM_GEOMETRY_DIAGRAMS=Object.freeze({render,renderPrompt,displayPrompt,choose});
 })();
