@@ -42,7 +42,7 @@ export function grade(exercise, key, responses) {
   const response=separator>=0?rawResponse.slice(0,separator):rawResponse;
   const reasoning=separator>=0?rawResponse.slice(separator+5):'';
   const structuredPerimeter=isMathBonus&&question.reasoningCheck?.kind==='rectangle-perimeter-v1';
-  if(isMathBonus&&question.reasoningRequired&&!structuredPerimeter&&reasoning.trim().length<8)throw new Error('Reasoning missing');
+  if(isMathBonus&&question.reasoningRequired&&!structuredPerimeter&&!reasoning.trim())throw new Error('Reasoning missing');
   if(rawResponse.length>10000)throw new Error('Answer too long');
   const secret=key.questions[i];
   let correct=null;
@@ -75,7 +75,7 @@ export function grade(exercise, key, responses) {
   }
   if(correct!==null){total++;score+=points;}
   return {question:question.q,response,correct,points,expected:question.type==='mc'?question.options?.[Number(secret.right)]:secret.right,skill:question.skill||'',explanation,
-   ...(isMathBonus&&question.reasoningRequired?{reasoning}: {}),
+   ...(isMathBonus&&question.reasoningRequired?{reasoning,...(!structuredPerimeter?{reasoningAssessment:'not-automatically-graded'}:{reasoningAssessment:'checked'})}: {}),
    ...(reasoningDetails?{reasoningDetails}:{})};
  });
  return {score,total,needsReview,answers};
