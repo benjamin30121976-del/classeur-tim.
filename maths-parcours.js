@@ -435,7 +435,16 @@ function readableMathPrompt(value){
   steps.map(step=>'<li>'+esc(step.replace(/^puis\s+/i,''))+'</li>').join('')+
   '</ol></div><p class="math-quiz-question-text">'+esc(m[2])+'</p>';
 }
-async function viewTraining(id){
+function insertTrainingFigures(panels,questions,context){
+  panels.forEach((panel,i)=>{
+   const fig=window.TIM_GEOMETRY_DIAGRAMS?.renderPrompt?.(questions[i]?.prompt||'',context||'');
+   if(!fig||!panel)return;
+   const prompt=panel.querySelector('.math-quiz-question-text, .math-quiz-context');
+   if(prompt)prompt.after(fig);
+   else (panel.querySelector('legend,h4')||panel).after(fig);
+  });
+ }
+ async function viewTraining(id){
  const x=lesson(id);if(!x)return;selected=id;group=groupOfId(id);
  const testId='MT'+suffix(id);
  const completed=grades.attempts.find(a=>a.id===testId);
@@ -462,7 +471,7 @@ async function viewTraining(id){
   const embeddedData=/(choisir|choisis|soustraire|soustrais|multiplier|multiplie|ajouter|ajoute|on considère|mesure|longueur|coordonnées|données)/i;
   if(!context&&task.questions.some(q=>dependsOnMissingData.test(q.prompt)&&!embeddedData.test(q.prompt)))
    throw Error('Une question renvoie à un programme ou à une figure dont l’énoncé manque. Exercice suspendu, aucune tentative utilisée.');
-  if(window.__TIM_PARENT){holder.innerHTML='<h3>Aperçu Parent · 10 questions (lecture seule)</h3><p>Ces questions ne sont pas les réponses correctes. Aucune tentative n’est créée lors de cet aperçu.</p>'+task.questions.map((q,i)=>'<section class="spx-training-question"><h4>Question '+(i+1)+' / 10</h4>'+readableMathPrompt(q.prompt)+'<ul>'+q.choices.map(c=>'<li>'+esc(c)+'</li>').join('')+'</ul></section>').join('');return;}
+  if(window.__TIM_PARENT){holder.innerHTML='<h3>Aperçu Parent · 10 questions (lecture seule)</h3><p>Ces questions ne sont pas les réponses correctes. Aucune tentative n’est créée lors de cet aperçu.</p>'+task.questions.map((q,i)=>'<section class="spx-training-question"><h4>Question '+(i+1)+' / 10</h4>'+readableMathPrompt(q.prompt)+'<ul>'+q.choices.map(c=>'<li>'+esc(c)+'</li>').join('')+'</ul></section>').join('');insertTrainingFigures([...holder.querySelectorAll('section.spx-training-question')],task.questions,x?.title);return;}
   // Nouvelle tentative seulement, après vérification du serveur et hors aperçu Parent.
   try{await window.TIM_ANIMATIONS?.playOpening?.();}
   catch(error){console.warn('Animation maths ignorée',error);}
@@ -474,6 +483,7 @@ async function viewTraining(id){
     q.choices.map((v,j)=>'<label class="math-choice"><input type="radio" name="mq'+i+'" value="'+j+'"> '+esc(v)+'</label>').join('')+'</fieldset>').join('')+
    '<div class="spx-quiz-navigation"><p id="math-quiz-progress" role="status" aria-live="polite"></p><button type="button" id="math-quiz-prev" class="spx-back">← Question précédente</button> <button type="button" id="math-quiz-next" class="spx-button">Question suivante →</button></div><button type="submit" id="math-quiz-submit" class="spx-button">Valider définitivement les 10 réponses</button><p id="math-quiz-status" role="status" aria-live="polite"></p></form>';
   const form=holder.querySelector('#math-quiz-form');
+   insertTrainingFigures([...form.querySelectorAll('fieldset.spx-training-question')],task.questions,x?.title);
   const questions=[...form.querySelectorAll('fieldset.spx-training-question')];
   const prev=form.querySelector('#math-quiz-prev'),next=form.querySelector('#math-quiz-next'),submit=form.querySelector('#math-quiz-submit'),progress=form.querySelector('#math-quiz-progress');
   let step=0;

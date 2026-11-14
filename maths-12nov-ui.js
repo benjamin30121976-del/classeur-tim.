@@ -20,6 +20,11 @@ function render(slot,id,back){
     '<p><strong>Réponse attendue :</strong> '+esc(q.expected)+'</p>'+
     '<p>'+esc(q.explanation||'Revois les rapports de Thalès dans la leçon BIS.')+'</p></section>').join('')+
    '<button class="spx-button" type="button" id="math12-return">Revoir la leçon BIS et le dessin</button>';
+  const corrected=[...slot.querySelectorAll('.math12-correction')];
+  corrected.forEach((panel,i)=>{
+   const fig=window.TIM_GEOMETRY_DIAGRAMS?.renderPrompt?.(questions[i]?.prompt||'', 'Réciproque de Thalès');
+   if(fig)(panel.querySelector('p')||panel.querySelector('h4'))?.after(fig);
+  });
   slot.querySelector('#math12-return').onclick=back;
  };
  const load=async()=>{
@@ -51,6 +56,11 @@ function render(slot,id,back){
      '</fieldset>').join('')+
     '<button type="submit" class="spx-button">'+(window.__TIM_PARENT?'Corriger cet essai sans enregistrer':'Valider définitivement les 10 réponses')+'</button>'+
     '<p role="status" aria-live="polite" id="math12-message"></p></form>';
+   const panels=[...slot.querySelectorAll('#math12-quiz-form fieldset.spx-training-question')];
+   panels.forEach((panel,i)=>{
+    const fig=window.TIM_GEOMETRY_DIAGRAMS?.renderPrompt?.(qs[i].prompt,'Réciproque de Thalès');
+    if(fig)(panel.querySelector('p')||panel.querySelector('legend'))?.after(fig);
+   });
    const form=slot.querySelector('#math12-quiz-form');
    form.onsubmit=async ev=>{
     ev.preventDefault();
