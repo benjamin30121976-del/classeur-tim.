@@ -799,7 +799,7 @@ ex.questions.forEach((question,i)=>{const row=E('div','q');row.append(E('div','q
 function values(){return controls.map(c=>c.kind==='mc'?(document.querySelector('input[name="'+c.name+'"]:checked')?.value??''):
  c.kind==='reasoning'?c.node.value.trim()+' ||| '+c.work.value.trim():
  c.kind==='reasoning-v2'?c.node.value.trim()+' ||| '+JSON.stringify({calculation:c.work.value.trim(),conclusion:c.conclusion.value.trim()}):c.node.value.trim());}
-function reasoningReady(c){return c.kind==='reasoning'?(!!c.node.value.trim()&&c.work.value.trim().length>=8):
+function reasoningReady(c){return c.kind==='reasoning'?(!!c.node.value.trim()&&!!c.work.value.trim()):
  c.kind==='reasoning-v2'?(!!c.node.value.trim()&&!!c.work.value.trim()&&!!c.conclusion.value.trim()):true;}
 function saveDraft(){if(old)return;const d=drafts();d[id]=values();save(DRAFT_KEY,d);}
 if(old){
