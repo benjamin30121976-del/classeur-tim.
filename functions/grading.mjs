@@ -9,11 +9,14 @@ export const normalizeMath = value => String(value ?? '').toLowerCase().trim()
 /* Une réponse mathématique exacte peut être rédigée sous forme de phrase.
  * N'accepter que la valeur attendue, éventuellement précédée d'un libellé clair.
  * Ne jamais prendre le dernier nombre d'un calcul approximatif comme preuve. */
-function mathWrittenAnswerMatches(expected, written){
+function mathWrittenAnswerMatches(expected, written, question){
  const expectedMath=normalizeMath(expected);
- const actual=MathText(written);
+ const actual=normalizeMath(written);
  if(actual===expectedMath)return true;
  const value=String(written??'').trim().replace(/[.!]\s*$/,'');
+ const prompt=String(question?.q||'');
+ if(/\bp[ée]rim[èe]tre\b/i.test(prompt)&&/\b(?:aire|surface)\b/i.test(value))return false;
+ if(/\b(?:aire|surface)\b/i.test(prompt)&&/\bp[ée]rim[èe]tre\b/i.test(value))return false;
  if(/\b(?:pas|faux|incorrect|environ|approximativement)\b/i.test(value))return false;
  const patterns=[
   /^(?:le|la|l['’])\s*(?:périmètre|résultat|longueur|distance|réponse|valeur|mesure|fraction|aire|surface)\s*(?:(?:est|vaut|mesure|fait|donne)\s*(?:de\s*)?|[:=]\s*)/i,
@@ -27,7 +30,6 @@ function mathWrittenAnswerMatches(expected, written){
  }
  return false;
 }
-function MathText(value){return normalizeMath(value);}
 
 export function grade(exercise, key, responses) {
  if (!exercise || !key || !Array.isArray(exercise.questions) || !Array.isArray(key.questions) || !Array.isArray(responses)) throw new Error('Invalid exercise');
@@ -46,7 +48,7 @@ export function grade(exercise, key, responses) {
   let correct=null;
   if(question.type==='mc')correct=String(secret.right)===response;
   else if(question.type==='text'){
-   correct=[secret.right,...(secret.also||[])].some(x=>isMathBonus?mathWrittenAnswerMatches(x,response):normalize(x)===normalize(response));
+   correct=[secret.right,...(secret.also||[])].some(x=>isMathBonus?mathWrittenAnswerMatches(x,response,question):normalize(x)===normalize(response));
    if(isMathBonus&&!correct){const normalized=normalizeMath(response),expected=normalizeMath(secret.right);if(expected.startsWith('x=')&&normalized===expected.slice(2))correct=true;}
   }
   else if(question.type==='free')needsReview=true;
