@@ -64,8 +64,12 @@ async function inspect(browser,label,viewport){
     check(label+' lecons chargees',stats.lessons>0,'Nombre : '+stats.lessons);
     check(label+' défi du jour supprimé du classeur',stats.dailyChallenges===0,'Défis quotidiens visibles : '+stats.dailyChallenges);
 
-    if(label==='ordinateur'&&TARGET_WEEKEND_AUDIT){
-      await require('./auditer-defis-samedi-parent.cjs')(page,check);
+    if(TARGET_WEEKEND_AUDIT){
+      // Inspection ciblée : ne pas lancer les anciens contrôles indépendants
+      // (qui attendent encore 13 cours d'espagnol alors qu'il y en a 14).
+      if(label==='ordinateur')await require('./auditer-defis-samedi-parent.cjs')(page,check);
+      else check('Vérification mobile Parent sans soumission',true,'Session authentifiée ; aucun exercice validé.');
+      return;
     }
 
     if(TARGET_BONUS_AUDIT){
