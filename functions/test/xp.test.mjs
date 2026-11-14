@@ -7,9 +7,11 @@ test('Bonus grants 0-2 XP',()=>{
  for(let score=0;score<=10;score++){const n=rawPoints({category:'bonus',score,total:10});assert.ok(n>=0&&n<=2)}
 });
 test('Manual review blocks automatic XP',()=>assert.equal(rawPoints({category:'bonus',score:2,total:2,needsReview:true}),0));
-test('Défis V18 sans plafond supplémentaire, bonus plafonné et pénalité réelle à -1',()=>{
+test('Défis V18 et exercices bonus sans plafond journalier, pénalité réelle à -1',()=>{
  assert.equal(cappedPoints(8,9,0,49,0,'daily'),8);
- assert.equal(cappedPoints(2,0,0,0,3,'bonus'),0);
+ assert.equal(cappedPoints(2,0,0,0,3,'bonus'),2);
+ assert.equal(cappedPoints(2,0,0,0,10,'bonus'),2);
+ assert.equal(cappedPoints(1,0,0,0,20,'bonus'),1);
  assert.equal(cappedPoints(-1,0,4,0,0,'daily'),-1);
 });
 
@@ -37,4 +39,39 @@ test('Les devoirs ENT, défis et relevés privés conservent leur barème initia
  assert.equal(rawPoints({kind:'daily',category:'challenge',score:10,total:10}),3);
  assert.equal(rawPoints({kind:'daily',category:'challenge',score:0,total:10}),-1);
  assert.equal(cappedPoints(0.5,0,0,0,0,'school'),0.5);
+});
+
+test('Cinq bonus à 10/10 le même jour apportent bien 10 XP, sans plafond ni modification du barème',()=>{
+ let cumul=0;
+ for(let i=0;i<5;i++){
+  const raw=rawPoints({category:'bonus',score:10,total:10});
+  const awarded=cappedPoints(raw,cumul,0,cumul,cumul,'bonus');
+  assert.equal(awarded,2);
+  cumul+=awarded;
+ }
+ assert.equal(cumul,10);
+});
+
+test('Aucun plafond quotidien pour tous les défis (3 missions du jour, samedi, dimanche, bonus)',()=>{
+ const cases=[
+  {kind:'daily',score:10,total:10,expected:3},
+  {kind:'weekly',score:20,total:20,expected:10},
+  {kind:'sunday',score:20,total:20,expected:20},
+  {kind:'bonus-day',score:10,total:10,expected:5},
+  {kind:'bonus-parent',score:20,total:20,expected:5}
+ ];
+ for(const row of cases){
+  const raw=rawPoints({kind:row.kind,category:'challenge',score:row.score,total:row.total});
+  assert.equal(raw,row.expected,row.kind+' barème');
+  for(const alreadyEarned of [0,3,9,30,75,100]){
+   assert.equal(cappedPoints(raw,alreadyEarned,0,alreadyEarned,alreadyEarned,'challenge'),raw,
+    row.kind+' ne doit pas perdre des XP à cause des gains déjà réalisés');
+  }
+ }
+ let dailyTotal=0;
+ for(let i=0;i<3;i++){
+  const raw=rawPoints({kind:'daily',category:'challenge',score:10,total:10});
+  dailyTotal+=cappedPoints(raw,dailyTotal,0,dailyTotal,0,'challenge');
+ }
+ assert.equal(dailyTotal,9,'trois défis du jour réussis donnent 9 XP');
 });
