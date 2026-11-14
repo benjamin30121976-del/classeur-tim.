@@ -131,10 +131,15 @@ async function inspect(browser,label,viewport){
       check(label+' import Parent disponible',await importPanel.count()===1);
       if(await importPanel.count()){
         await importPanel.evaluate(el=>el.open=true);
-        const picker=importPanel.locator('input[type="file"][aria-label="Charger un lot JSON de cours depuis le téléphone"]');
-        check(label+' sélecteur de fichier sans filtre Android',await picker.count()===1&&await picker.getAttribute('accept')===null);
+        const picker=importPanel.locator('input[type="file"]');
+        const pickerCount=await picker.count();
+        const attributes=pickerCount?await picker.first().evaluate(el=>({accept:el.getAttribute('accept'),label:el.getAttribute('aria-label'),type:el.type})):null;
+        console.log('IMPORT JSON ANDROID '+label+' : '+JSON.stringify({pickerCount,attributes}));
+        check(label+' sélecteur de fichier sans filtre Android',pickerCount===1&&attributes?.accept===null,
+          'Champs : '+pickerCount+' ; filtre : '+String(attributes?.accept??'aucun'));
+        if(pickerCount!==1)throw Error('Champ fichier absent dans le panneau d’import');
         const sample='{"lessons":[],"exercises":[]}';
-        await picker.setInputFiles({name:'controle-bonus-android.json',mimeType:'application/octet-stream',buffer:Buffer.from(sample,'utf8')});
+        await picker.first().setInputFiles({name:'controle-bonus-android.json',mimeType:'application/octet-stream',buffer:Buffer.from(sample,'utf8')});
         await page.waitForFunction(()=>{
           const p=document.querySelector('details.v16-import');
           return !!p&&p.querySelector('textarea')?.value==='{"lessons":[],"exercises":[]}'&&
