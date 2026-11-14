@@ -904,6 +904,8 @@ function renderFeedback(ex,t,root){
   }else if(answer.reasoning){
    container.append(E('p','','Raisonnement écrit : '+safe(answer.reasoning)));
   }
+  if(answer.reasoningAssessment==='not-automatically-graded')
+   container.append(E('p','subtle','Le résultat a été noté automatiquement. La démarche écrite est conservée, mais son exactitude n’a pas été évaluée par le correcteur.'));
  }
  const isChallenge=['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind);
  const isBonusDay=ex.kind==='bonus-day';
@@ -932,9 +934,10 @@ function renderFeedback(ex,t,root){
   const given=q.type==='mc'?(q.options?.[Number(a.response)]??a.response):a.response;
   p.append(E('strong','',(i+1)+'. '+safe(correctedPrompt(i,a.question||q.q||'Question'))));correctedFigure(p,i);p.append(E('p','','Ta réponse : '+safe(given)));
   showWrittenMethod(p,a);
-  if(a.correct!==null)p.append(E('p',a.correct?'correct':'wrong',
-   a.correct?'Bonne réponse.':a.points===0.5?
-    (q.reasoningCheck?.kind==='rectangle-perimeter-v1'?'Réponse partiellement correcte : 0,5/1 (résultat ou raisonnement à revoir).':'Réponse presque correcte : 0,5/1 (accent ou ponctuation).'):
+  const partial=Number.isFinite(Number(a.points))&&Number(a.points)>0&&Number(a.points)<1;
+  if(a.correct!==null)p.append(E('p',a.correct?'correct':partial?'subtle':'wrong',
+   a.correct?'Bonne réponse.':partial?
+    'Réponse partiellement correcte : '+Number(a.points).toLocaleString('fr-FR')+'/1 (voir l’explication).':
     'Réponse à revoir.'));
   if(a.correct===false){
    p.append(E('p','correct','Réponse attendue : '+safe(a.expected)));
