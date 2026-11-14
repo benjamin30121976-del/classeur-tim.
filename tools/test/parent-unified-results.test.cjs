@@ -101,7 +101,7 @@ test('l export produit vraiment un JSON complet pour les sept matières sans tou
  };
  let exported=null,downloaded=false;
  const window={
-  __TIM_PARENT:true,__TIM_BRIDGE:bridge,__TIM_DATA:{exercises:[],lessons:[]},
+  __TIM_PARENT:true,__TIM_BRIDGE:bridge,__TIM_DATA:{exercises:[{id:'TIMBONUSPERIM20261114',subject:'Mathématiques',title:'Périmètres'}],lessons:[]},
   __CLOUD_ATTEMPTS:[{
    id:'TIMBONUSPERIM20261114',title:'Périmètres',date:'2026-11-14T12:30:00.000Z',
    score:1,total:1,xp:0,answers:[{question:'Exercice fictif',response:'24 cm',expected:'24 cm',correct:true,points:1}]
