@@ -15,6 +15,8 @@ permissions:
   contents: read
 jobs:
   controle:
+    # Contrôle Parent/Tim de production conservé à la demande seulement.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:

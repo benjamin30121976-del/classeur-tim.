@@ -32,6 +32,8 @@ permissions:
   contents: read
 jobs:
   dernier-cours:
+    # Les vérifications de syntaxe restent accessibles ; la connexion Parent est manuelle.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:

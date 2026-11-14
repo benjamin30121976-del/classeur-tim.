@@ -94,6 +94,18 @@ export async function inspectFirestoreRead(accessToken,transport=fetch){
  };
 }
 
+/* Les quotas Google peuvent être remontés en 429 ou 403 RESOURCE_EXHAUSTED.
+   Lire uniquement le statut enum et le texte de l'erreur ; ne rien journaliser. */
+export async function isFirestoreQuotaResponse(response){
+ if(response?.status===429)return true;
+ if(response?.status!==403)return false;
+ try{
+  const info=(await response.clone().json())?.error||{};
+  return info.status==='RESOURCE_EXHAUSTED'||
+   /quota exceeded|resource exhausted/i.test(String(info.message||''));
+ }catch{return false;}
+}
+
 export async function firestore(env){
  const token=await getFirestoreAccessToken(env);
  async function request(method,endpoint,body,transaction){
@@ -105,6 +117,7 @@ export async function firestore(env){
   if(response.status===404)return null;
   if(!response.ok){
    if(response.status===429)throw new ApiFault(503,'firestore-limit-429');
+   if(await isFirestoreQuotaResponse(response))throw new ApiFault(503,'firestore-quota-exceeded');
     if(response.status===409)throw new ApiFault(409,'already-exists');
    if(response.status===403)throw new ApiFault(503,'firestore-service-permission');
    throw new ApiFault(502,'firestore-service-error');
@@ -124,6 +137,7 @@ export async function firestore(env){
    const resp=await fetch(url,{headers:{Authorization:'Bearer '+token}});
    if(!resp.ok){
      if(resp.status===429)throw new ApiFault(503,'firestore-limit-429');
+     if(await isFirestoreQuotaResponse(resp))throw new ApiFault(503,'firestore-quota-exceeded');
      throw new ApiFault(502,'firestore-list-error');
     }
    const data=await resp.json();

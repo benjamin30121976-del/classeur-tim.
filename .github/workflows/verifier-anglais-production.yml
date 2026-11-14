@@ -17,6 +17,8 @@ permissions:
   contents: read
 jobs:
   readonly:
+    # Contrôle authentifié uniquement lorsqu'il est explicitement demandé.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:

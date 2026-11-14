@@ -238,7 +238,10 @@ async function courseContent(db,uid){
   for(let attempt=0;attempt<3;attempt++){
    try{return {items:await db.list(name,500),available:true};}
    catch(error){
-    if(attempt===2)return {items:[],available:false};
+    // Un quota épuisé ne se rétablit pas après 200 ms : éviter
+    // deux nouvelles requêtes identiques pour chaque collection.
+    if(error?.code==='firestore-limit-429'||error?.code==='firestore-quota-exceeded'||
+       attempt===2)return {items:[],available:false};
     await new Promise(resolve=>setTimeout(resolve,200*(attempt+1)));
    }
   }
