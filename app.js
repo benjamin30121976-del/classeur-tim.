@@ -791,8 +791,8 @@ if(old){
  if(challenge){
   const summary=E('section','panel challenge-result-summary');summary.id='challenge-result-summary';
   summary.style.cssText='margin:12px 0;padding:18px;border:2px solid #dfbc61;border-radius:16px;line-height:1.6';
-  const grade=Number.isFinite(old.score)&&Number.isFinite(old.total)?old.score+'/'+old.total:'note en cours de chargement';
-  const xp=Number.isFinite(old.xp)?(old.xp>=0?'+':'')+old.xp+' XP':'XP indisponibles';
+  const grade=Number.isFinite(old.score)&&Number.isFinite(old.total)?old.score.toLocaleString('fr-FR')+'/'+old.total.toLocaleString('fr-FR'):'note en cours de chargement';
+  const xp=Number.isFinite(old.xp)?(old.xp>=0?'+':'')+old.xp.toLocaleString('fr-FR')+' XP':'XP indisponibles';
   summary.append(E('h3','','Ta note : '+grade),E('p','challenge-result-xp','XP attribués : '+xp));
   summary.append(E('p','small','Défi terminé. Tes réponses sont enregistrées ; tu peux relire ton exercice, mais pas recommencer.'));
   root.append(summary);
@@ -894,7 +894,7 @@ function renderFeedback(ex,t,root){
  if(isChallenge)box.id='challenge-detailed-correction';
  box.append(E('h3','',isBonusDay?(perfect?'Aucune erreur à corriger.':'Voir mes erreurs corrigées'):
   perfect?'Toutes les réponses sont correctes — aucune correction nécessaire.':
-  t.needsReview?'Rédaction enregistrée — à revoir':'Correction détaillée : '+t.score+'/'+t.total));
+  t.needsReview?'Rédaction enregistrée — à revoir':'Correction détaillée : '+Number(t.score).toLocaleString('fr-FR')+'/'+Number(t.total).toLocaleString('fr-FR')));
  box.append(E('p','subtle','Validé le '+new Date(t.date).toLocaleString('fr-FR')+'. Les réponses sont verrouillées sur tous les appareils.'));
  // Questions et réponses toujours relisibles, sans expliquer les réponses déjà correctes.
  const review=E('details','summary-details');
