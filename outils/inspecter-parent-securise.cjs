@@ -142,7 +142,7 @@ async function inspect(browser,label,viewport){
         const sample='{"lessons":[],"exercises":[]}';
         await picker.first().setInputFiles({name:'controle-bonus-android.json',mimeType:'application/octet-stream',buffer:Buffer.from(sample,'utf8')});
         await page.waitForFunction(()=>{
-          const p=document.querySelector('details.v16-import');
+          const p=[...document.querySelectorAll('details.v16-import')].find(el=>el.querySelector('summary')?.textContent.includes('Import de fichiers JSON (option avancée)'));
           return !!p&&p.querySelector('textarea')?.value==='{"lessons":[],"exercises":[]}'&&
                  p.textContent.includes('Lot chargé');
         },null,{timeout:9000});
