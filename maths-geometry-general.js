@@ -59,8 +59,10 @@
     /\bA[\s,–-]*D[\s,–-]*B\b/i.test(prompt))?['D','E']:['M','N'];
   const a=small[0],b=small[1];
   const data=lengths(prompt);
-  const givenParallel=/(?:\([MD][NE]\)|\b(?:MN|DE)\b)\s*(?:est|sont)?\s*(?:parall[eè]le|\/\/|∥)/i.test(prompt)||
-    /(?:droites|segments)\s*(?:\([MD][NE]\))?.{0,20}\bparall[eè]le/i.test(prompt);
+  // Une question « peut-on conclure (MN)//(BC) ? » n'est PAS une donnée.
+  // Ne pas révéler la conclusion avant le raisonnement.
+  const givenParallel=/(?:\((?:MN|DE)\)|\b(?:MN|DE)\b)\s+est\s+parall[eè]le\b/i.test(prompt)||
+    /\bavec\s+\((?:MN|DE)\)\s*(?:parall[eè]le|∥)/i.test(prompt);
   const knownDifferent=/diff[eé]rent|ne sont pas parall[eè]le|non parall[eè]le/.test(normalized);
   let ratio1=nums(data,'A'+a,'AB'),ratio2=nums(data,'A'+b,'AC');
   if(!Number.isFinite(ratio1)||ratio1<=0||ratio1>=1)ratio1=.44;
