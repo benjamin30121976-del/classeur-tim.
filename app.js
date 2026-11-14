@@ -746,7 +746,9 @@ function openExercise(id,options={}){const ex=exerciseBy(id);if(!ex)return;
   });return;
  }
  const existing=attemptFor(id),completedChallenge=Boolean(existing&&['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind));window.__TIM_OPEN_EXERCISE_ID=id;page('exercices');document.getElementById('exercise-index').classList.add('hide');const root=clear(document.getElementById('exercise-detail'));root.classList.add('active');root.append(button('← Retour aux exercices',()=>{root.classList.remove('active');document.getElementById('exercise-index').classList.remove('hide');renderExerciseIndex();scrollTop();},'plain back'));root.append(badge(ex.level),E('h2','',ex.title),E('p','intro',exerciseDescription(ex)));
-if(ex.kind==='daily'&&ex.questionBank==='spanish-ent-v1'){
+if(ex.kind==='bonus-day'){
+ // Pas d'indice ni de renvoi à une leçon avant la validation d'un défi bonus.
+}else if(ex.kind==='daily'&&ex.questionBank==='spanish-ent-v1'){
  root.append(E('p','small','Révision de plusieurs leçons d’espagnol : vocabulaire, phrases, traduction et conjugaison.'));
  root.append(button('Revoir les leçons d’espagnol',()=>{page('matieres');renderMatiere('Espagnol');},'plain'));
 }else{
