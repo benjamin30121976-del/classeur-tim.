@@ -94,7 +94,7 @@ async function inspect(browser,label,viewport){
               completed:!!root?.querySelector('.challenge-result-summary'),
               styled:!!root?.classList.contains('math-bonus-detail'),
               whiteCard:question?getComputedStyle(question).backgroundColor==='rgb(255, 255, 255)':false,
-              figureResponsive:fig?getComputedStyle(fig).maxWidth==='100%':false,
+              figureResponsive:fig?fig.getBoundingClientRect().width<=fig.parentElement.getBoundingClientRect().width+1:false,
               overflow:document.documentElement.scrollWidth-document.documentElement.clientWidth};
           });
           check(label+' ouverture bonus '+id,state.opened,
