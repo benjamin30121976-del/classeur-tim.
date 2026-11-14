@@ -57,3 +57,81 @@ test('le Parent voit explicitement si le raisonnement n a pas été évalué aut
  }]);
  assert.match(text,/démarche écrite est conservée sans évaluation automatique/);
 });
+
+
+test('l export produit vraiment un JSON complet pour les sept matières sans toucher à Tim',async()=>{
+ class FakeElement {
+  constructor(tag){this.tag=tag;this.textContent='';this.className='';this.children=[];this.listeners={};this.value='';}
+  append(...children){this.children.push(...children);}
+  replaceChildren(...children){this.children=children;}
+  setAttribute(){}
+  addEventListener(type,callback){this.listeners[type]=callback;}
+  remove(){}
+  click(){
+   if(this.tag==='a'){downloaded=true;return;}
+   return this.listeners.click?.();
+  }
+ }
+ const root=new FakeElement('div');
+ const ids=[
+  'ESE_L14_01','ME_ENT_PROGRAMMES','PCQ_L01_01',
+  'ENQ_L01_01','SVQ_L01_01','HGQ_L01_01','FRQ_L01_01'
+ ];
+ const result=(id)=>({
+  id,submittedAt:'2026-11-14T12:00:00.000Z',score:1,total:1,xp:0,
+  items:[{question:'Question fictive',response:'oui',expected:'oui',correct:true,points:1}]
+ });
+ const progress=(id)=>id?Promise.resolve({attempt:result(id)}):
+  Promise.resolve({attempts:ids.filter(x=>x!==''&&x).map(x=>({id:x,submittedAt:'2026-11-14T12:00:00.000Z',score:1,total:1}))});
+ const only=prefix=>(id)=>id?Promise.resolve({attempt:result(id)}):
+  Promise.resolve({attempts:ids.filter(x=>x.startsWith(prefix)).map(x=>({id:x,submittedAt:'2026-11-14T12:00:00.000Z',score:1,total:1}))});
+ const empty=async()=>({attempts:[]});
+ const bridge={
+  spanishEntTrainingProgress:only('ESE_'),
+  mathTrainingProgress:empty,
+  trainingProgress:empty,
+  parentReport:async()=>({attempts:[]}),
+  physicsTrainingProgress:only('PCQ_'),
+  englishTrainingProgress:only('ENQ_'),
+  svtTrainingProgress:only('SVQ_'),
+  hgTrainingProgress:only('HGQ_'),
+  frTrainingProgress:only('FRQ_'),
+  physicsEntProgress:empty,
+  mathEntProgress:only('ME_ENT_')
+ };
+ let exported=null,downloaded=false;
+ const window={
+  __TIM_PARENT:true,__TIM_BRIDGE:bridge,__TIM_DATA:{exercises:[],lessons:[]},
+  __CLOUD_ATTEMPTS:[{
+   id:'TIMBONUSPERIM20261114',title:'Périmètres',date:'2026-11-14T12:30:00.000Z',
+   score:1,total:1,xp:0,answers:[{question:'Exercice fictif',response:'24 cm',expected:'24 cm',correct:true,points:1}]
+  }]
+ };
+ const document={createElement:tag=>new FakeElement(tag),body:new FakeElement('body')};
+ const URL={createObjectURL(blob){exported=blob;return 'blob:unit-test';},revokeObjectURL(){}};
+ vm.runInNewContext(source,{window,document,Blob,URL,console,setTimeout,clearTimeout});
+ window.TIM_PARENT_UNIFIED.render(root);
+ await new Promise(resolve=>setImmediate(resolve));
+ const find=node=>{
+  if(node.tag==='button'&&node.textContent.includes('Exporter le bilan complet'))return node;
+  for(const child of node.children){
+   const found=find(child);if(found)return found;
+  }
+  return null;
+ };
+ const button=find(root);
+ assert.ok(button,'Le bouton Exporter n est pas présent');
+ await button.click();
+ assert.equal(downloaded,true);
+ assert.ok(exported instanceof Blob);
+ const payload=JSON.parse(await exported.text());
+ assert.equal(payload.records.length,8,'Sept matières et bonus doivent être conservés');
+ for(const record of payload.records){
+  assert.equal(record.questions.length,1,'Copie non exportée : '+record.id);
+  assert.equal(record.questions[0].response,'oui'===record.questions[0].response?'oui':'24 cm');
+ }
+ assert.deepEqual([...new Set(payload.records.map(x=>x.subject))].sort(),[
+  'Anglais','Espagnol','Français','Histoire-géographie',
+  'Mathématiques','Physique-chimie','SVT'
+ ].sort());
+});
