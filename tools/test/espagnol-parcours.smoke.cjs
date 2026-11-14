@@ -19,7 +19,16 @@ const out=path.join(process.cwd(),'test-espagnol-results');fs.mkdirSync(out,{rec
     await intro.waitFor({state:'hidden',timeout:20000});
    }
    const selectSpanish=async()=>{
-    await page.locator('[data-nav="matieres"]:visible').first().click();
+    const nav=page.locator('[data-nav="matieres"]:visible').first();
+    try{await nav.click({timeout:5000});}
+    catch(error){
+     // L'animation d'accueil peut apparaître après la connexion Invité.
+     // La fermer avant de réessayer sans contourner le site.
+     if(!(await intro.isVisible()))throw error;
+     await page.locator('#intro-silent').click({timeout:10000});
+     await intro.waitFor({state:'hidden',timeout:13000});
+     await nav.click({timeout:8000});
+    }
     await subject.locator('.matter-card').filter({hasText:'Espagnol'}).first().click();
     if(!(await page.locator('#matieres > .pagehead').isHidden()))throw Error('Selection header still visible inside subject');
    };
