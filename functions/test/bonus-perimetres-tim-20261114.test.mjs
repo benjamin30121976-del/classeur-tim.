@@ -8,10 +8,20 @@ import {rawPoints,cappedPoints} from '../xp.mjs';
 
 const ex=BONUS_PERIMETRE_TIM;
 const key={questions:ex.questions.map(q=>({right:q.right,also:q.also||[],why:q.why}))};
+function writeMethod(q,good=true){
+ if(q.reasoningCheck?.kind!=='rectangle-perimeter-v1')return good?
+  'Je détaille les étapes de calcul et conclus correctement.':'Je décris ici des étapes à revoir.';
+ const {length:l,width:w,unit}=q.reasoningCheck,total=2*(l+w);
+ return JSON.stringify(good?
+  {calculation:`2 × (${l} + ${w}) = ${total} ${unit}`,conclusion:unit==='cm'?
+   `Le périmètre du rectangle est de ${total} cm.`:`Il faut ${total} m de clôture pour entourer le potager.`}:
+  {calculation:`${l} × ${w} = ${l*w}`,conclusion:'Je donne une phrase-réponse incorrecte.'});
+}
 function responses(correct=10){
  return ex.questions.map((q,i)=>{
-  const answer=i<correct?String(q.right):q.type==='mc'?String((q.right+1)%4):'réponse incorrecte';
-  return q.reasoningRequired?answer+' ||| '+(i<correct?'J additionne les quatre côtés et conclus avec la bonne unité.':'Je donne mon calcul écrit puis je conclus à tort.'):answer;
+  const good=i<correct;
+  const answer=good?String(q.right):q.type==='mc'?String((q.right+1)%4):'réponse incorrecte';
+  return q.reasoningRequired?answer+' ||| '+writeMethod(q,good):answer;
  });
 }
 function evaluate(input){return grade(ex,key,input);}
@@ -85,4 +95,86 @@ test('import Parent protégé : aucun lancement sans autorisation explicite',()=
  assert(script.includes("process.env.TIM_BONUS_PERIMETRES_CONFIRME==='OUI'"));
  assert(script.includes("bonusPerimetreTimPack()"));
  assert(script.includes("assert.deepEqual(verified,{found:1,questions:10})"));
+});
+
+test('résultat juste mais calcul faux : pas de point entier',()=>{
+ const answers=responses(),q=ex.questions[8];
+ answers[8]=String(q.right)+' ||| '+JSON.stringify({
+  calculation:'8 × 4 = 32',conclusion:'Le périmètre du rectangle est de 24 cm.'
+ });
+ const graded=evaluate(answers),answer=graded.answers[8];
+ assert.equal(answer.points,0.5);assert.equal(answer.correct,false);
+ assert.equal(graded.score,9.5);
+ assert.equal(answer.reasoningDetails.calculationCorrect,false);
+ assert.match(answer.explanation,/Ton résultat numérique est juste/);
+});
+test('calcul juste et bonne conclusion, mais résultat saisi faux : crédit partiel',()=>{
+ const answers=responses(),q=ex.questions[8];
+ answers[8]='32 cm ||| '+writeMethod(q,true);
+ const out=evaluate(answers);
+ assert.equal(out.answers[8].points,0.5);
+ assert.equal(out.answers[8].correct,false);
+ assert.equal(out.score,9.5);
+});
+test('calcul faux prétendant produire le bon résultat : rejet',()=>{
+ const answers=responses(),q=ex.questions[8];
+ answers[8]=String(q.right)+' ||| '+JSON.stringify({
+  calculation:'8 × 4 = 24',conclusion:'Le périmètre du rectangle est de 24 cm.'
+ });
+ const out=evaluate(answers).answers[8];
+ assert.equal(out.correct,false);
+ assert.equal(out.points,0.5);
+ assert.match(out.explanation,/égalité incorrecte|ne démontre pas/);
+});
+test('un texte long sans calcul valide ne vaut pas un raisonnement',()=>{
+ const answers=responses(),q=ex.questions[8];
+ answers[8]=String(q.right)+' ||| '+JSON.stringify({
+  calculation:'J ai écrit beaucoup de choses sans aucune opération valable ici.',
+  conclusion:'Le périmètre du rectangle est de 24 cm.'
+ });
+ assert.equal(evaluate(answers).answers[8].points,0.5);
+});
+test('bonne opération mais mauvaise unité ou phrase : note partielle',()=>{
+ const answers=responses(),q=ex.questions[8];
+ answers[8]=String(q.right)+' ||| '+JSON.stringify({
+  calculation:'8 + 4 + 8 + 4 = 24',
+  conclusion:'La surface fait 24 cm².'
+ });
+ const out=evaluate(answers).answers[8];
+ assert.equal(out.correct,false);
+ assert.equal(out.points,0.5);
+ assert.equal(out.reasoningDetails.calculationCorrect,true);
+ assert.equal(out.reasoningDetails.conclusionCorrect,false);
+});
+test('plusieurs écritures mathématiquement valables sont acceptées',()=>{
+ const q=ex.questions[8],cases=[
+  '8 + 4 + 8 + 4 = 24',
+  '2 × (8 + 4) = 24 cm',
+  '(8+4)*2=24',
+  '8 * 2 + 4 * 2 = 24',
+  '8+4=12 ; 12*2=24'
+ ];
+ for(const calculation of cases){
+  const answers=responses();
+  answers[8]=String(q.right)+' ||| '+JSON.stringify({
+   calculation,conclusion:'Le périmètre du rectangle est de 24 cm.'
+  });
+  const out=evaluate(answers).answers[8];
+  assert.equal(out.points,1,'Calcul valable refusé : '+calculation+' / '+out.explanation);
+ }
+});
+test('deuxième problème : vraie clôture calculée avec unité mètre',()=>{
+ const answers=responses(),q=ex.questions[9];
+ answers[9]=String(q.right)+' ||| '+JSON.stringify({
+  calculation:'9 + 6 + 9 + 6 = 30 m',
+  conclusion:'Il faut 30 m de clôture pour entourer le potager.'
+ });
+ const out=evaluate(answers).answers[9];
+ assert.equal(out.correct,true);
+ assert.equal(out.points,1);
+});
+test('raisonnement structuré : calcul et phrase nécessaires',()=>{
+ const answers=responses();
+ answers[9]='30 m ||| '+JSON.stringify({calculation:'9+6+9+6=30',conclusion:''});
+ assert.throws(()=>evaluate(answers),/Reasoning missing/);
 });
