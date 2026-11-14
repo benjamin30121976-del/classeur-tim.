@@ -35,13 +35,13 @@ const pyth={id:'M26PYT1001',kind:'school',subject:'Mathématiques',title:'Archiv
  const {mathNov12ForParentImport,mathNov12Score}=await import('../maths-12nov-training.mjs');
  const original=mathNov12ForParentImport().exercises;
  const current=original.find(x=>x.id==='MTH12_03');
- const legacy=structuredClone(current);
- legacy.questions[9]={
+ const legacyExercise=structuredClone(current);
+ legacyExercise.questions[9]={
   q:'Le professeur a demandé l’exercice 25 p.253, mais son énoncé n’est pas dans l’ENT. Comment le classeur doit-il le présenter ?',
   options:['Inventer les mesures de la page','Indiquer que l’énoncé manque et proposer des exercices distincts','Prétendre que ces questions sont l’exercice officiel','Marquer le devoir comme réalisé']
  };
  const sample=Array(10).fill(0);
- const oldGrade=mathNov12Score('MTH12_03',sample,legacy);
+ const oldGrade=mathNov12Score('MTH12_03',sample,legacyExercise);
  const newGrade=mathNov12Score('MTH12_03',sample,current);
  assert(oldGrade&&newGrade,'Compatibilité des banques Thalès absente');
  assert.equal(oldGrade.items[9].correct,false,'Ancienne question : index 0 doit être faux');
