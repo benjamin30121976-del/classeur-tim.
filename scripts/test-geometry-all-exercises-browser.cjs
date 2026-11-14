@@ -35,7 +35,7 @@ const pyth={id:'M26PYT1001',kind:'school',subject:'Mathématiques',title:'Archiv
  const {mathNov12ForParentImport}=await import('../maths-12nov-training.mjs');
  const original=mathNov12ForParentImport().exercises;
  const {mathPublicTask}=await import('../worker/maths-training-curriculum.mjs');
- const mathsData=JSON.parse(fs.readFileSync(path.join(dir,'maths-bis-data.js'),'utf8').split('=').slice(1).join('=').trim().replace(/;\\s*$/,''));
+ const mathsData=JSON.parse(fs.readFileSync(path.join(dir,'maths-bis-data.js'),'utf8').split('=').slice(1).join('=').trim().replace(/;$/,''));
  const lessons=Object.fromEntries(mathsData.lessons.map(x=>[x.id,x.title]));
  const tasks=Array.from({length:23},(_,i)=>mathPublicTask('MT'+String(i+1).padStart(2,'0'))).map(t=>({
   ...t,hint:lessons[t.lessonId]||'',subject:'Mathématiques'
