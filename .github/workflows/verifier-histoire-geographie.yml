@@ -1,7 +1,7 @@
 name: Vérifier la sixième matière Histoire-Géographie
 on:
   push:
-    branches: [main, integration-histoire-geographie-20261113]
+    branches: [main, integration-histoire-geographie-20261113, correctif-exercices-hg09-20261114]
     paths:
       - 'histoire-geographie-*.js'
       - 'worker/hg-*.mjs'
