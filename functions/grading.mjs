@@ -1,4 +1,5 @@
 // Copie du moteur de notation V16, uniquement côté serveur.
+import {assessRectanglePerimeterReasoning} from './perimeter-reasoning.mjs';
 export const normalize = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[¿?¡!.,;:]/g,'').replace(/\s+/g,' ').trim();
 // Réponses de maths : accepte les signes typographiques, les espaces et les écritures d'exposants sans changer la valeur demandée.
 export const normalizeMath = value => String(value ?? '').toLowerCase().trim()
@@ -14,7 +15,8 @@ export function grade(exercise, key, responses) {
   const separator=isMathBonus?rawResponse.indexOf(' ||| '):-1;
   const response=separator>=0?rawResponse.slice(0,separator):rawResponse;
   const reasoning=separator>=0?rawResponse.slice(separator+5):'';
-  if(isMathBonus&&question.reasoningRequired&&reasoning.trim().length<8)throw new Error('Reasoning missing');
+  const structuredPerimeter=isMathBonus&&question.reasoningCheck?.kind==='rectangle-perimeter-v1';
+  if(isMathBonus&&question.reasoningRequired&&!structuredPerimeter&&reasoning.trim().length<8)throw new Error('Reasoning missing');
   if(rawResponse.length>10000)throw new Error('Answer too long');
   const secret=key.questions[i];
   let correct=null;
@@ -25,8 +27,30 @@ export function grade(exercise, key, responses) {
   }
   else if(question.type==='free')needsReview=true;
   else throw new Error('Unsupported question type');
-  if(correct!==null){total++;if(correct)score++;}
-  return {question:question.q,response,correct,expected:question.type==='mc'?question.options?.[Number(secret.right)]:secret.right,skill:question.skill||'',explanation:secret.why||'',...(isMathBonus&&question.reasoningRequired?{reasoning}: {})};
+  let points=correct===true?1:0,explanation=secret.why||'',reasoningDetails=null;
+  if(structuredPerimeter){
+   if(!question.reasoningRequired)throw Error('Invalid perimeter configuration');
+   const assessed=assessRectanglePerimeterReasoning(reasoning,question.reasoningCheck);
+   if(!assessed.validFormat)throw new Error('Reasoning missing');
+   reasoningDetails={
+    calculation:assessed.calculation,conclusion:assessed.conclusion,
+    calculationCorrect:assessed.calculationCorrect,conclusionCorrect:assessed.conclusionCorrect
+   };
+   const methodCorrect=assessed.calculationCorrect&&assessed.conclusionCorrect;
+   const numberCorrect=correct===true;
+   correct=numberCorrect&&methodCorrect;
+   points=correct?1:(numberCorrect||methodCorrect?0.5:0);
+   if(!correct){
+    const reason=numberCorrect?
+     'Ton résultat numérique est juste, mais ton raisonnement ne suffit pas à le justifier. ':
+     'Le résultat saisi ne correspond pas au périmètre attendu. ';
+    explanation=reason+assessed.feedback+' '+(secret.why||'');
+   }
+  }
+  if(correct!==null){total++;score+=points;}
+  return {question:question.q,response,correct,points,expected:question.type==='mc'?question.options?.[Number(secret.right)]:secret.right,skill:question.skill||'',explanation,
+   ...(isMathBonus&&question.reasoningRequired?{reasoning}: {}),
+   ...(reasoningDetails?{reasoningDetails}:{})};
  });
  return {score,total,needsReview,answers};
 }

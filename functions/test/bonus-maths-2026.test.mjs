@@ -56,3 +56,6 @@ test('orthographe mathématique et justification écrite sans correction humaine
  const good=evaluate(math,asSubmission(math));
  assert(good.answers[6].reasoning.includes('Je détaille'));
 });
+
+// Couverture complémentaire du défi personnalisé, sur branche de travail.
+import './bonus-perimetres-tim-20261114.test.mjs';

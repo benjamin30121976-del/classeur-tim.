@@ -746,7 +746,9 @@ function openExercise(id,options={}){const ex=exerciseBy(id);if(!ex)return;
   });return;
  }
  const existing=attemptFor(id),completedChallenge=Boolean(existing&&['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind));window.__TIM_OPEN_EXERCISE_ID=id;page('exercices');document.getElementById('exercise-index').classList.add('hide');const root=clear(document.getElementById('exercise-detail'));root.classList.add('active');root.append(button('← Retour aux exercices',()=>{root.classList.remove('active');document.getElementById('exercise-index').classList.remove('hide');renderExerciseIndex();scrollTop();},'plain back'));root.append(badge(ex.level),E('h2','',ex.title),E('p','intro',exerciseDescription(ex)));
-if(ex.kind==='daily'&&ex.questionBank==='spanish-ent-v1'){
+if(ex.kind==='bonus-day'){
+ // Pas d'indice ni de renvoi à une leçon avant la validation d'un défi bonus.
+}else if(ex.kind==='daily'&&ex.questionBank==='spanish-ent-v1'){
  root.append(E('p','small','Révision de plusieurs leçons d’espagnol : vocabulaire, phrases, traduction et conjugaison.'));
  root.append(button('Revoir les leçons d’espagnol',()=>{page('matieres');renderMatiere('Espagnol');},'plain'));
 }else{
@@ -761,16 +763,36 @@ if(!completedChallenge)root.append(makeAttachmentPanel('exercise',ex.id));if(!wi
 if(window.__TIM_GUEST){root.append(notice('Visite en lecture seule : tu peux voir les questions, mais tu ne peux ni répondre ni valider.','guest-preview'));
  for(const [i,q] of ex.questions.entries()){const row=E('div','q');row.append(E('strong','',(i+1)+'. '+q.q));if(q.type==='mc'){const ul=E('ul');for(const option of q.options)ul.append(E('li','',option));row.append(ul);}root.append(row);}return;}
 const old=existing,draft=drafts()[ex.id]||[];let form=E('div','panel');let controls=[];
-ex.questions.forEach((question,i)=>{const row=E('div','q');row.append(E('div','qtitle',(i+1)+'. '+question.q));const rawPrevious=old?old.answers[i]?.response:draft[i];const previous=typeof rawPrevious==='string'?rawPrevious.split(' ||| ')[0]:rawPrevious;if(question.type==='mc'){let options=E('div','check-answers');question.options.forEach((option,j)=>{const label=E('label','choose');const input=E('input');input.type='radio';input.name='question-'+ex.id+'-'+i;input.value=String(j);input.checked=previous!==undefined&&String(previous)===String(j);input.disabled=!!old;input.addEventListener('change',saveDraft);label.append(input,E('span','',option));options.append(label);});row.append(options);controls.push({kind:'mc',name:'question-'+ex.id+'-'+i});}else{const input=question.type==='free'?E('textarea','answer wide'):E('input','answer');if(question.type==='text'){input.type='text';input.autocomplete='off';input.spellcheck=false;input.placeholder=ex.subject==='Mathématiques'?'Écris le résultat, par exemple 5/8 ou 12 cm':'Écris la réponse en espagnol';}else{input.rows=6;input.placeholder='Écris ta lettre ici…';}input.value=previous===undefined?'':safe(previous);input.disabled=!!old;input.addEventListener('input',saveDraft);row.append(input);if(ex.kind==='bonus-day'&&ex.subject==='Mathématiques'&&question.reasoningRequired){const lbl=E('label','small','Explique comment tu as obtenu ton résultat (opérations, théorème ou phrase de conclusion).');const work=E('textarea','answer wide');work.rows=3;work.placeholder='Écris les étapes de ton raisonnement ici.';work.value=old?String(old.answers?.[i]?.reasoning||''):String(draft[i]||'').split(' ||| ')[1]||'';work.disabled=!!old;work.addEventListener('input',saveDraft);row.append(lbl,work);controls.push({kind:'reasoning',node:input,work});}else controls.push({kind:'text',node:input});}form.append(row);});if(!completedChallenge)root.append(form);
-function values(){return controls.map(c=>c.kind==='mc'?(document.querySelector('input[name="'+c.name+'"]:checked')?.value??''):c.kind==='reasoning'?c.node.value.trim()+' ||| '+c.work.value.trim():c.node.value.trim());}
+ex.questions.forEach((question,i)=>{const row=E('div','q');row.append(E('div','qtitle',(i+1)+'. '+question.q));const rawPrevious=old?old.answers[i]?.response:draft[i];const previous=typeof rawPrevious==='string'?rawPrevious.split(' ||| ')[0]:rawPrevious;if(question.type==='mc'){let options=E('div','check-answers');question.options.forEach((option,j)=>{const label=E('label','choose');const input=E('input');input.type='radio';input.name='question-'+ex.id+'-'+i;input.value=String(j);input.checked=previous!==undefined&&String(previous)===String(j);input.disabled=!!old;input.addEventListener('change',saveDraft);label.append(input,E('span','',option));options.append(label);});row.append(options);controls.push({kind:'mc',name:'question-'+ex.id+'-'+i});}else{const input=question.type==='free'?E('textarea','answer wide'):E('input','answer');if(question.type==='text'){input.type='text';input.autocomplete='off';input.spellcheck=false;input.placeholder=ex.subject==='Mathématiques'?'Écris le résultat, par exemple 5/8 ou 12 cm':'Écris la réponse en espagnol';}else{input.rows=6;input.placeholder='Écris ta lettre ici…';}input.value=previous===undefined?'':safe(previous);input.disabled=!!old;input.addEventListener('input',saveDraft);row.append(input);if(ex.kind==='bonus-day'&&ex.subject==='Mathématiques'&&question.reasoningRequired){
+ const detailed=question.reasoningCheck?.kind==='rectangle-perimeter-v1';
+ const initial=old?String(old.answers?.[i]?.reasoning||''):String(draft[i]||'').split(' ||| ')[1]||'';
+ let previousReasoning={};if(detailed){try{previousReasoning=JSON.parse(initial)||{};}catch{previousReasoning={};}}
+ const lbl=E('label','small',detailed?'Mon calcul et mes étapes :':'Explique comment tu as obtenu ton résultat (opérations, théorème ou phrase de conclusion).');
+ const work=E('textarea','answer wide');work.rows=3;
+ work.placeholder=detailed?'Écris les opérations et les étapes de ton calcul.':'Écris les étapes de ton raisonnement ici.';
+ work.value=detailed?String(previousReasoning.calculation||''):initial;work.disabled=!!old;
+ work.addEventListener('input',saveDraft);row.append(lbl,work);
+ if(detailed){
+  const clbl=E('label','small','Ma phrase-réponse :'),conclusion=E('textarea','answer wide');
+  conclusion.rows=2;conclusion.placeholder='Rédige une phrase complète avec le résultat et son unité.';
+  conclusion.value=String(previousReasoning.conclusion||'');conclusion.disabled=!!old;
+  conclusion.addEventListener('input',saveDraft);row.append(clbl,conclusion);
+  controls.push({kind:'reasoning-v2',node:input,work,conclusion});
+ }else controls.push({kind:'reasoning',node:input,work});
+}else controls.push({kind:'text',node:input});}form.append(row);});if(!completedChallenge)root.append(form);
+function values(){return controls.map(c=>c.kind==='mc'?(document.querySelector('input[name="'+c.name+'"]:checked')?.value??''):
+ c.kind==='reasoning'?c.node.value.trim()+' ||| '+c.work.value.trim():
+ c.kind==='reasoning-v2'?c.node.value.trim()+' ||| '+JSON.stringify({calculation:c.work.value.trim(),conclusion:c.conclusion.value.trim()}):c.node.value.trim());}
+function reasoningReady(c){return c.kind==='reasoning'?(!!c.node.value.trim()&&c.work.value.trim().length>=8):
+ c.kind==='reasoning-v2'?(!!c.node.value.trim()&&!!c.work.value.trim()&&!!c.conclusion.value.trim()):true;}
 function saveDraft(){if(old)return;const d=drafts();d[id]=values();save(DRAFT_KEY,d);}
 if(old){
  const challenge=['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind);
  if(challenge){
   const summary=E('section','panel challenge-result-summary');summary.id='challenge-result-summary';
   summary.style.cssText='margin:12px 0;padding:18px;border:2px solid #dfbc61;border-radius:16px;line-height:1.6';
-  const grade=Number.isFinite(old.score)&&Number.isFinite(old.total)?old.score+'/'+old.total:'note en cours de chargement';
-  const xp=Number.isFinite(old.xp)?(old.xp>=0?'+':'')+old.xp+' XP':'XP indisponibles';
+  const grade=Number.isFinite(old.score)&&Number.isFinite(old.total)?old.score.toLocaleString('fr-FR')+'/'+old.total.toLocaleString('fr-FR'):'note en cours de chargement';
+  const xp=Number.isFinite(old.xp)?(old.xp>=0?'+':'')+old.xp.toLocaleString('fr-FR')+' XP':'XP indisponibles';
   summary.append(E('h3','','Ta note : '+grade),E('p','challenge-result-xp','XP attribués : '+xp));
   summary.append(E('p','small','Défi terminé. Tes réponses sont enregistrées ; tu peux relire ton exercice, mais pas recommencer.'));
   root.append(summary);
@@ -806,7 +828,7 @@ if(old){
 } else if(window.__TIM_PARENT){controls.forEach(c=>{if(c.node)c.node.disabled=true;else for(const el of form.querySelectorAll('input'))el.disabled=true;});root.append(notice('Aperçu parent : seul Tim peut répondre et valider cet exercice.'));}else{
  const submit=button('Valider définitivement cet exercice',async()=>{
   const vals=values();
-  if(vals.some(v=>!safe(v).trim())||controls.some(c=>c.kind==='reasoning'&&(!c.node.value.trim()||c.work.value.trim().length<8))){alert('Réponds à toutes les questions et écris ta démarche lorsque cela est demandé.');return;}
+  if(vals.some(v=>!safe(v).trim())||controls.some(c=>!reasoningReady(c))){alert('Réponds à toutes les questions et écris ta démarche lorsque cela est demandé.');return;}
   if(attemptFor(id)){openExercise(id);return;}
   if(!confirm('Confirmer ? Cet exercice sera définitivement terminé, sur tous les appareils.'))return;
   submit.disabled=true;submit.textContent='Enregistrement sécurisé…';
@@ -847,7 +869,7 @@ if(!old && !window.__TIM_PARENT && controls.length>1){
   const progress=E('div','quiz-progress');const heading=E('div','quiz-row');const stateLabel=E('span','','Question 1 / '+questionNodes.length);const nAnswered=E('span','','0 réponse');heading.append(stateLabel,nAnswered);const bar=E('div','quiz-track');const barFill=E('span');bar.append(barFill);progress.append(heading,bar);root.insertBefore(progress,form);
   const actions=E('div','quiz-controls');let step=0;
   const before=button('← Précédent',()=>{showStep(step-1);progress.scrollIntoView({behavior:'smooth',block:'start'});},'plain');
-  const after=button('Suivant →',()=>{const answers=values();if(!safe(answers[step]).trim()||(controls[step].kind==='reasoning'&&(!controls[step].node.value.trim()||controls[step].work.value.trim().length<8))){alert('Écris ta réponse et ton raisonnement avant de continuer.');return;}showStep(step+1);progress.scrollIntoView({behavior:'smooth',block:'start'});},'btn');
+  const after=button('Suivant →',()=>{const answers=values();if(!safe(answers[step]).trim()||!reasoningReady(controls[step])){alert('Écris ta réponse et ton raisonnement avant de continuer.');return;}showStep(step+1);progress.scrollIntoView({behavior:'smooth',block:'start'});},'btn');
   actions.append(before,after);root.insertBefore(actions,submit);
   function showStep(n){step=Math.min(questionNodes.length-1,Math.max(0,n));for(let i=0;i<questionNodes.length;i++)questionNodes[i].classList.toggle('quiz-current',i===step);stateLabel.textContent='Question '+(step+1)+' / '+questionNodes.length;barFill.style.width=(((step+1)/questionNodes.length)*100)+'%';let filled=values().filter(v=>safe(v).trim()).length;nAnswered.textContent=filled+' réponse'+(filled>1?'s':'');before.disabled=step===0;after.classList.toggle('hide',step===questionNodes.length-1);submit.classList.toggle('ready',step===questionNodes.length-1);}
   form.addEventListener('change',()=>{nAnswered.textContent=values().filter(v=>safe(v).trim()).length+' réponses';});form.addEventListener('input',()=>{nAnswered.textContent=values().filter(v=>safe(v).trim()).length+' réponses';});
@@ -855,6 +877,15 @@ if(!old && !window.__TIM_PARENT && controls.length>1){
  }
 scrollTop();}
 function renderFeedback(ex,t,root){
+ function showWrittenMethod(container,answer){
+  const d=answer.reasoningDetails;
+  if(d){
+   container.append(E('p','','Calcul écrit : '+safe(d.calculation||'')));
+   container.append(E('p','','Phrase-réponse écrite : '+safe(d.conclusion||'')));
+  }else if(answer.reasoning){
+   container.append(E('p','','Raisonnement écrit : '+safe(answer.reasoning)));
+  }
+ }
  const isChallenge=['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind);
  const isBonusDay=ex.kind==='bonus-day';
  const box=E('section','result'+(t.needsReview?' waiting':''));
@@ -863,7 +894,7 @@ function renderFeedback(ex,t,root){
  if(isChallenge)box.id='challenge-detailed-correction';
  box.append(E('h3','',isBonusDay?(perfect?'Aucune erreur à corriger.':'Voir mes erreurs corrigées'):
   perfect?'Toutes les réponses sont correctes — aucune correction nécessaire.':
-  t.needsReview?'Rédaction enregistrée — à revoir':'Correction détaillée : '+t.score+'/'+t.total));
+  t.needsReview?'Rédaction enregistrée — à revoir':'Correction détaillée : '+Number(t.score).toLocaleString('fr-FR')+'/'+Number(t.total).toLocaleString('fr-FR')));
  box.append(E('p','subtle','Validé le '+new Date(t.date).toLocaleString('fr-FR')+'. Les réponses sont verrouillées sur tous les appareils.'));
  // Questions et réponses toujours relisibles, sans expliquer les réponses déjà correctes.
  const review=E('details','summary-details');
@@ -872,6 +903,7 @@ function renderFeedback(ex,t,root){
   const q=ex.questions[i]||{},given=q.type==='mc'?(q.options?.[Number(a.response)]??a.response):a.response;
   const row=E('div','separated');
   row.append(E('strong','',(i+1)+'. '+safe(a.question||q.q||'Question')),E('p','','Ma réponse : '+safe(given)));
+  showWrittenMethod(row,a);
   review.append(row);
  }
  if(!isBonusDay)box.append(review);
@@ -880,7 +912,11 @@ function renderFeedback(ex,t,root){
   const q=ex.questions[i]||{},p=E('div','feedback');
   const given=q.type==='mc'?(q.options?.[Number(a.response)]??a.response):a.response;
   p.append(E('strong','',(i+1)+'. '+safe(a.question||q.q||'Question')),E('p','','Ta réponse : '+safe(given)));
-  if(a.correct!==null)p.append(E('p',a.correct?'correct':'wrong',a.correct?'Bonne réponse.':a.points===0.5?'Réponse presque correcte : 0,5/1 (accent ou ponctuation).':'Réponse à revoir.'));
+  showWrittenMethod(p,a);
+  if(a.correct!==null)p.append(E('p',a.correct?'correct':'wrong',
+   a.correct?'Bonne réponse.':a.points===0.5?
+    (q.reasoningCheck?.kind==='rectangle-perimeter-v1'?'Réponse partiellement correcte : 0,5/1 (résultat ou raisonnement à revoir).':'Réponse presque correcte : 0,5/1 (accent ou ponctuation).'):
+    'Réponse à revoir.'));
   if(a.correct===false){
    p.append(E('p','correct','Réponse attendue : '+safe(a.expected)));
    const explanation=safe(a.explanation).trim()||'Compare les mots, leur ordre et les terminaisons avec la réponse attendue. Relis la leçon pour comprendre la règle.';
