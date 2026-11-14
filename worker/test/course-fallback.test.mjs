@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {TESTABLE} from '../server.mjs';
-import {TIM_UID,PARENT_UID} from '../auth.mjs';
+import {TIM_UID,PARENT_UID,ApiFault} from '../auth.mjs';
 const main={lessons:[{id:'L1',title:'Cours',subject:'Mathématiques'}],
  exercises:[{id:'EX1',questions:[{type:'text',q:'Question',right:'solution secrète'}]}]};
 test('Tim peut ouvrir ses cours même si Firestore refuse les listes de compléments',async()=>{
@@ -33,4 +33,20 @@ test('Les cours complets ne déclenchent pas d’avertissement',async()=>{
 test('Un compte non Tim ne peut pas charger le contenu Tim',async()=>{
  const db={get:async()=>main,list:async()=>[]};
  await assert.rejects(()=>TESTABLE.courseContent(db,PARENT_UID),{status:403});
+});
+
+test('Quota épuisé : une seule lecture par collection, aucun nouvel essai inutile',async()=>{
+ let calls=0;
+ const db={get:async()=>main,list:async()=>{calls++;throw new ApiFault(503,'firestore-quota-exceeded');}};
+ const result=await TESTABLE.courseContent(db,TIM_UID);
+ assert.equal(calls,2);
+ assert.equal(result.additionsIncomplete,true);
+ assert.equal(result.content.lessons.length,1);
+ assert.deepEqual(result.additions,{lessons:[],exercises:[]});
+});
+test('HTTP 429 : les tentatives de relecture s arrêtent immédiatement',async()=>{
+ let calls=0;
+ const db={get:async()=>main,list:async()=>{calls++;throw new ApiFault(503,'firestore-limit-429');}};
+ await TESTABLE.courseContent(db,TIM_UID);
+ assert.equal(calls,2);
 });
