@@ -124,6 +124,30 @@ async function inspect(browser,label,viewport){
         await picture(page,label+'-onglet-'+id);
       }catch(e){check(label+' onglet '+id,false,'Clic non abouti');}
     }
+    // Contrôle ciblé du sélecteur JSON sur Android : sélection en mémoire uniquement.
+    // Ne JAMAIS appuyer sur « Publier les nouveaux cours » pendant ce test.
+    try{
+      const importPanel=page.locator('details.v16-import').first();
+      check(label+' import Parent disponible',await importPanel.count()===1);
+      if(await importPanel.count()){
+        await importPanel.evaluate(el=>el.open=true);
+        const picker=importPanel.locator('input[type="file"][aria-label="Charger un lot JSON de cours depuis le téléphone"]');
+        check(label+' sélecteur de fichier sans filtre Android',await picker.count()===1&&await picker.getAttribute('accept')===null);
+        const sample='{"lessons":[],"exercises":[]}';
+        await picker.setInputFiles({name:'controle-bonus-android.json',mimeType:'application/octet-stream',buffer:Buffer.from(sample,'utf8')});
+        await page.waitForFunction(()=>{
+          const p=document.querySelector('details.v16-import');
+          return !!p&&p.querySelector('textarea')?.value==='{"lessons":[],"exercises":[]}'&&
+                 p.textContent.includes('Lot chargé');
+        },null,{timeout:9000});
+        check(label+' JSON de type générique reconnu',true,'Chargement local uniquement ; aucune publication');
+        await picker.setInputFiles([]);
+        await importPanel.locator('textarea').fill('');
+        await importPanel.evaluate(el=>el.open=false);
+      }
+    }catch(e){
+      check(label+' sélection JSON Android',false,'Contrôle incomplet : '+String(e?.message||e).slice(0,145));
+    }
     // Audit en lecture seule du backend des 23 tests. Aucune soumission.
     if(label==='ordinateur'){
       try{
