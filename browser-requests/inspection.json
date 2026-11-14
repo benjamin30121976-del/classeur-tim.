@@ -12,44 +12,29 @@
   "actions": [
     {
       "type": "nav",
-      "page": "matieres",
-      "name": "liste-matieres"
+      "page": "home",
+      "name": "accueil-nouvelle-presentation"
     },
     {
       "type": "click",
-      "selector": "#matieres-content button.matter-card:has-text('Histoire-géographie')",
-      "name": "ouvrir-histoire"
-    },
-    {
-      "type": "click",
-      "selector": "#matieres-content details.chapter-section:has-text('Nazisme') details.tim-es-lesson button:has-text('Leçon BIS')",
-      "name": "lire-bis-nazisme"
-    },
-    {
-      "type": "click",
-      "selector": "#matieres-content details.chapter-section:has-text('Nazisme') details.tim-es-lesson button:has-text('Je n’ai pas compris')",
-      "name": "aides-nazisme"
+      "selector": ".mission-hero .lobo-go",
+      "name": "ouvrir-bonus-devoirs"
     },
     {
       "type": "nav",
       "page": "matieres",
-      "name": "retour-liste"
+      "name": "cours-ranges-matieres"
     },
     {
-      "type": "click",
-      "selector": "#matieres-content button.matter-card:has-text('SVT')",
-      "name": "ouvrir-svt"
+      "type": "nav",
+      "page": "exercices",
+      "name": "exercices-ranges"
     },
     {
-      "type": "click",
-      "selector": "#matieres-content details.chapter-section:has-text('Phagocytose') details.tim-es-lesson button:has-text('Leçon BIS')",
-      "name": "lire-bis-phagocytose"
-    },
-    {
-      "type": "click",
-      "selector": "#matieres-content details.chapter-section:has-text('Phagocytose') details.tim-es-lesson button:has-text('Je n’ai pas compris')",
-      "name": "aides-phagocytose"
+      "type": "nav",
+      "page": "home",
+      "name": "retour-accueil"
     }
   ],
-  "note": "Deuxième contrôle Chromium ciblé après publication : HG nazisme et SVT phagocytose en Invité sur mobile et bureau. Mathématiques désactivées intentionnellement en Invité ; contrôle authentifié distinct. Aucune validation ni modification de résultats."
+  "note": "Contrôle Chromium après publication PR #62 : affichage accueil, ouverture du nouveau carré de bonus, accès Matières et Exercices. Lecture seule en Invité ; aucune validation ni écriture Tim."
 }
