@@ -48,3 +48,12 @@ test('l export récupère les détails des sept matières, sans consommer de ten
  assert(source.includes('safeRead('));
  assert.doesNotMatch(source,/submitTimExercise|deleteDoc|addDoc\(/);
 });
+
+
+test('le Parent voit explicitement si le raisonnement n a pas été évalué automatiquement',()=>{
+ const text=renderCopy({score:1,total:1,lesson:'Mathématiques'},[{
+  question:'Développe',response:'2x+6',expected:'2x+6',correct:true,points:1,
+  reasoning:'2x+3+3',reasoningAssessment:'not-automatically-graded'
+ }]);
+ assert.match(text,/démarche écrite est conservée sans évaluation automatique/);
+});
