@@ -23,3 +23,17 @@ test('V16: strips punctuation in short text',()=>{
 test('V16: rejects unsupported question type',()=>{
  assert.throws(()=>grade({questions:[{q:'x',type:'unknown'}]},{questions:[{right:'x'}]},['x']));
 });
+
+
+test('bonus maths : accepter un résultat exact rédigé comme une phrase',()=>{
+ const bonus={kind:'bonus-day',subject:'Mathématiques',questions:[{q:'Calcule le périmètre du rectangle 8 cm par 4 cm.',type:'text'}]};
+ const key={questions:[{right:'24 cm',also:['24']}]};
+ for(const response of ['24 cm','Le périmètre est de 24 cm.','P = 24 cm','On obtient 24 cm','24']){
+  const graded=grade(bonus,key,[response]);
+  assert.equal(graded.score,1,'Réponse correcte non reconnue : '+response);
+ }
+ for(const response of ['La surface fait 24 cm.','Il ne faut pas 24 cm','24 m','32 cm','24 cm ou 32 cm']){
+  const graded=grade(bonus,key,[response]);
+  assert.equal(graded.score,0,'Réponse incorrecte créditée : '+response);
+ }
+});
