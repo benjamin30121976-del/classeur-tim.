@@ -52,7 +52,7 @@ for(const [xp,expected] of [
 p=anim.playResult({kind:'sunday'},{xp:20,score:17,total:20,correctionStatus:'released'});
 assert.match(media().src,/Tim_Defi_Du_Dimanche_20XP_Original.mp4$/);skip().onclick();await p;
 p=anim.playResult({kind:'sunday'},{xp:14,score:15,total:20,correctionStatus:'released'});
-assert.match(media().src,/loup-sunday-anime\\.webp$/,'utiliser l’animation partielle, jamais la vidéo +20 XP');
+assert.match(media().src,/loup-sunday-anime\.webp$/,'utiliser l’animation partielle, jamais la vidéo +20 XP');
 assert.doesNotMatch(media().src,/20XP/,'pas de récompense trompeuse');
 assert.equal(award().hidden,true,'révélation XP masquée pendant le clip partiel');
 media().onerror();
