@@ -36,7 +36,8 @@ jobs:
       - name: Résumé
         run: echo 'Aucune tentative réelle de Tim n’a été consommée.' >> "$GITHUB_STEP_SUMMARY"
   navigateur-parent:
-    if: github.ref == 'refs/heads/main'
+    # La navigation Parent réelle reste disponible manuellement ; pas à chaque modification.
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
