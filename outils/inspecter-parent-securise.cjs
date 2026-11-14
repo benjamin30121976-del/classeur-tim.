@@ -7,6 +7,7 @@ const path=require('node:path');
 const EMAIL=process.env.TIM_PARENT_EMAIL||'';
 const PASSWORD=process.env.TIM_PARENT_PASSWORD||'';
 const URL=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
+const TARGET_IMPORT_ONLY=(()=>{try{return /controle-import-json-android/.test(JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion||'');}catch{return false;}})();
 const output=path.join(process.cwd(),'browser-parent-results');
 fs.mkdirSync(output,{recursive:true});
 const data={site:URL,date:new Date().toISOString(),checks:[],devices:[],notes:[],pageErrors:[],subjectInventory:[],educationInventory:[],lessonIndex:[],exerciseIndex:[],integrity:[]};
@@ -153,6 +154,7 @@ async function inspect(browser,label,viewport){
     }catch(e){
       check(label+' sélection JSON Android',false,'Contrôle incomplet : '+String(e?.message||e).slice(0,145));
     }
+    if(TARGET_IMPORT_ONLY)return; // Contrôle ciblé terminé ; aucun autre appel backend nécessaire.
     // Audit en lecture seule du backend des 23 tests. Aucune soumission.
     if(label==='ordinateur'){
       try{
