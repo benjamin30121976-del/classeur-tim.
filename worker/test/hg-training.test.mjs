@@ -132,3 +132,18 @@ test('HG : cours BIS 09 nazisme, énoncés masqués et 20 corrections',()=>{
   assert.equal(miss.score,0);assert.equal(miss.items.filter(q=>!q.correct&&q.explanation.length>=25).length,10);
  }
 });
+
+
+test('Pont navigateur HG : accès aux 18 exercices sans accepter de chapitre inexistant',()=>{
+ const {readFileSync}=require('node:fs');
+ const client=readFileSync(new URL('../../boot.js',import.meta.url),'utf8');
+ for(const method of ['hgTrainingTask','hgTrainingSubmit','hgTrainingPreviewSubmit']){
+  const start=client.indexOf(method+':async(');
+  assert.ok(start>=0,'méthode '+method+' absente');
+  const next=client.slice(start,start+500);
+  assert.match(next,/\^HGQ_L0\[1-9\]_0\[1-2\]\$/,'méthode '+method+' bloque HG09');
+ }
+ assert.equal(hgTrainingId('HGQ_L09_01'),true);
+ assert.equal(hgTrainingId('HGQ_L09_02'),true);
+ assert.equal(hgTrainingId('HGQ_L10_01'),false);
+});
