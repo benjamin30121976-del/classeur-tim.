@@ -114,6 +114,18 @@
          record(tag+' Math schéma',await page.locator('#matieres-content svg').count()>0);
          record(tag+' Math 3 exercices',await page.locator('#matieres-content [data-math-nov12-ex]').count()===3);
        }catch(e){record(tag+' Maths navigation',false,e.message)}
+       /* Firestore via SDK Firebase du Parent, distinct du compte de service Cloudflare.
+           Seule l'existence d'un document de cours ou le code d'erreur est rapporté. */
+       const firebaseDirect=await page.evaluate(async()=>{
+         try{
+           const {getApp}=await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js');
+           const {getFirestore,doc,getDoc}=await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js');
+           const snapshot=await getDoc(doc(getFirestore(getApp()),'content','main'));
+           return {ok:true,exists:snapshot.exists()};
+         }catch(e){return {ok:false,code:String(e?.code||e?.name||'unknown').slice(0,80)};}
+       });
+       record(tag+' SDK Firestore direct (document de cours)',firebaseDirect.ok&&firebaseDirect.exists,
+         firebaseDirect.ok?'Document de cours accessible sous Firebase Auth':firebaseDirect.code);
        for(const [label,method,id] of [
          ['HG ancien QCM','hgTrainingTask','HGQ_L08_01'],
          ['HG nouveau QCM','hgTrainingTask','HGQ_L09_01'],
