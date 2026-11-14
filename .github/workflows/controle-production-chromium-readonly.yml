@@ -1,5 +1,10 @@
 name: Contrôler classeur production avec Chromium lecture seule
 on:
+  push:
+    branches: [verification-affichage-bonus-perimetres-20261114]
+    paths:
+      - 'tools/test/verification-bonus-perimetres-publie.readonly.cjs'
+      - '.github/workflows/controle-production-chromium-readonly.yml'
   pull_request:
     paths:
       - 'tools/test/production-maths-animations.readonly.cjs'
@@ -28,12 +33,4 @@ jobs:
         env:
           NODE_PATH: /tmp/tim-readonly/node_modules
           TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
-        run: node tools/test/production-maths-animations.readonly.cjs
-      - name: Archiver les captures et le bilan
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: audit-classeur-production-lecture-seule
-          path: audit-production-tim/
-          if-no-files-found: warn
-          retention-days: 7
+        run: node tools/test/verification-bonus-perimetres-publie.readonly.cjs
