@@ -1,0 +1,34 @@
+name: Contrôler le budget de lectures Firestore (sans réseau)
+on:
+  pull_request:
+    paths:
+      - 'boot.js'
+      - 'tools/test/firestore-reads-budget.test.mjs'
+      - '.github/workflows/verifier-lectures-firestore.yml'
+      - '.github/workflows/verifier-histoire-geographie.yml'
+      - '.github/workflows/verifier-svt.yml'
+      - '.github/workflows/verifier-francais.yml'
+      - '.github/workflows/verifier-anglais-production.yml'
+      - '.github/workflows/verifier-essai-parent-defis.yml'
+      - '.github/workflows/verifier-defis-production-13nov.yml'
+      - '.github/workflows/verifier-maths-12nov.yml'
+      - '.github/workflows/espagnol-12nov-parent.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verifier-local:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier le code d'ouverture sans accès aux données réelles
+        run: |
+          node --check boot.js
+          node --test tools/test/firestore-reads-budget.test.mjs
+      - name: Tester les règles de protection du compte Tim
+        run: |
+          node --test functions/test/grading.test.mjs
