@@ -62,7 +62,7 @@ function simplestFraction(raw){
  return a===1;
 }
 export function numericMathAnswerMatches(actual,expected,prompt=''){
- const wanted=arithmetic(expected);
+ const wanted=arithmetic(stripUnit(expected,prompt));
  if(wanted===null)return false;
  const original=symbols(actual),task=symbols(prompt);
  if(!original||/\b(?:pas|faux|incorrect|environ|approximativement)\b/.test(original))return false;
