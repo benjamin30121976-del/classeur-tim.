@@ -4,6 +4,7 @@
 import {PROJECT,TIM_UID,PARENT_UID,ApiFault,verifyFirebaseToken} from './auth.mjs';
 import {firestore,createWrite,upsertWrite,updateWrite,NOW} from './firestore.mjs';
 import {grade} from '../functions/grading.mjs';
+import {mathNov12ForParentImport} from '../maths-12nov-training.mjs';
 import {rawPoints,cappedPoints} from '../functions/xp.mjs';
 import {buildMission,isMissionId,isMissionOpen} from '../functions/missions-v18.mjs';
 import {SPANISH_COURSE} from '../functions/spanish-training-curriculum.mjs';
@@ -1064,8 +1065,55 @@ async function getFirestoreReadDiagnostics(db,uid,payload={}){
   collectionHttpStatus:result.collectionHttpStatus,...extra};
 }
 
+/* Correction unique approuvée par le Parent : aucune modification possible
+   d'une copie, d'une note, des XP, ou de l'une des neuf autres questions. */
+const LEGACY_MTH12_Q10={
+ type:'mc',
+ q:'Le professeur a demandé l’exercice 25 p.253, mais son énoncé n’est pas dans l’ENT. Comment le classeur doit-il le présenter ?',
+ options:['Inventer les mesures de la page','Indiquer que l’énoncé manque et proposer des exercices distincts','Prétendre que ces questions sont l’exercice officiel','Marquer le devoir comme réalisé'],
+ right:'1',
+ why:'Les trois séries sont des exercices pédagogiques originaux, pas une reproduction du devoir 25 p.253.',
+ skill:'Réciproque de Thalès'
+};
+async function correctMathNov12Question10(db,uid,payload={}){
+ permitted(uid,'parent');
+ if(payload?.approval!=='MTH12_03_Q10_PARENT_APPROVED_20261114')
+  throw new ApiFault(403,'question10-approval-required');
+ const ex=mathNov12ForParentImport().exercises.find(x=>x.id==='MTH12_03');
+ if(!ex||ex.questions.length!==10)throw new ApiFault(503,'question10-bank-incomplete');
+ const tx=await db.transaction();
+ const paths=['exercises/MTH12_03','attempts/MTH12_03',
+  'privateAttempts/MTH12_03','publicExercises/MTH12_03',
+  'answerKeys/MTH12_03','releasedCorrections/MTH12_03'];
+ const [stored,attempt,privateAttempt,pub,key,released]=await Promise.all(paths.map(path=>db.get(path,tx)));
+ const equal=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+ if(!stored||stored.id!=='MTH12_03'||!Array.isArray(stored.questions)||stored.questions.length!==10||
+    !equal(stored.questions.slice(0,9),ex.questions.slice(0,9)))
+  throw new ApiFault(409,'question10-bank-mismatch');
+ if(!equal(stored.questions[9],ex.questions[9])){
+  if(attempt||privateAttempt||released)
+   throw new ApiFault(409,'question10-copy-already-exists');
+  if(pub||key)
+   throw new ApiFault(409,'question10-secondary-bank-exists');
+  if(!equal(stored.questions[9],LEGACY_MTH12_Q10))
+   throw new ApiFault(409,'question10-unknown-source');
+  const next={...stored,questions:stored.questions.slice()};
+  next.questions[9]={...ex.questions[9]};
+  // Un seul champ, dans un seul document existant. Toutes les lectures
+  // font partie de la transaction Firestore avant le commit.
+  await db.commit([updateWrite('exercises/MTH12_03',{payloadJson:JSON.stringify(next)})],tx);
+  const after=await db.get('exercises/MTH12_03');
+  if(!after||!equal(after.questions[9],ex.questions[9])||
+     !equal(after.questions.slice(0,9),stored.questions.slice(0,9)))
+   throw new ApiFault(502,'question10-postcheck-failed');
+  return {status:'updated',id:'MTH12_03',question:10,otherQuestionsUnchanged:true};
+ }
+ return {status:'already-corrected',id:'MTH12_03',question:10,otherQuestionsUnchanged:true};
+}
+
 const ACTIONS={
   getFirestoreReadDiagnostics:getFirestoreReadDiagnostics,
+  correctMathNov12Question10:correctMathNov12Question10,
  previewSpanishEntTraining:previewSpanishEntTraining,
  getMathEntTask:getMathEntTask,
  submitMathEntTask:submitMathEntTask,
@@ -1136,4 +1184,4 @@ export async function handleRequest(request,env){
   return respond({error:code},status);
  }
 }
-export const TESTABLE={getFirestoreReadDiagnostics,getEnglishTrainingTask,submitEnglishTraining,getEnglishTrainingProgress,previewEnglishTraining,getSvtTrainingTask,submitSvtTraining,getSvtTrainingProgress,previewSvtTraining,getHgTrainingTask,submitHgTraining,getHgTrainingProgress,previewHgTraining,getFrTrainingTask,submitFrTraining,getFrTrainingProgress,previewFrTraining,previewSpanishEntTraining,getMathEntTask,submitMathEntTask,previewMathEntTask,getMathEntProgress,getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,getMixedChallengePlan,previewMixedChallenge,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
+export const TESTABLE={correctMathNov12Question10,getFirestoreReadDiagnostics,getEnglishTrainingTask,submitEnglishTraining,getEnglishTrainingProgress,previewEnglishTraining,getSvtTrainingTask,submitSvtTraining,getSvtTrainingProgress,previewSvtTraining,getHgTrainingTask,submitHgTraining,getHgTrainingProgress,previewHgTraining,getFrTrainingTask,submitFrTraining,getFrTrainingProgress,previewFrTraining,previewSpanishEntTraining,getMathEntTask,submitMathEntTask,previewMathEntTask,getMathEntProgress,getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,getMixedChallengePlan,previewMixedChallenge,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
