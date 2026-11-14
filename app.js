@@ -650,7 +650,7 @@ function renderExerciseIndex(){
    root.className='clicklist';
    document.getElementById('exercise-count').textContent='Exercices bonus des devoirs · 0 XP';
    const back=button('← Tous les exercices',()=>{exerciseMode='';renderExerciseIndex();},'group-back');
-   back.style.color='#e6efff';toolbar.append(back);
+   back.style.setProperty('color','#e6efff','important');toolbar.append(back);
    const homework=bases.filter(e=>e.homeworkBonus===true);
    if(!homework.length){
     const empty=notice('Aucun exercice bonus de devoirs n’est encore publié. Les exercices préparés ensemble apparaîtront ici, sans modifier tes devoirs de l’ENT.');
