@@ -30,6 +30,12 @@ on:
       - 'outils/publier-bonus-maths-via-parent.cjs'
       - '.github/workflows/publier-bonus-maths.yml'
   workflow_dispatch:
+    inputs:
+      publier_perimetre:
+        description: "Autoriser explicitement l'import du défi périmètres après vérifications"
+        type: boolean
+        required: true
+        default: false
 permissions:
   contents: read
 jobs:
@@ -85,3 +91,33 @@ jobs:
         env:
           NODE_PATH: /tmp/tim-bonus-parent/node_modules
         run: node outils/publier-bonus-maths-via-parent.cjs
+
+  import-perimetre:
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.publier_perimetre == true
+    needs: validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+      TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
+      TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
+      TIM_BONUS_PERIMETRES_CONFIRME: OUI
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Valider syntaxe import ciblé
+        run: node --check outils/publier-bonus-perimetres-via-parent.cjs
+      - name: Confirmer secrets Parent présents
+        run: |
+          test -n "$TIM_PARENT_EMAIL" && test -n "$TIM_PARENT_PASSWORD"
+      - name: Installer Chromium / Playwright
+        run: |
+          mkdir -p /tmp/tim-bonus-perimetre
+          npm install --prefix /tmp/tim-bonus-perimetre --no-audit --no-fund playwright
+          /tmp/tim-bonus-perimetre/node_modules/.bin/playwright install --with-deps chromium
+      - name: Importer seulement le bonus périmètres autorisé (sans toucher aux résultats)
+        env:
+          NODE_PATH: /tmp/tim-bonus-perimetre/node_modules
+        run: node outils/publier-bonus-perimetres-via-parent.cjs
