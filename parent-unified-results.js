@@ -155,6 +155,11 @@ function renderDetails(slot,record,items){
  items.forEach((item,i)=>{
   const line=el('div','separated');
   cell(line,'strong','',(i+1)+'. '+item.question);
+  if(record.subject==='Mathématiques'){
+   const ex=window.__TIM_DATA?.exercises?.find(x=>x.id===record.id);
+   const fig=ex?window.TIM_BONUS_FIGURES?.render?.(ex,i):window.TIM_GEOMETRY_DIAGRAMS?.renderPrompt?.(item.question,record.title);
+   if(fig)line.append(fig);
+  }
   cell(line,'p','', 'Réponse de Tim : '+item.response);
   if(item.expected!==undefined&&item.expected!==null&&item.expected!=='')cell(line,'p','subtle','Réponse attendue : '+item.expected);
   if(item.points!==undefined&&item.points!==null&&Number.isFinite(Number(item.points)))cell(line,'p','small','Points attribués : '+Number(item.points).toLocaleString('fr-FR')+'/1');
