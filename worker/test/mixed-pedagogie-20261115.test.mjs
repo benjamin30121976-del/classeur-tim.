@@ -7,6 +7,8 @@ test('Le correcteur accepte le vrai calcul du samedi 14 novembre',()=>{
  const rect='Un rectangle mesure 6 cm de long et 6 cm de large. Donne son périmètre en cm.';
  assert.equal(ok('P = 6 + 6 + 6 + 6 = 24 cm','24',rect),true);
  assert.equal(ok('2 × (6 + 6) = 24 cm','24',rect),true);
+ assert.equal(ok('P = 2x(6+6) = 2x12 = 24','24',rect),true);
+ assert.equal(ok('P=6+6+6+6=24','24',rect),true);
  assert.equal(ok('Le périmètre du rectangle est de 24 cm.','24',rect),true);
  assert.equal(ok('6 + 6 = 24 cm','24',rect),false);
  assert.equal(ok('2 × 24 = 48 cm','24',rect),false);
@@ -16,7 +18,7 @@ test('Le correcteur accepte le vrai calcul du samedi 14 novembre',()=>{
 });
 test('Fraction 6/24 × 4 = 1 : étapes correctes, erreur ou valeur hors calcul refusée',()=>{
  const q='Calcule : 6/24 × 4 = ?';
- for(const answer of ['1','1,0','6/24 × 4 = 1','6/24*4=1','1/1'])
+ for(const answer of ['1','1,0','6/24 × 4 = 1','6/24*4=1','6/24 x 4 = 24/24 = 1','1/1'])
   assert.equal(ok(answer,'1',q),true,answer);
  for(const answer of ['6/24 × 4 = 2','6/24 + 4 = 1','La réponse est 11','6/24 × 4 = 0,5','24/4=1'])
   assert.equal(ok(answer,'1',q),false,answer);
