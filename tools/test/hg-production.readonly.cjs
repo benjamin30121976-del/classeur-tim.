@@ -31,12 +31,30 @@ const site=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
    await page.locator('#intro-skip').click({timeout:9000});
    await page.locator('#intro-screen').waitFor({state:'hidden',timeout:10000});
   }
+  /* Diagnostic Parent sans écriture : seuls deux statuts HTTP sont affichés.
+     Aucun jeton, mot de passe, résultat d'élève ou contenu Firestore n'est journalisé. */
+  const diag=await page.evaluate(async()=>{
+   try{
+    const {getApp}=await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js');
+    const {getAuth}=await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js');
+    const user=getAuth(getApp()).currentUser;
+    if(!user)return {requestHttpStatus:0,error:'parent-non-authentifie'};
+    const token=await user.getIdToken();
+    const response=await fetch('/api/tim',{method:'POST',cache:'no-store',
+     headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
+     body:JSON.stringify({action:'getFirestoreReadDiagnostics',payload:{}})});
+    const json=await response.json().catch(()=>({}));
+    return {requestHttpStatus:response.status,documentHttpStatus:json?.data?.documentHttpStatus??null,
+     collectionHttpStatus:json?.data?.collectionHttpStatus??null,error:String(json?.error||'')};
+   }catch{return {requestHttpStatus:0,error:'diagnostic-indisponible'};}
+  });
+  console.log('DIAGNOSTIC_FIRESTORE_HTTP_STATUTS_SEULEMENT '+JSON.stringify(diag));
   const before=await page.evaluate(()=>window.__TIM_BRIDGE.hgTrainingProgress());
   const results=await page.evaluate(async()=>{
    const pack=window.TIM_HG_PACK,bridge=window.__TIM_BRIDGE;
    if(!pack||!window.TIM_HG_PATH||!window.TIM_HG_TRAINING?.mount)
     throw Error('Le pack HG ou les modules du parcours sont absents.');
-   const ids=Array.from({length:8},(_,i)=>[1,2].map(n=>'HGQ_L0'+(i+1)+'_0'+n)).flat();
+   const ids=Array.from({length:9},(_,i)=>[1,2].map(n=>'HGQ_L0'+(i+1)+'_0'+n)).flat();
    let leaked=false,preview=null,total=0;
    for(const id of ids){
     const response=await bridge.hgTrainingTask(id),task=response?.task;
@@ -53,7 +71,7 @@ const site=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
     ids:ids.length,total,leaked,preview};
   });
   assert.deepEqual([results.lessons,results.bis,results.homework,results.attached,results.ids,results.total],
-   [25,8,14,1,16,160]);
+   [25,9,15,1,18,180]);
   assert.ok(results.originalLessons>=3&&results.originalHomework>=4);
   assert.equal(results.leaked,false);
   assert.equal(results.preview.practice,true);
@@ -66,8 +84,8 @@ const site=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
   await page.locator('[data-nav="home"]').first().click();
   assert.equal(await page.locator('#home-content .hg-home-quick button').count(),2);
   await page.locator('#home-content .hg-home-quick button').first().click();
-  assert.equal(await page.locator('#exercise-list .hg-exercise-lesson').count(),8);
-  assert.equal(await page.locator('#exercise-list .hg-exercise-lesson .tile').count(),16);
+  assert.equal(await page.locator('#exercise-list .hg-exercise-lesson').count(),9);
+  assert.equal(await page.locator('#exercise-list .hg-exercise-lesson .tile').count(),18);
   await page.locator('#exercise-list .hg-exercise-lesson .tile').first().click();
   await page.locator('#exercise-detail .tim-es-question-page').waitFor({timeout:20000});
   assert.match(await page.locator('#exercise-detail').innerText(),/Question 1 sur 10/);
@@ -85,6 +103,6 @@ const site=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
   assert.equal(link.lessonCount,1);
   assert.ok(link.dates.some(x=>/12\/11\/2026/.test(x)));
   assert.equal(blocked,0);
-  console.log('HISTOIRE-GEOGRAPHIE PRODUCTION OK : 25 séances ENT, 8 BIS, 14 devoirs, 16 quiz/160 questions, Parent 0 XP, Accueil, Exercices, renvoi institutions européennes.');
+  console.log('HISTOIRE-GEOGRAPHIE PRODUCTION OK : 25 séances ENT, 9 BIS, 15 devoirs, 18 quiz/180 questions, Parent 0 XP, Accueil, Exercices, renvoi institutions européennes.');
  }finally{await page.close();await browser.close();}
 })().catch(e=>{console.error('ÉCHEC HG PRODUCTION : '+String(e?.stack||e).slice(0,3800));process.exitCode=1;});
