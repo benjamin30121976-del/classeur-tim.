@@ -2,6 +2,34 @@
 /* Audit Parent strictement en lecture seule. Réutilise la session Chromium
    authentifiée du workflow existant. Ne journalise ni réponse, ni note,
    ni correction, ni identité ; aucune écriture dans Firebase. */
+const {runInNewContext}=require('node:vm');
+function mathNumericExpression(value,x){
+ let t=String(value??'').toLowerCase().trim().replace(/[−–—]/g,'-')
+  .replace(/[,]/g,'.').replace(/[×·]/g,'*').replace(/²/g,'**2')
+  .replace(/\s+/g,'').replace(/^(?:x|p|a|bc)[:=]/g,'');
+ // Refuser toutes les syntaxes non strictement arithmétiques.
+ if(!t||!(/^[0-9x+*/().-]+$/).test(t)||t.length>120)return null;
+ t=t.replace(/(\d)x/g,'$1*x').replace(/x(\d)/g,'x*$1')
+    .replace(/(\d|x)\(/g,'$1*(').replace(/\)(\d|x)/g,')*$1');
+ const expression=t.replace(/x/g,'('+x+')');
+ try{
+  const n=Number(runInNewContext(expression,Object.create(null),{timeout:20}));
+  return Number.isFinite(n)?n:null;
+ }catch{return null;}
+}
+function sameMathValue(a,b){
+ const xs=[-3,-1,0,1,2,4];
+ let valid=0;
+ for(const x of xs){
+  const u=mathNumericExpression(a,x),v=mathNumericExpression(b,x);
+  if(u===null||v===null)continue;
+  if(Math.abs(u-v)>1e-9)return false;
+  valid++;
+ }
+ return valid>=3;
+}
+const lower=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
+ .replace(/[^a-z0-9]+/g,' ').trim().replace(/\s+/g,' ');
 module.exports=async function auditerDefisParent(page,check){
  const snap=await page.evaluate(()=>{
   if(window.__TIM_PARENT!==true)throw Error('Compte Parent non authentifié');
@@ -45,13 +73,17 @@ module.exports=async function auditerDefisParent(page,check){
     const numericallyRight=q.type==='text'&&q.subject==='Mathématiques'&&
      literal.length>0&&Number.isFinite(asNumber)&&Number.isFinite(expectedNumber)&&asNumber===expectedNumber;
     const equivalentAlgebra=q.type==='text'&&q.subject==='Mathématiques'&&
-     /[a-z]/i.test(literal)&&/[a-z]/i.test(String(q.right))&&
-     literal.replace(/\s/g,'').length>3;
+     !a.correct&&sameMathValue(literal,String(q.right));
+    const containsExpected=q.type==='text'&&!a.correct&&
+     lower(q.right).length>=4&&lower(literal).includes(lower(q.right));
+    const methodsButNotCalculated=q.type==='reason'&&a.methodCorrect===true&&a.conclusionCorrect===true&&a.calculationCorrect!==true;
+    console.log('ÉNONCÉ PUBLIC '+copy.id+' Q'+String(i+1).padStart(2,'0')+': '+q.q);
     console.log('AUDIT '+copy.id+' Q'+String(i+1).padStart(2,'0')+
       ' : matière='+q.subject+', type='+q.format+
       ', partiel='+partial+', méthode-et-conclusion-justes-calcul-refusé='+suspectReason+
       ', nombre-math-correct-refusé='+numericallyRight+', écriture-algébrique-à-revoir='+equivalentAlgebra+
-      ', points-non-nuls='+Boolean(Number(a.points)>0)+'.');
+      ', formule-math-équivalente='+equivalentAlgebra+', réponse-modèle-incluse-dans-phrase='+containsExpected+
+      ', méthode-conclusion-reconnues='+methodsButNotCalculated+', points-non-nuls='+Boolean(Number(a.points)>0)+'.');
    }
   }
  }
