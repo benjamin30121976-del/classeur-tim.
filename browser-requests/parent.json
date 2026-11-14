@@ -1,8 +1,8 @@
 {
   "mode": "lecture-seule-parent",
   "site": "https://classeur-tim-v16.pages.dev/",
-  "scope": "Diagnostic Chromium Parent lecture seule : DOM du panneau d’import et version app.js servie par Cloudflare.",
+  "scope": "Vérification ciblée du véritable volet Import de fichiers JSON : choix d’un fichier de type générique et lecture locale, aucune publication.",
   "launch_on_update": true,
-  "note": "Lire seulement les attributs publics du formulaire et la version du JS, aucune publication.",
-  "checkVersion": "controle-import-json-android-20261114-dom"
+  "note": "Chromium Parent bureau et mobile. Aucun clic Publier, aucune écriture Firebase.",
+  "checkVersion": "controle-import-json-android-20261114-final"
 }
