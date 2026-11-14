@@ -648,7 +648,7 @@ function renderExerciseIndex(){
   finder.classList.add('hide');root.className='matter-grid';
   if(exerciseMode==='homework-bonus'){
    root.className='clicklist';
-   document.getElementById('exercise-count').textContent='Exercices bonus des devoirs · 0 XP';
+   document.getElementById('exercise-count').textContent='Exercices bonus des devoirs · XP selon chaque exercice';
    const back=button('← Tous les exercices',()=>{exerciseMode='';renderExerciseIndex();},'group-back');
    back.style.setProperty('color','#e6efff','important');toolbar.append(back);
    const homework=bases.filter(e=>e.homeworkBonus===true);
@@ -656,12 +656,12 @@ function renderExerciseIndex(){
     const empty=notice('Aucun exercice bonus de devoirs n’est encore publié. Les exercices préparés ensemble apparaîtront ici, sans modifier tes devoirs de l’ENT.');
     empty.style.color='#243c5b';root.append(empty);
    }
-   else for(const ex of homework)root.append(cardAction(ex.title,(ex.subject||'Espagnol')+' · Exercice de révision · 0 XP',exerciseDescription(ex),()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));
+   else for(const ex of homework)root.append(cardAction(ex.title,(ex.subject||'Espagnol')+' · Exercice de révision · barème XP indiqué sur la fiche',exerciseDescription(ex),()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));
    return;
   }
   if(exerciseMode==='school-all'){
    root.className='clicklist';const schoolwork=bases.filter(e=>window.TIM_EXERCISE.mode(e)==='school');
-   document.getElementById('exercise-count').textContent='Devoirs de l’école · 0 XP';toolbar.append(button('← Toutes les matières',()=>{exerciseMode='';renderExerciseIndex();},'group-back'));
+   document.getElementById('exercise-count').textContent='Devoirs de l’école · XP selon l’exercice';toolbar.append(button('← Toutes les matières',()=>{exerciseMode='';renderExerciseIndex();},'group-back'));
    if(!schoolwork.length)root.append(notice('Aucun devoir de l’ENT n’a encore été publié dans le classeur.'));
    else for(const ex of schoolwork)root.append(cardAction(ex.title,(ex.subject||'Espagnol')+' · '+(ex.kind==='training'?'jusqu’à +1 XP':'0 XP'),exerciseDescription(ex),()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));return;
   }
@@ -672,7 +672,7 @@ function renderExerciseIndex(){
   }
   document.getElementById('exercise-count').textContent='Devoirs de l’école et exercices bonus :';
   const overview=E('div','exercise-v12-overview');
-  overview.append(button('📚 DEVOIRS DE L’ÉCOLE · 0 XP',()=>{exerciseSubject='';exerciseMode='school-all';renderExerciseIndex();},'exercise-v12-overview-button school'));
+  overview.append(button('📚 DEVOIRS DE L’ÉCOLE',()=>{exerciseSubject='';exerciseMode='school-all';renderExerciseIndex();},'exercise-v12-overview-button school'));
   root.append(overview,bonusMissionPanel(false));
   const icons=['🇪🇸','∑','⚗','EN','📖','🌍','⚖','🌱','⚙'];
   SCHOOL_SUBJECTS.forEach((name,i)=>{const count=name==='Physique-chimie'?23:name==='Anglais'?11:name==='SVT'?14:name==='Histoire-géographie'?(window.TIM_HG_PACK?.bis?.length||0)*2:name==='Français'?22:name==='Mathématiques'?2+bases.filter(e=>(e.subject||'Espagnol')===name).length:bases.filter(e=>(e.subject||'Espagnol')===name).length;
@@ -689,15 +689,15 @@ function renderExerciseIndex(){
   finder.classList.add('hide');document.getElementById('exercise-count').textContent='Choisis ta mission :';
   const choices=E('div','exercise-type-choice');
   for(const [mode,label,icon,desc] of [
-   ['school','DEVOIRS DE L’ÉCOLE','📚','Exercices demandés par les professeurs dans l’ENT · XP selon les réponses.'],
-   ['bonus','EXERCICES BONUS','⭐','Exercices créés pour s’entraîner · XP bonus limités à +3 par jour.']
+   ['school','DEVOIRS DE L’ÉCOLE','📚','Devoirs ENT et entraînements liés · XP selon le barème de chaque exercice.'],
+   ['bonus','EXERCICES BONUS','⭐','Exercices créés pour s’entraîner · XP selon le barème de chaque exercice.']
   ]){
    const found=bySubject.filter(e=>window.TIM_EXERCISE.mode(e)===mode);
    const tile=E('button','exercise-type-tile '+mode);tile.type='button';
    tile.append(E('span','type-icon',icon),E('strong','',label),E('small','',desc),E('span','type-counter',found.length+' exercice(s)'));
    tile.addEventListener('click',()=>{exerciseMode=mode;exerciseGroup='';renderExerciseIndex();});choices.append(tile);
   }
-  root.append(E('p','exercise-type-prompt','Les devoirs de l’école n’apportent aucun XP. Les exercices bonus sont libres, avec un plafond de +3 XP par jour.'),choices);
+  root.append(E('p','exercise-type-prompt','Le nombre d’XP dépend de l’exercice et de ta note. Le barème est indiqué sur chaque fiche.'),choices);
   return;
  }
  // Défi bonus du jour : aucun exercice sans ajout explicite.
@@ -1348,7 +1348,7 @@ function makeSoundSettings(){const zone=E('div','sound-settings');zone.append(E(
 function renderHome(){
  const root=clear(document.getElementById('home-content'));refreshXPHeader();
  const hero=E('section','mission-hero');
- const copy=E('div','mission-copy');copy.append(E('div','shout','RÉVISIONS DES DEVOIRS'),E('h1','','MES DEVOIRS EN BONUS'),E('p','','Des exercices préparés ensemble pour réviser les devoirs. Note et correction, sans XP.'));
+ const copy=E('div','mission-copy');copy.append(E('div','shout','RÉVISIONS DES DEVOIRS'),E('h1','','MES DEVOIRS EN BONUS'),E('p','','Des exercices préparés ensemble pour réviser les devoirs. Note, correction et XP selon le barème de chaque exercice.'));
  copy.append(button('Ouvrir mes exercices bonus →',()=>{exerciseSubject='';exerciseGroup='';exerciseMode='homework-bonus';page('exercices');},'lobo-go'));hero.append(copy);const wolf=E('img','mission-wolf');wolf.src='./assets/loup-accueil.webp';wolf.alt='Le loup jongleur du classeur';hero.append(wolf);// Défis quotidiens rétablis avec les images originales du parent.
  root.append(hero);
  if(window.__TIM_READONLY_FALLBACK)
@@ -1431,7 +1431,7 @@ function renderMatiere(name,openLessonId=null){
   function addLessons(title,rows){if(!rows.length)return;body.append(E('h3','',title));const list=E('div','clicklist');for(const l of rows)list.append(cardAction(l.title,l.date||'Révision',l.summary||'',()=>openLesson(l.id)));body.append(list);}
   addLessons('Cours de la classe / ENT',ordinary);addLessons('Cours bonus : explications supplémentaires',bonus);
   function addEx(title,rows){if(!rows.length)return;body.append(E('h3','',title));const list=E('div','clicklist');for(const e of rows)list.append(cardAction(e.title,(e.kind==='training'?'Jusqu’à +1 XP':window.TIM_EXERCISE.school(e)?'0 XP':'Bonus XP'),exerciseDescription(e),()=>openExercise(e.id),attemptFor(e.id)?'Terminé':'À faire'));body.append(list);}
-  addEx('Devoirs ENT · 0 XP',chapterExercises.filter(e=>window.TIM_EXERCISE.mode(e)==='school'));
+  addEx('Devoirs ENT et entraînements liés',chapterExercises.filter(e=>window.TIM_EXERCISE.mode(e)==='school'));
   addEx('Entraînements bonus',chapterExercises.filter(e=>window.TIM_EXERCISE.mode(e)!=='school'));
   section.append(body);root.append(section);
  }
