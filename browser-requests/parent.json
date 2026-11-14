@@ -1,8 +1,8 @@
 {
   "mode": "lecture-seule-parent",
   "site": "https://classeur-tim-v16.pages.dev/",
-  "scope": "Audit lecture seule de tous les énoncés de géométrie des exercices Maths sur le vrai site, sans lire ni publier les copies de Tim.",
+  "scope": "Contrôle du site Cloudflare réel en session Parent : figures bonus maths, lisibilité mobile et boutons de copies/export. Lecture seule.",
   "launch_on_update": true,
-  "note": "Question IDs et énoncés, aucun identifiant personnel, note, réponse, résultat ou XP.",
-  "checkVersion": "controle-toutes-figures-geometrie-20261114-v1"
+  "note": "Chromium Parent bureau + Android 390px, aucune soumission, aucune capture de résultats individuels.",
+  "checkVersion": "controle-bonus-parent-20261114-v1"
 }
