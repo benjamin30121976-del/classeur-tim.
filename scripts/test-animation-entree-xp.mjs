@@ -1,6 +1,7 @@
 // Vérifications UI en mémoire : aucune connexion Firebase, aucune tentative consommée.
 import assert from 'node:assert/strict';
-import {readFileSync} from 'node:fs';
+import {readFileSync,existsSync} from 'node:fs';
+import {rawPoints} from '../functions/xp.mjs';
 import vm from 'node:vm';
 
 class Element {
@@ -55,7 +56,9 @@ skip().onclick();await p;
 p=anim.playResult({kind:'sunday'},{xp:20,score:17,total:20,correctionStatus:'released'});
 assert.match(media().src,/Tim_Defi_Du_Dimanche_20XP_Original.mp4$/);skip().onclick();await p;
 p=anim.playResult({kind:'sunday'},{xp:14,score:15,total:20,correctionStatus:'released'});
-assert.equal(media(),undefined,'ne pas montrer +20 XP si 14 XP obtenus');
+assert.match(media().src,/loup-sunday-anime\.webp$/,'Le dimanche à +14 utilise le loup animé neutre');
+assert.equal(award().hidden,true);
+media().onerror();
 assert.equal(award().hidden,false);skip().onclick();await p;
 // Vérifier que les deux GIF existants ne sont montrés que pour la récompense gagnée.
 for(const [kind,xp,score,total,expectedFile] of [
@@ -63,11 +66,19 @@ for(const [kind,xp,score,total,expectedFile] of [
  ['bonus-parent',5,9,10,'Tim_Defi_Bonus_5XP.gif'],
  ['bonus-day',5,7,10,'Tim_Defi_Bonus_5XP.gif'],
  ['bonus-day',2.5,6,10,'Tim_Animation_2_5XP_Loup.gif'],
- ['weekly',7,15,20,null],
- ['weekly',0,8,20,null],
- ['bonus-parent',0,8,10,null],
- ['bonus-day',0,4,10,null],
- ['training',0.5,6,10,null]
+ ['weekly',7,15,20,'loup-weekly-anime.webp'],
+ ['weekly',4,12,20,'loup-weekly-anime.webp'],
+ ['weekly',1,10,20,'Tim_Animation_1XP_Vitre_Embuee.mp4'],
+ ['weekly',0,8,20,'Tim_Animation_0XP_Toc_Toc_Paume.mp4'],
+ ['weekly',-1,7,20,'Tim_Animation_Minus1XP_Tete_Penaude.gif'],
+ ['sunday',14,15,20,'loup-sunday-anime.webp'],
+ ['sunday',8,12,20,'loup-sunday-anime.webp'],
+ ['sunday',2,10,20,'Tim_Animation_2XP_Grattage.mp4'],
+ ['sunday',0,8,20,'Tim_Animation_0XP_Toc_Toc_Paume.mp4'],
+ ['sunday',-2,7,20,'loup-defi-original.webp'],
+ ['bonus-parent',0,8,10,'Tim_Animation_0XP_Toc_Toc_Paume.mp4'],
+ ['bonus-day',0,4,10,'Tim_Animation_0XP_Toc_Toc_Paume.mp4'],
+ ['training',0.5,6,10,'loup-defi-original.webp']
 ]){
  p=anim.playResult({kind},{xp,score,total,correctionStatus:'released'});
  if(expectedFile){
@@ -81,6 +92,45 @@ for(const [kind,xp,score,total,expectedFile] of [
   'Note : '+score.toLocaleString('fr-FR')+' / '+total.toLocaleString('fr-FR'));
  skip().onclick();await p;
 }
+// Vérification exhaustive : chaque note, même fractionnaire, déclenche un média
+// correspondant aux seuls XP réellement gagnés. Aucun accès Firebase.
+const expectedMedia=(kind,xp)=>{
+ const shared={2.5:'Tim_Animation_2_5XP_Loup.gif',2:'Tim_Animation_2XP_Grattage.mp4',
+  1:'Tim_Animation_1XP_Vitre_Embuee.mp4',0:'Tim_Animation_0XP_Toc_Toc_Paume.mp4',
+  '-1':'Tim_Animation_Minus1XP_Tete_Penaude.gif'};
+ if(kind==='daily'&&xp===3)return 'Tim_Animation_3XP_Mouche.mp4';
+ if(kind==='weekly'&&xp===10)return 'Tim_Defi_Du_Samedi_10XP.gif';
+ if(kind==='weekly'&&[4,7].includes(xp))return 'loup-weekly-anime.webp';
+ if(kind==='sunday'&&xp===20)return 'Tim_Defi_Du_Dimanche_20XP_Original.mp4';
+ if(kind==='sunday'&&[8,14].includes(xp))return 'loup-sunday-anime.webp';
+ if(['bonus-parent','bonus-day'].includes(kind)&&xp===5)return 'Tim_Defi_Bonus_5XP.gif';
+ return shared[xp]||'loup-defi-original.webp';
+};
+let scenarioCount=0;
+for(const [kind,total] of [['daily',10],['weekly',20],['sunday',20],
+ ['bonus-parent',10],['bonus-day',10]]){
+ for(let quarter=0;quarter<=total*4;quarter++){
+  const score=quarter/4;
+  const xp=rawPoints({kind,category:'challenge',score,total,needsReview:false});
+  const expectedFile=expectedMedia(kind,xp);
+  p=anim.playResult({kind,category:'challenge'},
+   {xp,score,total,correctionStatus:'released'});
+  assert.ok(media()?.src?.endsWith(expectedFile),
+   'Animation incorrecte pour '+kind+' '+score+'/'+total+' : '+expectedFile);
+  assert.equal(award().hidden,true,'XP révélés avant le média');
+  media().onerror();
+  assert.equal(award().hidden,false,'XP non révélés après le média');
+  assert.equal(find(award(),x=>x.tagName==='STRONG').textContent,anim.xpLabel(xp));
+  assert.equal(find(award(),x=>x.className==='tim-anim-award-grade').textContent,
+   'Note : '+score.toLocaleString('fr-FR')+' / '+total.toLocaleString('fr-FR'));
+  skip().onclick();await p;
+  scenarioCount++;
+ }
+}
+for(const file of ['assets/loup-weekly-anime.webp','assets/loup-sunday-anime.webp',
+ 'assets/loup-defi-original.webp'])assert.ok(existsSync(file),'Média déjà présent absent : '+file);
+console.log('OK '+scenarioCount+' notes/XP : toutes les sorties animées en simulation, sans écriture.');
+
 const last=body.children.length;
 await anim.playResult({kind:'weekly'},{xp:10,score:17,total:20,correctionStatus:'pending-parent'});
 assert.equal(body.children.length,last,'Ne pas lancer le GIF si la correction n’est pas autorisée');
