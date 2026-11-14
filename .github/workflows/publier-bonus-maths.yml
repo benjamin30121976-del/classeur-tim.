@@ -65,7 +65,7 @@ jobs:
           node --test functions/test/bonus-perimetres-tim-20261114.test.mjs
           node --test functions/test/grading.test.mjs functions/test/xp.test.mjs
   import-parent:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, 'PUBLISH_TIM_PERIMETRE_20261114')
     needs: validation
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -93,7 +93,7 @@ jobs:
         run: node outils/publier-bonus-maths-via-parent.cjs
 
   import-perimetre:
-    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.publier_perimetre == true
+    if: github.ref == 'refs/heads/main' && ((github.event_name == 'workflow_dispatch' && inputs.publier_perimetre == true) || (github.event_name == 'push' && contains(github.event.head_commit.message, 'PUBLISH_TIM_PERIMETRE_20261114')))
     needs: validation
     runs-on: ubuntu-latest
     timeout-minutes: 20
