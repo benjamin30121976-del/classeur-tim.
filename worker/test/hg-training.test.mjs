@@ -134,8 +134,8 @@ test('HG : cours BIS 09 nazisme, énoncés masqués et 20 corrections',()=>{
 });
 
 
-test('Pont navigateur HG : accès aux 18 exercices sans accepter de chapitre inexistant',()=>{
- const {readFileSync}=require('node:fs');
+test('Pont navigateur HG : accès aux 18 exercices sans accepter de chapitre inexistant',async()=>{
+ const {readFileSync}=await import('node:fs');
  const client=readFileSync(new URL('../../boot.js',import.meta.url),'utf8');
  for(const method of ['hgTrainingTask','hgTrainingSubmit','hgTrainingPreviewSubmit']){
   const start=client.indexOf(method+':async(');
