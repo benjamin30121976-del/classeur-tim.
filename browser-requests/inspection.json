@@ -13,23 +13,58 @@
     {
       "type": "nav",
       "page": "matieres",
-      "name": "matieres"
+      "name": "ouvrir-matieres"
     },
     {
       "type": "click",
-      "selector": "#matieres-content button.matter-espanol",
-      "name": "espagnol"
+      "selector": "#matieres-content button.matter-card:has-text('Mathématiques')",
+      "name": "maths-13"
     },
     {
       "type": "click",
-      "selector": "#matieres-content details.tim-es-lesson:first-of-type > summary",
-      "name": "lecon-espagnol"
+      "selector": "[data-math-open-original='TIM_ENT_20261113']",
+      "name": "maths-cours-original-13"
     },
     {
       "type": "click",
-      "selector": "#matieres-content details.tim-es-lesson:first-of-type button",
-      "name": "contenu-lecon"
+      "selector": "[data-math-reciproque]",
+      "name": "maths-bis-thales-13"
+    },
+    {
+      "type": "nav",
+      "page": "matieres",
+      "name": "retour-matieres-hg"
+    },
+    {
+      "type": "click",
+      "selector": "#matieres-content button.matter-card:has-text('Histoire-géographie')",
+      "name": "histoire-13"
+    },
+    {
+      "type": "click",
+      "selector": "#matieres-content details.chapter-section:last-of-type details.tim-es-lesson button:has-text('Leçon BIS')",
+      "name": "bis-nazisme"
+    },
+    {
+      "type": "nav",
+      "page": "matieres",
+      "name": "retour-matieres-svt"
+    },
+    {
+      "type": "click",
+      "selector": "#matieres-content button.matter-card:has-text('SVT')",
+      "name": "svt-13"
+    },
+    {
+      "type": "click",
+      "selector": "#matieres-content details.chapter-section:last-of-type details.tim-es-lesson button:has-text('Leçon BIS')",
+      "name": "bis-phagocytose"
+    },
+    {
+      "type": "click",
+      "selector": "#matieres-content details.chapter-section:last-of-type details.tim-es-lesson button:has-text('Je n’ai pas compris')",
+      "name": "svt-aides"
     }
   ],
-  "note": "Controle Chromium gratuit mode Invite sur mobile/desktop de l'interface Espagnol. Aucun exercice valide, aucune connexion, aucun contenu modifie."
+  "note": "Contrôle Chromium après publication du 13 novembre, lecture seule Invité mobile et bureau : Thalès, nazisme, phagocytose. Aucun compte Tim/Parent utilisé, aucune validation."
 }
