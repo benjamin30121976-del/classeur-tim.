@@ -60,12 +60,38 @@ export async function inspectFirestoreRead(accessToken,transport=fetch){
    const response=await transport(url,{method:'GET',headers:{
     Authorization:'Bearer '+accessToken,'Cache-Control':'no-store'
    }});
-   return Number.isInteger(response?.status)?response.status:0;
-  }catch{return 0;}
+   const http=Number.isInteger(response?.status)?response.status:0;
+   const result={http};
+   if(http===429){
+    // Aucun corps de réponse ne sort de cette fonction. Seules les chaînes
+    // de raison au format enum Google et un délai numérique sont admissibles.
+    const retry=Number(response.headers?.get('retry-after'));
+    if(Number.isInteger(retry)&&retry>=1&&retry<=86400)result.retryAfterSeconds=retry;
+    let err;
+    try{err=(await response.json())?.error;}catch{}
+    const safeEnum=v=>typeof v==='string'&&/^[A-Z][A-Z0-9_]{2,79}$/.test(v)?v:null;
+    const status=safeEnum(err?.status);
+    const reasons=Array.isArray(err?.details)
+      ?err.details.map(d=>safeEnum(d?.reason)).filter(Boolean):[];
+    if(status)result.googleStatus=status;
+    if(reasons.length)result.googleReason=reasons[0];
+   }
+   return result;
+  }catch{return {http:0};}
  }
- const documentHttpStatus=await status(dbRoot+'/__tim_health__/readonly_probe');
- const collectionHttpStatus=await status(collection);
- return {documentHttpStatus,collectionHttpStatus,readOnly:true};
+ const document=await status(dbRoot+'/__tim_health__/readonly_probe');
+ const collectionStatus=await status(collection);
+ return {
+  documentHttpStatus:document.http,
+  collectionHttpStatus:collectionStatus.http,
+  readOnly:true,
+  ...(document.googleStatus?{documentGoogleStatus:document.googleStatus}:{}),
+  ...(collectionStatus.googleStatus?{collectionGoogleStatus:collectionStatus.googleStatus}:{}),
+  ...(document.googleReason?{documentGoogleReason:document.googleReason}:{}),
+  ...(collectionStatus.googleReason?{collectionGoogleReason:collectionStatus.googleReason}:{}),
+  ...(document.retryAfterSeconds?{documentRetryAfterSeconds:document.retryAfterSeconds}:{}),
+  ...(collectionStatus.retryAfterSeconds?{collectionRetryAfterSeconds:collectionStatus.retryAfterSeconds}:{})
+ };
 }
 
 export async function firestore(env){

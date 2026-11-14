@@ -1037,8 +1037,17 @@ async function getFirestoreReadDiagnostics(db,uid){
  const result=await db.probe();
  if(!Number.isInteger(result.documentHttpStatus)||!Number.isInteger(result.collectionHttpStatus))
   throw new ApiFault(503,'firestore-diagnostic-invalid');
+ const extra={};
+ for(const key of ['documentGoogleStatus','collectionGoogleStatus','documentGoogleReason','collectionGoogleReason']){
+  if(typeof result[key]==='string'&&/^[A-Z][A-Z0-9_]{2,79}$/.test(result[key]))
+   extra[key]=result[key];
+ }
+ for(const key of ['documentRetryAfterSeconds','collectionRetryAfterSeconds']){
+  const n=result[key];
+  if(Number.isInteger(n)&&n>=1&&n<=86400)extra[key]=n;
+ }
  return {readOnly:true,documentHttpStatus:result.documentHttpStatus,
-  collectionHttpStatus:result.collectionHttpStatus};
+  collectionHttpStatus:result.collectionHttpStatus,...extra};
 }
 
 const ACTIONS={
