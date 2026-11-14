@@ -84,7 +84,7 @@
   if(givenParallel){
    caption.textContent='Les droites '+a+b+' et BC sont indiquées parallèles dans l’énoncé. Schéma non à l’échelle.';
   }else{
-   caption.textContent='Aucun parallélisme n’est marqué : la conclusion doit être justifiée par les données de l’énoncé. Schéma non à l’échelle.';
+   caption.textContent='Les droites ('+a+b+') et (BC) sont-elles parallèles ? Compare les longueurs données. Le dessin seul ne permet pas de répondre. Schéma non à l’échelle.';
   }
   return fig;
  }
