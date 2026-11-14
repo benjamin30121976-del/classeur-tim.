@@ -1,8 +1,8 @@
 {
   "mode": "lecture-seule-parent",
   "site": "https://classeur-tim-v16.pages.dev/",
-  "scope": "Vérification ciblée du véritable volet Import de fichiers JSON : choix d’un fichier de type générique et lecture locale, aucune publication.",
+  "scope": "Test final du véritable sélecteur de fichiers JSON Android et du message de chargement local, sans publication.",
   "launch_on_update": true,
   "note": "Chromium Parent bureau et mobile. Aucun clic Publier, aucune écriture Firebase.",
-  "checkVersion": "controle-import-json-android-20261114-final"
+  "checkVersion": "controle-import-json-android-20261114-final-v2"
 }
