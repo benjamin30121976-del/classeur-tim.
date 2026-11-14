@@ -135,11 +135,11 @@
   if(!s.trim())return null;
   if(/enonce (?:du|de|n.est pas)|le professeur a demande|page \d+.*manu|reproduire le devoir/.test(c))return null;
   if(/thales|thal[eè]s|parallele|align[eé]|droites? \(|\b(?:AM|AN|AD|AE)\s*\/\s*(?:AB|AC)\b/i.test(c)||
-    (/thales|thal[eè]s/.test(h)&&/triangle|rapport|reciproque|segment|angles?|droites?|align|parallele|position/i.test(c))){
+    (/thales|thal[eè]s/.test(h)&&/triangle|rapport|reciproque|segment|angles?|droites?|align|parallele|position|configuration|egalit|conclu|redaction|\babc\b|\bad\s*=|\bae\s*=|\bam\s*=|\ban\s*=/i.test(c))){
    return 'thales';
   }
   if(/pythagore|hypotenuse|triangle (?:[A-Z]{3} )?rectangle|nature du triangle|triangle .*cotes|triangle .*angles|diagonale/i.test(c)||
-    (/pythagore|triangle rectangle/.test(h)&&/triangle|longueur|perimetre|rectangle|cotes?|hypotenuse|calcul/i.test(c))){
+    (/pythagore|triangle rectangle/.test(h)&&/triangle|longueur|perimetre|aire|rectangle|cotes?|hypotenuse|calcul|nature/i.test(c))){
    return 'triangle';
   }
   if(/rectangle|potager rectangulaire|contour d.un cadre|perimetre de l.affiche|affiche rectangulaire/i.test(c)||
