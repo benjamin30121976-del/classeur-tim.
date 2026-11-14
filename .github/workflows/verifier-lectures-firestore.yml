@@ -3,6 +3,10 @@ on:
   pull_request:
     paths:
       - 'boot.js'
+      - 'worker/firestore.mjs'
+      - 'worker/server.mjs'
+      - 'worker/test/firestore-quota.test.mjs'
+      - 'worker/test/course-fallback.test.mjs'
       - 'tools/test/firestore-reads-budget.test.mjs'
       - '.github/workflows/verifier-lectures-firestore.yml'
       - '.github/workflows/verifier-histoire-geographie.yml'
@@ -28,7 +32,10 @@ jobs:
       - name: Vérifier le code d'ouverture sans accès aux données réelles
         run: |
           node --check boot.js
+          node --check worker/firestore.mjs
+          node --check worker/server.mjs
           node --test tools/test/firestore-reads-budget.test.mjs
+          node --test worker/test/firestore-quota.test.mjs worker/test/course-fallback.test.mjs
       - name: Tester les règles de protection du compte Tim
         run: |
           node --test functions/test/grading.test.mjs
