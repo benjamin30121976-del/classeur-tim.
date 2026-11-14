@@ -54,6 +54,14 @@ const pyth={id:'M26PYT1001',kind:'school',subject:'Mathématiques',title:'Archiv
      missing:t.questions.map((q,i)=>({prompt:q.prompt,fig:figures[i]})).filter(x=>!x.fig).map(x=>x.prompt.slice(0,110))};
    }),tasks);
    if(device==='android')console.log('BANQUE_230_FIGURES '+JSON.stringify(inventory));
+   for(const id of ['MT05','MT06','MT07','MT08','MT09','MT14','MT15','MT16','MT18','MT21','MT22']){
+    const item=inventory.find(x=>x.id===id);
+    assert.equal(item?.withFigure,10,id+' : il manque une figure dans un exercice de géométrie');
+   }
+   for(const id of ['MT01','MT02','MT03','MT04','MT10','MT11','MT12','MT13','MT19','MT20']){
+    const item=inventory.find(x=>x.id===id);
+    assert.equal(item?.withFigure,0,id+' : les calculs sans géométrie ne doivent pas recevoir de figure inutile');
+   }
    const direct=await page.evaluate(({bd,original,pyth})=>{
     const b=bd.questions.map((_,i)=>window.TIM_BONUS_FIGURES.render(bd,i));
     const bis=original.map(ex=>({
@@ -103,6 +111,11 @@ const pyth={id:'M26PYT1001',kind:'school',subject:'Mathématiques',title:'Archiv
     figure:el.getBoundingClientRect().width,container:el.parentElement.getBoundingClientRect().width
    })));
    assert(widths.every(v=>v.figure<=v.container+2),'Un schéma déborde sur le téléphone.');
+   const output=path.join(dir,'browser-results','animations-exercices');
+   fs.mkdirSync(output,{recursive:true});
+   await page.locator('#exercise-detail .q').first().screenshot({
+    path:path.join(output,'devoir-thales-question1-'+device+'.png'),animations:'disabled'
+   });
    console.log('OK '+device+': 10/10 devoir Thalès, 29/30 BIS (une question sur le manuel sans figure), 3/3 archive Pythagore ; rendu Exercices 10/10 ; aucune tentative.');
    await page.close();
   }
