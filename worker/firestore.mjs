@@ -49,6 +49,25 @@ function unwrapNested(x){
  }
  return x;
 }
+/* Diagnostic en lecture seule, strictement réservé au Parent par le serveur.
+   Ne lit aucun corps de réponse et ne retourne ni document, ni jeton, ni secret.
+   404 sur la sonde inexistante est une réponse normale de l'API Firestore. */
+export async function inspectFirestoreRead(accessToken,transport=fetch){
+ const collection=new URL(dbRoot+'/hgTrainingAttempts');
+ collection.searchParams.set('pageSize','1');
+ async function status(url){
+  try{
+   const response=await transport(url,{method:'GET',headers:{
+    Authorization:'Bearer '+accessToken,'Cache-Control':'no-store'
+   }});
+   return Number.isInteger(response?.status)?response.status:0;
+  }catch{return 0;}
+ }
+ const documentHttpStatus=await status(dbRoot+'/__tim_health__/readonly_probe');
+ const collectionHttpStatus=await status(collection);
+ return {documentHttpStatus,collectionHttpStatus,readOnly:true};
+}
+
 export async function firestore(env){
  const token=await getFirestoreAccessToken(env);
  async function request(method,endpoint,body,transaction){
@@ -95,7 +114,7 @@ export async function firestore(env){
   if(!res)throw new ApiFault(502,'firestore-commit-error');
   return res;
  }
- return {get,list,transaction,commit,docName};
+ return {get,list,transaction,commit,docName,probe:()=>inspectFirestoreRead(token)};
 }
 export function createWrite(path,data,transform=[]){
  return {update:asDocument(path,data),currentDocument:{exists:false},...(transform.length?{updateTransforms:transform}:{})};
