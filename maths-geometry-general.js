@@ -141,7 +141,7 @@
    return 'thales';
   }
   if(/pythagore|hypotenuse|triangle (?:[A-Z]{3} )?rectangle|nature du triangle|triangle .*cotes|triangle .*angles|diagonale/i.test(c)||
-    (/pythagore|triangle rectangle/.test(h)&&/triangle|longueur|perimetre|aire|rectangle|cotes?|hypotenuse|calcul|nature/i.test(c))){
+    (/pythagore|triangle rectangle|contraposee/.test(h)&&/triangle|longueur|perimetre|aire|rectangle|cotes?|hypotenuse|calcul|nature|carre du cote/i.test(c))){
    return 'triangle';
   }
   if(/rectangle|potager rectangulaire|contour d.un cadre|perimetre de l.affiche|affiche rectangulaire/i.test(c)||
