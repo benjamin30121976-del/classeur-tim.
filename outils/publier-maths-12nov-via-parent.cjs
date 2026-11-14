@@ -23,7 +23,10 @@ async function question10Snapshot(page){
    }catch(error){return {name,error:String(error?.code||'read-failed').slice(0,90)};}
   }));
   const failed=records.filter(x=>x.error);
-  if(failed.length)return {error:failed.map(x=>x.name+':'+x.error).join(', ')};
+  if(failed.length)return {error:failed.map(x=>x.name+':'+x.error).join(', '),
+   attemptReadable:!records[1].error,attemptExists:Boolean(records[1].exists),
+   privateReadable:!records[2].error,privateExists:Boolean(records[2].exists),
+   exerciseReadable:!records[0].error,exerciseExists:Boolean(records[0].exists)};
   return {
    payloadJson:records[0].payloadJson,
    flags:{attempt:records[1].exists,privateAttempt:records[2].exists,
@@ -35,7 +38,12 @@ async function checkOrFixQuestion10(page,mode,pack){
  if(mode!=='verify'&&mode!=='fix')throw Error('Mode de contrôle invalide');
  const expected=pack.exercises.find(x=>x.id==='MTH12_03');
  const before=await question10Snapshot(page);
- if(before.error)throw Error('STOP : lectures Firebase refusées : '+before.error+'. Aucune écriture.');
+ if(before.error){
+  console.log('QUESTION10 : exercice lisible='+before.exerciseReadable+', présent='+before.exerciseExists+
+   ' ; tentative lisible='+before.attemptReadable+', existante='+before.attemptExists+
+   ' ; copie privée lisible='+before.privateReadable+', existante='+before.privateExists+'.');
+  throw Error('STOP : lectures Firebase refusées : '+before.error+'. Aucune écriture.');
+ }
  const plan=planQuestion10(before.payloadJson,expected,before.flags);
  console.log('QUESTION10 PRECONTROLE : '+plan.status+' ; tentatives présentes : '+Boolean(before.flags.attempt||before.flags.privateAttempt)+'.');
  if(plan.status==='already-corrected'){
