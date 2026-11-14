@@ -162,7 +162,7 @@
   const prompt=String(q.q||q.prompt||'');
   const hint=String(ex.title||'')+' '+String(ex.topic||'')+' '+String(ex.chapter||'');
   let shared='';
-  if((/quel est son|quel est le (?:perimetre|périmètre)/i.test(prompt))&&ex.questions?.length){
+  if((/quel(?:le)? est (?:son|sa)|quel est le (?:perimetre|périmètre)/i.test(prompt))&&ex.questions?.length){
    shared=String(ex.questions.find(x=>/AB\s*=\s*[0-9]|triangle\s+[A-Z]{3}/i.test(x.q||x.prompt||''))?.q||'');
   }
   return renderPrompt(prompt,hint,shared);
