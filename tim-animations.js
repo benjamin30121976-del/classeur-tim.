@@ -119,7 +119,11 @@
   if(saved?.correctionStatus==='pending-parent'||saved?.correctionLocked===true)return Promise.resolve();
   if(window.TIM_EXERCISE?.school?.(ex))return Promise.resolve();
   const kind=ex?.kind;
-  const media=xp===2.5?'plus2half':kind==='daily'?
+  // Les fichiers samedi et bonus existent déjà : les déclencher seulement
+  // lorsque le serveur confirme le gain exact pour le défi correspondant.
+  const media=kind==='weekly'&&xp===10?'saturday':
+   (kind==='bonus-parent'||kind==='bonus-day')&&xp===5?'bonus':
+   xp===2.5?'plus2half':kind==='daily'?
    (xp===3?'plus3':xp===2?'plus2':xp===1?'plus1':xp===0?'zero':xp===-1?'minus1':null):
    kind==='sunday'&&xp===20?'sunday':null;
   return play(media||'reward',{xp,score:Number(saved.score),total:Number(saved.total),
