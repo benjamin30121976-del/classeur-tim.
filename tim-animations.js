@@ -6,6 +6,9 @@
  const root='./assets/animations/';
  const files={
   daily:'../loup-defi-original.webp',
+  reward:'../loup-defi-original.webp',
+  weeklyPartial:'../loup-weekly-anime.webp',
+  sundayPartial:'../loup-sunday-anime.webp',
   opening:'Tim_Ouverture_Exercice_Splash_Tan_Tan_V6_Moins_Aigue.mp4',
   plus3:'Tim_Animation_3XP_Mouche.mp4',
   plus2:'Tim_Animation_2XP_Grattage.mp4',
@@ -18,7 +21,8 @@
   sundayCard:'Tim_Defi_Du_Dimanche_20XP_Original.gif',
   bonus:'Tim_Defi_Bonus_5XP.gif'
  };
- const dur={minus1:5000,saturday:6500,sunday:6500,bonus:6500};
+ const dur={minus1:5000,saturday:6500,sunday:6500,bonus:6500,
+  weeklyPartial:3500,sundayPartial:3500,reward:3200};
  const url=key=>files[key]?root+files[key]:'';
  const motionOK=()=>!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
  let active=null;
@@ -119,14 +123,17 @@
   if(saved?.correctionStatus==='pending-parent'||saved?.correctionLocked===true)return Promise.resolve();
   if(window.TIM_EXERCISE?.school?.(ex))return Promise.resolve();
   const kind=ex?.kind;
-  // Les fichiers samedi et bonus existent déjà : les déclencher seulement
-  // lorsque le serveur confirme le gain exact pour le défi correspondant.
-  const media=kind==='weekly'&&xp===10?'saturday':
-   (kind==='bonus-parent'||kind==='bonus-day')&&xp===5?'bonus':
-   xp===2.5?'plus2half':kind==='daily'?
-   (xp===3?'plus3':xp===2?'plus2':xp===1?'plus1':xp===0?'zero':xp===-1?'minus1':null):
-   kind==='sunday'&&xp===20?'sunday':null;
-  return play(media||'reward',{xp,score:Number(saved.score),total:Number(saved.total),
+  // Une animation pour chaque résultat possible, sans annoncer un gain fictif :
+  // les vidéos/GIF avec un nombre fixe ne servent que pour ce nombre exact ;
+  // les gains intermédiaires utilisent les WebP animés déjà présents.
+  const shared=xp===2.5?'plus2half':xp===2?'plus2':xp===1?'plus1':
+   xp===0?'zero':xp===-1?'minus1':'reward';
+  const daily=xp===3?'plus3':shared;
+  const media=kind==='daily'?daily:
+   kind==='weekly'?(xp===10?'saturday':(xp===7||xp===4)?'weeklyPartial':shared):
+   kind==='sunday'?(xp===20?'sunday':(xp===14||xp===8)?'sundayPartial':shared):
+   (kind==='bonus-parent'||kind==='bonus-day')&&xp===5?'bonus':shared;
+  return play(media,{xp,score:Number(saved.score),total:Number(saved.total),
    kind:kind==='training'?'training':kind?'challenge':'bonus'});
  }
  // Garde les visuels d'accueil originaux en cas de média absent.
