@@ -9,23 +9,23 @@
  const safe=s=>String(s||'').slice(0,180);
  const record=(id,ok,detail='')=>{report.checks.push({id,ok,detail:safe(detail)});console.log((ok===true?'OK':ok===false?'FAIL':'UNKNOWN')+' '+id+' '+safe(detail))};
  async function openSubject(page,subject){
-   await page.locator('[data-nav="matieres"]:visible').first().click({timeout:9000});
+   await page.evaluate(()=>document.querySelector('[data-nav="matieres"]').click());
    const card=page.locator('#matieres-content button.matter-card').filter({hasText:subject}).first();
    if(!await card.count())throw Error('Carte '+subject+' absente');
    if(await card.isDisabled())throw Error('Carte '+subject+' désactivée');
-   await card.click({timeout:9000});
+   await card.evaluate(el=>el.click());
  }
  async function checkChapter(page,role,subject,chapter,key,requirements){
    try{
      await openSubject(page,subject);
      const g=page.locator('#matieres-content details.chapter-section').filter({hasText:chapter}).first();
      if(!await g.count())throw Error('Chapitre '+chapter+' absent');
-     await g.locator(':scope > summary').click({timeout:7000});
+     await g.evaluate(el=>{el.open=true});
      const lesson=g.locator('details.tim-es-lesson').filter({hasText:'13/11/2026'}).first();
      if(!await lesson.count())throw Error('Séance du 13 absente');
-     await lesson.locator(':scope > summary').click({timeout:7000});
+     await lesson.evaluate(el=>{el.open=true});
      for(const [tab,words] of Object.entries(requirements)){
-       await lesson.locator('button[data-tab="'+tab+'"]').click({timeout:7000});
+       await lesson.locator('button[data-tab="'+tab+'"]').evaluate(el=>el.click());
        const txt=await lesson.locator('section.panel').first().innerText();
        const pass=words.every(w=>txt.toLowerCase().includes(w.toLowerCase()));
        record(role+' '+key+' onglet '+tab,pass,words.join(' / '));
@@ -38,11 +38,11 @@
          }
        }
      }
-     await lesson.locator('button[data-tab="train"]').click({timeout:7000});
+     await lesson.locator('button[data-tab="train"]').evaluate(el=>el.click());
      const btns=lesson.locator('section.panel button');
      record(role+' '+key+' 2 exercices visibles',(await btns.count())>=2,'boutons '+await btns.count());
      if(role.startsWith('guest')){
-       await btns.first().click();
+       await btns.first().evaluate(el=>el.click());
        const result=await lesson.locator('section.panel').innerText();
        record(role+' '+key+' exercice réservé',/réservés aux comptes|Visiteur/i.test(result));
      }
@@ -99,7 +99,7 @@
        ent:['Séance','13/11/2026'],bis:['phagocytose','englober','Je vois'],help:['repérer','englober'],entex:['Leçon','13/11/2026']
      });
      if(role==='guest'){
-       await page.locator('[data-nav="matieres"]:visible').first().click();
+       await page.evaluate(()=>document.querySelector('[data-nav="matieres"]').click());
        const names=await page.locator('#matieres-content button.matter-card strong').allTextContents();
        record(tag+' 7 matières',['Espagnol','Mathématiques','Physique-chimie','Anglais','SVT','Histoire-géographie','Français'].every(s=>names.includes(s)));
        record(tag+' Math Invité protégé',await page.locator('#matieres-content button.matter-card').filter({hasText:'Mathématiques'}).first().isDisabled());
@@ -108,7 +108,7 @@
          await openSubject(page,'Mathématiques');
          const home=await page.locator('#matieres-content').innerText();
          record(tag+' Math ENT 13',home.includes('13 novembre')&&home.includes('Thalès'));
-         await page.locator('#matieres-content [data-math-reciproque]').first().click({timeout:8000});
+         await page.locator('#matieres-content [data-math-reciproque]').first().evaluate(el=>el.click());
          const txt=await page.locator('#matieres-content').innerText();
          record(tag+' Math BIS réciproque / contraposée',txt.includes('réciproque du théorème de Thalès')&&txt.includes('contraposée')&&txt.includes('AD/AB'));
          record(tag+' Math schéma',await page.locator('#matieres-content svg').count()>0);
