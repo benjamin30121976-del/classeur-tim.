@@ -649,9 +649,13 @@ function renderExerciseIndex(){
   if(exerciseMode==='homework-bonus'){
    root.className='clicklist';
    document.getElementById('exercise-count').textContent='Exercices bonus des devoirs · 0 XP';
-   toolbar.append(button('← Tous les exercices',()=>{exerciseMode='';renderExerciseIndex();},'group-back'));
+   const back=button('← Tous les exercices',()=>{exerciseMode='';renderExerciseIndex();},'group-back');
+   back.style.color='#e6efff';toolbar.append(back);
    const homework=bases.filter(e=>e.homeworkBonus===true);
-   if(!homework.length)root.append(notice('Aucun exercice bonus de devoirs n’est encore publié. Les exercices préparés ensemble apparaîtront ici, sans modifier tes devoirs de l’ENT.'));
+   if(!homework.length){
+    const empty=notice('Aucun exercice bonus de devoirs n’est encore publié. Les exercices préparés ensemble apparaîtront ici, sans modifier tes devoirs de l’ENT.');
+    empty.style.color='#243c5b';root.append(empty);
+   }
    else for(const ex of homework)root.append(cardAction(ex.title,(ex.subject||'Espagnol')+' · Exercice de révision · 0 XP',exerciseDescription(ex),()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));
    return;
   }
