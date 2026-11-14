@@ -16,6 +16,8 @@ permissions:
   contents: read
 jobs:
   simulation-parent-sans-ecriture:
+    # Simulation Parent sur demande, pas après chaque déploiement.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 12
     env:
