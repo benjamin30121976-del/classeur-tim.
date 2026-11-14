@@ -9,6 +9,7 @@ import {SVT_QCM,SVT_WRITTEN} from './svt-questions.mjs';
 import {HG_QCM,HG_WRITTEN} from './hg-questions.mjs';
 import {FR_QCM,FR_WRITTEN} from './fr-questions.mjs';
 import {sameShortAnswer,numericEquivalent} from './short-answer-equivalence.mjs';
+import {numericMathAnswerMatches} from './math-answer-equivalence.mjs';
 
 const n=(s)=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
  .replace(/[¿?¡!.,;:]/g,'').replace(/[’‘]/g,"'").replace(/\s+/g,' ').trim();
@@ -69,7 +70,7 @@ const B={
      'Un rectangle mesure '+a+' cm de long et '+b+' cm de large. Calcule son aire et explique ta méthode.',
      ['Aire = longueur × largeur','Périmètre = 2 × (longueur + largeur)','Utiliser Pythagore'],0,[a,b,'×',v],v,'cm²',
      'L’aire d’un rectangle est le produit de la longueur par la largeur. Ici : '+a+' × '+b+' = '+v+' cm².',
-     {diagram:'rectangle',dimensions:[a,b],lesson:'MBIS19'});},
+     {diagram:'rectangle',dimensions:[a,b],lesson:null});},
    s=>{const k=1+s%3,a=3*k,b=4*k,c=5*k;return reason(
      'ABC est un triangle rectangle en A. AB = '+a+' cm et AC = '+b+' cm. Calcule BC, l’hypoténuse.',
      ['Théorème de Pythagore','Théorème de Thalès','Aire du triangle'],0,[a*a,b*b,'+',c*c],c,'cm',
@@ -93,7 +94,7 @@ const B={
      'Le cadre d’une affiche rectangulaire mesure '+a+' cm sur '+b+' cm. Quelle longueur totale de bord faut-il prévoir ?',
      ['Calculer le périmètre : 2 × (L + l)','Calculer l’aire : L × l','Additionner seulement L et l'],0,[a,b,'+',2,'×',v],v,'cm',
      'Le bord correspond au périmètre du rectangle : 2 × ('+a+' + '+b+') = '+v+' cm.',
-     {diagram:'rectangle',dimensions:[a,b],lesson:'MBIS19'});}
+     {diagram:'rectangle',dimensions:[a,b],lesson:null});}
   ]
  },
  en:{
@@ -223,7 +224,25 @@ const BLUEPRINT=[
  [['ma','reason'],['pc','fill'],['es','short'],['pc','mc'],['ma','fill'],['es','mc'],['ma','reason'],['pc','short'],['es','fill'],['ma','short']],
  [['pc','reason'],['es','fill'],['ma','short'],['pc','mc'],['es','short'],['ma','reason'],['pc','fill'],['es','mc'],['pc','short'],['ma','fill']]
 ];
-function lessonFor(q,subject){return q.lesson||(subject==='es'?'L14':subject==='ma'?'MBIS13':subject==='en'?'EN_BIS07':subject==='sv'?'SVT_BIS07':subject==='hg'?'HG_BIS08':subject==='fr'?'FR_BIS07':'PC_BIS01');}
+function lessonFor(q,subject){
+ // La référence doit correspondre à la notion réellement demandée.
+ // Aucun cours du professeur n'est inventé pour le périmètre.
+ if(q.lesson!==undefined)return q.lesson;
+ if(subject==='ma'){
+  const prompt=n(q.q);
+  if(/rectangle|affiche|perimetre|aire d.un rectangle/.test(prompt))return null;
+  if(/fraction|\d+\/\d+/.test(prompt))return 'MBIS02';
+  if(/\bpuissance\b|[²³⁴]/.test(q.q))return 'MBIS03';
+  if(/developpe|distributivite/.test(prompt))return 'MBIS11';
+  if(/reduis|\bx\b|\d+x/.test(prompt))return 'MBIS10';
+  if(/programme de calcul/.test(prompt))return 'MBIS13';
+  if(/calcule : \(−|calcule : \(-/.test(prompt))return 'MBIS01';
+  return 'MBIS19'; // Automatismes numériques uniquement.
+ }
+ return subject==='es'?'L14':subject==='en'?'EN_BIS07':
+  subject==='sv'?'SVT_BIS07':subject==='hg'?'HG_BIS08':
+  subject==='fr'?'FR_BIS07':'PC_BIS01';
+}
 /* Deux questions d'anglais par défi quotidien à partir du 16 novembre.
    Préserver les questions et copies jusqu'au 15 novembre.
    Anglais ne paraît que dans les missions à partir du 16 novembre. */
@@ -367,7 +386,7 @@ export function mixedMission(id){
   level:kind==='daily'?'Mission quotidienne':kind==='weekly'?'Contrôle du samedi':'Grand contrôle du dimanche',
   subject:'Défis',lesson:questions[0].lessonId,kind,category:'challenge',period,
   questionBank:'mixed-202611-v1',
-  realLessons:[...new Set(questions.map(q=>q.lessonId))],
+  realLessons:[...new Set(questions.map(q=>q.lessonId).filter(Boolean))],
   questions};
 }
 export function mixedPlan(now=new Date()){
@@ -388,19 +407,44 @@ export function publicMixedMission(mission){
   return publicFields;
  })};
 }
+function acceptedSpanishSchoolPhrase(actual,expected){
+ const expectedSimple=n(expected),spoken=n(actual)
+  .replace(/[¿?¡!.,;:]/g,'').replace(/\s+/g,' ').trim();
+ // Traduction « Je ne vais jamais en cours le samedi » : plusieurs
+ // ordres naturels, mais une négation et les éléments de sens obligatoires.
+ if(expectedSimple==='nunca voy a clase el sabado'){
+  if(/\b(?:siempre|tambien|pero|hoy|manana)\b/.test(spoken))return false;
+  if(!/^(?:(?:nunca|jamas) voy|no voy)\b/.test(spoken))return false;
+  if(!/\b(?:nunca|jamas)\b/.test(spoken)||!/\b(?:clase|colegio|instituto)\b/.test(spoken)||
+     !/\bsabados?\b/.test(spoken))return false;
+  return /\b(?:a clase|al colegio|al instituto)\b/.test(spoken);
+ }
+ if(expectedSimple==='voy al colegio'){
+  return /^voy (?:al colegio|al instituto|a clase)$/.test(spoken);
+ }
+ return false;
+}
 function valueMatches(actual,expected,alternatives=[],subject=''){
+ if(subject==='Mathématiques'&&numericMathAnswerMatches(actual,expected)){
+  return true;
+ }
  if(subject==='Mathématiques'){
   const num=/^[+−-]?(?:\d+(?:[.,]\d+)?|[.,]\d+)$/;
   if(num.test(String(actual).trim())&&num.test(String(expected).trim()))
    return numericEquivalent(actual,expected);
  }
  if(subject==='Espagnol'){
+  if(acceptedSpanishSchoolPhrase(actual,expected))return true;
   const a=n(actual).replace(/\s*([+\-=×÷*/²])\s*/g,'$1');
   return [expected,...alternatives].some(x=>a===n(x).replace(/\s*([+\-=×÷*/²])\s*/g,'$1'));
  }
  return sameShortAnswer(actual,expected,alternatives,{english:subject==='Anglais'});
 }
 function calcCorrect(input,q){
+ // Un calcul juste ne doit pas être refusé parce qu'il utilise une autre
+ // décomposition : 6+6+6+6=24 et 2×(6+6)=24 prouvent le même périmètre.
+ if(q.subject==='Mathématiques'&&/[×*÷/+]/.test(String(input))&&
+    numericMathAnswerMatches(input,q.answer,q.q))return true;
  const s=n(input).replace(/[−–—]/g,'−').replace(/,/g,'.').replace(/\^2/g,'²');
  if(s.length<5||!q.parts)return false;
  const present=v=>new RegExp('(^|[^\\d])'+String(v)+'([^\\d]|$)').test(s);
@@ -471,9 +515,15 @@ export function gradeMixedMission(mission,responses,translationsUsed=[],{allowIn
     methodCorrect:methodOk,calculationCorrect:calcOk,conclusionCorrect:conclusionOk,
     skill:q.skill,subject:q.subject,lessonId:q.lessonId,explanation:q.why};
   }
-  const correct=q.type==='mc'?raw===String(q.right):valueMatches(raw,q.right,q.also||[],q.subject);
+  const correct=q.type==='mc'?raw===String(q.right):
+   q.subject==='Mathématiques'&&numericMathAnswerMatches(raw,q.right,q.q)||
+   valueMatches(raw,q.right,q.also||[],q.subject);
   const plain=value=>String(value??'').toLowerCase().replace(/[¿?¡!.,;:]/g,'').replace(/\s+/g,' ').trim();
-  const exact=q.type==='text'?[q.right,...(q.also||[])].some(x=>plain(raw)===plain(x)):correct;
+  const exact=q.type==='text'?(
+    [q.right,...(q.also||[])].some(x=>plain(raw)===plain(x))||
+    q.subject==='Espagnol'&&acceptedSpanishSchoolPhrase(raw,q.right)&&
+     (!/sabado/i.test(n(q.right))||/sábados?/.test(raw))
+   ):correct;
   // En espagnol : accent ou ñ oubliés = demi-point, et non mauvaise
   // compréhension ; les autres matières acceptent les accents français.
   const points=!correct?0:q.subject==='Espagnol'&&!exact?0.5:1;
