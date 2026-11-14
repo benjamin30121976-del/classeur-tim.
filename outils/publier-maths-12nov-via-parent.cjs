@@ -53,6 +53,22 @@ async function bankSnapshot(page){
   publicExercise:server.publicExercise,answerKey:server.answerKey,
   releasedCorrection:server.releasedCorrection}};
 }
+async function serverCorrectionReady(page){
+ // Appel sans autorisation d'écrire : doit être rejeté précisément par
+ // l'action serveur, ce qui prouve qu'elle est réellement déployée.
+ return page.evaluate(async()=>{
+  const {getApp}=await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js');
+  const {getAuth}=await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js');
+  const token=await getAuth(getApp()).currentUser.getIdToken();
+  const response=await fetch('/api/tim',{method:'POST',cache:'no-store',
+   headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+   body:JSON.stringify({action:'correctMathNov12Question10',payload:{}})});
+  const body=await response.json();
+  if(response.status!==403||body?.error!=='question10-approval-required')
+   throw Error('STOP : correcteur serveur non déployé ou refus inattendu ; aucune écriture.');
+  return true;
+ });
+}
 async function checkOrFixQuestion10(page,mode,pack){
  if(mode!=='verify'&&mode!=='fix')throw Error('Mode de contrôle invalide');
  const expected=pack.exercises.find(x=>x.id==='MTH12_03');
@@ -63,29 +79,30 @@ async function checkOrFixQuestion10(page,mode,pack){
   console.log('QUESTION10 : déjà correcte dans Firebase. Aucune écriture.');
   return;
  }
+ await serverCorrectionReady(page);
  if(mode==='verify'){
   console.log('QUESTION10 : modification exactement ciblée possible. Précontrôle lecture seule : aucune écriture.');
   return;
  }
- // Vérification répétée immédiatement avant la transaction, côté serveur.
+ // Répéter le précontrôle juste avant l'unique appel autorisé.
  const fresh=await bankSnapshot(page);
  if(fresh.payloadJson!==before.payloadJson)throw Error('STOP : source changée depuis le précontrôle.');
  planQuestion10(fresh.payloadJson,expected,fresh.flags);
- await page.evaluate(async values=>{
+ const outcome=await page.evaluate(async()=>{
   const {getApp}=await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-app.js');
-  const {getFirestore,doc,runTransaction}=await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-firestore.js');
-  const db=getFirestore(getApp());
-  const refs=['exercises','attempts','privateAttempts'].map(name=>doc(db,name,'MTH12_03'));
-  await runTransaction(db,async tx=>{
-   const saved=await Promise.all(refs.map(ref=>tx.get(ref)));
-   if(!saved[0].exists()||saved[0].data()?.payloadJson!==values.before)
-    throw Error('STOP : document modifié depuis le précontrôle ; aucune écriture.');
-   if(saved[1].exists()||saved[2].exists())
-    throw Error('STOP : nouvelle tentative ou copie privée présente ; aucune écriture.');
-   // Une seule mise à jour : le champ payloadJson du document existant.
-   tx.update(refs[0],{payloadJson:values.after});
-  });
- },{before:before.payloadJson,after:plan.nextPayload});
+  const {getAuth}=await import('https://www.gstatic.com/firebasejs/13.2.0/firebase-auth.js');
+  const token=await getAuth(getApp()).currentUser.getIdToken();
+  const response=await fetch('/api/tim',{method:'POST',cache:'no-store',
+   headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+   body:JSON.stringify({action:'correctMathNov12Question10',
+    payload:{approval:'MTH12_03_Q10_PARENT_APPROVED_20261114'}})});
+  const body=await response.json();
+  if(!response.ok)throw Error('STOP : serveur : '+String(body?.error||response.status));
+  if(!['updated','already-corrected'].includes(body?.data?.status))
+   throw Error('STOP : confirmation de correction manquante.');
+  return body.data.status;
+ });
+ console.log('QUESTION10 SERVEUR : '+outcome+'.');
  const after=await bankSnapshot(page);
  const verified=planQuestion10(after.payloadJson,expected,after.flags);
  assert.equal(verified.status,'already-corrected','Question 10 non confirmée après mise à jour.');
