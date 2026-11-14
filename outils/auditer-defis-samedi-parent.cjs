@@ -93,6 +93,15 @@ module.exports=async function auditerDefisParent(page,check){
       (q.q.includes('charge positive')?'cation':q.q.includes('solide qui apparaît')?'precipite':
        q.q.includes('apparition de bulles')?'gaz':'');
     const possiblePhysics=Boolean(physicsKey)&&lower(literal).includes(physicsKey);
+    const numberTokens=literal.match(/(?:^|[^\\d])([+-]?\\d+(?:[.,]\\d+)?)(?=[^\\d]|$)/g)||[];
+    const lastMatch=numberTokens.length?numberTokens[numberTokens.length-1].match(/[+-]?\\d+(?:[.,]\\d+)?/):null;
+    const finalNumberCorrect=q.subject==='Mathématiques'&&q.type==='text'&&
+     lastMatch&&Number(lastMatch[0].replace(',','.'))===expectedNumber;
+    const span=lower(literal).split(' ').filter(Boolean);
+    const detailedSpanish=q.subject==='Espagnol'&&q.q.includes('Je ne vais jamais')&&
+     span.includes('voy')&&(span.includes('nunca')||span.includes('jamas'))&&
+     (span.includes('clase')||span.includes('colegio')||span.includes('instituto'))&&
+     (span.includes('sabado')||span.includes('sabados'));
     const methodsButNotCalculated=q.type==='reason'&&a.methodCorrect===true&&a.conclusionCorrect===true&&a.calculationCorrect!==true;
     console.log('ÉNONCÉ PUBLIC '+copy.id+' Q'+String(i+1).padStart(2,'0')+': '+q.q);
     console.log('AUDIT '+copy.id+' Q'+String(i+1).padStart(2,'0')+
@@ -101,7 +110,8 @@ module.exports=async function auditerDefisParent(page,check){
       ', nombre-math-correct-refusé='+numericallyRight+', écriture-algébrique-à-revoir='+equivalentAlgebra+
       ', formule-math-équivalente='+equivalentAlgebra+', réponse-modèle-incluse-dans-phrase='+containsExpected+
       ', calcul-complet-math-juste-refusé='+correctCalculationRefused+', nombre-attendu-présent='+numericResultMentioned+
-      ', formulation-espagnol-possible='+possibleSpanish+', concept-physique-présent='+possiblePhysics+
+      ', formulation-espagnol-possible='+possibleSpanish+', contexte-espagnol-complet='+detailedSpanish+
+      ', dernier-nombre-correct='+Boolean(finalNumberCorrect)+', concept-physique-présent='+possiblePhysics+
       ', méthode-conclusion-reconnues='+methodsButNotCalculated+', points-non-nuls='+Boolean(Number(a.points)>0)+'.');
    }
   }
