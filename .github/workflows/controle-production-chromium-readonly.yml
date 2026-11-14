@@ -33,4 +33,6 @@ jobs:
         env:
           NODE_PATH: /tmp/tim-readonly/node_modules
           TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
+          TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+          TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
         run: node tools/test/verification-bonus-perimetres-publie.readonly.cjs
