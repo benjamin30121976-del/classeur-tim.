@@ -80,8 +80,8 @@ function open(ex,ctx={}){
   box.append(E('h3',parent?'Essai Parent — méthode du défi':'Ma méthode avant l’interrogation'));
   const day=new Date().getDay();box.append(E('p','Conseil du jour : '+advice[(day+6)%7],'mix-advice'));
   const list=E('ol');
-  for(const s of ['Je lis la consigne et je repère ce qui est demandé.','Je cherche sur mon brouillon avant de rédiger.','J’écris mon calcul ou mon raisonnement, puis ma conclusion.','Je passe une question difficile et j’y reviens.','Je relis ma copie avant de valider.'])list.append(E('li',s));
-  box.append(list,E('p','Prépare une feuille, un stylo et éventuellement une règle. Aucune aide ne donne les réponses pendant le défi.','mix-muted'));
+  for(const s of ['Je lis la question : quel résultat doit-on trouver ?','Je fais mon calcul sur le brouillon. Je peux utiliser la méthode que je connais.','Je termine par une phrase courte avec l’unité, si nécessaire.','Si je bloque, je passe et je reviens avant de valider.'])list.append(E('li',s));
+  box.append(list,E('p','Tu peux écrire le même calcul de plusieurs façons correctes. Par exemple, pour le tour d’un rectangle, additionner les quatre côtés est aussi valable. Les résultats restent cachés jusqu’à la validation.','mix-muted'));
   if(parent)box.append(E('p','Tu peux répondre librement, même à quelques questions seulement, puis demander le corrigé. Tu pourras recommencer cet essai autant de fois que nécessaire, sans toucher au compte Tim.','mix-advice'));
   box.append(btn(parent?'Commencer mon essai Parent':'J’ai préparé mon brouillon — Commencer',
     ()=>{state.stage='quiz';showQuiz();},'mix-btn mix-primary'));
@@ -100,21 +100,23 @@ function open(ex,ctx={}){
    });box.append(group);
   }else if(q.type==='reason'){
    const current=decode(val);
-   box.append(E('p','1. Je choisis la méthode','mix-step-label'));
+   box.append(E('p','1. Je choisis ce que je dois faire','mix-step-label'));
+   if(q.subject==='Mathématiques'&&/rectangle|affiche/i.test(q.q))
+    box.append(E('p','Lis les mots du problème : te demande-t-on la surface intérieure ou la longueur du bord ?','mix-paper'));
    q.methods.forEach((method,k)=>{
     const line=E('label',undefined,'mix-option'),radio=E('input');
     radio.type='radio';radio.name='method-'+ex.id+'-'+i;radio.value=String(k);radio.checked=String(current.m??'')===String(k);
     radio.onchange=()=>{current.m=String(k);state.answers[i]=JSON.stringify(current);persist();};
     if(old||guest||serviceReadOnly)radio.disabled=true;line.append(radio,E('span',method));box.append(line);
    });
-   for(const [key,heading,placeholder] of [['c','2. Mon calcul et mes étapes','Je pose mon opération sur le brouillon, puis j’écris mon calcul…'],['s','3. Ma conclusion','Je rédige une phrase complète avec le résultat et l’unité…']]){
+   for(const [key,heading,placeholder] of [['c','2. J’écris mon calcul','Écris ton opération et ton résultat. Une autre méthode juste est acceptée.'],['s','3. Je fais une phrase-réponse','Écris ce que tu as trouvé, puis l’unité (cm, cm², etc.).']]){
     box.append(E('p',heading,'mix-step-label'));
     const field=E('textarea',undefined,'mix-textarea');field.rows=key==='c'?3:2;
     field.placeholder=placeholder;field.value=current[key]||'';field.disabled=!!old||guest||serviceReadOnly;
     field.oninput=()=>{current[key]=field.value;state.answers[i]=JSON.stringify(current);persist();};
     box.append(field);
    }
-   box.append(E('p','Utilise ton brouillon pour poser ton calcul avant de répondre.','mix-paper'));
+   box.append(E('p','Une méthode juste, un calcul juste et une phrase juste sont évalués séparément. Une étape réussie donne des points même si une autre est fausse.','mix-paper'));
   }else{
    const input=q.format==='short'?E('textarea',undefined,'mix-textarea'):E('input',undefined,'mix-input');
    if(q.format==='short')input.rows=3;else input.type='text';
@@ -239,9 +241,10 @@ function open(ex,ctx={}){
     item.append(E('p','Méthode choisie : '+String(a.methodResponse||'Non renseignée')));
     item.append(E('p','Mon calcul : '+String(a.calculationResponse||'')));
     item.append(E('p','Ma conclusion : '+String(a.conclusionResponse||'')));
-    item.append(E('p','Méthode : '+(a.methodCorrect?'bien choisie':'à revoir')+
-     ' · Calcul : '+(a.calculationCorrect?'correct':'à revoir')+
-     ' · Conclusion : '+(a.conclusionCorrect?'correcte':'à revoir'),'mix-muted'));
+    item.append(E('p','Méthode : '+(a.methodCorrect?'juste (+0,5 point)':'à revoir')+
+     ' · Calcul : '+(a.calculationCorrect?'juste (+0,25 point)':'à revoir')+
+     ' · Phrase-réponse : '+(a.conclusionCorrect?'juste (+0,25 point)':'à revoir'),'mix-muted'));
+    if(partial>0&&partial<1)item.append(E('p','Une partie de ta réponse est correcte : les points de cette étape sont conservés.','mix-advice'));
    }else{
     item.append(E('p','Ma réponse : '+(!String(a.response||'').trim()?'Sans réponse':
      q.type==='mc'?q.options?.[Number(a.response)]||a.response:a.response)));
@@ -249,7 +252,8 @@ function open(ex,ctx={}){
    }
    item.append(E('p','Explication : '+String(a.explanation||'Relis la leçon pour comprendre.')));
    const dg=draw(q,true);if(dg)item.append(dg);
-   item.append(E('p','À revoir : '+(q.lessonId||'leçon correspondante'),'mix-muted'));
+   item.append(E('p',q.lessonId?'Leçon à revoir : '+q.lessonId:
+    'À revoir : la méthode expliquée ci-dessus. Ce problème ne correspond pas à une leçon ENT identifiée.','mix-muted'));
    if(q.lessonId&&typeof window.TIM_PEDAGOGY_NAVIGATE==='function')
     item.append(btn('Ouvrir la leçon correspondante',()=>window.TIM_PEDAGOGY_NAVIGATE(q.subject,q.lessonId),'mix-link'));
    copy.append(item);
