@@ -425,9 +425,6 @@ function acceptedSpanishSchoolPhrase(actual,expected){
  return false;
 }
 function valueMatches(actual,expected,alternatives=[],subject=''){
- if(subject==='Mathématiques'&&numericMathAnswerMatches(actual,expected)){
-  return true;
- }
  if(subject==='Mathématiques'){
   const num=/^[+−-]?(?:\d+(?:[.,]\d+)?|[.,]\d+)$/;
   if(num.test(String(actual).trim())&&num.test(String(expected).trim()))
