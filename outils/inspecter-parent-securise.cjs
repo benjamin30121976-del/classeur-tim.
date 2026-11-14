@@ -132,6 +132,19 @@ async function inspect(browser,label,viewport){
       check(label+' import Parent disponible',await importPanel.count()===1);
       if(await importPanel.count()){
         await importPanel.evaluate(el=>el.open=true);
+        const diagnostic=await page.evaluate(async()=>{
+          const el=document.querySelector('details.v16-import');
+          const js=await fetch('./app.js?v=diagnostic-import-json-20261114',{cache:'no-store'}).then(r=>r.text()).catch(()=> '');
+          return {
+            summary:el?.querySelector('summary')?.textContent||'',
+            children:[...(el?.children||[])].map(x=>({tag:x.tagName,cls:String(x.className||''),inputs:x.querySelectorAll('input').length})),
+            innerHTML:(el?.innerHTML||'').slice(0,1500),
+            servedAppHasNewPicker:js.includes("Android peut déclarer un fichier .json"),
+            servedAppHasOldFilter:js.includes("packFile.accept='.json,application/json'"),
+            resources:performance.getEntriesByType('resource').filter(x=>/app\\.js|boot\\.js/.test(x.name)).map(x=>x.name).slice(-5)
+          };
+        });
+        console.log('DIAGNOSTIC IMPORT DOM '+label+' : '+JSON.stringify(diagnostic));
         const picker=importPanel.locator('input[type="file"]');
         const pickerCount=await picker.count();
         const attributes=pickerCount?await picker.first().evaluate(el=>({accept:el.getAttribute('accept'),label:el.getAttribute('aria-label'),type:el.type})):null;
