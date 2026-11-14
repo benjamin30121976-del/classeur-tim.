@@ -44,8 +44,13 @@ const site=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
      headers:{'Content-Type':'application/json',Authorization:'Bearer '+token},
      body:JSON.stringify({action:'getFirestoreReadDiagnostics',payload:{}})});
     const json=await response.json().catch(()=>({}));
+    const extra={};
+    for(const key of ['documentGoogleStatus','collectionGoogleStatus','documentGoogleReason',
+     'collectionGoogleReason','documentRetryAfterSeconds','collectionRetryAfterSeconds']){
+     if(json?.data&&Object.hasOwn(json.data,key))extra[key]=json.data[key];
+    }
     return {requestHttpStatus:response.status,documentHttpStatus:json?.data?.documentHttpStatus??null,
-     collectionHttpStatus:json?.data?.collectionHttpStatus??null,error:String(json?.error||'')};
+     collectionHttpStatus:json?.data?.collectionHttpStatus??null,error:String(json?.error||''),...extra};
    }catch{return {requestHttpStatus:0,error:'diagnostic-indisponible'};}
   });
   console.log('DIAGNOSTIC_FIRESTORE_HTTP_STATUTS_SEULEMENT '+JSON.stringify(diag));
