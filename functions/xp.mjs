@@ -26,10 +26,11 @@ export function rawPoints({kind,category,score,total,needsReview}) {
 }
 export function cappedPoints(raw,dayEarned=0,dayLost=0,weekEarned=0,dayBonus=0,category='bonus'){
  if(!Number.isFinite(raw))throw Error('Invalid XP');
- // Les défis n'ont ni le plafond ancien de +10/jour ni celui de +50/semaine.
+ // Aucun plafond journalier pour les bonus : leurs points sont comptés exercice par exercice.
+ // Conserver les paramètres de cette fonction pour ne pas modifier le contrat serveur ni les copies passées.
  if(category==='challenge')return raw;
  if(raw<=0)return raw;
- if(category==='bonus')return Math.max(0,Math.min(raw,3-dayBonus));
+ if(category==='bonus')return raw;
  return raw;
 }
 export function weeklyReward(points){
