@@ -1034,8 +1034,19 @@ async function getSpanishDailyMissions(db,uid){
 
 /* Diagnostique les statuts HTTP Google sans exposer les documents de Tim.
    Accessible uniquement au Parent authentifié; aucune écriture. */
-async function getFirestoreReadDiagnostics(db,uid){
+async function getFirestoreReadDiagnostics(db,uid,payload={}){
  permitted(uid,'parent');
+ // Variante existante du diagnostic, ciblée sur le seul exercice MTH12_03.
+ // Aucun énoncé, réponse, copie, note ou donnée personnelle ne sort du serveur.
+ if(payload?.mathNov12Bank===true){
+  const paths=['exercises/MTH12_03','publicExercises/MTH12_03',
+   'answerKeys/MTH12_03','releasedCorrections/MTH12_03',
+   'attempts/MTH12_03','privateAttempts/MTH12_03'];
+  const found=await Promise.all(paths.map(p=>db.get(p)));
+  return {readOnly:true,bank:'MTH12_03',
+   exercise:Boolean(found[0]),publicExercise:Boolean(found[1]),answerKey:Boolean(found[2]),
+   releasedCorrection:Boolean(found[3]),attempt:Boolean(found[4]),privateAttempt:Boolean(found[5])};
+ }
  if(typeof db.probe!=='function')throw new ApiFault(503,'firestore-diagnostic-unavailable');
  const result=await db.probe();
  if(!Number.isInteger(result.documentHttpStatus)||!Number.isInteger(result.collectionHttpStatus))
