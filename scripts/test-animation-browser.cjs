@@ -99,4 +99,9 @@ const close=()=>new Promise(resolve=>server.close(resolve));
   console.log('OK - Chromium Android mouvement réduit : note et XP visibles sans animation.');
   assert.deepEqual(errors,[],'Erreurs JavaScript du navigateur');
  } finally {await browser.close();}
-})().then(close).catch(async error=>{console.error(error);await close();process.exitCode=1;});
+})().then(close).then(()=>{
+  // Même workflow Chromium existant : scénario de remédiation local, sans Firebase.
+  const {spawnSync}=require('node:child_process');
+  const check=spawnSync(process.execPath,[path.join(__dirname,'test-bonus-perimetres-browser.cjs')],{stdio:'inherit',env:process.env});
+  if(check.status!==0)process.exitCode=1;
+}).catch(async error=>{console.error(error);await close();process.exitCode=1;});
