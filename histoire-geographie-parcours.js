@@ -73,9 +73,9 @@ function session(course,bis,pack){
     add(pane,'p','Résumé des informations disponibles dans l’ENT : le texte complet de cette séance n’a pas été retrouvé.','lesson-caution');
     add(pane,'p',course.summary);
    }else add(pane,'p','Cette séance est inscrite à l’ENT, mais aucun cours détaillé n’est fourni dans l’archive.');
-   const due=pack.homework.filter(h=>h.due===course.date);
-   if(due.length){add(pane,'h4','Consignes prévues pour cette date');
-    for(const h of due){add(pane,'p',h.title+' : '+h.content);if(h.originalText){add(pane,'h4','Texte original donné à copier dans l’ENT');add(pane,'p',h.originalText);}}
+   const due=pack.homework.filter(h=>h.due===course.date||h.lessonEntId===course.entId);
+   if(due.length){add(pane,'h4','Consignes et travaux liés à cette séance');
+    for(const h of due){add(pane,'p','Pour le '+fr(h.due)+' — '+h.title+' : '+h.content);if(h.originalText){add(pane,'h4','Texte original donné à copier dans l’ENT');add(pane,'p',h.originalText);}}
     add(pane,'p','Les travaux cochés dans l’ENT ne prouvent pas que les corrections individuelles sont connues.');}
    const area=E('div');pane.append(area);window.TIM_HG_DOCUMENTS?.render(course.id,area);
   }else if(tab==='bis'){
@@ -86,7 +86,7 @@ function session(course,bis,pack){
    add(pane,'p','Relis les explications, puis entraîne-toi sur dix questions. La correction indiquera ce qu’il faut revoir.');
   }else if(tab==='entex'){
    add(pane,'h3','4 · Exercices et documents ENT du professeur');
-   const tasks=pack.homework.filter(h=>h.due===course.date);
+   const tasks=pack.homework.filter(h=>h.due===course.date||h.lessonEntId===course.entId);
    if(!tasks.length)add(pane,'p','Pas d’exercice détaillé du professeur rattaché à cette séance.');
    for(const h of tasks){add(pane,'p','Consigne pour le '+fr(h.due)+' — '+h.title+' : '+h.content);if(h.originalText){add(pane,'h4','Transcription ENT à recopier');add(pane,'p',h.originalText);}}
    const attached=pack.attachments.filter(d=>d.target===course.id);
