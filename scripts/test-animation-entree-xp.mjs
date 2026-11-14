@@ -57,11 +57,33 @@ assert.match(media().src,/Tim_Defi_Du_Dimanche_20XP_Original.mp4$/);skip().oncli
 p=anim.playResult({kind:'sunday'},{xp:14,score:15,total:20,correctionStatus:'released'});
 assert.equal(media(),undefined,'ne pas montrer +20 XP si 14 XP obtenus');
 assert.equal(award().hidden,false);skip().onclick();await p;
-for(const [kind,xp] of [['weekly',10],['bonus-parent',5],['training',0.5],['bonus-day',2]]){
- p=anim.playResult({kind},{xp,score:8,total:10,correctionStatus:'released'});
+// Vérifier que les deux GIF existants ne sont montrés que pour la récompense gagnée.
+for(const [kind,xp,score,total,expectedFile] of [
+ ['weekly',10,17,20,'Tim_Defi_Du_Samedi_10XP.gif'],
+ ['bonus-parent',5,9,10,'Tim_Defi_Bonus_5XP.gif'],
+ ['bonus-day',5,7,10,'Tim_Defi_Bonus_5XP.gif'],
+ ['bonus-day',2.5,6,10,'Tim_Animation_2_5XP_Loup.gif'],
+ ['weekly',7,15,20,null],
+ ['weekly',0,8,20,null],
+ ['bonus-parent',0,8,10,null],
+ ['bonus-day',0,4,10,null],
+ ['training',0.5,6,10,null]
+]){
+ p=anim.playResult({kind},{xp,score,total,correctionStatus:'released'});
+ if(expectedFile){
+  assert.ok(media()?.src?.endsWith(expectedFile),kind+' '+xp+' XP : mauvais média');
+  assert.equal(award().hidden,true,'Les XP ne sont révélés qu’après le GIF');
+  media().onerror();
+  assert.equal(award().hidden,false,'Les XP sont révélés après le GIF');
+ }else assert.equal(media(),undefined,'GIF indû pour '+kind+' '+xp+' XP');
  assert.equal(find(award(),x=>x.tagName==='STRONG').textContent,anim.xpLabel(xp));
+ assert.equal(find(award(),x=>x.className==='tim-anim-award-grade').textContent,
+  'Note : '+score.toLocaleString('fr-FR')+' / '+total.toLocaleString('fr-FR'));
  skip().onclick();await p;
 }
+const last=body.children.length;
+await anim.playResult({kind:'weekly'},{xp:10,score:17,total:20,correctionStatus:'pending-parent'});
+assert.equal(body.children.length,last,'Ne pas lancer le GIF si la correction n’est pas autorisée');
 await anim.playResult({category:'school'},{xp:0,correctionStatus:'pending-parent'});
 assert.equal(overlay().removed,true,'aucune récompense trompeuse pour devoir scolaire');
 const app=readFileSync('app.js','utf8');
