@@ -61,7 +61,15 @@ function simplestFraction(raw){
  while(b){const c=a%b;a=b;b=c;}
  return a===1;
 }
+const finalUnit=value=>{
+ const match=/\s*(cm²|cm\^2|cm2|m²|m\^2|m2|cm|m)\.?$/.exec(symbols(value));
+ return match?(match[1].replace(/\^2|2/g,'²')):null;
+};
 export function numericMathAnswerMatches(actual,expected,prompt=''){
+ const actualUnit=finalUnit(actual);
+ const expectedUnit=finalUnit(expected)||
+  (/\ben\s+(?:cm²|cm2|cm\^2|cm|m²|m2|m\^2|m)\b/.exec(symbols(prompt))||[])[0]?.replace(/^en\s+/,'').replace(/\^2|2/g,'²')||null;
+ if(actualUnit&&actualUnit!==expectedUnit)return false;
  const wanted=arithmetic(stripUnit(expected,prompt));
  if(wanted===null)return false;
  const original=symbols(actual),task=symbols(prompt);
