@@ -5,6 +5,7 @@
 const tolerance=(a,b)=>Math.abs(a-b)<1e-9;
 const symbols=s=>String(s??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
  .toLowerCase().replace(/[−–—]/g,'-').replace(/[×·]/g,'*')
+ .replace(/(\d|\))\s*x\s*(?=\d|\()/g,'$1*')
  .replace(/÷/g,'/').replace(/,/g,'.').replace(/[\u00a0\u202f]/g,' ')
  .replace(/\s+/g,' ').trim();
 function arithmetic(value){
