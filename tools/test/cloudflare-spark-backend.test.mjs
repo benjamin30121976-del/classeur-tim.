@@ -39,11 +39,11 @@ const exercise={
   {q:'15?',type:'text',right:'quinze',also:['15'],why:'Écrire le nombre'}
  ]
 };
-test('Tim valide une seule fois, avec 0 XP et note réservée au parent',async()=>{
+test('Tim valide une seule fois, avec 1 XP selon le barème actuel et note réservée au parent',async()=>{
  const db=fakeDB({'exercises/MATH_Q01':exercise});
  const first=await TESTABLE.submitExercise(db,TIM_UID,{id:'MATH_Q01',answers:['0','15']});
  assert.equal(first.submitted,true);
- assert.equal(first.xp,0);
+ assert.equal(first.xp,1);
  assert.equal(db.commits(),1);
  assert.equal(db.docs.get('privateAttempts/MATH_Q01').score,2);
  assert.equal(db.docs.get('privateAttempts/MATH_Q01').total,2);
