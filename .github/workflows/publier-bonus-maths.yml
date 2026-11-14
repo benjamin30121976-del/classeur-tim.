@@ -36,6 +36,11 @@ on:
         type: boolean
         required: true
         default: false
+      publier_sept_bonus:
+        description: "Autoriser explicitement un import ciblé des sept bonus mathématiques"
+        type: boolean
+        required: true
+        default: false
 permissions:
   contents: read
 jobs:
@@ -65,7 +70,7 @@ jobs:
           node --test functions/test/bonus-perimetres-tim-20261114.test.mjs
           node --test functions/test/grading.test.mjs functions/test/xp.test.mjs
   import-parent:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && !contains(github.event.head_commit.message, 'PUBLISH_TIM_PERIMETRE_20261114')
+    if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.publier_sept_bonus == true
     needs: validation
     runs-on: ubuntu-latest
     timeout-minutes: 20
