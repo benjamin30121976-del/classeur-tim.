@@ -23,10 +23,12 @@ const specs=[
 ];
 const expected=(spec,score)=>spec.boundaries.find(([threshold])=>score/spec.total>=threshold-1e-12)[1];
 function mediaKey(spec,xp){
- if(xp===2.5)return 'plus2half';
- if(spec.kind==='daily')return {'3':'plus3','2':'plus2','1':'plus1','0':'zero','-1':'minus1'}[String(xp)]||null;
- if(spec.kind==='sunday'&&xp===20)return 'sunday';
- return null;
+ const shared=({'2.5':'plus2half','2':'plus2','1':'plus1','0':'zero','-1':'minus1'})[String(xp)]||'reward';
+ if(spec.kind==='daily')return xp===3?'plus3':shared;
+ if(spec.kind==='weekly')return xp===10?'saturday':([7,4].includes(xp)?'weeklyPartial':shared);
+ if(spec.kind==='sunday')return xp===20?'sunday':([14,8].includes(xp)?'sundayPartial':shared);
+ if(['bonus-parent','bonus-day'].includes(spec.kind)&&xp===5)return 'bonus';
+ return shared;
 }
 function label(n){return (n>0?'+':'')+n.toLocaleString('fr-FR')+' XP';}
 function signal(message){report.issues.push(message);console.log('ANOMALIE : '+message);}
@@ -79,10 +81,10 @@ async function runBrowser(mobile){
     typeof window.TIM_XP?.contribution==='function',null,{timeout:20000});
   const published=await page.evaluate(()=>({
    scripts:[...document.scripts].map(s=>s.src).filter(Boolean),
-   mappings:Object.fromEntries(['opening','plus3','plus2','plus1','zero','minus1','plus2half','sunday']
+   mappings:Object.fromEntries(['opening','plus3','plus2','plus1','zero','minus1','plus2half','sunday','bonus','saturday','reward','weeklyPartial','sundayPartial']
      .map(k=>[k,window.TIM_ANIMATIONS.url(k)]))
   }));
-  assert(published.scripts.some(s=>s.includes('tim-animations.js?v=revelation-xp-defis-20261113-v2')),
+  assert(published.scripts.some(s=>s.includes('tim-animations.js?v=animations-tous-defis-20261114-v1')),
    'Le site n’utilise pas la version contrôlée du lecteur');
   // En exercice neuf le vrai média d'entrée doit être décodable.
   await page.evaluate(()=>{void window.TIM_ANIMATIONS.playOpening()});
@@ -138,13 +140,7 @@ async function runBrowser(mobile){
     assert.equal(shownXp,label(xp),'XP incorrects '+spec.kind+' '+score);
     const shownNote=(await award.locator('.tim-anim-award-grade').innerText()).trim();
     const expectedNote='Note : '+score.toLocaleString('fr-FR')+' / '+spec.total;
-    if(shownNote!==expectedNote){
-     // L'absence de virgule n'altère pas les résultats, mais elle sera signalée.
-     if(!shownNote.includes(''+score+' / '+spec.total))
-       throw Error('Note incohérente '+spec.kind+' '+score+' : '+shownNote);
-     if(!report.issues.includes('Les notes fractionnaires sont affichées avec un point au lieu de la virgule française'))
-      signal('Les notes fractionnaires sont affichées avec un point au lieu de la virgule française');
-    }
+    assert.equal(shownNote,expectedNote,'Note française incorrecte '+spec.kind+' '+score);
     if(mobile&&[
       'daily:10','daily:8','daily:6','daily:3','daily:1',
       'weekly:17','weekly:15','weekly:12','weekly:10','weekly:8','weekly:7',
