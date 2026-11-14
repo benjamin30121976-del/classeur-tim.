@@ -93,8 +93,8 @@ module.exports=async function auditerDefisParent(page,check){
       (q.q.includes('charge positive')?'cation':q.q.includes('solide qui apparaît')?'precipite':
        q.q.includes('apparition de bulles')?'gaz':'');
     const possiblePhysics=Boolean(physicsKey)&&lower(literal).includes(physicsKey);
-    const numberTokens=literal.match(/(?:^|[^\\d])([+-]?\\d+(?:[.,]\\d+)?)(?=[^\\d]|$)/g)||[];
-    const lastMatch=numberTokens.length?numberTokens[numberTokens.length-1].match(/[+-]?\\d+(?:[.,]\\d+)?/):null;
+    const numberTokens=literal.match(/(?:^|[^\d])([+-]?\d+(?:[.,]\d+)?)(?=[^\d]|$)/g)||[];
+    const lastMatch=numberTokens.length?numberTokens[numberTokens.length-1].match(/[+-]?\d+(?:[.,]\d+)?/):null;
     const finalNumberCorrect=q.subject==='Mathématiques'&&q.type==='text'&&
      lastMatch&&Number(lastMatch[0].replace(',','.'))===expectedNumber;
     const span=lower(literal).split(' ').filter(Boolean);
