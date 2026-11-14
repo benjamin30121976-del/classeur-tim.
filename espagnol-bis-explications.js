@@ -130,6 +130,17 @@ window.TIM_SPANISH_BIS_EXPLAINED={
       "Yo hago = je fais. Pour les autres personnes, ouvre le tableau du verbe plus bas."
     ],
     "remember": "Pour une question de conjugaison, repère d'abord le verbe, puis le pronom. Les dix tableaux complets restent consultables."
+  },
+  "10099~6400554": {
+    "why": "Le texte du 12 novembre utilise plusieurs négations et des saisons différentes selon les hémisphères. Il faut comprendre la phrase entière avant de répondre.",
+    "rule": "« No… sino… » corrige une idée : non pas A, mais B. « Nunca » signifie jamais. « Nada » signifie rien, souvent avec « no ». Au sud de la planète, les saisons sont inversées par rapport à la France.",
+    "worked": [
+      "Question : que signifie « No empiezo las clases en septiembre, sino en marzo » ?",
+      "Je repère « no… sino… » : septembre est l'information refusée, mars est celle qui la remplace. « Empiezo » signifie « je commence ».",
+      "Je ne commence pas les cours en septembre, mais en mars."
+    ],
+    "remember": "Dans no… sino…, relève d'abord l'idée niée, puis ce qui la remplace. Nunca = jamais ; no… nada = ne… rien."
   }
+
 };
 })();
