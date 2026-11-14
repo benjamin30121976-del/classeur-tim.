@@ -1,56 +1,37 @@
-name: Navigateur autonome du classeur
+name: Audit sérieux du classeur du 13 novembre — lecture seule
 on:
   push:
-    branches: [main]
+    branches: [audit-serieux-classeur-20261114]
     paths:
-      - 'browser-requests/inspection.json'
-      - 'outils/navigateur-autonome.cjs'
-      - 'outils/inspecter-animations-publiees.cjs'
+      - 'tools/test/audit-13nov-production.readonly.cjs'
       - '.github/workflows/navigation-libre.yml'
   workflow_dispatch:
 permissions:
   contents: read
-  issues: write
-concurrency:
-  group: navigateur-autonome-classeur
-  cancel-in-progress: true
 jobs:
   inspection:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    env:
+      TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+      TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
+      TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
     steps:
-      - name: Charger le code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
       - name: Installer Chromium et Playwright
         run: |
-          mkdir -p /tmp/tim-agent
-          npm install --prefix /tmp/tim-agent --no-audit --no-fund playwright
-          /tmp/tim-agent/node_modules/.bin/playwright install --with-deps chromium
-      - name: Explorer le classeur et enregistrer les captures
+          mkdir -p /tmp/tim-audit
+          npm install --prefix /tmp/tim-audit --no-audit --no-fund playwright
+          /tmp/tim-audit/node_modules/.bin/playwright install chromium
+      - name: Auditer le site publié et la sécurité des exercices
         env:
-          NODE_PATH: /tmp/tim-agent/node_modules
-        run: node outils/navigateur-autonome.cjs
-      - name: Vérifier les animations réellement publiées sur Cloudflare
-        if: always()
-        env:
-          NODE_PATH: /tmp/tim-agent/node_modules
-        run: node outils/inspecter-animations-publiees.cjs
-      - name: Déposer le bilan permanent sur GitHub
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if [ -f browser-results/rapport.md ]; then
-            echo '' >> browser-results/rapport.md
-            echo '---' >> browser-results/rapport.md
-            echo 'Exécution : https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}' >> browser-results/rapport.md
-            gh issue edit 2 --body-file browser-results/rapport.md
-          fi
-      - name: Sauvegarder rapport et captures
+          NODE_PATH: /tmp/tim-audit/node_modules
+        run: node tools/test/audit-13nov-production.readonly.cjs
+      - name: Archiver le bilan expurgé et captures publiques
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: navigation-libre-captures
-          path: browser-results/
+          name: audit-tim-13nov-production
+          path: audit-13nov-report/
           retention-days: 3
           if-no-files-found: warn
