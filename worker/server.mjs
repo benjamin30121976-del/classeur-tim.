@@ -1020,7 +1020,20 @@ async function getSpanishDailyMissions(db,uid){
  return {day,dailyIds,exercises};
 }
 
+/* Diagnostique les statuts HTTP Google sans exposer les documents de Tim.
+   Accessible uniquement au Parent authentifié; aucune écriture. */
+async function getFirestoreReadDiagnostics(db,uid){
+ permitted(uid,'parent');
+ if(typeof db.probe!=='function')throw new ApiFault(503,'firestore-diagnostic-unavailable');
+ const result=await db.probe();
+ if(!Number.isInteger(result.documentHttpStatus)||!Number.isInteger(result.collectionHttpStatus))
+  throw new ApiFault(503,'firestore-diagnostic-invalid');
+ return {readOnly:true,documentHttpStatus:result.documentHttpStatus,
+  collectionHttpStatus:result.collectionHttpStatus};
+}
+
 const ACTIONS={
+  getFirestoreReadDiagnostics:getFirestoreReadDiagnostics,
  previewSpanishEntTraining:previewSpanishEntTraining,
  getMathEntTask:getMathEntTask,
  submitMathEntTask:submitMathEntTask,
@@ -1070,7 +1083,7 @@ const ACTIONS={
 export async function handleRequest(request,env){
  const url=new URL(request.url);
  if(url.pathname==='/api/status'&&request.method==='GET')
-  return respond({available:Boolean(env.FIREBASE_SERVICE_ACCOUNT),platform:'cloudflare-pages',lessonTrainingXpPolicy:'7-5-0-v1',mixedChallengesVersion:'mixed-202611-v1',mixedDailyRollout:'2026-11-13-separate-ids',features:{frTraining:true,frParentPreview:true,frLessons:11,frExercises:22,hgTraining:true,hgParentPreview:true,hgLessons:8,hgExercises:16,svtTraining:true,svtParentPreview:true,svtLessons:7,svtExercises:14,physicsParentPreview:true,physicsEntInteractive:true,physicsEntOriginalTasks:2,mathEntInteractive:true,mathEntOriginalTasks:2,spanishParentPreview:true,mixedParentPreview:true}});
+  return respond({available:Boolean(env.FIREBASE_SERVICE_ACCOUNT),platform:'cloudflare-pages',lessonTrainingXpPolicy:'7-5-0-v1',mixedChallengesVersion:'mixed-202611-v1',mixedDailyRollout:'2026-11-13-separate-ids',features:{frTraining:true,frParentPreview:true,frLessons:11,frExercises:22,hgTraining:true,hgParentPreview:true,hgLessons:9,hgExercises:18,svtTraining:true,svtParentPreview:true,svtLessons:7,svtExercises:14,physicsParentPreview:true,physicsEntInteractive:true,physicsEntOriginalTasks:2,mathEntInteractive:true,mathEntOriginalTasks:2,spanishParentPreview:true,mixedParentPreview:true}});
  if(url.pathname!=='/api/tim')return respond({error:'not-found'},404);
  try{
   if(request.method!=='POST')throw new ApiFault(405,'method-not-allowed');
@@ -1091,4 +1104,4 @@ export async function handleRequest(request,env){
   return respond({error:code},status);
  }
 }
-export const TESTABLE={getEnglishTrainingTask,submitEnglishTraining,getEnglishTrainingProgress,previewEnglishTraining,getSvtTrainingTask,submitSvtTraining,getSvtTrainingProgress,previewSvtTraining,getHgTrainingTask,submitHgTraining,getHgTrainingProgress,previewHgTraining,getFrTrainingTask,submitFrTraining,getFrTrainingProgress,previewFrTraining,previewSpanishEntTraining,getMathEntTask,submitMathEntTask,previewMathEntTask,getMathEntProgress,getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,getMixedChallengePlan,previewMixedChallenge,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
+export const TESTABLE={getFirestoreReadDiagnostics,getEnglishTrainingTask,submitEnglishTraining,getEnglishTrainingProgress,previewEnglishTraining,getSvtTrainingTask,submitSvtTraining,getSvtTrainingProgress,previewSvtTraining,getHgTrainingTask,submitHgTraining,getHgTrainingProgress,previewHgTraining,getFrTrainingTask,submitFrTraining,getFrTrainingProgress,previewFrTraining,previewSpanishEntTraining,getMathEntTask,submitMathEntTask,previewMathEntTask,getMathEntProgress,getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,getMixedChallengePlan,previewMixedChallenge,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
