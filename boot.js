@@ -15,6 +15,9 @@ const status=document.getElementById('access-status');
 const form=document.getElementById('login-form');
 const button=document.getElementById('login-button');
 let auth,db,functionsApi,activeUser,appLoaded=false,unsubscribe=null;
+// Le suivi espagnol peut réutiliser UNE FOIS les lectures faites à l'ouverture.
+// Jamais de cache persistant des notes, des tentatives ou des corrections.
+let nextSpanishProgressSnapshot=null;
 /* Firebase Spark alternative: signed Firebase Auth token over a same-origin
    Cloudflare Pages route. The old callable remains a fallback until configured.
    Never retry an uncertain submission through another provider. */
@@ -397,10 +400,11 @@ async function fetchAttempts(content){
  const isParent=activeUser?.uid===PARENT_UID;
  // Les originaux des notes sont déjà conservés dans privateAttempts.
  // Les règles existantes en autorisent la lecture au seul parent.
- let grades=new Map();
+ let grades=new Map(),privateSnapshot=null;
  if(isParent){
   try{
    const privateDocs=await getDocs(collection(db,'privateAttempts'));
+   privateSnapshot=privateDocs.docs;
    grades=new Map(privateDocs.docs.map(doc=>[doc.id,doc.data()]));
   }catch(error){console.warn('Notes détaillées Parent indisponibles :',error.code||error.message);}
  }
@@ -438,10 +442,13 @@ async function fetchAttempts(content){
    }
   }catch(error){console.warn('Corrections Tim en attente :',error.code||error.message);}
  }
+ // Ce snapshot ne servira qu'à la première lecture du suivi Espagnol (15 s max).
+ // Il ne remplace jamais un rechargement demandé et ne modifie aucune donnée.
+ nextSpanishProgressSnapshot={uid:activeUser?.uid,when:Date.now(),attempts:docs.docs,privateAttempts:privateSnapshot};
  list.sort((a,b)=>a.date.localeCompare(b.date));window.__CLOUD_ATTEMPTS=list;return list;
 }
 
-function stopApp(){if(window.__TIM_GUEST)return;document.body.classList.remove('ready');access.hidden=false;appLoaded=false;window.__CLOUD_ATTEMPTS=[];window.__TIM_SPANISH_ENT_XP=[];window.__TIM_SPANISH_PROGRESS={status:'loading',attempts:[]};
+function stopApp(){if(window.__TIM_GUEST)return;nextSpanishProgressSnapshot=null;document.body.classList.remove('ready');access.hidden=false;appLoaded=false;window.__CLOUD_ATTEMPTS=[];window.__TIM_SPANISH_ENT_XP=[];window.__TIM_SPANISH_PROGRESS={status:'loading',attempts:[]};
   for(const id of ['content-import','content-import-button','import-logout'])document.getElementById(id)?.remove();
   access.querySelector('h1').textContent="Accède à tes missions";
   access.querySelector('p').textContent='Connexion réservée à Tim et à son parent.';
@@ -607,13 +614,16 @@ async function startSession(user){
  const trainingId=/^SP[QW]_L(?:0[1-9]|1[0-5])_0[1-5]$/;
  const loadSpanishProgress=async()=>{
   try{
-   const docs=await getDocs(activeUser?.uid===TIM_UID?
+   const previous=nextSpanishProgressSnapshot;
+   nextSpanishProgressSnapshot=null; // usage unique, jamais de cache de résultats durable
+   const shared=previous?.uid===activeUser?.uid&&Date.now()-previous.when<=15000?previous:null;
+   const docs=shared?{docs:shared.attempts}:await getDocs(activeUser?.uid===TIM_UID?
     query(collection(db,'attempts'),where('authorUid','==',TIM_UID)):
     collection(db,'attempts'));
    const ids=docs.docs.filter(d=>trainingId.test(d.id));
    let grades=new Map();
    if(activeUser?.uid===PARENT_UID&&ids.length){
-    const priv=await getDocs(collection(db,'privateAttempts'));
+    const priv=shared?.privateAttempts?{docs:shared.privateAttempts}:await getDocs(collection(db,'privateAttempts'));
     grades=new Map(priv.docs.filter(d=>trainingId.test(d.id)).map(d=>[d.id,d.data()]));
    }
    const attempts=ids.map(d=>{
