@@ -7,9 +7,11 @@ test('Bonus grants 0-2 XP',()=>{
  for(let score=0;score<=10;score++){const n=rawPoints({category:'bonus',score,total:10});assert.ok(n>=0&&n<=2)}
 });
 test('Manual review blocks automatic XP',()=>assert.equal(rawPoints({category:'bonus',score:2,total:2,needsReview:true}),0));
-test('Défis V18 sans plafond supplémentaire, bonus plafonné et pénalité réelle à -1',()=>{
+test('Défis V18 et exercices bonus sans plafond journalier, pénalité réelle à -1',()=>{
  assert.equal(cappedPoints(8,9,0,49,0,'daily'),8);
- assert.equal(cappedPoints(2,0,0,0,3,'bonus'),0);
+ assert.equal(cappedPoints(2,0,0,0,3,'bonus'),2);
+ assert.equal(cappedPoints(2,0,0,0,10,'bonus'),2);
+ assert.equal(cappedPoints(1,0,0,0,20,'bonus'),1);
  assert.equal(cappedPoints(-1,0,4,0,0,'daily'),-1);
 });
 
@@ -37,4 +39,15 @@ test('Les devoirs ENT, défis et relevés privés conservent leur barème initia
  assert.equal(rawPoints({kind:'daily',category:'challenge',score:10,total:10}),3);
  assert.equal(rawPoints({kind:'daily',category:'challenge',score:0,total:10}),-1);
  assert.equal(cappedPoints(0.5,0,0,0,0,'school'),0.5);
+});
+
+test('Cinq bonus à 10/10 le même jour apportent bien 10 XP, sans plafond ni modification du barème',()=>{
+ let cumul=0;
+ for(let i=0;i<5;i++){
+  const raw=rawPoints({category:'bonus',score:10,total:10});
+  const awarded=cappedPoints(raw,cumul,0,cumul,cumul,'bonus');
+  assert.equal(awarded,2);
+  cumul+=awarded;
+ }
+ assert.equal(cumul,10);
 });
