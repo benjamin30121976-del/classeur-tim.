@@ -132,7 +132,13 @@ export const BONUS_PERIMETRE_TIM = {
       "reasoningRequired": true,
       "also": [
         "30"
-      ]
+      ],
+      "reasoningCheck": {
+        "kind": "rectangle-perimeter-v1",
+        "length": 9,
+        "width": 6,
+        "unit": "m"
+      }
     }
   ],
   "subject": "Mathématiques",
