@@ -5,7 +5,7 @@
  --homework-blue:#1755a1;
  --homework-blue-soft:#e7f1ff;
  color:#dbe9fa;
- padding:0 0 calc(120px + env(safe-area-inset-bottom,0px));
+ padding:0 0 calc(42px + env(safe-area-inset-bottom,0px));
 }
 #exercise-detail.homework-bonus-detail > button.back{
  display:inline-flex;align-items:center;max-width:100%;
@@ -150,21 +150,10 @@
  min-height:48px!important;font-size:15px!important;padding:9px 12px;
 }
 #exercise-detail.homework-bonus-detail .attachment-panel[hidden]{display:none!important}
+/* Pendant une réponse, éviter que les cinq onglets fixes masquent
+   le schéma et les choix. Le bouton « Retour aux exercices » reste disponible. */
 body:has(#exercise-detail.homework-bonus-detail.active) .tabs{
- min-height:68px!important;padding:5px max(5px,env(safe-area-inset-left))
- calc(6px + env(safe-area-inset-bottom))!important;
- gap:2px;background:#0b1b2ef5;
-}
-body:has(#exercise-detail.homework-bonus-detail.active) .tabs button{
- min-height:57px!important;padding:5px 2px 4px!important;
- font-size:12px!important;gap:3px!important;
-}
-body:has(#exercise-detail.homework-bonus-detail.active) .tabs .nav-icon{
- min-height:24px!important;height:25px!important;
- width:30px!important;font-size:23px!important;
-}
-body:has(#exercise-detail.homework-bonus-detail.active) .tabs .nav-icon svg{
- width:24px!important;height:24px!important;
+ display:none!important;
 }
 @media(max-width:420px){
  #exercise-detail.homework-bonus-detail .homework-detail-body{padding:13px 14px}
