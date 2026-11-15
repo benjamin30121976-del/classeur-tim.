@@ -276,7 +276,7 @@ function open(ex,ctx={}){
    }
    if(q.type!=='structured')item.append(E('p','Explication : '+String(a.explanation||'Relis la leçon pour comprendre.')));
    const dg=draw(q,true);if(dg)item.append(dg);
-   item.append(E('p',q.lessonReview&&a.correct===false?'Leçon à revoir : '+q.lessonReview:q.lessonId?'Leçon à revoir : '+q.lessonId:
+   item.append(E('p',a.lessonReview&&a.correct===false?'Leçon à revoir : '+a.lessonReview:q.lessonId?'Leçon à revoir : '+q.lessonId:
     'À revoir : la méthode expliquée ci-dessus. Ce problème ne correspond pas à une leçon ENT identifiée.','mix-muted'));
    if(q.lessonId&&typeof window.TIM_PEDAGOGY_NAVIGATE==='function')
     item.append(btn('Ouvrir la leçon correspondante',()=>window.TIM_PEDAGOGY_NAVIGATE(q.subject,q.lessonId),'mix-link'));
