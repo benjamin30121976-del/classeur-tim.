@@ -272,7 +272,7 @@ export const SUNDAY_BILAN_20261115={
         }
       ],
       "why": "La devise est « Liberté, Égalité, Fraternité ». Le cours traite également du principe de laïcité, lié notamment à la liberté de conscience.",
-      "subject": "Histoire-géographie / EMC",
+      "subject": "Histoire-géographie",
       "topic": "Devise et laïcité",
       "difficulty": "facile",
       "lessonId": "HG_BIS08",
@@ -520,7 +520,7 @@ export const SUNDAY_BILAN_20261115={
         }
       ],
       "why": "Les députés européens sont élus pour cinq ans. Le Parlement européen participe au pouvoir législatif de l’Union européenne.",
-      "subject": "Histoire-géographie / EMC",
+      "subject": "Histoire-géographie",
       "topic": "Parlement européen",
       "difficulty": "facile",
       "lessonId": "HG_BIS08",
