@@ -1114,7 +1114,13 @@ const XP_V5_START='2026-11-06';
 const XP_START='2026-11-06T04:27:16Z';
 const XP_V10_START='2026-11-06T05:42:54Z'; // Maintient les barèmes des validations antérieures à la V10.
 const parisDay=window.TIM_XP.day;
-const weekMonday=window.TIM_XP.monday;
+const weekMonday=window.TIM_XP.xpPeriodStart;
+function xpBarExceptionNotice(){
+ const today=parisDay(new Date());
+ if(today==='2026-11-15')return 'Exception exceptionnelle : la barre XP sera conservée le lundi 16 novembre. Prochaine remise à zéro le lundi 23 novembre.';
+ if(window.TIM_XP.xpCarryActive(today))return 'Exception cette semaine : les XP du 9 au 15 novembre restent sur la barre jusqu’au dimanche 22. Remise à zéro le lundi 23 novembre.';
+ return '';
+}
 function xpBar(a){const ex=exerciseBy(a.id);return window.TIM_XP.contribution(a,ex);}
 function xpBarV9(a){return window.TIM_XP.contributionV9(a,exerciseBy(a.id));}
 function xpBarV10(a){return window.TIM_XP.contributionV10(a,exerciseBy(a.id));}
@@ -1122,8 +1128,8 @@ function xpBarV5(a){if(a.needsReview||!a.total)return 0;const p=Math.max(0,Math.
 function coreXpInfo(done=attempts()){
  if(done.every(a=>typeof a.xp==='number')){
   const ordered=[...done].sort((a,b)=>String(a.date||'').localeCompare(String(b.date||'')));
-  let total=0,peak=0;const week=window.TIM_XP.monday(parisDay(new Date()));let weekly=0;
-  for(const a of ordered){total=Math.max(0,total+Number(a.xp||0));peak=Math.max(peak,total);if(parisDay(a.date)&&window.TIM_XP.monday(parisDay(a.date))===week)weekly=Math.max(0,weekly+Number(a.xp||0));}
+  let total=0,peak=0;const week=window.TIM_XP.xpPeriodStart(parisDay(new Date()));let weekly=0;
+  for(const a of ordered){total=Math.max(0,total+Number(a.xp||0));peak=Math.max(peak,total);if(parisDay(a.date)&&window.TIM_XP.xpPeriodStart(parisDay(a.date))===week)weekly=Math.max(0,weekly+Number(a.xp||0));}
   const level=Math.floor(peak/100)+1;
   return {total,perfect:done.filter(a=>a.correctionStatus==='released'&&a.total>0&&a.score===a.total).length,peak,level,inLevel:Math.max(0,Math.min(100,total-(level-1)*100)),done:done.length,week:weekly,rawWeek:weekly,reward:window.TIM_XP.reward(Math.max(0,weekly)),legacy:0,weeklyPass:false};
  }
@@ -1157,14 +1163,14 @@ function xpInfo(done=attempts()){
   unique.set(a.id,a);
  }
  let spanishTotal=0,spanishWeek=0;
- const current=window.TIM_XP.monday(parisDay(new Date()));
+ const current=window.TIM_XP.xpPeriodStart(parisDay(new Date()));
  for(const a of unique.values()){
   const date=parisDay(a.submittedAt);
   // Seules les tentatives effectivement datées et enregistrées sont
   // incluses au total comme dans le compteur du service Cloudflare.
   if(!date)continue;
   spanishTotal+=a.xp;
-  if(window.TIM_XP.monday(date)===current)spanishWeek+=a.xp;
+  if(window.TIM_XP.xpPeriodStart(date)===current)spanishWeek+=a.xp;
  }
  const total=base.total+spanishTotal,week=base.week+spanishWeek;
  const peak=Math.max(base.peak,total),level=Math.floor(peak/100)+1;
@@ -1176,10 +1182,13 @@ function xpInfo(done=attempts()){
 function makeXPPanel(){
  const st=xpInfo(),week=Math.max(0,Number(st.week)||0);
  const cap=Math.min(75,week),value=week.toLocaleString('fr-FR');
+ const carry=window.TIM_XP.xpCarryActive(parisDay(new Date()));
+ const notice=xpBarExceptionNotice();
  const wrapper=E('section','xp-showcase');
  const top=E('div','xp-showcase-top');
- top.append(E('div','xp-showcase-title','MES XP DE LA SEMAINE'),E('strong','xp-current-count',value+' / 75 XP'));
+ top.append(E('div','xp-showcase-title',carry?'MES XP CONSERVÉS':'MES XP DE LA SEMAINE'),E('strong','xp-current-count',value+' / 75 XP'));
  wrapper.append(top);
+ if(notice)wrapper.append(E('p','xp-explainer',notice));
  const art=E('div','xp-illustration');
  const picture=E('img','xp-illustration-img');
  picture.src='./assets/barre-xp-original.png';
@@ -1192,7 +1201,7 @@ function makeXPPanel(){
  track.setAttribute('aria-valuenow',String(cap));
  const fill=E('div','xp-art-fill');fill.style.transform='scaleX('+cap/75+')';
  track.append(fill);art.append(track);
- const meter=E('div','xp-art-meter',value+' XP cette semaine');
+ const meter=E('div','xp-art-meter',value+(carry?' XP conservés':' XP cette semaine'));
  art.append(meter);wrapper.append(art);
  const tierRow=E('div','xp-reward-tiers');
  for(const [threshold,euros] of [[19,2],[38,5],[75,10]]){
@@ -1207,7 +1216,7 @@ function makeXPPanel(){
  wrapper.append(E('p','xp-explainer',next===null?
   'Objectif de 75 XP atteint. Récompense de 10 € à valider par le parent.':
   'Encore '+(next-week).toLocaleString('fr-FR')+' XP pour atteindre le palier de '+(next===19?'2 €':next===38?'5 €':'10 €')+'.'));
- wrapper.append(E('p','xp-level-caption','Niveau '+st.level+' · '+st.total.toLocaleString('fr-FR')+' XP cumulés · remise à zéro du compteur hebdomadaire chaque lundi.'));
+ wrapper.append(E('p','xp-level-caption','Niveau '+st.level+' · '+st.total.toLocaleString('fr-FR')+' XP cumulés · '+(notice?'exception unique : prochaine remise à zéro le lundi 23 novembre.':'remise à zéro du compteur hebdomadaire chaque lundi.')));
  return wrapper;
 }
 function refreshXPHeader(){const el=document.getElementById('xp-header');if(!el||window.__TIM_GUEST)return;const s=xpInfo();el.innerHTML='<span>⭐ '+s.total.toLocaleString('fr-FR')+' XP</span><small>Niveau '+s.level+'</small>';}
@@ -1216,7 +1225,8 @@ function makeRewardsTile(){const b=E('button','reward-open');b.type='button';
  const text=E('span');text.append(E('strong','','🎁 MES RÉCOMPENSES'),E('small','','Comment fonctionnent les XP, les défis et les gains ?'));
  b.append(text,E('span','','›'));b.addEventListener('click',()=>{
   const dialog=document.getElementById('rewards-dialog'),body=clear(document.getElementById('rewards-explanation'));
-  body.append(E('p','','Les XP des défis sont comptés du lundi au dimanche. Le compteur hebdomadaire revient à zéro le lundi. La récompense est à valider et à verser par le parent ; les montants ne se cumulent pas.'));
+  body.append(E('p','','Les XP des défis sont habituellement comptés du lundi au dimanche. Le compteur revient à zéro chaque lundi, sauf pendant l’exception du 16 au 22 novembre 2026. La récompense est à valider et à verser par le parent ; les montants ne se cumulent pas.'));
+  if(xpBarExceptionNotice())body.append(E('p','',xpBarExceptionNotice()));
   const table=E('table'),heads=E('tr');for(const t of ['XP de la semaine','Récompense'])heads.append(E('th','',t));table.append(heads);
   for(const [score,amount] of [[19,'2 €'],[38,'5 €'],[75,'10 €']]){const row=E('tr');row.append(E('td','',score+' XP'),E('td','',amount));table.append(row);}body.append(table);
   const p=E('ul');for(const t of ['Défi du samedi (20 questions) : 17–20 = +10 XP ; 15–16 = +7 XP ; 12–14 = +4 XP ; 10–11 = +1 XP ; 8–9 = 0 XP ; 0–7 = −1 XP.','Défi du dimanche (20 questions sur la rentrée) : mêmes paliers que samedi, doublés pour atteindre 20 XP maximum.','Devoirs scolaires ENT : 0 XP. Entraînements des leçons de mathématiques et d’espagnol : 7 à 10/10 = +1 XP ; 5 à 6/10 = +0,5 XP ; 0 à 4/10 = 0 XP. Exercice bonus libre : maximum +3 XP par jour.','Une seule validation par défi du week-end. Les résultats et les XP déjà acquis restent enregistrés.','À chaque lundi, seul le compteur hebdomadaire repart à zéro : les notes, copies, trophées et XP de niveau restent enregistrés.','Les récompenses ne sont pas versées automatiquement ; le parent valide le montant.'])p.append(E('li','',t));body.append(p);
