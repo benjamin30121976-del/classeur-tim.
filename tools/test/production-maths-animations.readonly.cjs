@@ -85,6 +85,43 @@ async function main(){
       row.checks.mathTrainingLabel=(await mat.locator('[data-math-train]').allTextContents()).slice(0,5);
       row.checks.mathNote=(await mat.innerText()).slice(0,650);
      }
+     // Contrôle du site réellement publié, sans identifiants ni validation.
+     // Le mode invité ne doit jamais créer de copie, note, tentative ou XP.
+     await page.locator('[data-nav="matieres"]').first().click();
+     await page.waitForFunction(()=>[...document.querySelectorAll('#matieres-content button.matter-card')]
+       .some(b=>b.textContent.includes('EMC')&&!b.disabled),{timeout:18000});
+     const emc=mat.locator('button.matter-card').filter({hasText:'EMC'}).first();
+     if(!(await emc.count())||!(await emc.isEnabled()))throw Error('Matière EMC non publiée ou désactivée');
+     await emc.click();
+     await page.waitForFunction(()=>document.querySelector('#matieres-content h2')?.textContent?.includes('EMC — Mes leçons'),{timeout:12000});
+     row.checks.emc=await page.evaluate(()=>{
+       const container=document.querySelector('#matieres-content');
+       const branches=[...container.querySelectorAll('details.chapter-section')];
+       const pack=window.TIM_HG_PACK||{};
+       return {
+         heading:container.querySelector('h2')?.textContent||'',
+         chapters:branches.length,
+         lessons:container.querySelectorAll('details.tim-es-lesson').length,
+         bis:(pack.bis||[]).filter(b=>/\\(EMC\\)/.test(b.group||'')).length,
+         hgUnchanged:(pack.lessons||[]).length===25&&(pack.chapters||[]).length===9,
+         horizontalOverflow:document.documentElement.scrollWidth>window.innerWidth+2
+       };
+     });
+     if(row.checks.emc.chapters!==3||row.checks.emc.lessons!==5||row.checks.emc.bis!==3||
+        !row.checks.emc.hgUnchanged||row.checks.emc.horizontalOverflow)
+       throw Error('EMC production non conforme : '+JSON.stringify(row.checks.emc));
+     const chapter=mat.locator('details.chapter-section').first();
+     await chapter.evaluate(el=>el.open=true);
+     const lesson=chapter.locator('details.tim-es-lesson').first();
+     await lesson.evaluate(el=>el.open=true);
+     for(const name of ['Leçon ENT','Leçon BIS','Je n’ai pas compris','Exercices ENT','Entraînement']){
+       if(!(await lesson.getByRole('button',{name,exact:true}).count()))throw Error('Onglet EMC absent : '+name);
+     }
+     await lesson.getByRole('button',{name:'Leçon BIS',exact:true}).click();
+     if(!(await lesson.getByText('Comprendre la leçon pas à pas').count()))
+       throw Error('Explication BIS EMC absente');
+     await page.screenshot({path:path.join(out,device+'-emc-publie.jpg'),type:'jpeg',quality:72,fullPage:true,timeout:20000});
+     row.checks.emcReady=true;
      row.checks.javascriptCapabilities=await page.evaluate(()=>({
       mathPath:Boolean(window.TIM_MATH_PATH),
       mathBisCount:window.TIM_MATHS_BIS_PACK?.lessons?.length??null,
@@ -110,6 +147,7 @@ async function main(){
    '- Chapitres mathématiques : '+(d.checks.mathGroupCount??'non mesuré'),
    '- Leçons BIS vues dans le code : '+(d.checks.javascriptCapabilities?.mathBisCount??'non mesuré'),
    '- Lecteur animations chargé : '+Boolean(d.checks.javascriptCapabilities?.animations),
+   '- EMC publiée et inspectée : '+Boolean(d.checks.emcReady)+' · '+JSON.stringify(d.checks.emc||{}),
    '- Requêtes non-GET empêchées : '+d.blockedNonGet);
   if(d.checks.mathHeadings?.length)lines.push('- Rubriques : '+d.checks.mathHeadings.join(' / '));
   for(const error of d.errors)lines.push('- Avertissement : '+error);
@@ -117,6 +155,7 @@ async function main(){
  fs.writeFileSync(path.join(out,'rapport.md'),lines.join('\n')+'\n');
  fs.writeFileSync(path.join(out,'rapport.json'),JSON.stringify(report,null,2)+'\n');
  console.log(lines.join('\n'));
+ if(report.devices.some(d=>!d.checks.emcReady))process.exitCode=1;
  if(report.devices.every(d=>!d.checks.http||d.checks.http>=400))process.exitCode=1;
 }
 main().catch(e=>{console.error('Audit échoué : '+e.message);process.exitCode=1;});
