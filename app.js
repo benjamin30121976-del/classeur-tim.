@@ -805,32 +805,79 @@ function openExercise(id,options={}){const ex=exerciseBy(id);if(!ex)return;
    }
   });return;
  }
- const existing=attemptFor(id),completedChallenge=Boolean(existing&&['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind));window.__TIM_OPEN_EXERCISE_ID=id;page('exercices');document.getElementById('exercise-index').classList.add('hide');const root=clear(document.getElementById('exercise-detail'));root.classList.add('active');root.classList.toggle('math-bonus-detail',ex.kind==='bonus-day'&&ex.subject==='Mathématiques');root.append(button('← Retour aux exercices',()=>{root.classList.remove('active');document.getElementById('exercise-index').classList.remove('hide');renderExerciseIndex();scrollTop();},'plain back'));
-root.append(badge(ex.level),E('h2','',ex.title));
-// La séance ENT du 12/11 est une trace authentique du cahier de textes, sans PDF joint.
-// Lien de consultation seulement : ne lance ni correction ni validation de l'exercice.
-if(ex.homeworkBonus===true&&ex.subject==='Mathématiques'&&
-   (ex.id==='BD1611_MA01'||/r[eé]ciproque\s+de\s+thal[eè]s/i.test(ex.title))){
- root.append(button('Voir la leçon ENT du 12 novembre · Réciproque de Thalès',
+ const existing=attemptFor(id),completedChallenge=Boolean(existing&&['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind));
+ const isHomeworkDetail=ex.homeworkBonus===true;
+ window.__TIM_OPEN_EXERCISE_ID=id;page('exercices');
+ document.getElementById('exercise-index').classList.add('hide');
+ const root=clear(document.getElementById('exercise-detail'));
+ root.classList.add('active');
+ root.classList.toggle('math-bonus-detail',ex.kind==='bonus-day'&&ex.subject==='Mathématiques'||isHomeworkDetail&&ex.subject==='Mathématiques');
+ root.classList.toggle('homework-bonus-detail',isHomeworkDetail);
+ root.append(button('← Retour aux exercices',()=>{
+  root.classList.remove('active');
+  document.getElementById('exercise-index').classList.remove('hide');
+  renderExerciseIndex();scrollTop();
+ },'plain back'));
+ const actualLesson=lessonBy(ex.lesson);
+ const isThalesENT=ex.homeworkBonus===true&&ex.subject==='Mathématiques'&&
+  (ex.id==='BD1611_MA01'||/r[eé]ciproque\s+de\s+thal[eè]s/i.test(ex.title));
+ if(isHomeworkDetail){
+  // La liste « Bonus devoirs » était déjà modernisée. Réutiliser cette
+  // hiérarchie dans le détail au lieu de l'ancien écran générique.
+  const subjectTheme={
+   'Mathématiques':'maths','Espagnol':'espagnol','Anglais':'anglais',
+   'Français':'francais','Histoire-géographie':'histoire',
+   'Physique-chimie':'physique','SVT':'svt'
+  }[ex.subject]||'maths';
+  const title=String(ex.title||'Révision du devoir');
+  const dated=/^(\d{1,2}\/\d{1,2}(?:\/\d{4})?)\s*[—–-]\s*(.+)$/.exec(title);
+  const cleanTitle=dated?dated[2]:title;
+  const topic=E('section','homework-detail-hero homework-subject-'+subjectTheme);
+  const band=E('div','homework-detail-band');
+  band.append(E('strong','homework-detail-subject',ex.subject||'Révisions'),
+   E('span','homework-detail-date',dated?'Pour le '+dated[1]:'Bonus devoir'));
+  const body=E('div','homework-detail-body');
+  body.append(E('div','homework-detail-kicker','RÉVISION DU DEVOIR'),
+   E('h2','',cleanTitle),
+   E('p','homework-detail-facts',ex.questions.length+' questions · Une seule tentative · Correction expliquée après validation'),
+   E('p','homework-detail-disclaimer','Exercice créé dans le classeur pour réviser. Ce n’est pas la fiche originale du professeur.'));
+  topic.append(band,body);
+  root.append(topic);
+  const courses=E('details','homework-detail-courses');
+  const related=E('div','homework-detail-links');
+  if(isThalesENT)related.append(button('Cours ENT du 12 novembre · Thalès',
    ()=>{page('matieres');renderMatiere('Mathématiques',null,'TIM_ENT_20261112');},
    'math-homework-ent-link'));
-}
-root.append(E('p','intro',exerciseDescription(ex)));
-if(ex.kind==='bonus-day'){
+  if(actualLesson)related.append(button('Leçon BIS correspondante',()=>openLesson(ex.lesson),'plain'));
+  if(ex.instructions)related.append(E('p','homework-detail-source-note',ex.instructions));
+  // Conserver la règle déjà validée : aucun renvoi de cours avant un défi bonus.
+  if(ex.kind!=='bonus-day'&&related.childNodes.length){
+   courses.append(E('summary','','Cours et informations complémentaires'),related);
+   root.append(courses);
+  }
+ }else{
+  root.append(badge(ex.level),E('h2','',ex.title));
+  root.append(E('p','intro',exerciseDescription(ex)));
+  if(ex.kind==='bonus-day'){
  // Pas d'indice ni de renvoi à une leçon avant la validation d'un défi bonus.
-}else if(ex.kind==='daily'&&ex.questionBank==='spanish-ent-v1'){
- root.append(E('p','small','Révision de plusieurs leçons d’espagnol : vocabulaire, phrases, traduction et conjugaison.'));
- root.append(button('Revoir les leçons d’espagnol',()=>{page('matieres');renderMatiere('Espagnol');},'plain'));
-}else{
- const actualLesson=lessonBy(ex.lesson);
- if(ex.kind==='bonus-day'&&!actualLesson)root.append(E('p','small','Entraînement bonus sur ce thème. Ce n’est pas un cours original de la professeure.'));
- else root.append(E('p','small','Leçon associée : '+(actualLesson?.title||(ex.subject==='Mathématiques'?ex.chapter||'Voir les cours de la matière':'Voir les cours de la matière'))));
- if(actualLesson)root.append(button('Voir la leçon correspondante',()=>openLesson(ex.lesson),'plain'));
-}
-if(ex.instructions&&!completedChallenge){const instructions=E('div','note info',ex.instructions);instructions.style.cssText='white-space:pre-line;font-size:16px;line-height:1.65;margin:12px 0;padding:16px;border:2px solid #e9b84a;border-radius:14px';root.append(instructions);}
-if(!completedChallenge)root.append(makeAttachmentPanel('exercise',ex.id));if(!window.__TIM_GUEST&&!ex.kind&&!attemptFor(ex.id)){
+  }else if(ex.kind==='daily'&&ex.questionBank==='spanish-ent-v1'){
+   root.append(E('p','small','Révision de plusieurs leçons d’espagnol : vocabulaire, phrases, traduction et conjugaison.'));
+   root.append(button('Revoir les leçons d’espagnol',()=>{page('matieres');renderMatiere('Espagnol');},'plain'));
+  }else{
+   if(ex.kind==='bonus-day'&&!actualLesson)root.append(E('p','small','Entraînement bonus sur ce thème. Ce n’est pas un cours original de la professeure.'));
+   else root.append(E('p','small','Leçon associée : '+(actualLesson?.title||(ex.subject==='Mathématiques'?ex.chapter||'Voir les cours de la matière':'Voir les cours de la matière'))));
+   if(actualLesson)root.append(button('Voir la leçon correspondante',()=>openLesson(ex.lesson),'plain'));
+  }
+  if(ex.instructions&&!completedChallenge){
+   const instructions=E('div','note info',ex.instructions);
+   instructions.style.cssText='white-space:pre-line;font-size:16px;line-height:1.65;margin:12px 0;padding:16px;border:2px solid #e9b84a;border-radius:14px';
+   root.append(instructions);
+  }
+ }
+ if(!completedChallenge)root.append(makeAttachmentPanel('exercise',ex.id,{hideIfEmpty:isHomeworkDetail}));
+if(!window.__TIM_GUEST&&!ex.kind&&!attemptFor(ex.id)){
  const mode=window.TIM_EXERCISE.mode(ex);
- const modeInfo=notice(mode==='school'?'📚 DEVOIR DE L’ÉCOLE · 0 XP. Ton parent débloquera la correction.':mode==='bonus'?'⭐ EXERCICE BONUS · 100 % = +2 XP ; dès 60 % = +1 XP ; sinon 0. Maximum +3 XP par jour.':'Cet exercice n’est pas encore disponible.');modeInfo.id='tim-exercise-mode-info';root.append(modeInfo);
+ const modeInfo=notice(mode==='school'?'Devoir scolaire · 0 XP · Correction après accord du parent.':mode==='bonus'?'Bonus · 10/10 : +2 XP · Dès 6/10 : +1 XP · Sinon 0 XP · Plafond quotidien +3 XP.':'Cet exercice n’est pas encore disponible.');modeInfo.id='tim-exercise-mode-info';if(isHomeworkDetail)modeInfo.classList.add('homework-detail-mode-info');root.append(modeInfo);
 }
 showTaskGuide(root); // Un seul rappel court au début du bonus, pas dix répétitions.
 if(window.__TIM_GUEST){root.append(notice('Visite en lecture seule : tu peux voir les questions, mais tu ne peux ni répondre ni valider.','guest-preview'));
@@ -933,19 +980,19 @@ if(old){
    root.append(notice('Ton exercice est enregistré, mais le résultat n’a pas pu s’afficher. Tu ne dois pas le recommencer.'));
    root.append(button('Ouvrir ma note et mon corrigé',()=>openExercise(id),'mission-launch'));
   }
-},'btn');root.append(E('p','small','Une seule validation. Pour les défis, la note et la correction sont immédiates ; les devoirs scolaires restent à 0 XP et sous contrôle du parent.'),submit);}
+},'btn');if(!isHomeworkDetail)root.append(E('p','small','Une seule validation. Pour les défis, la note et la correction sont immédiates ; les devoirs scolaires restent à 0 XP et sous contrôle du parent.'));root.append(submit);}
 if(!old && !window.__TIM_PARENT && controls.length>1){
   const questionNodes=[...form.querySelectorAll('.q')];
   const submit=root.querySelector('button.btn');
   if(submit){submit.classList.add('quiz-final');}
   form.classList.add('quiz-one');
-  const progress=E('div','quiz-progress');const heading=E('div','quiz-row');const stateLabel=E('span','','Question 1 / '+questionNodes.length);const nAnswered=E('span','','0 réponse');heading.append(stateLabel,nAnswered);const bar=E('div','quiz-track');const barFill=E('span');bar.append(barFill);progress.append(heading,bar);root.insertBefore(progress,form);
+  const progress=E('div','quiz-progress');const heading=E('div','quiz-row');const stateLabel=E('span','','Question 1 / '+questionNodes.length);const progressCount=n=>isHomeworkDetail?n+' / '+questionNodes.length+' réponses':n+' réponse'+(n>1?'s':'');const nAnswered=E('span','',progressCount(0));heading.append(stateLabel,nAnswered);const bar=E('div','quiz-track');const barFill=E('span');bar.append(barFill);progress.append(heading,bar);root.insertBefore(progress,form);
   const actions=E('div','quiz-controls');let step=0;
   const before=button('← Précédent',()=>{showStep(step-1);progress.scrollIntoView({behavior:'smooth',block:'start'});},'plain');
   const after=button('Suivant →',()=>{const answers=values();if(!safe(answers[step]).trim()||!reasoningReady(controls[step])){alert('Écris ta réponse et ton raisonnement avant de continuer.');return;}showStep(step+1);progress.scrollIntoView({behavior:'smooth',block:'start'});},'btn');
   actions.append(before,after);root.insertBefore(actions,submit);
-  function showStep(n){step=Math.min(questionNodes.length-1,Math.max(0,n));for(let i=0;i<questionNodes.length;i++)questionNodes[i].classList.toggle('quiz-current',i===step);stateLabel.textContent='Question '+(step+1)+' / '+questionNodes.length;barFill.style.width=(((step+1)/questionNodes.length)*100)+'%';let filled=values().filter(v=>safe(v).trim()).length;nAnswered.textContent=filled+' réponse'+(filled>1?'s':'');before.disabled=step===0;after.classList.toggle('hide',step===questionNodes.length-1);submit.classList.toggle('ready',step===questionNodes.length-1);}
-  form.addEventListener('change',()=>{nAnswered.textContent=values().filter(v=>safe(v).trim()).length+' réponses';});form.addEventListener('input',()=>{nAnswered.textContent=values().filter(v=>safe(v).trim()).length+' réponses';});
+  function showStep(n){step=Math.min(questionNodes.length-1,Math.max(0,n));for(let i=0;i<questionNodes.length;i++)questionNodes[i].classList.toggle('quiz-current',i===step);stateLabel.textContent='Question '+(step+1)+' / '+questionNodes.length;barFill.style.width=(((step+1)/questionNodes.length)*100)+'%';let filled=values().filter(v=>safe(v).trim()).length;nAnswered.textContent=progressCount(filled);before.disabled=step===0;after.classList.toggle('hide',step===questionNodes.length-1);submit.classList.toggle('ready',step===questionNodes.length-1);}
+  form.addEventListener('change',()=>{nAnswered.textContent=progressCount(values().filter(v=>safe(v).trim()).length);});form.addEventListener('input',()=>{nAnswered.textContent=progressCount(values().filter(v=>safe(v).trim()).length);});
   showStep(0);
  }
 scrollTop();}
@@ -1049,15 +1096,16 @@ function exported(){return {app:'classeur_espagnol_tim',version:7,exportedAt:new
 function exportJSON(){const blob=new Blob([JSON.stringify(exported(),null,2)],{type:'application/json'});const url=URL.createObjectURL(blob);let a=document.createElement('a');a.download='resultats_espagnol_Tim_V7.json';a.href=url;document.body.append(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),8000);}
 function renderAttempts(list,arr){clear(list);if(!arr.length){list.append(notice('Aucun exercice validé.'));return;}for(const a of arr.slice().reverse()){let box=E('div','panel');box.append(E('h3','',a.title+(a.needsReview?' · à corriger':a.score===null?' · note non disponible':' · '+a.score+'/'+a.total)),E('p','meta',new Date(a.date).toLocaleString('fr-FR')));const detail=E('details','summary-details');detail.append(E('summary','','Voir toutes les réponses'));for(const [i,x] of a.answers.entries()){const row=E('div','separated');row.append(E('strong','',(i+1)+'. '+x.question),E('p','',`Réponse : ${x.response}`),E('p','subtle',`Attendu : ${x.expected}`),E('p',x.correct===false?'wrong':x.correct===true?'correct':'subtle',x.correct===null?'À relire':x.correct?'Correct':'À revoir'));detail.append(row);}box.append(detail);list.append(box);}}
 // V15 — Lecture privée des pièces jointes (PDF, figures, photos, documents).
-function makeAttachmentPanel(targetKind,targetId){
- const panel=E('section','panel attachment-panel');panel.append(E('h3','',targetKind==='lesson'?(isBisLesson(lessonBy(targetId))?'Documents complémentaires de la leçon BIS':'Documents originaux ENT · PDF et figures'):'Documents et figures'));
+function makeAttachmentPanel(targetKind,targetId,options={}){
+ const hideIfEmpty=options.hideIfEmpty===true;
+ const panel=E('section','panel attachment-panel');if(hideIfEmpty)panel.hidden=true;panel.append(E('h3','',targetKind==='lesson'?(isBisLesson(lessonBy(targetId))?'Documents complémentaires de la leçon BIS':'Documents originaux ENT · PDF et figures'):'Documents et figures'));
  if(!window.__TIM_BRIDGE?.attachments){panel.append(E('p','small','Les pièces jointes privées sont visibles après connexion.'));return panel;}
  const info=E('p','small','Chargement des documents…'),list=E('div','attachment-list');panel.append(info,list);
  const api=window.__TIM_BRIDGE.attachments;
  async function refresh(){
   clear(list);info.textContent='Chargement des pièces jointes…';
   try{
-   const files=await api.list(targetKind,targetId);info.textContent=files.length?files.length+' document(s) disponible(s).':'Aucune pièce jointe pour le moment.';
+   const files=await api.list(targetKind,targetId);if(hideIfEmpty)panel.hidden=files.length===0;info.textContent=files.length?files.length+' document(s) disponible(s).':'Aucune pièce jointe pour le moment.';
    for(const item of files){
     const row=E('div','attachment-row');
     row.append(E('div','attachment-name',(item.title||item.fileName)+' · '+(item.size/1024/1024).toFixed(2)+' Mo'));
