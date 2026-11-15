@@ -58,7 +58,7 @@ function showCorrection(slot,report){
  if(lessonId){
   if(count)slot.append(E('p','','Partie conseillée à revoir : '+(reviewTitles[lessonId]||'la règle et les exemples')+'.'));
   const reviser=button('Revoir la leçon BIS pour comprendre les erreurs',()=>{
-   window.TIM_PEDAGOGY_NAVIGATE?.('HG',lessonId);
+   window.TIM_PEDAGOGY_NAVIGATE?.(/^HG_BIS0[6-8]$/.test(lessonId)?'EMC':'Histoire-géographie',lessonId);
   },'spx-quick-link');
   reviser.style.cssText='display:block;width:100%;min-height:47px;margin:12px 0;padding:10px;font-weight:800';
   slot.append(reviser);
