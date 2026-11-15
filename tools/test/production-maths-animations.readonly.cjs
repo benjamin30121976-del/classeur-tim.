@@ -39,7 +39,7 @@ async function main(){
     matchingPrompt:body.includes('const prompt=displayPrompt(ex,index'),
     noFalseDE:body.includes('const hasDE='),
     rightCaption:body.includes('L’égalité des rapports est donnée dans l’énoncé'),
-    noAssumedParallel:body.includes('givenParallel?ratio1:(knownDifferent?.57:.54)')
+    correctGeometryPolicy:body.includes('ratio2=(givenParallel||equalRatiosGiven)?ratio1:(knownDifferent?.57:.54)')
    };
    if(Object.entries(report.thalesPublication).every(([k,v])=>
      k.endsWith('Status')?v===200:v===true))break;
