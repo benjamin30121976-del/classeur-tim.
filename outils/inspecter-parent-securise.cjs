@@ -65,6 +65,11 @@ async function inspect(browser,label,viewport){
     check(label+' lecons chargees',stats.lessons>0,'Nombre : '+stats.lessons);
     check(label+' défi du jour supprimé du classeur',stats.dailyChallenges===0,'Défis quotidiens visibles : '+stats.dailyChallenges);
 
+    if(process.env.TIM_ENCRYPTED_COPY_AUDIT==='1'){
+      if(label==='ordinateur')await require('./auditer-copie-samedi-chiffree.cjs')(page,check);
+      else check('Audit chiffré mobile non nécessaire',true,'Aucune écriture.');
+      return;
+    }
     if(TARGET_SATURDAY_REVISE){
       await require('./reviser-copie-samedi-parent.cjs')(page,check,process.env.TIM_SATURDAY_REVISE);
       return;
