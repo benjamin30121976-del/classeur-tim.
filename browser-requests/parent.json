@@ -1,8 +1,8 @@
 {
   "mode": "lecture-seule-parent",
   "site": "https://classeur-tim-v16.pages.dev/",
-  "scope": "Contrôle du site Cloudflare réel en session Parent : figures bonus maths, lisibilité mobile et boutons de copies/export. Lecture seule.",
+  "scope": "Réviser en lecture seule la copie du grand défi du samedi 14/11, puis rectifier seulement les points des questions 3,12,15 après autorisation et sauvegarde de l'original.",
   "launch_on_update": true,
-  "note": "Chromium Parent bureau + Android 390px, aucune soumission, aucune capture de résultats individuels.",
-  "checkVersion": "controle-bonus-parent-20261114-v1"
+  "note": "Workflow Parent Chromium existant. PR=précontrôle strict sans écriture. Publication main=rectification ciblée uniquement si serveur déployé, sauvegarde d'origine et XP inchangés.",
+  "checkVersion": "rectifier-copie-samedi-20261114-v1"
 }
