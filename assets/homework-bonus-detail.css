@@ -1,0 +1,176 @@
+/* Détail Bonus devoirs — présentation validée dans « Référence »/« Référence 2 ».
+   Ne concerne ni les données, ni la notation, ni les autres exercices. */
+#exercise-detail.homework-bonus-detail{
+ --homework-ink:#192a43;
+ --homework-blue:#1755a1;
+ --homework-blue-soft:#e7f1ff;
+ color:#dbe9fa;
+ padding:0 0 calc(120px + env(safe-area-inset-bottom,0px));
+}
+#exercise-detail.homework-bonus-detail > button.back{
+ display:inline-flex;align-items:center;max-width:100%;
+ margin:10px 0 12px;padding:9px 12px;
+ color:#d6f7ff!important;background:#163750!important;
+ border:1px solid #4b829b;border-radius:12px;
+ font-size:15px!important;min-height:42px!important;white-space:normal;
+}
+#exercise-detail.homework-bonus-detail .homework-detail-hero{
+ display:block;overflow:hidden;border-radius:19px;border:1px solid #bdcfe5;
+ background:#fff;color:var(--homework-ink);
+ box-shadow:0 7px 22px #06152a2c;margin:0 0 12px;
+}
+#exercise-detail.homework-bonus-detail .homework-detail-band{
+ display:flex;align-items:center;justify-content:space-between;
+ gap:9px;flex-wrap:wrap;padding:10px 14px;
+ background:linear-gradient(110deg,#164bb3,#337acb);
+ color:#fff;
+}
+#exercise-detail.homework-bonus-detail .homework-detail-subject{
+ font-size:16px!important;font-weight:900;color:#fff;line-height:1.3;
+}
+#exercise-detail.homework-bonus-detail .homework-detail-date{
+ padding:5px 9px;border:1px solid #ffffff58;border-radius:20px;
+ background:#092f772c;color:#fff;font-size:12px!important;
+ font-weight:750;line-height:1.35;
+}
+#exercise-detail.homework-bonus-detail .homework-detail-body{padding:14px 16px 15px}
+#exercise-detail.homework-bonus-detail .homework-detail-kicker{
+ font-size:11px!important;color:#285ab6!important;font-weight:900;
+ letter-spacing:.07em;line-height:1.25;margin:0 0 6px;
+}
+#exercise-detail.homework-bonus-detail .homework-detail-body h2{
+ font-size:clamp(21px,5.4vw,27px)!important;
+ font-weight:900;line-height:1.24;color:#162940!important;
+ letter-spacing:-.025em;margin:0 0 10px;overflow-wrap:anywhere;
+}
+#exercise-detail.homework-bonus-detail .homework-detail-facts{
+ margin:0 0 7px;color:#244268!important;
+ font-size:14px!important;line-height:1.4;font-weight:750;
+}
+#exercise-detail.homework-bonus-detail .homework-detail-disclaimer{
+ margin:0;color:#49617a!important;font-size:13px!important;line-height:1.4;
+}
+#exercise-detail.homework-bonus-detail .homework-detail-courses{
+ border:1px solid #92b2d3;border-radius:13px;background:#e9f3ff;
+ color:#1c3958;overflow:hidden;margin:10px 0 12px;
+}
+#exercise-detail.homework-bonus-detail .homework-detail-courses>summary{
+ cursor:pointer;padding:11px 13px;color:#1c4274;
+ font-size:14px!important;line-height:1.4;font-weight:800;
+}
+#exercise-detail.homework-bonus-detail .homework-detail-courses[open]>summary{
+ border-bottom:1px solid #b9cfea;
+}
+#exercise-detail.homework-bonus-detail .homework-detail-links{
+ display:flex;flex-wrap:wrap;gap:8px;padding:10px 12px 12px;
+}
+#exercise-detail.homework-bonus-detail .homework-detail-links button{
+ box-sizing:border-box;flex:1 1 210px;width:auto!important;max-width:none!important;
+ margin:0!important;padding:10px 12px!important;
+ background:#15559a!important;color:#fff!important;
+ border:1px solid #0d4178!important;border-radius:10px!important;
+ font-size:14px!important;line-height:1.35;min-height:45px!important;
+}
+#exercise-detail.homework-bonus-detail .homework-detail-source-note{
+ width:100%;margin:0;color:#344e67!important;font-size:13px!important;
+ line-height:1.45;white-space:pre-line;
+}
+#exercise-detail.homework-bonus-detail .homework-detail-mode-info{
+ background:#e5f1ff!important;color:#193f70!important;
+ border:1px solid #aac8e5!important;border-radius:12px;
+ padding:10px 13px;margin:0 0 12px;
+ font-size:13px!important;line-height:1.4!important;font-weight:700;
+}
+#exercise-detail.homework-bonus-detail .quiz-progress{
+ margin:12px 0 12px;padding:12px 14px!important;
+ border:1px solid #b6cee7;border-radius:14px;background:#fff;
+ scroll-margin-top:140px;
+}
+#exercise-detail.homework-bonus-detail .quiz-progress .quiz-row{
+ display:flex;align-items:center;justify-content:space-between;gap:9px;
+ color:#2b4469!important;font-size:14px!important;line-height:1.3;
+ font-weight:850;
+}
+#exercise-detail.homework-bonus-detail .quiz-progress .quiz-track{
+ height:6px;background:#e4ebf5;
+}
+#exercise-detail.homework-bonus-detail .quiz-progress .quiz-track span{background:#245bd9}
+#exercise-detail.homework-bonus-detail .panel.quiz-one{
+ background:transparent!important;border:0!important;box-shadow:none!important;
+ margin:0!important;padding:0!important;min-height:0;
+}
+#exercise-detail.homework-bonus-detail .q,
+#exercise-detail.homework-bonus-detail .quiz-one .q.quiz-current{
+ box-sizing:border-box;background:#fff!important;color:var(--homework-ink)!important;
+ border:1px solid #cfdceb!important;border-radius:17px;
+ margin:0 0 12px;padding:15px!important;overflow-wrap:anywhere;
+ box-shadow:0 3px 14px #091b3220;
+}
+#exercise-detail.homework-bonus-detail .qtitle{
+ color:#172a45!important;font-size:clamp(18px,4.9vw,21px)!important;
+ font-weight:850!important;line-height:1.4!important;
+ letter-spacing:0!important;margin-bottom:12px!important;
+ white-space:normal;overflow-wrap:anywhere;
+}
+#exercise-detail.homework-bonus-detail .check-answers{
+ display:grid;gap:8px;
+}
+#exercise-detail.homework-bonus-detail .check-answers .choose{
+ box-sizing:border-box;background:#f7faff!important;
+ color:#20344e!important;border:1px solid #bdcfe2!important;
+ border-radius:12px;min-height:50px!important;
+ padding:11px 12px!important;line-height:1.4;
+}
+#exercise-detail.homework-bonus-detail .check-answers .choose:has(input:checked){
+ background:#e5f5ef!important;border:2px solid #218a72!important;
+}
+#exercise-detail.homework-bonus-detail .check-answers .choose span{
+ color:#213854!important;font-size:16px!important;
+ line-height:1.4!important;font-weight:500;
+}
+#exercise-detail.homework-bonus-detail .check-answers .choose input{
+ width:20px;height:20px;flex-shrink:0;
+}
+#exercise-detail.homework-bonus-detail .tim-math-bonus-figure{
+ max-width:510px!important;margin:12px auto 12px!important;
+ border-radius:12px!important;
+}
+#exercise-detail.homework-bonus-detail .tim-math-bonus-figure svg{
+ max-height:285px!important;object-fit:contain;
+}
+#exercise-detail.homework-bonus-detail .tim-math-bonus-figure figcaption{
+ background:#edf5ff;color:#294b6e!important;
+ font-size:13px!important;line-height:1.42!important;
+ padding:9px 10px!important;border-radius:8px;
+}
+#exercise-detail.homework-bonus-detail .quiz-controls{
+ display:flex;gap:9px;margin:12px 0 14px;
+}
+#exercise-detail.homework-bonus-detail .quiz-controls button{
+ min-height:48px!important;font-size:15px!important;padding:9px 12px;
+}
+#exercise-detail.homework-bonus-detail .attachment-panel[hidden]{display:none!important}
+body:has(#exercise-detail.homework-bonus-detail.active) .tabs{
+ min-height:68px!important;padding:5px max(5px,env(safe-area-inset-left))
+ calc(6px + env(safe-area-inset-bottom))!important;
+ gap:2px;background:#0b1b2ef5;
+}
+body:has(#exercise-detail.homework-bonus-detail.active) .tabs button{
+ min-height:57px!important;padding:5px 2px 4px!important;
+ font-size:12px!important;gap:3px!important;
+}
+body:has(#exercise-detail.homework-bonus-detail.active) .tabs .nav-icon{
+ min-height:24px!important;height:25px!important;
+ width:30px!important;font-size:23px!important;
+}
+body:has(#exercise-detail.homework-bonus-detail.active) .tabs .nav-icon svg{
+ width:24px!important;height:24px!important;
+}
+@media(max-width:420px){
+ #exercise-detail.homework-bonus-detail .homework-detail-body{padding:13px 14px}
+ #exercise-detail.homework-bonus-detail .homework-detail-band{padding:10px 13px}
+ #exercise-detail.homework-bonus-detail .homework-detail-hero{border-radius:17px}
+ #exercise-detail.homework-bonus-detail .q,
+ #exercise-detail.homework-bonus-detail .quiz-one .q.quiz-current{padding:13px!important}
+ #exercise-detail.homework-bonus-detail .tim-math-bonus-figure svg{max-height:260px!important}
+}
