@@ -54,6 +54,22 @@ function bisContent(root,b){
  if(b.id==='HG_BIS08')add(root,'p','Précision institutionnelle : le Conseil de l’Europe n’est pas le Conseil européen. Il n’est pas une institution de l’Union européenne.');
  if(b.id==='HG_BIS09')add(root,'p','Repères : 1933, construction de la dictature ; 1935, lois de Nuremberg ; 1939–1945, guerre et Shoah. En 1945, l’Allemagne nazie est vaincue. Schéma créé pour apprendre, non fourni dans l’ENT.');
 }
+// Associations ENT explicites : la date de remise n'est pas toujours la date de séance.
+// Ne pas rattacher le cours à recopier pour le 9 novembre à la séance du 9 novembre
+// lorsqu'il a été donné pendant celle du 6.
+const ENT_LINKED_HOMEWORK={
+ '10099~6402886':['10099~213498','10099~213669'],
+ '10099~6402837':['10099~214592'],
+ '10099~6402820':['10099~214770','10099~215099'],
+ '10099~6402787':['10099~215396']
+};
+const LINKED_HOMEWORK_IDS=new Set(Object.values(ENT_LINKED_HOMEWORK).flat());
+function homeworkForCourse(course,pack){
+ const ids=ENT_LINKED_HOMEWORK[course.entId];
+ if(ids)return pack.homework.filter(h=>ids.includes(h.id));
+ return pack.homework.filter(h=>h.lessonEntId===course.entId||(
+  h.due===course.date&&!LINKED_HOMEWORK_IDS.has(h.id)));
+}
 function session(course,bis,pack){
  const details=E('details',undefined,'tim-es-lesson');
  details.style.cssText='background:#18243c;border:1px solid #5b6983;border-radius:13px;margin:11px 0;padding:12px';
@@ -75,7 +91,7 @@ function session(course,bis,pack){
     add(pane,'p','Résumé des informations disponibles dans l’ENT : le texte complet de cette séance n’a pas été retrouvé.','lesson-caution');
     add(pane,'p',course.summary);
    }else add(pane,'p','Cette séance est inscrite à l’ENT, mais aucun cours détaillé n’est fourni dans l’archive.');
-   const due=pack.homework.filter(h=>h.due===course.date||h.lessonEntId===course.entId);
+   const due=homeworkForCourse(course,pack);
    if(due.length){add(pane,'h4','Consignes et travaux liés à cette séance');
     for(const h of due){add(pane,'p','Pour le '+fr(h.due)+' — '+h.title+' : '+h.content);if(h.originalText){add(pane,'h4','Texte original donné à copier dans l’ENT');add(pane,'p',h.originalText);}}
     add(pane,'p','Les travaux cochés dans l’ENT ne prouvent pas que les corrections individuelles sont connues.');}
@@ -88,7 +104,7 @@ function session(course,bis,pack){
    add(pane,'p','Relis les explications, puis entraîne-toi sur dix questions. La correction indiquera ce qu’il faut revoir.');
   }else if(tab==='entex'){
    add(pane,'h3','4 · Exercices et documents ENT du professeur');
-   const tasks=pack.homework.filter(h=>h.due===course.date||h.lessonEntId===course.entId);
+   const tasks=homeworkForCourse(course,pack);
    if(!tasks.length)add(pane,'p','Pas d’exercice détaillé du professeur rattaché à cette séance.');
    for(const h of tasks){add(pane,'p','Consigne pour le '+fr(h.due)+' — '+h.title+' : '+h.content);if(h.originalText){add(pane,'h4','Transcription ENT à recopier');add(pane,'p',h.originalText);}}
    const attached=pack.attachments.filter(d=>d.target===course.id);
