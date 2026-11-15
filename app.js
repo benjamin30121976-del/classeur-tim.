@@ -37,22 +37,35 @@ function homeworkBonusCard(ex){
  const original=safe(ex.title);
  const dated=original.match(/^(\d{1,2}\/\d{1,2}(?:\/\d{4})?)\s*[—–-]\s*(.+)$/);
  const date=dated?dated[1]:'';
- const title=(dated?dated[2]:original).replace(/^Évaluation\s*:/i,'Révision :');
+ const title=(dated?dated[2]:original).replace(/^Évaluation\s*:/i,'').trim();
  const subject=ex.subject||'Espagnol';
+ const subjects={
+  'Anglais':['anglais','EN'],'Espagnol':['espagnol','ES'],
+  'Français':['francais','FR'],'Histoire-géographie':['histoire','HG'],
+  'Mathématiques':['maths','∑'],'Physique-chimie':['physique','PC'],
+  'SVT':['svt','SVT']
+ };
+ const [theme,mark]=subjects[subject]||['autre','3e'];
  const done=Boolean(attemptFor(ex.id));
  const mode=window.TIM_EXERCISE.mode(ex);
  const xpLabel=ex.kind==='bonus-day'?'XP du défi':ex.kind==='training'?'Jusqu’à +1 XP':mode==='bonus'?'Jusqu’à +2 XP':mode==='school'?'0 XP':'XP selon la note';
  const total=Array.isArray(ex.questions)?ex.questions.length:0;
- const card=E('button','tile homework-bonus-card');card.type='button';
- const head=E('span','homework-bonus-head');
- head.append(E('span','homework-bonus-eyebrow',subject+(date?' · Pour le '+date:'')),badge(done?'Terminé':'À faire',done?'green':''));
- card.append(head,E('strong','homework-bonus-title',title));
- card.append(E('span','homework-bonus-summary','Révision créée dans le classeur, pas la fiche du professeur.'));
+ const card=E('button','tile homework-bonus-card homework-subject-'+theme);card.type='button';
+ const top=E('span','homework-bonus-band');
+ const label=E('span','homework-bonus-subject');
+ label.append(E('span','homework-bonus-mark',mark),E('span','homework-bonus-subject-name',subject));
+ top.append(label,E('span','homework-bonus-date',date?'Pour le '+date:'À réviser'));
+ const body=E('span','homework-bonus-body');
+ const context=E('span','homework-bonus-context');
+ context.append(E('span','homework-bonus-kicker','RÉVISION DU DEVOIR'),badge(done?'Terminé':'À faire',done?'green':''));
+ body.append(context,E('strong','homework-bonus-title',title));
  const facts=E('span','homework-bonus-facts');
  if(total)facts.append(E('span','',total+' questions'));
- facts.append(E('span','','Note sur '+(total||10)),E('span','',xpLabel));
- card.append(facts,E('span','homework-bonus-rules','Une tentative · Correction expliquée après validation'));
- card.append(E('span','homework-bonus-cta',done?'Consulter →':'Commencer →'));
+ facts.append(E('span','','Note sur '+(total||10)),E('span','homework-bonus-xp',xpLabel));
+ body.append(facts);
+ const foot=E('span','homework-bonus-foot');
+ foot.append(E('span','homework-bonus-rules','1 tentative · Correction expliquée'),E('span','homework-bonus-cta',done?'Consulter →':'Commencer →'));
+ body.append(foot);card.append(top,body);
  card.addEventListener('click',()=>openExercise(ex.id));
  return card;
 }
@@ -666,7 +679,7 @@ function renderExerciseIndex(){
   const pageTitle=document.querySelector('#exercices .pagehead h2');
   const pageIntro=document.querySelector('#exercices .pagehead .intro');
   if(pageTitle)pageTitle.textContent=isHomeworkBonus?'Bonus devoirs':'Mes exercices';
-  if(pageIntro)pageIntro.textContent=isHomeworkBonus?'Des exercices pour préparer les devoirs. Choisis une révision ci-dessous.':'Chaque exercice indique ses XP possibles selon la note. Les devoirs, les entraînements et les défis conservent leurs barèmes. Une seule validation par exercice.';
+  if(pageIntro)pageIntro.textContent=isHomeworkBonus?'Matière d’abord, puis sujet. Ces révisions sont créées dans le classeur, elles ne remplacent pas les fiches du professeur.':'Chaque exercice indique ses XP possibles selon la note. Les devoirs, les entraînements et les défis conservent leurs barèmes. Une seule validation par exercice.';
  if(exerciseSubject==='Physique-chimie'){renderPhysicsExerciseDirectory(root,toolbar);return;}
  if(exerciseSubject==='Anglais'){renderEnglishExerciseDirectory(root,toolbar);return;}
   if(exerciseSubject==='SVT'){renderSvtExerciseDirectory(root,toolbar);return;}
@@ -677,7 +690,7 @@ function renderExerciseIndex(){
   finder.classList.add('hide');root.className='matter-grid';
   if(exerciseMode==='homework-bonus'){
    root.className='clicklist homework-bonus-list';
-   const homework=bases.filter(e=>e.homeworkBonus===true);
+   const homework=bases.filter(e=>e.homeworkBonus===true).sort((a,b)=>{const order=['Anglais','Espagnol','Français','Histoire-géographie','Mathématiques','Physique-chimie','SVT'];const key=x=>{const i=order.indexOf(x.subject||'Espagnol');return i<0?order.length:i;};return key(a)-key(b);});
    document.getElementById('exercise-count').textContent=homework.length+' révision(s) · '+homework.filter(e=>attemptFor(e.id)).length+' terminée(s)';
    const back=button('← Tous les exercices',()=>{exerciseMode='';renderExerciseIndex();},'group-back');
    back.style.setProperty('color','#e6efff','important');toolbar.append(back);
