@@ -407,7 +407,11 @@ export function publicMixedMission(mission){
  if(!mission)return null;
  return {...mission,questions:mission.questions.map(q=>{
   const {right,also,why,parts,answer,unit,...publicFields}=q;
-  if(q.type==='structured')publicFields.fields=(q.fields||[]).map(({accepted,...field})=>field);
+  if(q.type==='structured'){
+    publicFields.fields=(q.fields||[]).map(({accepted,...field})=>field);
+    delete publicFields.lessonReview;
+    delete publicFields.sourceEnt;
+   }
   return publicFields;
  })};
 }
