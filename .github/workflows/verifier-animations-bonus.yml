@@ -21,6 +21,8 @@ on:
       - 'maths-12nov-ui.js'
       - 'mixed-challenges-ui.js'
       - 'scripts/test-geometry-all-exercises-browser.cjs'
+      - 'scripts/test-homework-bonus-presentation-browser.cjs'
+      - 'assets/homework-bonus-detail.css'
       - 'scripts/test-bonus-figures-browser.cjs'
       - 'boot.js'
       - 'xp-rules.js'
@@ -51,6 +53,7 @@ jobs:
           node --check maths-bonus-figures.js
           node --check maths-geometry-general.js
           node --check scripts/test-geometry-all-exercises-browser.cjs
+          node --check scripts/test-homework-bonus-presentation-browser.cjs
           node --check maths-12nov-ui.js
           node --check mixed-challenges-ui.js
           node --check scripts/test-bonus-figures-browser.cjs
@@ -83,6 +86,7 @@ jobs:
           node scripts/test-bonus-perimetres-browser.cjs
           node scripts/test-bonus-figures-browser.cjs
           node scripts/test-geometry-all-exercises-browser.cjs
+          node scripts/test-homework-bonus-presentation-browser.cjs
       - name: Archiver les captures des animations
         if: always()
         uses: actions/upload-artifact@v4
