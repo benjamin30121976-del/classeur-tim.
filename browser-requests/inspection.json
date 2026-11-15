@@ -28,8 +28,8 @@
     {
       "type": "click",
       "selector": ".mission-hero .lobo-go",
-      "name": "bonus-devoirs-texte-xp"
+      "name": "bonus-devoirs-cartes-compactes-20261115"
     }
   ],
-  "note": "Contrôle en mode Invité après publication PR #65. Vérifier les libellés des XP de chaque exercice et du premier carré, en Chromium bureau/mobile. Aucun exercice validé et aucune écriture sur Tim."
+  "note": "Contrôle de publication de la nouvelle présentation Bonus devoirs (PR ciblée): navigation Invité Chromium bureau/Android, captures après ouverture de l'onglet. Lecture seule, aucun exercice validé, aucune donnée Tim modifiée."
 }
