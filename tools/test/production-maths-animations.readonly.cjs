@@ -87,41 +87,41 @@ async function main(){
      }
      // Contrôle du site réellement publié, sans identifiants ni validation.
      // Le mode invité ne doit jamais créer de copie, note, tentative ou XP.
+     // Parcours publié, même lecture par cartes que Espagnol/Mathématiques.
      await page.locator('[data-nav="matieres"]').first().click();
      await page.waitForFunction(()=>[...document.querySelectorAll('#matieres-content button.matter-card')]
        .some(b=>b.textContent.includes('EMC')&&!b.disabled),null,{timeout:18000});
      const emc=mat.locator('button.matter-card').filter({hasText:'EMC'}).first();
-     if(!(await emc.count())||!(await emc.isEnabled()))throw Error('Matière EMC non publiée ou désactivée');
+     if(!(await emc.count())||!(await emc.isEnabled()))throw Error('Matière EMC non publiée');
      await emc.click();
-     await page.waitForFunction(()=>document.querySelector('#matieres-content h2')?.textContent?.includes('EMC — Mes leçons'),null,{timeout:12000});
+     await page.waitForFunction(()=>document.querySelector('#matieres-content .emc-view .spx-hero h2')?.textContent?.includes('Mes leçons d’EMC'),null,{timeout:20000});
      row.checks.emc=await page.evaluate(()=>{
        const container=document.querySelector('#matieres-content');
-       const branches=[...container.querySelectorAll('details.chapter-section')];
        const pack=window.TIM_HG_PACK||{};
        return {
-         heading:container.querySelector('h2')?.textContent||'',
-         chapters:branches.length,
-         lessons:container.querySelectorAll('details.tim-es-lesson').length,
+         heading:container.querySelector('.emc-view .spx-hero h2')?.textContent||'',
+         cards:container.querySelectorAll('.emc-view .spx-card').length,
          bis:(pack.bis||[]).filter(b=>/\(EMC\)/.test(b.group||'')).length,
+         lessons:(pack.lessons||[]).filter(c=>/\(EMC\)/.test(c.chapter||'')).length,
          hgUnchanged:(pack.lessons||[]).length===25&&(pack.chapters||[]).length===9,
          horizontalOverflow:document.documentElement.scrollWidth>window.innerWidth+2
        };
      });
-     if(row.checks.emc.chapters!==3||row.checks.emc.lessons!==5||row.checks.emc.bis!==3||
+     if(row.checks.emc.cards!==3||row.checks.emc.lessons!==5||row.checks.emc.bis!==3||
         !row.checks.emc.hgUnchanged||row.checks.emc.horizontalOverflow)
-       throw Error('EMC production non conforme : '+JSON.stringify(row.checks.emc));
-     const chapter=mat.locator('details.chapter-section').first();
-     await chapter.evaluate(el=>el.open=true);
-     const lesson=chapter.locator('details.tim-es-lesson').first();
-     await lesson.evaluate(el=>el.open=true);
-     for(const name of ['Leçon ENT','Leçon BIS','Je n’ai pas compris','Exercices ENT','Entraînement']){
-       if(!(await lesson.getByRole('button',{name,exact:true}).count()))throw Error('Onglet EMC absent : '+name);
+       throw Error('Accueil EMC publié non conforme : '+JSON.stringify(row.checks.emc));
+     await mat.locator('.emc-view .spx-card').first().click();
+     if(await mat.locator('.emc-view .spx-row').count()!==3)
+       throw Error('Une BIS et deux cours ENT attendus sur le premier chapitre');
+     await mat.locator('.emc-view .spx-row').first().click();
+     if(await mat.locator('.emc-view .hg-bis-illustration').count()!==1)
+       throw Error('Leçon BIS doit s’afficher une seule fois avec son schéma');
+     for(const name of ['Cours ENT','Leçon BIS','Je n’ai pas compris','Exercices ENT','Entraînement']){
+       if(!(await mat.locator('.emc-view .emc-shortcuts').getByRole('button',{name,exact:true}).count()))
+         throw Error('Rubrique EMC absente : '+name);
      }
-     await lesson.getByRole('button',{name:'Leçon BIS',exact:true}).click();
-     if(!(await lesson.getByText('Comprendre la leçon pas à pas').count()))
-       throw Error('Explication BIS EMC absente');
-     await page.screenshot({path:path.join(out,device+'-emc-publie.jpg'),type:'jpeg',quality:72,fullPage:true,timeout:20000});
      row.checks.emcReady=true;
+     await page.screenshot({path:path.join(out,device+'-emc-publie.jpg'),type:'jpeg',quality:72,fullPage:true,timeout:20000});
      row.checks.javascriptCapabilities=await page.evaluate(()=>({
       mathPath:Boolean(window.TIM_MATH_PATH),
       mathBisCount:window.TIM_MATHS_BIS_PACK?.lessons?.length??null,
