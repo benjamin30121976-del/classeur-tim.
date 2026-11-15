@@ -45,7 +45,7 @@ const ex={
    const page=await browser.newPage({viewport,locale:'fr-FR'});
    await page.route('**/*',r=>r.abort('blockedbyclient'));
    await page.setContent('<!doctype html><html lang="fr"><head><meta name="viewport" content="width=device-width, initial-scale=1"><style>'+
-    originalCss+'</style><style>'+style+'</style></head><body>'+
+    originalCss+'</style><style>'+style+'</style></head><body class="ready">'+
     '<section class="page active" id="exercices"><div id="exercise-index"></div><div class="detail" id="exercise-detail"></div></section>'+
     '<nav class="tabs"><button><span class="nav-icon">⌂</span>Accueil</button>'+
     '<button><span class="nav-icon">▦</span>Matières</button>'+
@@ -88,6 +88,13 @@ const ex={
     const xp=root.querySelector('.homework-detail-mode-info');
     const card=root.querySelector('.homework-detail-hero');
     const rects=({elem,viewport})=>elem?.getBoundingClientRect().width<=viewport+2;
+    const contrast=(color,bg)=>{
+     const components=c=>(c.match(/[\d.]+/g)||[]).slice(0,3).map(v=>{
+      const n=Number(v)/255;return n<=.04045?n/12.92:((n+.055)/1.055)**2.4;
+     });
+     const light=c=>{const [r,g,b]=components(c);return r*.2126+g*.7152+b*.0722;};
+     const a=light(color),b=light(bg);return (Math.max(a,b)+.05)/(Math.min(a,b)+.05);
+    };
     return {
      hasClass:root.classList.contains('homework-bonus-detail'),
      subject:card?.querySelector('.homework-detail-subject')?.textContent,
@@ -98,6 +105,7 @@ const ex={
      extraAttached:root.querySelector('.attachment-panel')?.hidden,
      coursesClosed:root.querySelector('.homework-detail-courses')?.open===false,
      xpVisible:!!xp&&getComputedStyle(xp).display!=='none',
+     xpContrast:contrast(getComputedStyle(xp).color,getComputedStyle(xp).backgroundColor),
      qCount:root.querySelectorAll('.q').length,
      currentCount:root.querySelectorAll('.quiz-current').length,
      figureCount:q?.querySelectorAll('figure svg').length,
@@ -125,6 +133,7 @@ const ex={
    assert.equal(result.extraAttached,true,name+' : rubrique pièces jointes vide non masquée');
    assert.equal(result.coursesClosed,true,name+' : cours doit rester replié');
    assert.equal(result.xpVisible,true,name+' : barème bonus doit être consultable');
+   assert(result.xpContrast>=4.5,name+' : contraste de la règle XP insuffisant : '+result.xpContrast);
    assert.equal(result.qCount,10);
    assert.equal(result.currentCount,1);
    assert.equal(result.figureCount,1);
@@ -133,7 +142,7 @@ const ex={
    assert(result.optionFont>=15&&result.optionFont<=19,name+' : choix illisible : '+result.optionFont);
    assert.equal(result.widthValid,true,name+' : largeur dépasse le viewport');
    assert.equal(result.questionFits,true,name+' : question déborde');
-   assert(result.navHeight<99,name+' : navigation du bas trop haute '+result.navHeight);
+   assert(result.navHeight>=55&&result.navHeight<99,name+' : navigation du bas masquée ou trop haute '+result.navHeight);
    assert.equal(result.originalDescriptionVisible,false,name+' : ancien paragraphe répété');
    assert.equal(result.originalInstructionsVisible,false,name+' : consigne repliée devrait être cachée');
    assert.equal(result.writing,0,'Une copie réelle ne doit pas être créée en test');
