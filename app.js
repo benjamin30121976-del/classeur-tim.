@@ -1465,7 +1465,7 @@ function renderMatieres(){
  }root.append(wrap);
  if(SCHOOL_SUBJECTS.some(s=>!DATA.lessons.some(l=>(l.subject||'Espagnol')===s)))root.append(E('div','note','Les autres matières ne seront remplies qu’à partir des documents réels de Tim (ENT, cahiers et devoirs). Aucun cours ne sera inventé.'));
 }
-function renderMatiere(name,openLessonId=null){
+function renderMatiere(name,openLessonId=null,openEntId=null){
  setMatieresSelectionHeader(false);
  const root=clear(document.getElementById('matieres-content'));
  if(name==='Espagnol'&&window.TIM_SPANISH_ENT_EXACT){
@@ -1486,7 +1486,7 @@ function renderMatiere(name,openLessonId=null){
  if(name==='Français'&&window.TIM_FR_PATH){window.TIM_FR_PATH.render(root,{back:renderMatieres,openLessonId});return;}
   if(name==='Mathématiques'&&window.TIM_MATH_PATH){
   window.TIM_MATH_PATH.render(root,{
-   lessons:DATA.lessons,exercises:DATA.exercises,openLessonId,
+   lessons:DATA.lessons,exercises:DATA.exercises,openLessonId,openEntId,
    back:renderMatieres,original:openLesson,exercise:openExercise,
    task:id=>window.__TIM_BRIDGE.mathTrainingTask(id),
    submit:(id,answers,bankVersion)=>window.__TIM_BRIDGE.mathTrainingSubmit(id,answers,bankVersion),
