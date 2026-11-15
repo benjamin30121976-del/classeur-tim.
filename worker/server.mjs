@@ -10,6 +10,7 @@ import {buildMission,isMissionId,isMissionOpen} from '../functions/missions-v18.
 import {SPANISH_COURSE} from '../functions/spanish-training-curriculum.mjs';
 import {isMixedMissionId,mixedMission,mixedPlan,publicMixedMission,gradeMixedMission} from './mixed-challenges.mjs';
 import {examineSaturdayCopy,SATURDAY_COPY_ID,SATURDAY_REVISION} from './saturday-20261114-review.mjs';
+import {prepareSaturdayFullCredit,SATURDAY_FULL_CREDIT_VERSION,SATURDAY_FULL_CREDIT_ARCHIVE,SATURDAY_PREVIOUS_ARCHIVE} from './saturday-20261114-full-credit.mjs';
 import {mathId,mathPublicTaskPrivate,gradeMathTaskPrivate,MATH_BANK_VERSION,validateMathFragment} from './math-private-kv.mjs';
 import {spanishEntTrainingId,spanishEntTask,spanishEntPublicTask,gradeSpanishEntTask,isSpanishDailyMissionId,spanishDailyMissionIds,buildSpanishDailyMission,gradeSpanishDailyMission} from './spanish-ent-training.mjs';
 import {spanishLessonXp} from './spanish-lesson-xp.mjs';
@@ -1183,10 +1184,88 @@ async function reviseSaturday20261114(db,uid,payload={}){
   originalArchived:true,attemptUntouched:true};
 }
 
+/* Demande du Parent : redonner les points entiers à deux calculs corrects.
+   Toutes les lectures et les quatre écritures sont atomiques. L'historique
+   de la première révision est conservé, et l'état précédent est archivé
+   dans un deuxième document NON REMPLAÇABLE, sans exposer la copie. */
+async function correctSaturdayFullCredit(db,uid,payload={}){
+ permitted(uid,'parent');
+ if(!['preview','apply'].includes(payload.mode))
+  throw new ApiFault(400,'saturday-full-credit-invalid-mode');
+ if(payload.mode==='apply'&&payload.approval!=='WEEK_2026W46_FULL_CREDIT_PARENT_20261115')
+  throw new ApiFault(403,'saturday-full-credit-approval-required');
+ const privatePath='privateAttempts/'+SATURDAY_COPY_ID;
+ const attemptPath='attempts/'+SATURDAY_COPY_ID;
+ const xpPath='xpState/tim';
+ const tx=payload.mode==='apply'?await db.transaction():null;
+ const [copy,pub,xp,previousHistory,existingHistory]=await Promise.all([
+  db.get(privatePath,tx),db.get(attemptPath,tx),
+  db.get(xpPath,tx),db.get(SATURDAY_PREVIOUS_ARCHIVE,tx),
+  db.get(SATURDAY_FULL_CREDIT_ARCHIVE,tx)
+ ]);
+ if(copy?.gradeRevision?.version===SATURDAY_FULL_CREDIT_VERSION){
+  if(!existingHistory||existingHistory.version!==SATURDAY_FULL_CREDIT_VERSION||
+     !copy||copy.score!==15||pub?.xp!==7||
+     copy.answers?.[11]?.points!==1||copy.answers?.[14]?.points!==1)
+   throw new ApiFault(409,'saturday-full-credit-history-inconsistent');
+  return {status:'already-corrected',score:15,total:20,xp:7,historySaved:true,
+   questions:[12,15],noWrite:true};
+ }
+ if(existingHistory)throw new ApiFault(409,'saturday-full-credit-history-present');
+ if(!copy||!pub||!xp||!previousHistory||
+    copy.authorUid!==TIM_UID||pub.authorUid!==TIM_UID)
+  throw new ApiFault(409,'saturday-full-credit-records-not-matching');
+ let plan;
+ try{plan=prepareSaturdayFullCredit(copy,pub,xp,previousHistory);}
+ catch{throw new ApiFault(409,'saturday-full-credit-preconditions-failed');}
+ if(payload.mode==='preview')
+  return {status:'eligible',fromScore:plan.scoreBefore,toScore:plan.scoreAfter,
+   fromXp:plan.xpBefore,toXp:plan.xpAfter,xpDelta:plan.deltaXp,
+   questions:[12,15],noWrite:true};
+ const revision={version:SATURDAY_FULL_CREDIT_VERSION,
+  approvedBy:'parent',oldScore:14,newScore:15,oldXp:4,newXp:7,
+  changedQuestions:[12,15],previousVersion:SATURDAY_REVISION,
+  reason:'Deux raisonnements justes en deux étapes : 6+6=12 puis 12x2=24 ; 6/24=0,25 puis 0,25x4=1'};
+ await db.commit([
+  createWrite(SATURDAY_FULL_CREDIT_ARCHIVE,{
+   version:SATURDAY_FULL_CREDIT_VERSION,
+   originalPrivateAttempt:copy,originalPublicAttempt:pub,
+   originalXpState:xp,previousArchiveVersion:previousHistory.version,
+   scoreBefore:14,scoreAfter:15,xpBefore:4,xpAfter:7,
+   changes:plan.changes
+  }),
+  updateWrite(privatePath,{score:15,answers:plan.answers,gradeRevision:revision}),
+  updateWrite(attemptPath,{xp:7}),
+  updateWrite(xpPath,plan.xpPatch)
+ ],tx);
+ const [after,afterAttempt,afterXP,archive]=await Promise.all([
+  db.get(privatePath),db.get(attemptPath),db.get(xpPath),
+  db.get(SATURDAY_FULL_CREDIT_ARCHIVE)
+ ]);
+ const sameResponses=Array.isArray(after?.answers)&&after.answers.length===20&&
+  plan.answers.every((a,i)=>after.answers[i]?.question===a.question&&
+   after.answers[i]?.response===a.response&&
+   after.answers[i]?.points===a.points&&
+   after.answers[i]?.correct===a.correct);
+ if(!archive||archive.version!==SATURDAY_FULL_CREDIT_VERSION||
+    !after||after.gradeRevision?.version!==SATURDAY_FULL_CREDIT_VERSION||
+    after.score!==15||!sameResponses||
+    !afterAttempt||afterAttempt.xp!==7||
+    afterAttempt.exerciseId!==pub.exerciseId||
+    afterAttempt.authorUid!==pub.authorUid||
+    !afterXP||afterXP.week!==xp.week||
+    afterXP.weekXp<plan.xpPatch.weekXp||
+    afterXP.weekEarned<plan.xpPatch.weekEarned)
+  throw new ApiFault(502,'saturday-full-credit-postcheck-failed');
+ return {status:'corrected',score:15,total:20,xp:7,xpDelta:3,
+  questions:[12,15],historySaved:true,attemptStillUnique:true};
+}
+
 const ACTIONS={
   getFirestoreReadDiagnostics:getFirestoreReadDiagnostics,
   correctMathNov12Question10:correctMathNov12Question10,
   reviseSaturday20261114:reviseSaturday20261114,
+  correctSaturdayFullCredit:correctSaturdayFullCredit,
  previewSpanishEntTraining:previewSpanishEntTraining,
  getMathEntTask:getMathEntTask,
  submitMathEntTask:submitMathEntTask,
@@ -1257,4 +1336,4 @@ export async function handleRequest(request,env){
   return respond({error:code},status);
  }
 }
-export const TESTABLE={reviseSaturday20261114,correctMathNov12Question10,getFirestoreReadDiagnostics,getEnglishTrainingTask,submitEnglishTraining,getEnglishTrainingProgress,previewEnglishTraining,getSvtTrainingTask,submitSvtTraining,getSvtTrainingProgress,previewSvtTraining,getHgTrainingTask,submitHgTraining,getHgTrainingProgress,previewHgTraining,getFrTrainingTask,submitFrTraining,getFrTrainingProgress,previewFrTraining,previewSpanishEntTraining,getMathEntTask,submitMathEntTask,previewMathEntTask,getMathEntProgress,getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,getMixedChallengePlan,previewMixedChallenge,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
+export const TESTABLE={correctSaturdayFullCredit,reviseSaturday20261114,correctMathNov12Question10,getFirestoreReadDiagnostics,getEnglishTrainingTask,submitEnglishTraining,getEnglishTrainingProgress,previewEnglishTraining,getSvtTrainingTask,submitSvtTraining,getSvtTrainingProgress,previewSvtTraining,getHgTrainingTask,submitHgTraining,getHgTrainingProgress,previewHgTraining,getFrTrainingTask,submitFrTraining,getFrTrainingProgress,previewFrTraining,previewSpanishEntTraining,getMathEntTask,submitMathEntTask,previewMathEntTask,getMathEntProgress,getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,getMixedChallengePlan,previewMixedChallenge,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
