@@ -48,7 +48,7 @@ test('La barre du lundi 16 conserve l acquis, ajoute les nouveaux XP, puis remet
  assert.equal(calc('2026-11-23'),0);
 });
 test('Aucune date invalide acceptée côté serveur',()=>{
- for(const s of ['2026-11-31','2026-13-16','2026-11-16T00:00','']:
+ for(const s of ['2026-11-31','2026-13-16','2026-11-16T00:00',''])
   assert.throws(()=>xpPeriodStart(s),/Invalid XP date/);
 });
 test('Les dix voies de notation utilisent la période XP exception',()=>{
