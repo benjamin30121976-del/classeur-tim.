@@ -38,7 +38,10 @@ function showCorrection(slot,report){
  const count=report.items.filter(i=>!i.correct).length;
  heading.append(E('p','',count?count+' erreur(s) : pour chacune, compare ta réponse, la réponse attendue et le raisonnement expliqué ci-dessous.':'Toutes les réponses sont correctes.'));
  slot.append(heading);
+ // Pour Tim, expliquer ses erreurs sans lui imposer toutes les réponses correctes.
+ // Le Parent garde l'accès à la copie complète avec ses dix réponses.
  report.items.forEach((item,i)=>{
+  if(!window.__TIM_PARENT&&item.correct)return;
   const box=E('section','tim-es-training-result-item');
   box.style.cssText=st.group+';border-left:4px solid '+(item.correct?'#397b56':'#bb664e');
   box.append(E('h4','', 'Question '+(i+1)+' — '+(item.correct?'Réussie':'À revoir')));
@@ -190,7 +193,7 @@ async function renderProgress(where){
  try{
   const r=await bridge().hgTrainingProgress();
   const rows=r?.attempts||[];
-  where.replaceChildren(E('p','',rows.length+' / 16 exercices BIS validés. Une seule tentative par exercice.'));
+  where.replaceChildren(E('p','',rows.length+' / 18 exercices BIS validés. Une seule tentative par exercice.'));
   if(!rows.length){where.append(E('p','','Aucune note de hg enregistrée pour le moment.'));return;}
   for(const item of rows){
    const block=E('details','pc-progress-item');block.style.cssText=st.group;
