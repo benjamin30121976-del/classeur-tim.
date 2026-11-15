@@ -93,7 +93,10 @@ assert.equal(ex.questions.length,10);
      disclaimers:card?.querySelectorAll('.homework-detail-disclaimer')?.length,
      oldIntro:root.querySelectorAll(':scope > .intro, :scope > .note.info').length,
      extraAttached:root.querySelector('.attachment-panel')?.hidden,
-     coursesClosed:root.querySelector('.homework-detail-courses')?.open===false,
+     adviceClosed:root.querySelector('.exercise-method-advice')?.open===false,
+     adviceTitle:root.querySelector('.exercise-method-advice>summary')?.textContent,
+     adviceText:root.querySelector('.exercise-method-advice')?.textContent,
+     courseLinks:[...root.querySelectorAll('a,button')].filter(x=>/Cours ENT|Leçon BIS correspondante|Voir la leçon/i.test(x.textContent)).length,
      xpVisible:!!xp&&getComputedStyle(xp).display!=='none',
      xpContrast:contrast(getComputedStyle(xp).color,getComputedStyle(xp).backgroundColor),
      qCount:root.querySelectorAll('.q').length,
@@ -123,7 +126,11 @@ assert.equal(ex.questions.length,10);
    assert.equal(result.disclaimers,1);
    assert.equal(result.oldIntro,0,name+' : anciens paragraphes toujours présents');
    assert.equal(result.extraAttached,true,name+' : rubrique pièces jointes vide non masquée');
-   assert.equal(result.coursesClosed,true,name+' : cours doit rester replié');
+   assert.equal(result.adviceClosed,true,name+' : conseils de méthode doivent rester repliés');
+   assert.equal(result.adviceTitle,'Conseils pour répondre');
+   assert.match(result.adviceText,/brouillon/i);
+   assert.match(result.adviceText,/Relis chaque réponse/i);
+   assert.equal(result.courseLinks,0,name+' : aucun lien vers les cours dans l’exercice');
    assert.equal(result.xpVisible,true,name+' : barème bonus doit être consultable');
    assert(result.xpContrast>=4.5,name+' : contraste de la règle XP insuffisant : '+result.xpContrast);
    assert.equal(result.qCount,10);
