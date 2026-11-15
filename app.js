@@ -805,7 +805,17 @@ function openExercise(id,options={}){const ex=exerciseBy(id);if(!ex)return;
    }
   });return;
  }
- const existing=attemptFor(id),completedChallenge=Boolean(existing&&['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind));window.__TIM_OPEN_EXERCISE_ID=id;page('exercices');document.getElementById('exercise-index').classList.add('hide');const root=clear(document.getElementById('exercise-detail'));root.classList.add('active');root.classList.toggle('math-bonus-detail',ex.kind==='bonus-day'&&ex.subject==='Mathématiques');root.append(button('← Retour aux exercices',()=>{root.classList.remove('active');document.getElementById('exercise-index').classList.remove('hide');renderExerciseIndex();scrollTop();},'plain back'));root.append(badge(ex.level),E('h2','',ex.title),E('p','intro',exerciseDescription(ex)));
+ const existing=attemptFor(id),completedChallenge=Boolean(existing&&['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind));window.__TIM_OPEN_EXERCISE_ID=id;page('exercices');document.getElementById('exercise-index').classList.add('hide');const root=clear(document.getElementById('exercise-detail'));root.classList.add('active');root.classList.toggle('math-bonus-detail',ex.kind==='bonus-day'&&ex.subject==='Mathématiques');root.append(button('← Retour aux exercices',()=>{root.classList.remove('active');document.getElementById('exercise-index').classList.remove('hide');renderExerciseIndex();scrollTop();},'plain back'));
+root.append(badge(ex.level),E('h2','',ex.title));
+// La séance ENT du 12/11 est une trace authentique du cahier de textes, sans PDF joint.
+// Lien de consultation seulement : ne lance ni correction ni validation de l'exercice.
+if(ex.homeworkBonus===true&&ex.subject==='Mathématiques'&&
+   (ex.id==='BD1611_MA01'||/r[eé]ciproque\s+de\s+thal[eè]s/i.test(ex.title))){
+ root.append(button('Voir la leçon ENT du 12 novembre · Réciproque de Thalès',
+   ()=>{page('matieres');renderMatiere('Mathématiques',null,'TIM_ENT_20261112');},
+   'math-homework-ent-link'));
+}
+root.append(E('p','intro',exerciseDescription(ex)));
 if(ex.kind==='bonus-day'){
  // Pas d'indice ni de renvoi à une leçon avant la validation d'un défi bonus.
 }else if(ex.kind==='daily'&&ex.questionBank==='spanish-ent-v1'){
