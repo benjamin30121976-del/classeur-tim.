@@ -54,7 +54,7 @@ assert.equal(ex.questions.length,10);
      document,window,E,button,badge:()=>E('span','badge','3e D'),
      notice:(s,cls)=>E('div','notice '+(cls||''),s),
      page:()=>{},clear:n=>(n.replaceChildren(),n),
-     lessonBy:()=>pack.lessons[0],
+     lessonBy:()=>({id:'BD16_HG_CAHIER',title:'Les cinq mots du cahier sur le nazisme'}),
      exerciseBy:()=>exercise,attemptFor:()=>null,
      drafts:()=>({}),makeAttachmentPanel:(kind,id,opts)=>{
       const n=E('section','attachment-panel');n.hidden=!!opts?.hideIfEmpty;
