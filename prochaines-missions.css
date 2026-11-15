@@ -1,0 +1,66 @@
+/* Mes prochaines missions — lisible sur Android, isolé du système de notes. */
+#prochaines .pagehead{margin-bottom:12px}
+#prochaines-content{padding-bottom:28px}
+.future-hero{position:relative;isolation:isolate;overflow:hidden;border-radius:26px;border:1px solid #48658e;background:radial-gradient(circle at 90% 20%,#39cce04b,transparent 37%),linear-gradient(125deg,#12284c 0%,#27366b 65%,#523974 100%);padding:25px 23px 20px;box-shadow:0 16px 40px #030b2161}
+.future-hero:before{content:"";position:absolute;width:220px;height:220px;border-radius:50%;border:1px solid #ffffff2a;right:-70px;top:-95px;z-index:-1}
+.future-hero-copy{max-width:690px;position:relative;z-index:1}
+.future-overline{display:block;color:#bbf568;font-size:12px;letter-spacing:.14em;font-weight:950;margin-bottom:11px}
+.future-hero h2{font-size:clamp(29px,6vw,47px);line-height:1.06;color:#fff;margin:0 0 11px;max-width:520px}
+.future-hero p{font-size:clamp(14px,2.8vw,17px);color:#e3edff;line-height:1.5;max-width:525px;margin:0 0 20px}
+.future-hero-symbol{position:absolute;right:4%;top:-28px;font-size:clamp(116px,23vw,220px);color:#a7e7f017;transform:rotate(14deg);pointer-events:none}
+.future-numbers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;max-width:510px}
+.future-number{padding:11px 10px;background:#07182f8c;border:1px solid #b0c0f33f;border-radius:14px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.future-number strong{font-size:27px;color:#e3ff93;line-height:1;font-variant-numeric:tabular-nums}
+.future-number small{font-size:11px;color:#e4eaf6;line-height:1.25}
+.future-sync-note{color:#b4c5df;font-size:12px;line-height:1.5;padding:11px 1px 0;margin:0}
+.future-filters{display:flex;gap:8px;overflow-x:auto;padding:15px 0 7px}
+.future-action{cursor:pointer;min-height:44px;padding:10px 13px;border-radius:12px;border:1px solid #6f7f9f;color:#f4f7ff;background:#2c3e61;font-size:13px;font-weight:850;text-align:center;line-height:1.3}
+.future-action:hover{filter:brightness(1.09)}.future-action:focus-visible{outline:3px solid #e4fe95;outline-offset:2px}
+.future-filters .future-action{white-space:nowrap;background:#242d49;flex:0 0 auto;border-color:#485677}
+.future-filters .future-action.selected{background:#d9fb79;border-color:#d9fb79;color:#152138}
+.future-section{margin-top:19px}
+.future-section-title{font-size:24px;color:#fff;margin:0 0 5px}
+.future-section-intro{font-size:13px;color:#b7c4d9;margin:0 0 12px}
+.future-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.future-card{--future-accent:#99a9fb;position:relative;display:flex;flex-direction:column;align-items:stretch;border-radius:20px;border:1px solid #4c5c7d;border-top:4px solid var(--future-accent);background:linear-gradient(155deg,#273653,#1c2840);padding:17px;min-width:0;box-shadow:0 8px 25px #030b1b33}
+.future-maths{--future-accent:#79b5ff}.future-anglais{--future-accent:#66d2f1}.future-espagnol{--future-accent:#ffd07b}.future-physique{--future-accent:#f9a1d3}.future-svt{--future-accent:#9ff0a7}.future-histoire{--future-accent:#f2ac83}.future-francais{--future-accent:#d3b1ff}
+.future-card-head{display:flex;justify-content:space-between;align-items:center;gap:7px;flex-wrap:wrap;margin-bottom:12px}
+.future-subject{font-size:12px;font-weight:950;color:var(--future-accent);letter-spacing:.01em}
+.future-pill{font-size:10px;line-height:1.25;font-weight:900;padding:6px 9px;border-radius:999px;color:#ddedff;background:#354767;border:1px solid #526583;align-self:flex-start}
+.future-pill.urgent{background:#ffe3a0;color:#473115;border-color:#ffe3a0;font-size:12px}
+.future-pill.countdown{background:#cfebff;color:#1b3e67;border-color:#cfebff;font-size:12px}
+.future-pill.type{margin:0 0 12px;background:#384561;color:#e8f0ff}
+.future-task-title{font-size:clamp(18px,2.5vw,22px);line-height:1.22;overflow-wrap:anywhere;margin:0 0 7px;color:#fff}
+.future-task-date{font-size:13px;color:#d3def0;font-weight:700;margin:0 0 10px}
+.future-description{font-size:14px;line-height:1.52;color:#e0e6f2;margin:1px 0 10px;overflow-wrap:anywhere;white-space:pre-line}
+.future-source,.future-no-bonus{font-size:11px;color:#a6b8d2;line-height:1.5;margin:0 0 10px}
+.future-progress{margin:8px 0 10px}
+.future-progress span{font-size:12px;color:#d3e5f0;font-weight:700}
+.future-track{margin-top:7px;height:8px;border-radius:50px;background:#5b6a7f;overflow:hidden}
+.future-track .future-bar{display:block;height:100%;background:linear-gradient(90deg,#93e7b2,#dafe7d);border-radius:50px}
+.future-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:auto;padding-top:8px}
+.future-actions .future-action{flex:1 1 170px}
+.future-actions .future-action.primary{background:#dcfc7f;color:#1b292e;border-color:#dcfc7f}
+.future-actions .future-action.secondary{background:#344765;border-color:#6d83a3;color:#f3f9ff}
+.future-plan{margin-top:13px;border-top:1px solid #536684;padding-top:8px}
+.future-plan summary{font-size:12px;color:#d8eeff;font-weight:800;cursor:pointer;padding:7px 0}
+.future-plan ol{margin:5px 0 0;padding-left:21px;font-size:12px;color:#d5dfed;line-height:1.5}
+.future-plan li{margin:6px 0}
+.future-empty{border:1px dashed #566484;background:#1e2a45;border-radius:15px;padding:17px;color:#aebbd1;font-size:13px}
+.future-home-teaser{display:flex;align-items:center;gap:13px;width:100%;text-align:left;margin:13px 0 17px;background:linear-gradient(115deg,#cef48a,#9be9ed);border:2px solid #e8ffc3;border-radius:18px;padding:14px;color:#152a38;min-height:85px;box-shadow:0 9px 24px #02081955}
+.future-home-icon{display:grid;place-items:center;background:#102c43;color:#d8fc87;width:48px;height:48px;flex-shrink:0;border-radius:13px;font-size:25px}
+.future-home-copy{min-width:0;display:flex;flex-direction:column}
+.future-home-kicker{font-size:10px;font-weight:950;letter-spacing:.08em}
+.future-home-copy strong{font-size:20px;line-height:1.2}
+.future-home-copy small{font-size:12px;color:#31485b}
+.future-home-arrow{margin-left:auto;font-size:23px;font-weight:900}
+@media(max-width:710px){.future-list{grid-template-columns:1fr}.future-hero{padding:21px 17px}.future-section-title{font-size:22px}}
+@media(max-width:420px){
+ .tabs{gap:2px;padding-left:5px;padding-right:5px}
+ .tabs button{min-width:0;flex:1 1 0;padding:4px 1px;font-size:10px}
+ .tabs .nav-icon{width:34px!important;min-height:34px!important;font-size:29px!important}
+ .tabs .nav-icon svg{width:28px!important;height:28px!important}
+ .future-number{padding:9px 7px}.future-number strong{font-size:24px}.future-number small{font-size:10px}
+ .future-card{padding:15px}.future-action{font-size:12px}
+ .future-home-copy strong{font-size:18px}
+}
