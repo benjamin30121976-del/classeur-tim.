@@ -107,6 +107,28 @@ const pyth={id:'M26PYT1001',kind:'school',subject:'Mathématiques',title:'Archiv
     const item=inventory.find(x=>x.id===id);
     assert.equal(item?.withFigure,0,id+' : les calculs sans géométrie ne doivent pas recevoir de figure inutile');
    }
+   // Régression : le bonus du 16/11 avait un ancien énoncé D/E en base,
+   // mais affichait M/N. Le dessin doit suivre M/N et la légende sans chiffres.
+   const stale=structuredClone(bd);
+   stale.questions[0].q='Dans le triangle ABC, D est sur [AB] et E sur [AC], dans le même ordre. On sait que AD/AB = AE/AC. Quelle conclusion permet la réciproque de Thalès ?';
+   const consistent=await page.evaluate(ex=>{
+    const figure=window.TIM_GEOMETRY_DIAGRAMS.render(ex,0);
+    const marks=[...figure.querySelectorAll('svg text')].map(el=>el.textContent);
+    const caption=figure.querySelector('figcaption')?.textContent||'';
+    const shown=window.TIM_GEOMETRY_DIAGRAMS.displayPrompt(ex,0,ex.questions[0].q);
+    return {marks,caption,shown};
+   },stale);
+   assert(consistent.shown.includes('M est sur [AB]')&&consistent.shown.includes('N sur [AC]'),
+    'Le texte présenté doit bien être celui de M et N');
+   assert(consistent.marks.includes('M')&&consistent.marks.includes('N'),
+    'Le schéma de la question 1 doit afficher les deux points M et N');
+   assert(!consistent.marks.includes('D')&&!consistent.marks.includes('E'),
+    'Le schéma affiche encore les anciens points D et E');
+   assert.match(consistent.caption,/égalité des rapports/);
+   assert(!/compare les longueurs données/i.test(consistent.caption),
+    'La légende ne doit pas demander des longueurs inexistantes');
+   assert(!/sont parallèles/i.test(consistent.caption),
+    'La légende ne doit pas donner la conclusion');
    const direct=await page.evaluate(({bd,original,pyth})=>{
     const b=bd.questions.map((_,i)=>window.TIM_BONUS_FIGURES.render(bd,i));
     const bis=original.map(ex=>({
