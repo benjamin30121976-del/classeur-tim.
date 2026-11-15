@@ -75,12 +75,31 @@ async function inspect(browser,label,viewport){
           sundayCard:document.querySelector('.sunday-card')?.textContent?.includes('GRAND DÉFI DU DIMANCHE')||false};
       });
       for(const x of audit.items){
-        check(label+' defi du dimanche '+x.id+' present',x.present,
-          'Dans le plan : '+x.inPlan+' ; questions : '+x.questionCount+
+        const expected=x.id==='SUNDAY_BILAN_20261115'?
+          x.inPlan&&x.present&&x.questionCount===20:!x.inPlan;
+        check(label+' rattachement dimanche '+x.id,expected,
+          'Dans la carte : '+x.inPlan+' ; questions : '+x.questionCount+
           ' ; copie locale présente : '+x.takenClient+' ; copie Parent présente : '+String(x.takenServer));
       }
-      check(label+' carte dimanche existante',audit.sundayCard,'Identifiant du plan : '+audit.sunday);
+      check(label+' carte dimanche reliée aux 20 questions',
+        audit.sundayCard&&audit.sunday==='SUNDAY_BILAN_20261115',
+        'Identifiant du plan : '+audit.sunday);
       check(label+' historique Parent consultable',audit.reportAccessible);
+      if(audit.sunday==='SUNDAY_BILAN_20261115'&&
+         !audit.items.some(x=>x.takenClient||x.takenServer===true)){
+        try{
+          const button=page.locator('.sunday-card .mission-launch');
+          check(label+' bouton Parent dans la carte du dimanche',await button.count()===1);
+          await button.click({timeout:12000});
+          const intro=page.getByRole('button',{name:'Commencer mon essai Parent'});
+          check(label+' essai Parent ouvert depuis la carte du dimanche',await intro.isVisible());
+          await intro.click();
+          check(label+' première question et cadres de réponse visibles',
+            await page.locator('.mix-progress').innerText().then(x=>/Question 1 \/ 20/.test(x)).catch(()=>false)&&
+            (await page.locator('.mix-structured-field textarea').count())>=2);
+          // Ne JAMAIS valider un exercice, même lors d'un essai Parent de contrôle.
+        }catch(err){check(label+' ouverture du dimanche en lecture seule',false,String(err?.message||err).slice(0,130));}
+      }
       return;
     }
     const stats=await page.evaluate(()=>({
