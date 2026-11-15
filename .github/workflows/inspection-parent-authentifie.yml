@@ -79,7 +79,7 @@ jobs:
           NODE_PATH: /tmp/tim-parent-browser/node_modules
         run: node outils/inspecter-parent-securise.cjs
       - name: Vérifier si le bonus HG ancien a déjà une copie (Parent, lecture seule)
-        if: steps.verify.outputs.configured == 'true'
+        if: always() && steps.verify.outputs.configured == 'true'
         env:
           NODE_PATH: /tmp/tim-parent-browser/node_modules
         run: node outils/auditer-bonus-hg-parent.cjs
