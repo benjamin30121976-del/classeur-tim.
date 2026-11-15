@@ -18,6 +18,13 @@ const clean=s=>String(s??'').trim()
 const proof12=s=>/^(?:p=)?6\+6=12(?:\s+|;\s*)(?:p=)?12x2=24(?:\s*cm)?$/i.test(clean(s));
 const proof15=s=>/^6\/24=0\.25(?:\s+|;\s*)0\.25x4=1$/i.test(clean(s));
 
+export function proveSaturdayTwoCalculations(copy){
+ return Array.isArray(copy?.answers)&&copy.answers.length===20&&
+  proof12(copy.answers[11]?.response)&&proof15(copy.answers[14]?.response)&&
+  close(copy.answers[11]?.points,0.5)&&close(copy.answers[14]?.points,0.5)&&
+  copy.answers[11]?.correct===false&&copy.answers[14]?.correct===false;
+}
+
 export function prepareSaturdayFullCredit(copy,pub,xp,firstArchive){
  const mission=mixedMission(SATURDAY_COPY_ID);
  if(!mission||mission.questions?.length!==20||mission.kind!=='weekly')fail('bank-changed');
