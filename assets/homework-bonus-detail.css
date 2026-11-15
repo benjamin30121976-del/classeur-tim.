@@ -152,7 +152,7 @@
 #exercise-detail.homework-bonus-detail .attachment-panel[hidden]{display:none!important}
 /* Pendant une réponse, éviter que les cinq onglets fixes masquent
    le schéma et les choix. Le bouton « Retour aux exercices » reste disponible. */
-body:has(#exercise-detail.homework-bonus-detail.active) .tabs{
+body:has(#exercices.page.active #exercise-detail.homework-bonus-detail.active) .tabs{
  display:none!important;
 }
 @media(max-width:420px){
