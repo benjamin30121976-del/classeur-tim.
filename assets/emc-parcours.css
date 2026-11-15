@@ -1,0 +1,43 @@
+/* EMC : mêmes composants de lecture/navigation SPX que le parcours Espagnol,
+   palette adaptée à EMC. Ne touche pas aux autres matières ni à Firebase. */
+.spx.emc-view{max-width:1040px;margin:0 auto;color:#243147}
+.emc-view .spx-hero{background:linear-gradient(120deg,#203960,#315e86);border-color:#a8cce5}
+.emc-view .spx-hero:after{border-color:#ffffff16}
+.emc-view .spx-kicker{color:#d4ecff}
+.emc-view .spx-back{color:#234f7c!important;font-size:14px;min-height:44px}
+.emc-view .spx-search{border-color:#bfd3e6;color:#315e86}
+.emc-view .spx-subheading{color:#243e5c}
+.emc-view .spx-card{border-color:#cad9e9;color:#25405b}
+.emc-view .spx-card strong,.emc-view .spx-row strong{color:#22547c}
+.emc-view .spx-card small{color:#255a82}
+.emc-view .spx-card[hidden]{display:none!important}
+.emc-view .spx-icon,.emc-view .spx-chip{background:#e3f0fa;color:#2a6488}
+.emc-view .spx-row{border-color:#d5e0ee}
+.emc-view .spx-panel{border-color:#d9e2ee}
+.emc-view .spx-panel h3{color:#224f77}
+.emc-view .spx-label{background:#dcecf9;color:#22557a}
+.emc-view .spx-button{background:#2c5c83;color:#fff;min-height:44px;white-space:normal}
+.emc-view .spx-button.subtle{background:#e6f1fa;color:#24547c;border:1px solid #bfd7e9}
+.emc-view .spx-button.emc-active{background:#224b72;color:#fff}
+.emc-view .spx-note{color:#516780}
+.emc-view .spx-panel h4{font-size:15px;color:#254c6d;line-height:1.45;margin:15px 0 5px}
+.emc-view .spx-panel p{overflow-wrap:anywhere;white-space:pre-wrap}
+.emc-view .spx-panel .lesson-caution{border-left:3px solid #ca9847;padding-left:10px}
+.emc-view .emc-shortcuts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:12px 0 18px}
+.emc-view .emc-shortcuts button{width:100%;margin:0;font-size:13px;text-align:center;line-height:1.35}
+.emc-view .emc-task{background:#f5f9fd;border:1px solid #d4e2ed;border-radius:12px;padding:11px 13px;margin:12px 0}
+.emc-view .hg-bis-illustration{max-width:100%;overflow:hidden}
+.emc-view .hg-bis-illustration svg{height:auto;max-width:100%;display:block}
+.emc-view .spx-row{gap:9px;min-height:65px;overflow-wrap:anywhere}
+.emc-view .spx-row > span:nth-child(2){min-width:0;flex:1}
+.emc-view .spx-row > span:last-child{flex:0 0 auto;font-size:12px;color:#285a83}
+.emc-view .emc-training-slot{min-height:0;margin:12px 0}
+.emc-view .tim-es-training-result-item,.emc-view .tim-es-question-page{overflow-wrap:anywhere}
+@media(max-width:600px){
+ .emc-view .emc-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .emc-view .spx-hero{padding:18px 15px}
+ .emc-view .spx-panel{padding:14px}
+ .emc-view .spx-card{min-height:0}
+ .emc-view .spx-row{flex-wrap:wrap}
+ .emc-view .spx-row > span:last-child{margin-left:auto}
+}

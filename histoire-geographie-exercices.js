@@ -185,15 +185,15 @@ async function mount(id,where){
  };
  draw();
 }
-async function renderProgress(where){
+async function renderProgress(where,options={}){
  where.replaceChildren();
  if(!family()){setStatus(where,'Mode Visiteur : notes réservées aux comptes Tim et Parent.');return;}
  if(!bridge()?.hgTrainingProgress){setStatus(where,'Le suivi sécurisé est indisponible.');return;}
  setStatus(where,'Chargement des notes et des corrections…');
  try{
   const r=await bridge().hgTrainingProgress();
-  const rows=r?.attempts||[];
-  where.replaceChildren(E('p','',rows.length+' / 18 exercices BIS validés. Une seule tentative par exercice.'));
+  const rows=(r?.attempts||[]).filter(x=>!options.emcOnly||/^HGQ_L0[6-8]_0[1-2]$/.test(String(x.id||'')));
+  where.replaceChildren(E('p','',rows.length+' / '+(options.emcOnly?6:18)+' exercices BIS validés. Une seule tentative par exercice.'));
   if(!rows.length){where.append(E('p','','Aucune note de hg enregistrée pour le moment.'));return;}
   for(const item of rows){
    const block=E('details','pc-progress-item');block.style.cssText=st.group;
