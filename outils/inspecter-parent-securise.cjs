@@ -10,6 +10,7 @@ const URL=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
 const TARGET_IMPORT_ONLY=(()=>{try{return /controle-import-json-android/.test(JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion||'');}catch{return false;}})();
 const TARGET_BONUS_AUDIT=(()=>{try{return /controle-bonus-parent-20261114/.test(JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion||'');}catch{return false;}})();
 const TARGET_RECHECK=process.env.TIM_AUDIT_RECODING==='1';
+const TARGET_SUNDAY_AUDIT=process.env.TIM_SUNDAY_AUDIT==='1';
 const TARGET_SATURDAY_REVISE=(()=>{try{return JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion==='rectifier-copie-samedi-20261114-v1';}catch{return false;}})()&&['preview','apply'].includes(process.env.TIM_SATURDAY_REVISE||'');
 const TARGET_SATURDAY_FULL_CREDIT=(()=>{try{return JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion==='plein-credit-samedi-20261115-v2';}catch{return false;}})()&&['preview','apply'].includes(process.env.TIM_SATURDAY_FULL_CREDIT||'');
 const output=path.join(process.cwd(),'browser-parent-results');
@@ -53,6 +54,34 @@ async function inspect(browser,label,viewport){
     if(await intro.isVisible()){
       await page.locator('#intro-silent').click({timeout:5000});
       await intro.waitFor({state:'hidden',timeout:13000});
+    }
+    if(TARGET_SUNDAY_AUDIT){
+      // Audit ciblé, lecture seule : aucune copie ni note affichée, aucune soumission.
+      const audit=await page.evaluate(async()=>{
+        const ex=window.__TIM_DATA?.exercises||[];
+        const publicPlan=window.__TIM_CHALLENGES||{};
+        const attempts=window.__CLOUD_ATTEMPTS||[];
+        let api=null;
+        try{
+          const r=await window.__TIM_BRIDGE?.parentReport?.();
+          if(Array.isArray(r?.attempts))api=r.attempts;
+        }catch{}
+        const ids=['SUNDAY_20261115','SUNDAY_BILAN_20261115'];
+        const relevant=ids.map(id=>({id,inPlan:publicPlan.sunday===id,present:ex.some(e=>e.id===id),
+          questionCount:ex.find(e=>e.id===id)?.questions?.length||0,
+          takenClient:attempts.some(a=>a.id===id),
+          takenServer:api===null?null:api.some(a=>a.id===id)}));
+        return {sunday:publicPlan.sunday,items:relevant,reportAccessible:api!==null,
+          sundayCard:document.querySelector('.sunday-card')?.textContent?.includes('GRAND DÉFI DU DIMANCHE')||false};
+      });
+      for(const x of audit.items){
+        check(label+' defi du dimanche '+x.id+' present',x.present,
+          'Dans le plan : '+x.inPlan+' ; questions : '+x.questionCount+
+          ' ; copie locale présente : '+x.takenClient+' ; copie Parent présente : '+String(x.takenServer));
+      }
+      check(label+' carte dimanche existante',audit.sundayCard,'Identifiant du plan : '+audit.sunday);
+      check(label+' historique Parent consultable',audit.reportAccessible);
+      return;
     }
     const stats=await page.evaluate(()=>({
       lessons:window.__TIM_DATA?.lessons?.length||0,
