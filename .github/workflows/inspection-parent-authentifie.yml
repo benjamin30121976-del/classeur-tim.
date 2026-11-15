@@ -34,6 +34,7 @@ jobs:
       TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
       TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
       TIM_AUDIT_RECODING: '0'
+      TIM_SUNDAY_AUDIT: ${{ github.head_ref == 'defi-dimanche-emplacement-20261115' && '1' || '0' }}
       TIM_SATURDAY_REVISE: 'off'
       TIM_SATURDAY_FULL_CREDIT: 'off'
       TIM_XP_CARRY_INSPECT: ${{ github.head_ref == 'exception-barre-xp-du-16-au-22-novembre-2026' && '1' || '0' }}
