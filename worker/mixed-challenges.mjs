@@ -496,7 +496,8 @@ export function gradeMixedMission(mission,responses,translationsUsed=[],{allowIn
   if(raw.length>2000)throw Error('Réponse trop longue');
   if(q.type==='structured'){
    // Cadres guidés : comparaison de réponses ciblées, sans notation arbitraire d'un texte libre.
-   let values;try{values=JSON.parse(raw);}catch{throw Error('Cadres invalides');}
+   let values;if(allowIncomplete&&!raw.trim())values=q.fields.map(()=>'');
+   else try{values=JSON.parse(raw);}catch{throw Error('Cadres invalides');}
    if(!Array.isArray(values)||values.length!==q.fields.length||
       values.some(v=>typeof v!=='string'||v.length>500))throw Error('Cadres invalides');
    if(!allowIncomplete&&values.some(v=>!v.trim()))throw Error('Cadres incomplets');
