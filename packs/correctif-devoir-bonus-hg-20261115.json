@@ -1,0 +1,173 @@
+{
+  "status": "CORRECTIF_PREPARE_NON_PUBLIE_NE_PAS_IMPORTER_TEL_QUEL",
+  "note": "Les identifiants existent potentiellement déjà dans Firestore. Ne pas réimporter ni écraser les copies ; vérifier d’abord les éventuelles tentatives.",
+  "lesson": {
+    "id": "BD16_HG_REF",
+    "subject": "Histoire-géographie",
+    "title": "Fiche bonus — cinq mots du cahier sur le nazisme",
+    "chapter": "Nazisme : dictature et persécutions",
+    "topic": "Nazisme : dictature et persécutions",
+    "category": "bis",
+    "date": "2026-11-16",
+    "source": "Photo du cahier de Tim envoyée le 15 novembre 2026 ; complément de la séance ENT du 13 novembre, distinct du texte original du professeur.",
+    "summary": "Les cinq notions du cahier sont : autoritaire, antiparlementaire, nationaliste, raciste et antisémite. Le devoir ENT indique « définir 5 mots » sans sa liste.",
+    "help": "Rédige une phrase complète pour chaque mot, avec un exemple pour deux d’entre eux. Vérifie ton brouillon avant de répondre aux dix questions.",
+    "blocks": [
+      {
+        "kind": "note",
+        "h": "Source du cahier",
+        "text": "Photographie de la page « Les idées des nazis dans Mein Kampf ». Les cinq termes sont bien visibles ; la consigne ENT ne confirme pas explicitement que ce sont les cinq mots à rendre."
+      },
+      {
+        "kind": "bullets",
+        "h": "Les cinq définitions à apprendre",
+        "items": [
+          "Autoritaire : Un pouvoir qui impose l’obéissance et limite les libertés et l’opposition.",
+          "Antiparlementaire : Qui s’oppose au Parlement et à la démocratie parlementaire.",
+          "Nationaliste : Qui exalte la nation et recherche sa puissance.",
+          "Raciste : Qui prétend que certaines « races » humaines sont supérieures à d’autres et les discrimine.",
+          "Antisémite : Qui manifeste de la haine ou de la discrimination envers les Juifs."
+        ]
+      },
+      {
+        "kind": "bullets",
+        "h": "Les mots et symboles également présents",
+        "items": [
+          "NSDAP : parti national-socialiste d’Adolf Hitler, dit parti nazi.",
+          "SA : sections d’assaut, organisation paramilitaire nazie dite « chemises brunes ».",
+          "SS : organisation nazie devenue un instrument de terreur, de répression et de persécution.",
+          "Gestapo : police politique de l’Allemagne nazie.",
+          "Croix gammée : emblème du parti et du régime nazi.",
+          "Mein Kampf : livre d’Hitler rédigé surtout en 1924, publié en 1925 et 1926 ; 1923 est l’année de son putsch manqué."
+        ]
+      },
+      {
+        "kind": "note",
+        "h": "Méthode de rédaction",
+        "text": "N’écris pas seulement « autoritaire = dictature ». Écris : « Un pouvoir autoritaire impose l’obéissance et limite les libertés et l’opposition. »"
+      }
+    ]
+  },
+  "exercise": {
+    "id": "BD1611_HG01",
+    "subject": "Histoire-géographie",
+    "title": "16/11 — Les cinq idées nazies à définir (cahier)",
+    "lesson": "BD16_HG_REF",
+    "category": "bonus",
+    "homeworkBonus": true,
+    "homeworkDue": "2026-11-16",
+    "linkedLessons": [
+      "HG_BIS09",
+      "HG_ENT_20261113"
+    ],
+    "linkedHomework": [
+      "10099~215396"
+    ],
+    "originalSourceStatus": "Révision réadaptée à la photo du cahier transmise le 15 novembre ; l’ENT n’énumère pas les cinq mots.",
+    "level": "Révision 3e · Bonus devoirs",
+    "description": "10 questions (5 QCM de compréhension et 5 réponses écrites), 1 tentative et correction expliquée. Même identifiant que le bonus existant : modification non importable directement, à traiter en sécurité.",
+    "instructions": "Sur brouillon, écris cinq définitions en phrases complètes, puis ferme la leçon et réponds. Les cinq dernières réponses demandent seulement l’adjectif précis ; compare ensuite tes phrases aux corrections.",
+    "questions": [
+      {
+        "type": "mc",
+        "q": "Quelle définition correspond au mot « autoritaire » dans la leçon sur le nazisme ?",
+        "options": [
+          "Qui gouverne par des élections libres.",
+          "Un pouvoir qui impose l’obéissance et limite les libertés et l’opposition.",
+          "Qui soutient les débats parlementaires.",
+          "Qui défend les libertés individuelles."
+        ],
+        "right": 1,
+        "why": "Autoritaire : Un pouvoir qui impose l’obéissance et limite les libertés et l’opposition. Exemple : Le régime nazi impose l’obéissance et réprime les opposants.",
+        "skill": "autoritaire"
+      },
+      {
+        "type": "mc",
+        "q": "Quelle définition correspond au mot « antiparlementaire » dans la leçon sur le nazisme ?",
+        "options": [
+          "Qui s’oppose au Parlement et à la démocratie parlementaire.",
+          "Qui souhaite renforcer le Parlement.",
+          "Qui partage le pouvoir avec toutes les oppositions.",
+          "Qui approuve le pluralisme des partis."
+        ],
+        "right": 0,
+        "why": "Antiparlementaire : Qui s’oppose au Parlement et à la démocratie parlementaire. Exemple : Le régime nazi détruit le pluralisme et le pouvoir des représentants élus.",
+        "skill": "antiparlementaire"
+      },
+      {
+        "type": "mc",
+        "q": "Quelle définition correspond au mot « nationaliste » dans la leçon sur le nazisme ?",
+        "options": [
+          "Qui veut abolir toutes les frontières.",
+          "Qui rejette toute identité nationale.",
+          "Qui exalte la nation et recherche sa puissance.",
+          "Qui gouverne uniquement par les députés."
+        ],
+        "right": 2,
+        "why": "Nationaliste : Qui exalte la nation et recherche sa puissance. Exemple : Le nazisme veut renforcer et agrandir l’Allemagne.",
+        "skill": "nationaliste"
+      },
+      {
+        "type": "mc",
+        "q": "Quelle définition correspond au mot « raciste » dans la leçon sur le nazisme ?",
+        "options": [
+          "Qui défend l’égalité de tous les êtres humains.",
+          "Qui reconnaît toutes les religions.",
+          "Qui veut protéger les droits de chacun.",
+          "Qui prétend que certaines « races » humaines sont supérieures à d’autres et les discrimine."
+        ],
+        "right": 3,
+        "why": "Raciste : Qui prétend que certaines « races » humaines sont supérieures à d’autres et les discrimine. Exemple : Le racisme nazi s’appuie sur une hiérarchie raciale sans fondement scientifique.",
+        "skill": "raciste"
+      },
+      {
+        "type": "mc",
+        "q": "Quelle définition correspond au mot « antisémite » dans la leçon sur le nazisme ?",
+        "options": [
+          "Qui défend tous les groupes religieux.",
+          "Qui manifeste de la haine ou de la discrimination envers les Juifs.",
+          "Qui réclame l’égalité des droits.",
+          "Qui étudie les civilisations anciennes."
+        ],
+        "right": 1,
+        "why": "Antisémite : Qui manifeste de la haine ou de la discrimination envers les Juifs. Exemple : L’antisémitisme nazi entraîne exclusion, persécutions puis génocide.",
+        "skill": "antisémite"
+      },
+      {
+        "type": "text",
+        "q": "Quel adjectif décrit un pouvoir qui exige l’obéissance et réprime l’opposition ? Écris un mot.",
+        "right": "autoritaire",
+        "why": "Définition à rédiger : « Autoritaire signifie : Un pouvoir qui impose l’obéissance et limite les libertés et l’opposition. » Exemple : Le régime nazi impose l’obéissance et réprime les opposants.",
+        "skill": "autoritaire"
+      },
+      {
+        "type": "text",
+        "q": "Quel adjectif décrit un mouvement hostile au Parlement et à la démocratie parlementaire ? Écris un mot.",
+        "right": "antiparlementaire",
+        "why": "Définition à rédiger : « Antiparlementaire signifie : Qui s’oppose au Parlement et à la démocratie parlementaire. » Exemple : Le régime nazi détruit le pluralisme et le pouvoir des représentants élus.",
+        "skill": "antiparlementaire"
+      },
+      {
+        "type": "text",
+        "q": "Quel adjectif décrit un mouvement qui exalte sa nation et recherche sa puissance ? Écris un mot.",
+        "right": "nationaliste",
+        "why": "Définition à rédiger : « Nationaliste signifie : Qui exalte la nation et recherche sa puissance. » Exemple : Le nazisme veut renforcer et agrandir l’Allemagne.",
+        "skill": "nationaliste"
+      },
+      {
+        "type": "text",
+        "q": "Quel adjectif décrit l’idéologie qui hiérarchise à tort des groupes humains selon de prétendues races ? Écris un mot.",
+        "right": "raciste",
+        "why": "Définition à rédiger : « Raciste signifie : Qui prétend que certaines « races » humaines sont supérieures à d’autres et les discrimine. » Exemple : Le racisme nazi s’appuie sur une hiérarchie raciale sans fondement scientifique.",
+        "skill": "raciste"
+      },
+      {
+        "type": "text",
+        "q": "Quel adjectif décrit l’idéologie hostile aux Juifs ? Écris un mot.",
+        "right": "antisémite",
+        "why": "Définition à rédiger : « Antisémite signifie : Qui manifeste de la haine ou de la discrimination envers les Juifs. » Exemple : L’antisémitisme nazi entraîne exclusion, persécutions puis génocide.",
+        "skill": "antisémite"
+      }
+    ]
+  }
+}
