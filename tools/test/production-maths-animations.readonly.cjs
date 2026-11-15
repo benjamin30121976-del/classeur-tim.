@@ -89,11 +89,11 @@ async function main(){
      // Le mode invité ne doit jamais créer de copie, note, tentative ou XP.
      await page.locator('[data-nav="matieres"]').first().click();
      await page.waitForFunction(()=>[...document.querySelectorAll('#matieres-content button.matter-card')]
-       .some(b=>b.textContent.includes('EMC')&&!b.disabled),{timeout:18000});
+       .some(b=>b.textContent.includes('EMC')&&!b.disabled),null,{timeout:18000});
      const emc=mat.locator('button.matter-card').filter({hasText:'EMC'}).first();
      if(!(await emc.count())||!(await emc.isEnabled()))throw Error('Matière EMC non publiée ou désactivée');
      await emc.click();
-     await page.waitForFunction(()=>document.querySelector('#matieres-content h2')?.textContent?.includes('EMC — Mes leçons'),{timeout:12000});
+     await page.waitForFunction(()=>document.querySelector('#matieres-content h2')?.textContent?.includes('EMC — Mes leçons'),null,{timeout:12000});
      row.checks.emc=await page.evaluate(()=>{
        const container=document.querySelector('#matieres-content');
        const branches=[...container.querySelectorAll('details.chapter-section')];
@@ -102,7 +102,7 @@ async function main(){
          heading:container.querySelector('h2')?.textContent||'',
          chapters:branches.length,
          lessons:container.querySelectorAll('details.tim-es-lesson').length,
-         bis:(pack.bis||[]).filter(b=>/\\(EMC\\)/.test(b.group||'')).length,
+         bis:(pack.bis||[]).filter(b=>/\(EMC\)/.test(b.group||'')).length,
          hgUnchanged:(pack.lessons||[]).length===25&&(pack.chapters||[]).length===9,
          horizontalOverflow:document.documentElement.scrollWidth>window.innerWidth+2
        };
