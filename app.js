@@ -32,6 +32,30 @@ function quizLabel(q){return q.level==='Rédaction'?'Rédaction : 7 critères v�
 function exerciseDescription(ex){const description=safe(ex?.description);return ex?.kind==='training'?description.replace(/0 XP/g,'+1 / +0,5 / 0 XP selon la note'):ex?.kind?description:description.replace(/correction immédiate/gi,'correction après autorisation du parent');}
 function topicSelect(id,arr,sel,handler){const root=clear(document.getElementById(id));root.append(new Option('Tous les thèmes','all'));for(const x of arr)root.append(new Option(x,x));root.value=sel;root.addEventListener('change',()=>handler(root.value));}
 function cardAction(heading,meta,description,onClick,status){const b=E('button','tile');b.type='button';if(status)b.append(badge(status,status==='Terminé'?'green':''));b.append(E('strong','',heading),E('small','',meta));if(description)b.append(E('small','',description));b.append(E('span','end','Ouvrir →'));b.addEventListener('click',onClick);return b;}
+/* Liste compacte des bonus de devoirs : présentation seule, aucun changement de tentative ou de XP. */
+function homeworkBonusCard(ex){
+ const original=safe(ex.title);
+ const dated=original.match(/^(\d{1,2}\/\d{1,2}(?:\/\d{4})?)\s*[—–-]\s*(.+)$/);
+ const date=dated?dated[1]:'';
+ const title=(dated?dated[2]:original).replace(/^Évaluation\s*:/i,'Révision :');
+ const subject=ex.subject||'Espagnol';
+ const done=Boolean(attemptFor(ex.id));
+ const mode=window.TIM_EXERCISE.mode(ex);
+ const xpLabel=ex.kind==='bonus-day'?'XP du défi':ex.kind==='training'?'Jusqu’à +1 XP':mode==='bonus'?'Jusqu’à +2 XP':mode==='school'?'0 XP':'XP selon la note';
+ const total=Array.isArray(ex.questions)?ex.questions.length:0;
+ const card=E('button','tile homework-bonus-card');card.type='button';
+ const head=E('span','homework-bonus-head');
+ head.append(E('span','homework-bonus-eyebrow',subject+(date?' · Pour le '+date:'')),badge(done?'Terminé':'À faire',done?'green':''));
+ card.append(head,E('strong','homework-bonus-title',title));
+ card.append(E('span','homework-bonus-summary','Révision créée dans le classeur, pas la fiche du professeur.'));
+ const facts=E('span','homework-bonus-facts');
+ if(total)facts.append(E('span','',total+' questions'));
+ facts.append(E('span','','Note sur '+(total||10)),E('span','',xpLabel));
+ card.append(facts,E('span','homework-bonus-rules','Une tentative · Correction expliquée après validation'));
+ card.append(E('span','homework-bonus-cta',done?'Consulter →':'Commencer →'));
+ card.addEventListener('click',()=>openExercise(ex.id));
+ return card;
+}
 function makeExamples(root,rows){for(const [es,fr] of rows){const ex=E('div','example');const left=E('div');left.append(document.createTextNode(es+' '));left.append(speakButton(es));ex.append(left,E('div','',fr));root.append(ex);}}
 function speakButton(txt){let b=E('button','speak','▶ Écouter');b.type='button';b.title='Écouter en espagnol';b.addEventListener('click',()=>speak(txt));return b;}
 function speak(txt){if(!('speechSynthesis' in window)){alert('La voix espagnole n’est pas disponible dans ce navigateur.');return;}try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(safe(txt));u.lang='es-ES';u.rate=.82;const v=speechSynthesis.getVoices().find(x=>x.lang?.toLowerCase().startsWith('es'));if(v)u.voice=v;u.onerror=()=>{alert('La prononciation n’a pas fonctionné sur cet appareil.');};speechSynthesis.speak(u);}catch(err){alert('Impossible de lire cette phrase sur ce téléphone.');}}
@@ -638,6 +662,11 @@ function renderExerciseIndex(){
  const finder=document.getElementById('exercise-search').closest('.toolrow');
  const extras=clear(document.getElementById('recommended-extra'));
  const bases=DATA.exercises.filter(e=>!window.TIM_EXERCISE.challenge(e));
+  const isHomeworkBonus=exerciseMode==='homework-bonus'&&!exerciseSubject;
+  const pageTitle=document.querySelector('#exercices .pagehead h2');
+  const pageIntro=document.querySelector('#exercices .pagehead .intro');
+  if(pageTitle)pageTitle.textContent=isHomeworkBonus?'Bonus devoirs':'Mes exercices';
+  if(pageIntro)pageIntro.textContent=isHomeworkBonus?'Des exercices pour préparer les devoirs. Choisis une révision ci-dessous.':'Chaque exercice indique ses XP possibles selon la note. Les devoirs, les entraînements et les défis conservent leurs barèmes. Une seule validation par exercice.';
  if(exerciseSubject==='Physique-chimie'){renderPhysicsExerciseDirectory(root,toolbar);return;}
  if(exerciseSubject==='Anglais'){renderEnglishExerciseDirectory(root,toolbar);return;}
   if(exerciseSubject==='SVT'){renderSvtExerciseDirectory(root,toolbar);return;}
@@ -647,16 +676,16 @@ function renderExerciseIndex(){
  if(!exerciseSubject){
   finder.classList.add('hide');root.className='matter-grid';
   if(exerciseMode==='homework-bonus'){
-   root.className='clicklist';
-   document.getElementById('exercise-count').textContent='Exercices bonus des devoirs · XP selon chaque exercice';
+   root.className='clicklist homework-bonus-list';
+   const homework=bases.filter(e=>e.homeworkBonus===true);
+   document.getElementById('exercise-count').textContent=homework.length+' révision(s) · '+homework.filter(e=>attemptFor(e.id)).length+' terminée(s)';
    const back=button('← Tous les exercices',()=>{exerciseMode='';renderExerciseIndex();},'group-back');
    back.style.setProperty('color','#e6efff','important');toolbar.append(back);
-   const homework=bases.filter(e=>e.homeworkBonus===true);
    if(!homework.length){
     const empty=notice('Aucun exercice bonus de devoirs n’est encore publié. Les exercices préparés ensemble apparaîtront ici, sans modifier tes devoirs de l’ENT.');
     empty.style.color='#243c5b';root.append(empty);
    }
-   else for(const ex of homework)root.append(cardAction(ex.title,(ex.subject||'Espagnol')+' · Exercice de révision · barème XP indiqué sur la fiche',exerciseDescription(ex),()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));
+   else for(const ex of homework)root.append(homeworkBonusCard(ex));
    return;
   }
   if(exerciseMode==='school-all'){
