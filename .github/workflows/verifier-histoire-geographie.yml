@@ -15,6 +15,15 @@ on:
       - 'parent-unified-results.js'
       - 'tools/test/hg-production.readonly.cjs'
       - '.github/workflows/verifier-histoire-geographie.yml'
+  pull_request:
+    paths:
+      - 'histoire-geographie-*.js'
+      - 'index.html'
+      - 'app.js'
+      - 'packs/bonus-nazisme-cahier-16nov-v2.json'
+      - 'tools/test/nazism-bonus-cahier.test.mjs'
+      - 'scripts/test-bonus-nazisme-cahier-browser.cjs'
+      - '.github/workflows/verifier-histoire-geographie.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -33,6 +42,16 @@ jobs:
       - name: Vérifier HG, correction, sécurité et missions des six matières
         run: |
           node --test worker/test/hg-training.test.mjs worker/test/mixed-challenges.test.mjs worker/test/mixed-parent-preview.test.mjs worker/test/corrections-pedagogiques.test.mjs worker/test/svt-training.test.mjs worker/test/physics-training.test.mjs worker/test/math-training.test.mjs
+      - name: Vérifier les dix questions du bonus depuis le cahier
+        run: node --test tools/test/nazism-bonus-cahier.test.mjs
+      - name: Installer Chromium pour le test du bonus sans réseau
+        run: |
+          npm install --prefix /tmp/tim-hg-bonus --no-audit --no-fund playwright
+          /tmp/tim-hg-bonus/node_modules/.bin/playwright install chromium
+      - name: Vérifier l'affichage mobile et les réponses sans écrire dans Firebase
+        env:
+          NODE_PATH: /tmp/tim-hg-bonus/node_modules
+        run: node scripts/test-bonus-nazisme-cahier-browser.cjs
       - name: Résumé
         run: echo 'Aucune tentative réelle de Tim n’a été consommée.' >> "$GITHUB_STEP_SUMMARY"
   navigateur-parent:

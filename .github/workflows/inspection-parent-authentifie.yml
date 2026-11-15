@@ -8,6 +8,7 @@ on:
     paths:
       - 'browser-requests/parent.json'
       - 'outils/inspecter-parent-securise.cjs'
+      - 'outils/auditer-bonus-hg-parent.cjs'
       - 'functions/xp-week-exception.mjs'
       - 'functions/test/xp-week-exception.test.mjs'
       - 'outils/auditer-recotation-samedi-20261115.cjs'
@@ -77,6 +78,11 @@ jobs:
         env:
           NODE_PATH: /tmp/tim-parent-browser/node_modules
         run: node outils/inspecter-parent-securise.cjs
+      - name: Vérifier si le bonus HG ancien a déjà une copie (Parent, lecture seule)
+        if: always() && steps.verify.outputs.configured == 'true'
+        env:
+          NODE_PATH: /tmp/tim-parent-browser/node_modules
+        run: node outils/auditer-bonus-hg-parent.cjs
       - name: Archiver uniquement les captures avec donnees individuelles masquees
         if: steps.verify.outputs.configured == 'true' && always()
         uses: actions/upload-artifact@v4

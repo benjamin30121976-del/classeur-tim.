@@ -237,7 +237,7 @@ function renderLessonIndex(){
  if(!found.length)root.append(notice('Aucune fiche trouvée pour cette recherche.'));
 }
 function openLesson(id){const l=lessonBy(id);if(!l)return;
- if(subjectOf(l)==='SVT'&&window.TIM_SVT_PATH){page('matieres');renderMatiere('SVT',id);return;}if(subjectOf(l)==='Histoire-géographie'&&window.TIM_HG_PATH){page('matieres');renderMatiere('Histoire-géographie',id);return;}if(subjectOf(l)==='Français'&&window.TIM_FR_PATH){page('matieres');renderMatiere('Français',id);return;}if(subjectOf(l)==='Anglais'&&window.TIM_ENGLISH_PATH){page('matieres');renderMatiere('Anglais',id);return;}if(subjectOf(l)==='Physique-chimie'&&window.TIM_PHYSIQUE_PATH){page('matieres');renderMatiere('Physique-chimie',id);return;}lessonSubject=subjectOf(l);lessonGroup='';page('cours');document.getElementById('lesson-index').classList.add('hide');const dest=clear(document.getElementById('lesson-detail'));dest.classList.add('active');
+ if(subjectOf(l)==='SVT'&&window.TIM_SVT_PATH){page('matieres');renderMatiere('SVT',id);return;}if(subjectOf(l)==='Histoire-géographie'&&window.TIM_HG_PATH){page('matieres');renderMatiere('Histoire-géographie',id==='BD16_HG_CAHIER'?'HG_BIS09':id);return;}if(subjectOf(l)==='Français'&&window.TIM_FR_PATH){page('matieres');renderMatiere('Français',id);return;}if(subjectOf(l)==='Anglais'&&window.TIM_ENGLISH_PATH){page('matieres');renderMatiere('Anglais',id);return;}if(subjectOf(l)==='Physique-chimie'&&window.TIM_PHYSIQUE_PATH){page('matieres');renderMatiere('Physique-chimie',id);return;}lessonSubject=subjectOf(l);lessonGroup='';page('cours');document.getElementById('lesson-index').classList.add('hide');const dest=clear(document.getElementById('lesson-detail'));dest.classList.add('active');
  const bis=isBisLesson(l),allSame=DATA.lessons.filter(x=>x.id!==l.id&&subjectOf(x)===subjectOf(l)&&chapterOf(x)===chapterOf(l)),others=allSame.filter(x=>bis?!isBisLesson(x):isBisLesson(x));
  dest.append(button('← Retour au sommaire',()=>{dest.classList.remove('active');document.getElementById('lesson-index').classList.remove('hide');scrollTop();},'plain back'));
  dest.append(E('p','lesson-type-label '+(bis?'bis':'ent'),bis?'LEÇON BIS · POUR MIEUX COMPRENDRE':'COURS ENT · DOCUMENT DU PROFESSEUR'),E('h2','',l.title),E('p','meta',bis?'Version pédagogique complémentaire':'Cours abordé : '+(l.date||'date non précisée')),E('p','',l.summary));
@@ -679,7 +679,12 @@ function renderExerciseIndex(){
  const toolbar=clear(document.getElementById('exercise-subject-toolbar'));
  const finder=document.getElementById('exercise-search').closest('.toolrow');
  const extras=clear(document.getElementById('recommended-extra'));
- const bases=DATA.exercises.filter(e=>!window.TIM_EXERCISE.challenge(e));
+ // Le bonus du cahier est un NOUVEL exercice stocké côté serveur.
+ // Ne cacher l'ancienne carte non terminée que si la nouvelle version existe réellement.
+ // Les copies terminées restent accessibles ; aucune note ni réponse n'est modifiée.
+ const newerNazismBonus=DATA.exercises.some(e=>e.id==='BD1611_HG02'&&e.homeworkBonus===true&&e.questions?.length===10);
+ const bases=DATA.exercises.filter(e=>!window.TIM_EXERCISE.challenge(e)&&
+  !(newerNazismBonus&&e.id==='BD1611_HG01'&&!attemptFor(e.id)));
   const isHomeworkBonus=exerciseMode==='homework-bonus'&&!exerciseSubject;
   const pageTitle=document.querySelector('#exercices .pagehead h2');
   const pageIntro=document.querySelector('#exercices .pagehead .intro');

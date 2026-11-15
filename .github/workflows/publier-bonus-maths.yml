@@ -17,6 +17,9 @@ on:
       - 'boot.js'
       - 'app.js'
       - 'outils/publier-bonus-maths-via-parent.cjs'
+      - 'outils/publier-bonus-hg-cahier-via-parent.cjs'
+      - 'packs/bonus-nazisme-cahier-16nov-v2.json'
+      - 'tools/test/nazism-bonus-cahier.test.mjs'
       - '.github/workflows/publier-bonus-maths.yml'
   push:
     branches: [main]
@@ -36,6 +39,9 @@ on:
       - 'boot.js'
       - 'app.js'
       - 'outils/publier-bonus-maths-via-parent.cjs'
+      - 'outils/publier-bonus-hg-cahier-via-parent.cjs'
+      - 'packs/bonus-nazisme-cahier-16nov-v2.json'
+      - 'tools/test/nazism-bonus-cahier.test.mjs'
       - '.github/workflows/publier-bonus-maths.yml'
   workflow_dispatch:
     inputs:
@@ -75,11 +81,13 @@ jobs:
           node --check functions/bonus-perimetres-tim-20261114.mjs
           node --check worker/server.mjs
           node --check outils/publier-bonus-maths-via-parent.cjs
+          node --check outils/publier-bonus-hg-cahier-via-parent.cjs
       - name: Tester 70 questions, bonnes réponses, copies fausses, XP illimités
         run: |
           node --test functions/test/bonus-maths-2026.test.mjs
           node --test functions/test/bonus-perimetres-tim-20261114.test.mjs
           node --test functions/test/grading.test.mjs functions/test/bonus-reponses-equivalentes-20261115.test.mjs functions/test/xp.test.mjs
+          node --test tools/test/nazism-bonus-cahier.test.mjs
   import-parent:
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main' && inputs.publier_sept_bonus == true
     needs: validation
@@ -137,3 +145,36 @@ jobs:
         env:
           NODE_PATH: /tmp/tim-bonus-perimetre/node_modules
         run: node outils/publier-bonus-perimetres-via-parent.cjs
+
+  import-nazisme-cahier:
+    # Une seule importation ciblée après autorisation explicite par le parent.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && contains(github.event.head_commit.message, 'PUBLISH_TIM_HG_CAHIER_20261115')
+    needs: validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+      TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
+      TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
+      TIM_HG_CAHIER_PUBLISH: OUI
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Valider le lot HG et l'importeur
+        run: |
+          node --check outils/publier-bonus-hg-cahier-via-parent.cjs
+          node --test tools/test/nazism-bonus-cahier.test.mjs
+      - name: Vérifier les accès Parent existants
+        run: |
+          test -n "$TIM_PARENT_EMAIL" || { echo "::error::Secret Parent indisponible"; exit 1; }
+          test -n "$TIM_PARENT_PASSWORD" || { echo "::error::Secret Parent indisponible"; exit 1; }
+      - name: Installer Chromium Playwright pour le compte Parent
+        run: |
+          npm install --prefix /tmp/tim-bonus-hg --no-audit --no-fund playwright
+          /tmp/tim-bonus-hg/node_modules/.bin/playwright install --with-deps chromium
+      - name: Importer deux nouveaux documents HG et vérifier Firebase et Parent
+        env:
+          NODE_PATH: /tmp/tim-bonus-hg/node_modules
+        run: node outils/publier-bonus-hg-cahier-via-parent.cjs
