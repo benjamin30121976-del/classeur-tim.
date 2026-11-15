@@ -9,6 +9,10 @@ function read(){try{return JSON.parse(localStorage.getItem(KEY)||'{}')||{};}catc
 function save(id,draft){try{const all=read();if(draft)all[id]=draft;else delete all[id];localStorage.setItem(KEY,JSON.stringify(all));}catch{}}
 function decode(value){try{return JSON.parse(value);}catch{return {};}}
 function answered(q,answer){
+ if(q.type==='structured'){
+  const values=decode(answer);return Array.isArray(values)&&values.length===q.fields.length&&
+   values.every(v=>typeof v==='string'&&v.trim().length>0);
+ }
  if(q.type!=='reason')return String(answer||'').trim()!=='';
  const a=decode(answer);return /^[0-9]+$/.test(String(a.m??''))&&String(a.c||'').trim()!==''&&String(a.s||'').trim()!=='';
 }
@@ -98,6 +102,19 @@ function open(ex,ctx={}){
     radio.onchange=()=>{state.answers[i]=String(idx);persist();};if(old||guest||serviceReadOnly)radio.disabled=true;
     line.append(radio,E('span',opt));group.append(line);
    });box.append(group);
+  }else if(q.type==='structured'){
+   const restored=decode(val),current=Array.isArray(restored)?restored:[];
+   q.fields.forEach((f,j)=>{
+    const panel=E('div',undefined,'mix-structured-field');
+    panel.append(E('p',(j+1)+'. '+f.name+' · '+Number(f.points).toLocaleString('fr-FR')+' pt','mix-step-label'));
+    panel.append(E('p',f.instruction,'mix-muted'));
+    const field=E('textarea',undefined,'mix-textarea');field.rows=2;field.maxLength=500;
+    field.placeholder='Écris ta réponse ou JSP si tu ne sais pas.';field.value=current[j]||'';
+    field.disabled=!!old||guest||serviceReadOnly;
+    field.oninput=()=>{current[j]=field.value;state.answers[i]=JSON.stringify(current);persist();};
+    panel.append(field);box.append(panel);
+   });
+   box.append(E('p','Tous les cadres doivent être remplis. « JSP » compte comme une réponse, mais ne rapporte aucun point. Les réponses restent cachées jusqu’à la validation finale.','mix-paper'));
   }else if(q.type==='reason'){
    const current=decode(val);
    box.append(E('p','1. Je choisis ce que je dois faire','mix-step-label'));
@@ -136,7 +153,7 @@ function open(ex,ctx={}){
   host.append(progress);
   if(serviceReadOnly)host.append(E('p','Lecture seule : le serveur des notes est momentanément indisponible. Aucune tentative ne sera enregistrée. Recharge le classeur lorsque le service fonctionne.','mix-paper'));
   const q=questions[state.page],box=E('section',undefined,'mix-panel');
-  box.append(E('p',q.subject+' · '+(q.format==='mc'?'Choix':q.format==='fill'?'À compléter':q.format==='reason'?'Raisonnement':'Réponse écrite'),'mix-subject'));
+  box.append(E('p',q.subject+' · '+(q.format==='mc'?'Choix':q.format==='fill'?'À compléter':q.format==='reason'?'Raisonnement':q.format==='structured'?'Réponses guidées':'Réponse écrite'),'mix-subject'));
   box.append(E('h3',q.q));
   const graphic=draw(q);if(graphic)box.append(graphic);
   if(q.subject==='Espagnol'&&q.fr){
@@ -168,7 +185,7 @@ function open(ex,ctx={}){
    checkbox.onchange=()=>{state.checked[i]=checkbox.checked;showReview();};line.append(checkbox,E('span',text));box.append(line);});
   const list=E('div',undefined,'mix-review-list');
   questions.forEach((q,i)=>{const complete=answered(q,state.answers[i]),button=btn(
-   'Question '+(i+1)+' · '+q.subject+' · '+(complete?'Réponse présente':'À compléter'),()=>{
+   'Question '+(i+1)+' · '+q.subject+' · '+(complete?'Réponse présente':q.type==='structured'?'À compléter : '+q.fields.filter((f,j)=>!String((Array.isArray(decode(state.answers[i]))?decode(state.answers[i]):[])[j]||'').trim()).map(f=>f.name).join(', '):'À compléter'),()=>{
     state.page=i;showQuiz();
    },'mix-review-item'+(complete?'':' mix-missing'));
    list.append(button);});
@@ -237,7 +254,14 @@ function open(ex,ctx={}){
    const partial=Number(a.points)||0;
    item.append(E('h4','Question '+(i+1)+' · '+q.subject+' · '+partial.toLocaleString('fr-FR')+'/1 point'));
    item.append(E('p',q.q));
-   if(q.type==='reason'){
+   if(q.type==='structured'){
+     for(const f of a.fieldResults||[]){
+      item.append(E('p',String(f.label||'Étape')+' : '+String(f.response||'Sans réponse')+(f.correct?' · Juste':' · À revoir'),'mix-muted'));
+      if(!f.correct)item.append(E('p','Réponse attendue : '+String(f.expected||'')));
+     }
+     if(a.correct===false)item.append(E('p','Explication : '+String(a.explanation||'')));
+     else item.append(E('p','Tous les cadres sont corrects.','mix-advice'));
+   }else if(q.type==='reason'){
     item.append(E('p','Méthode choisie : '+String(a.methodResponse||'Non renseignée')));
     item.append(E('p','Mon calcul : '+String(a.calculationResponse||'')));
     item.append(E('p','Ma conclusion : '+String(a.conclusionResponse||'')));
@@ -250,9 +274,9 @@ function open(ex,ctx={}){
      q.type==='mc'?q.options?.[Number(a.response)]||a.response:a.response)));
     if(a.correct===false)item.append(E('p','Réponse attendue : '+String(a.expected||'')));
    }
-   item.append(E('p','Explication : '+String(a.explanation||'Relis la leçon pour comprendre.')));
+   if(q.type!=='structured')item.append(E('p','Explication : '+String(a.explanation||'Relis la leçon pour comprendre.')));
    const dg=draw(q,true);if(dg)item.append(dg);
-   item.append(E('p',q.lessonId?'Leçon à revoir : '+q.lessonId:
+   item.append(E('p',q.lessonReview&&a.correct===false?'Leçon à revoir : '+q.lessonReview:q.lessonId?'Leçon à revoir : '+q.lessonId:
     'À revoir : la méthode expliquée ci-dessus. Ce problème ne correspond pas à une leçon ENT identifiée.','mix-muted'));
    if(q.lessonId&&typeof window.TIM_PEDAGOGY_NAVIGATE==='function')
     item.append(btn('Ouvrir la leçon correspondante',()=>window.TIM_PEDAGOGY_NAVIGATE(q.subject,q.lessonId),'mix-link'));
