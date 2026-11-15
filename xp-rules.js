@@ -4,6 +4,11 @@
 const f=new Intl.DateTimeFormat('fr-CA',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'});
 const day=date=>{const d=new Date(date);if(!Number.isFinite(d.getTime()))return '';const parts=Object.fromEntries(f.formatToParts(d).filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));return `${parts.year}-${parts.month}-${parts.day}`;};
 const monday=s=>{const d=new Date(s+'T12:00:00Z');d.setUTCDate(d.getUTCDate()-((d.getUTCDay()+6)%7));return d.toISOString().slice(0,10);};
+// Une seule exception pour la BARRE XP (pas pour la date des défis) :
+// le lundi 16 novembre on garde les XP gagnés depuis le lundi 9.
+// À compter du lundi 23 novembre, les périodes normales reprennent.
+const xpPeriodStart=s=>{const ordinary=monday(s);return ordinary==='2026-11-16'?'2026-11-09':ordinary;};
+const xpCarryActive=s=>monday(s)==='2026-11-16';
 const isChallenge=ex=>['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex?.kind);
 function exercisePoints(a){if(a.needsReview||!a.total)return 0;const p=Math.max(0,Math.min(1,(a.score||0)/a.total));return p===1?3:p>=.8?2:p>=.6?1:p>=.4?-1:-2;}
 function bonusPoints(a){if(a.needsReview||!a.total)return 0;const p=Math.max(0,Math.min(1,(a.score||0)/a.total));return p===1?2:p>=.6?1:0;}
@@ -55,5 +60,5 @@ function contribution(a,ex){if(!ex)return 0;
  return bonusPoints(a);
 }
 function reward(xp){return xp>=75?10:xp>=38?5:xp>=19?2:0;}
-window.TIM_XP={day,monday,exercisePoints,bonusPoints,isBonus,contribution,contributionV9,contributionV10,reward,canSubmit};
+window.TIM_XP={day,monday,xpPeriodStart,xpCarryActive,exercisePoints,bonusPoints,isBonus,contribution,contributionV9,contributionV10,reward,canSubmit};
 })();
