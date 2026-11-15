@@ -24,6 +24,28 @@ async function main(){
   for(const file of ['/tim-animations.js','/assets/animations/Tim_Defi_Du_Samedi_10XP.gif','/assets/animations/Tim_Defi_Bonus_5XP.gif','/maths-parcours.js','/maths-bis-data.js']){
    report.staticFiles[file]=await probe(probePage,file);
   }
+  // Contrôler uniquement les fichiers réellement servis par Cloudflare.
+  // Aucun compte Parent/Tim et aucune requête d'écriture.
+  report.thalesPublication={};
+  for(let retry=0;retry<20;retry++){
+   const [home,js]=await Promise.all([
+    probePage.request.get(new URL('/',base).href,{timeout:25000}),
+    probePage.request.get(new URL('/maths-geometry-general.js',base).href,{timeout:25000})
+   ]);
+   const html=await home.text(),body=await js.text();
+   report.thalesPublication={
+    htmlStatus:home.status(),scriptStatus:js.status(),
+    version:html.includes('maths-geometry-general.js?v=thales-rapports-coherents-20261115-v3'),
+    matchingPrompt:body.includes('const prompt=displayPrompt(ex,index'),
+    noFalseDE:body.includes('const hasDE='),
+    rightCaption:body.includes('L’égalité des rapports est donnée dans l’énoncé'),
+    noAssumedParallel:body.includes('givenParallel?ratio1:(knownDifferent?.57:.54)')
+   };
+   if(Object.entries(report.thalesPublication).every(([k,v])=>
+     k.endsWith('Status')?v===200:v===true))break;
+   if(retry<19)await probePage.waitForTimeout(5000);
+  }
+  console.log('Cloudflare Thalès fichier publié : '+JSON.stringify(report.thalesPublication));
   // Vérification publique sans jeton ni secret : service du backend configuré ?
   try{
    const response=await probePage.request.get(new URL('/api/status',base).href,{timeout:20000});
@@ -46,6 +68,37 @@ async function main(){
    try{
     const response=await page.goto(base,{waitUntil:'domcontentloaded',timeout:45000});
     row.checks.http=response?.status()||null;
+    await page.waitForFunction(()=>Boolean(window.TIM_GEOMETRY_DIAGRAMS?.render),null,{timeout:35000});
+    row.checks.thalesFigure=await page.evaluate(()=>{
+     // Banque volontairement ancienne D/E : la présentation de la question 1
+     // doit rester M/N sur tous les écrans, sans modifier la banque Firestore.
+     const ex={id:'BD1611_MA01',subject:'Mathématiques',title:'Réciproque de Thalès',
+      questions:[{q:'Dans le triangle ABC, D est sur [AB] et E sur [AC], AD/AB = AE/AC.'}]};
+     const displayed=window.TIM_GEOMETRY_DIAGRAMS.displayPrompt(ex,0,ex.questions[0].q);
+     const fig=window.TIM_GEOMETRY_DIAGRAMS.render(ex,0);
+     const labels=[...fig.querySelectorAll('svg text')].map(el=>el.textContent);
+     const caption=fig.querySelector('figcaption')?.textContent||'';
+     const slopeCross=f=>{
+      const lines=[...f.querySelectorAll('svg line')];
+      if(lines.length!==4)return null;
+      const v=line=>[Number(line.getAttribute('x2'))-Number(line.getAttribute('x1')),
+        Number(line.getAttribute('y2'))-Number(line.getAttribute('y1'))];
+      const [x,y]=v(lines[2]),[u,w]=v(lines[3]);return x*w-y*u;
+    };
+    const equalNumbers=window.TIM_GEOMETRY_DIAGRAMS.renderPrompt(
+       'Dans le triangle ABC, AM = 2, AB = 6, AN = 3, AC = 9. Les droites (MN) et (BC) sont-elles parallèles ?','Thalès');
+    const unequalNumbers=window.TIM_GEOMETRY_DIAGRAMS.renderPrompt(
+       'Dans le triangle ABC, AM = 3, AB = 9, AN = 6, AC = 12. Les droites (MN) et (BC) sont-elles parallèles ?','Thalès');
+    const symbolic=slopeCross(fig),equal=slopeCross(equalNumbers),unequal=slopeCross(unequalNumbers);
+    return {promptMN:displayed.includes('M est sur [AB]')&&displayed.includes('N sur [AC]'),
+      figureMN:labels.includes('M')&&labels.includes('N')&&!labels.includes('D')&&!labels.includes('E'),
+      captionCorrect:caption.includes('égalité des rapports')&&!caption.includes('Compare les longueurs données'),
+      noPrematureConclusion:!caption.includes('sont parallèles'),
+      symbolicEqualityDrawsParallel:Number.isFinite(symbolic)&&Math.abs(symbolic)<1e-6,
+      numericEqualityDrawsParallel:Number.isFinite(equal)&&Math.abs(equal)<1e-6,
+      unequalNumbersDrawNonParallel:Number.isFinite(unequal)&&Math.abs(unequal)>1e-6};
+    });
+    console.log('Cloudflare Thalès '+device+' : '+JSON.stringify(row.checks.thalesFigure));
     row.checks.enterGuest=await page.locator('#guest-enter').isVisible();
     row.checks.introButton=await page.locator('#intro-skip').count()>0;
     row.checks.scriptTags=await page.evaluate(()=>[...document.scripts].map(x=>(x.getAttribute('src')||'').split('?')[0]).filter(Boolean));
@@ -103,6 +156,7 @@ async function main(){
   'Aucune connexion Parent/Tim ni exercice validé. Toute requête POST a été bloquée.',
   '','## État du serveur privé','- API Cloudflare : '+JSON.stringify(report.backend||{}),'','## Ressources du site public'];
  for(const [key,v] of Object.entries(report.staticFiles))lines.push('- '+key+' : HTTP '+v.status+', '+(v.available?'fichier correct':'absent ou mauvais type')+' ('+v.contentType+')');
+ lines.push('','## Schéma Thalès publié : '+JSON.stringify(report.thalesPublication));
  for(const d of report.devices){
   lines.push('','## '+d.device,'- Page HTTP : '+d.checks.http,
    '- Accès Visiteur : '+Boolean(d.checks.guestOpened),
@@ -118,5 +172,7 @@ async function main(){
  fs.writeFileSync(path.join(out,'rapport.json'),JSON.stringify(report,null,2)+'\n');
  console.log(lines.join('\n'));
  if(report.devices.every(d=>!d.checks.http||d.checks.http>=400))process.exitCode=1;
+ if(!Object.entries(report.thalesPublication||{}).every(([k,v])=>k.endsWith('Status')?v===200:v===true))process.exitCode=1;
+ if(!report.devices.every(d=>Object.values(d.checks.thalesFigure||{}).every(v=>v===true)&&d.checks.thalesFigure))process.exitCode=1;
 }
 main().catch(e=>{console.error('Audit échoué : '+e.message);process.exitCode=1;});
