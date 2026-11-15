@@ -116,17 +116,21 @@ function session(course,bis,pack){
 }
 function render(root,opts={}){
  const pack=window.TIM_HG_PACK;
- root.replaceChildren(btn('← Toutes les matières',()=>opts.back?.()),E('h2','Histoire-géographie — Mes leçons'));
- if(!pack?.lessons?.length){add(root,'p','Le dossier Histoire-géographie est temporairement indisponible.');return;}
- add(root,'p',pack.lessons.length+' séances ENT classées par date · '+pack.bis.length+' leçons BIS · '+(pack.bis.length*2)+' exercices de 10 questions.');
- add(root,'p','Archives ENT du 12 novembre et collecte ciblée du 13. Si le professeur ne donne qu’un titre, la leçon BIS est un ajout distinct : aucun texte officiel n’est inventé.','lesson-caution');
- if(window.__TIM_PARENT&&!window.__TIM_GUEST&&window.TIM_HG_DOCUMENTS?.parentImport)root.append(window.TIM_HG_DOCUMENTS.parentImport());
+ const emcOnly=opts.emcOnly===true;
+ const visibleChapters=(pack?.chapters||[]).filter(x=>!emcOnly||/\(EMC\)/.test(x));
+ const visibleLessons=(pack?.lessons||[]).filter(x=>visibleChapters.includes(x.chapter));
+ const visibleBis=(pack?.bis||[]).filter(x=>visibleChapters.includes(x.group));
+ root.replaceChildren(btn('← Toutes les matières',()=>opts.back?.()),E('h2',emcOnly?'EMC — Mes leçons':'Histoire-géographie — Mes leçons'));
+ if(!visibleLessons.length){add(root,'p',emcOnly?'Aucune séance EMC identifiée dans le classeur pour le moment.':'Le dossier Histoire-géographie est temporairement indisponible.');return;}
+ add(root,'p',visibleLessons.length+' séances ENT classées par date · '+visibleBis.length+' leçons BIS · '+(visibleBis.length*2)+' exercices de 10 questions.');
+ add(root,'p',emcOnly?'Les cours EMC déjà archivés dans Histoire-géographie sont présentés ici sans duplication de copies, notes ou XP. Les documents ENT et les leçons BIS restent distincts.':'Archives ENT du 12 novembre et collecte ciblée du 13. Si le professeur ne donne qu’un titre, la leçon BIS est un ajout distinct : aucun texte officiel n’est inventé.','lesson-caution');
+ if(!emcOnly&&window.__TIM_PARENT&&!window.__TIM_GUEST&&window.TIM_HG_DOCUMENTS?.parentImport)root.append(window.TIM_HG_DOCUMENTS.parentImport());
  const exam=pack.homework.find(h=>h.due==='2026-11-18'&&/évaluation/i.test(h.title));
  if(exam){const panel=E('section',undefined,'panel');
   add(panel,'h3','Évaluation d’EMC annoncée — mercredi 18 novembre');
   add(panel,'p','L’ENT mentionne « évaluation EMC », sans préciser son sujet exact. Les leçons sur les principes républicains, la loi Veil et les institutions européennes fournissent une révision, mais le programme de contrôle n’est pas confirmé.');
   root.append(panel);}
- for(const chapter of pack.chapters){
+ for(const chapter of visibleChapters){
   const rows=pack.lessons.filter(x=>x.chapter===chapter),bis=pack.bis.filter(b=>b.group===chapter);
   const chosen=bis.find(b=>b.id===opts.openLessonId);
   const courseFor=chosen?(rows.find(c=>c.date===chosen.date)||rows[rows.length-1]):null;
@@ -139,13 +143,14 @@ function render(root,opts={}){
     group.open=true;item.details.open=true;item.openTab(chosen?'bis':'ent');
    }
   }
-  if(!opts.openLessonId&&chapter==='Nazisme : dictature et persécutions'){group.open=true;listing.lastElementChild?.setAttribute('open','');}
+  if(!opts.openLessonId&&chapter==='Nazisme : dictature et persécutions'&&!emcOnly){group.open=true;listing.lastElementChild?.setAttribute('open','');}
+  if(!opts.openLessonId&&emcOnly&&chapter===visibleChapters[0])group.open=true;
   root.append(group);
  }
  const missing=E('details',undefined,'panel');missing.append(E('summary','Documents ENT manquants ou incomplets'));
  for(const m of pack.missing)add(missing,'p','• '+m);
  root.append(missing);
- const progress=E('details',undefined,'panel');progress.append(E('summary','Notes, copies et corrections en histoire-géographie'));
+ const progress=E('details',undefined,'panel');progress.append(E('summary',emcOnly?'Notes et corrections EMC (historique partagé avec Histoire-géographie)':'Notes, copies et corrections en histoire-géographie'));
  const slot=E('div');progress.append(slot);progress.addEventListener('toggle',()=>{if(progress.open)window.TIM_HG_TRAINING?.renderProgress(slot)});root.append(progress);
  const sources=E('details',undefined,'panel');sources.append(E('summary','Références pour vérifier les leçons BIS'));
  for(const item of pack.sources){const p=E('p');const a=E('a',item.title);a.href=item.url;a.target='_blank';a.rel='noopener noreferrer';p.append(a);sources.append(p);}root.append(sources);
