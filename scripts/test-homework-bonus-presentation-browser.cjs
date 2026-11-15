@@ -121,6 +121,8 @@ const ex={
      questionFits:rects({elem:q,viewport:window.innerWidth}),
      originalDescriptionVisible:root.innerText.includes('ANCIEN TEXTE RÉPÉTÉ'),
      originalInstructionsVisible:root.innerText.includes('L’ENT ne donne pas les énoncés exacts'),
+     backAvailable:!!root.querySelector('button.back')&&root.querySelector('button.back').textContent.includes('Retour'),
+     oldFooterVisible:root.innerText.includes('Pour les défis, la note et la correction'),
      writing:window.__CLOUD_ATTEMPTS.length
     };
    });
@@ -142,9 +144,11 @@ const ex={
    assert(result.optionFont>=15&&result.optionFont<=19,name+' : choix illisible : '+result.optionFont);
    assert.equal(result.widthValid,true,name+' : largeur dépasse le viewport');
    assert.equal(result.questionFits,true,name+' : question déborde');
-   assert(result.navHeight>=55&&result.navHeight<99,name+' : navigation du bas masquée ou trop haute '+result.navHeight);
+   assert.equal(result.navHeight,0,name+' : les onglets fixes doivent être masqués pendant le questionnaire');
    assert.equal(result.originalDescriptionVisible,false,name+' : ancien paragraphe répété');
    assert.equal(result.originalInstructionsVisible,false,name+' : consigne repliée devrait être cachée');
+   assert.equal(result.backAvailable,true,name+' : bouton Retour obligatoire si la navigation est masquée');
+   assert.equal(result.oldFooterVisible,false,name+' : ancien texte répété toujours visible');
    assert.equal(result.writing,0,'Une copie réelle ne doit pas être créée en test');
    const output=path.join(dir,'browser-results','animations-exercices');
    fs.mkdirSync(output,{recursive:true});
