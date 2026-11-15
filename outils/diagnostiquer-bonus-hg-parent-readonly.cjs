@@ -73,6 +73,36 @@ const site=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
   assert.equal(ui.parent,true,'Session Parent non autorisée');
   assert.equal(dbResult.lessonDocument,true,'La nouvelle fiche Firestore doit exister');
   assert.equal(dbResult.exerciseDocument,true,'Le nouveau bonus Firestore doit exister');
+  // Contrôle visuel ciblé du site réellement publié : aucune réponse saisie.
+  if(await page.locator('#intro-screen').isVisible().catch(()=>false)){
+   const skip=page.locator('#intro-skip');
+   if(await skip.isVisible())await skip.click();
+   await page.locator('#intro-screen').waitFor({state:'hidden',timeout:12000});
+  }
+  await page.locator('[data-nav="home"]:visible').first().click({timeout:15000});
+  await page.getByRole('button',{name:/Ouvrir mes exercices bonus/i}).click({timeout:15000});
+  const tiles=page.locator('#exercise-list .homework-bonus-card');
+  const newCard=tiles.filter({hasText:/Les cinq idées nazies à définir/i});
+  const oldCard=tiles.filter({hasText:/Cinq notions à définir/i});
+  const cards={total:await tiles.count(),newCount:await newCard.count(),oldCount:await oldCard.count()};
+  assert.equal(cards.newCount,1,'Le nouveau bonus ne figure pas dans « Bonus devoirs ».');
+  await newCard.click({timeout:15000});
+  const d=page.locator('#exercise-detail.active');
+  const detail={
+   visible:await d.isVisible(),
+   questions:await d.locator('.q').count(),
+   title:await d.locator('.homework-detail-hero h2').textContent()
+  };
+  assert(detail.visible);
+  assert.equal(detail.questions,10);
+  assert.match(detail.title,/cinq idées nazies/i);
+  const courses=d.locator('details.homework-detail-courses');
+  if(!(await courses.isVisible()))throw Error('Lien vers la leçon BIS absent');
+  await courses.locator('summary').click();
+  await courses.getByRole('button',{name:/Leçon BIS correspondante/i}).click({timeout:15000});
+  const bis=await page.locator('#matieres-content').innerText();
+  assert(/antiparlementaire/i.test(bis),'Le cours HG BIS enrichi n’est pas ouvert.');
+  console.log('BONUS_HG_REEL_CHROMIUM '+JSON.stringify({cards,detail,lessonOpened:true,noAnswerSubmitted:true}));
   await page.close();
  }finally{await browser.close();}
 })().catch(e=>{console.error('Diagnostic bonus Parent incomplet : '+String(e?.message||e).slice(0,230));process.exitCode=1;});
