@@ -82,20 +82,7 @@ async function main(){
     row.checks.enterGuest=await page.locator('#guest-enter').isVisible();
     row.checks.introButton=await page.locator('#intro-skip').count()>0;
     row.checks.scriptTags=await page.evaluate(()=>[...document.scripts].map(x=>(x.getAttribute('src')||'').split('?')[0]).filter(Boolean));
-    await page.waitForFunction(()=>Boolean(document.querySelector('.tabs')&&document.getElementById('exercise-detail')),{timeout:12000});
-    row.checks.homeworkStyle=await page.evaluate(()=>{
-     const section=document.getElementById('exercices');
-     const detail=document.getElementById('exercise-detail');
-     const nav=document.querySelector('.tabs');
-     const previousSection=section.className,previousDetail=detail.className;
-     section.classList.add('active');detail.classList.add('active','homework-bonus-detail');
-     // La feuille CSS publique doit empêcher les onglets de couvrir la figure.
-     const hidden=getComputedStyle(nav).display==='none';
-     section.className=previousSection;detail.className=previousDetail;
-     const restored=getComputedStyle(nav).display!=='none';
-     return {hiddenDuringExercise:hidden,restoredAfterLeaving:restored};
-    });
-    console.log('Bonus devoir navigation Cloudflare '+device+' : '+JSON.stringify(row.checks.homeworkStyle));
+
     await page.screenshot({path:path.join(out,device+'-accueil.jpg'),type:'jpeg',quality:68,fullPage:true,timeout:20000});
     if(row.checks.enterGuest){
      await page.locator('#guest-enter').click({timeout:15000});
@@ -112,6 +99,21 @@ async function main(){
       }
       await intro.waitFor({state:'hidden',timeout:18000});
      }
+     await page.waitForFunction(()=>document.body.classList.contains('ready'),null,{timeout:20000});
+     await page.waitForFunction(()=>Boolean(document.querySelector('.tabs')&&document.getElementById('exercise-detail')),{timeout:12000});
+     row.checks.homeworkStyle=await page.evaluate(()=>{
+      const section=document.getElementById('exercices');
+      const detail=document.getElementById('exercise-detail');
+      const nav=document.querySelector('.tabs');
+      const previousSection=section.className,previousDetail=detail.className;
+      section.classList.add('active');detail.classList.add('active','homework-bonus-detail');
+      // La feuille CSS publique doit empêcher les onglets de couvrir la figure.
+      const hidden=getComputedStyle(nav).display==='none';
+      section.className=previousSection;detail.className=previousDetail;
+      const restored=getComputedStyle(nav).display!=='none';
+      return {hiddenDuringExercise:hidden,restoredAfterLeaving:restored};
+     });
+     console.log('Bonus devoir navigation Cloudflare '+device+' : '+JSON.stringify(row.checks.homeworkStyle));
      // Navigation locale en mode Visiteur : évite la couverture de l'écran par l'intro.
      await page.evaluate(()=>{
       const button=[...document.querySelectorAll('[data-nav="matieres"]')][0];
