@@ -5,6 +5,7 @@ on:
       - 'worker/mixed-challenges.mjs'
       - 'worker/sunday-bilan-20261115.mjs'
       - 'worker/test/sunday-bilan-20261115.test.mjs'
+      - 'tools/test/sunday-bilan-ui.readonly.cjs'
       - 'worker/saturday-20261114-review.mjs'
       - 'worker/test/saturday-20261114-review.test.mjs'
       - 'worker/test/saturday-20261114-server.test.mjs'
@@ -18,6 +19,7 @@ on:
       - 'worker/mixed-challenges.mjs'
       - 'worker/sunday-bilan-20261115.mjs'
       - 'worker/test/sunday-bilan-20261115.test.mjs'
+      - 'tools/test/sunday-bilan-ui.readonly.cjs'
       - 'worker/saturday-20261114-review.mjs'
       - 'worker/test/saturday-20261114-review.test.mjs'
       - 'worker/test/saturday-20261114-server.test.mjs'
@@ -78,3 +80,4 @@ jobs:
         run: |
           node tools/test/mixed-ui.readonly.cjs
           node tools/test/mixed-parent-ui.readonly.cjs
+          node tools/test/sunday-bilan-ui.readonly.cjs
