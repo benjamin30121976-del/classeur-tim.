@@ -1351,16 +1351,16 @@ async function startSession(user){
   const panel=document.createElement('section');panel.id='parent-corrections';panel.style.cssText='margin:16px auto;padding:16px;max-width:850px;border:1px solid #6788b2;border-radius:16px;background:#14253e;color:white';
   panel.innerHTML='<h2>Résultats et copies de Tim</h2><p id="pending-corrections-status">Chargement…</p><div id="pending-corrections-list"></div>';
   document.getElementById('account-strip').after(panel);
-  // Date réelle de validation, sans approximation pour les copies anciennes.
-  const formatCompletedAt=value=>{
-   if(!value)return null;
-   const date=typeof value?.toDate==='function'?value.toDate():
-    Number.isFinite(value?.seconds)?new Date(value.seconds*1000):new Date(value);
-   return date instanceof Date&&Number.isFinite(date.getTime())
-    ?date.toLocaleString('fr-FR',{timeZone:'Europe/Paris',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
-    :null;
-  };
   const refreshCorrections=async()=>{
+   // Fonction locale également exercée par le test existant du suivi Parent.
+   const formatCompletedAt=value=>{
+    if(!value)return null;
+    const date=typeof value?.toDate==='function'?value.toDate():
+     Number.isFinite(value?.seconds)?new Date(value.seconds*1000):new Date(value);
+    return date instanceof Date&&Number.isFinite(date.getTime())
+     ?date.toLocaleString('fr-FR',{timeZone:'Europe/Paris',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
+     :null;
+   };
    const status=panel.querySelector('#pending-corrections-status');
    const list=panel.querySelector('#pending-corrections-list');
    status.textContent='Actualisation du suivi des devoirs…';list.replaceChildren();
