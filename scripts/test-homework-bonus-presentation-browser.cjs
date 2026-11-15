@@ -143,6 +143,8 @@ const ex={
    assert.equal(result.adviceTitle,'Conseils pour répondre',name+' : intitulé des conseils incorrect');
    assert.match(result.methodText,/fais un brouillon/i,name+' : conseil brouillon absent');
    assert.match(result.methodText,/Relis chaque réponse/i,name+' : conseil relecture absent');
+   assert.match(result.methodText,/reprends les mots importants de la question/i,name+' : conseil phrase-réponse absent');
+   assert.match(result.methodText,/Ne recopie pas la question telle quelle/i,name+' : conseil risque de copie intégrale');
    assert.deepEqual(result.courseLinks,[],name+' : ne pas proposer un cours pendant l’exercice');
    assert.equal(result.xpVisible,true,name+' : barème bonus doit être consultable');
    assert(result.xpContrast>=4.5,name+' : contraste de la règle XP insuffisant : '+result.xpContrast);
@@ -198,6 +200,8 @@ const ex={
    assert.match(english.heading,/musique.*ness.*prétérit/i,name+' : titre anglais absent');
    assert.equal(english.advice,'Conseils pour répondre',name+' : aide méthodologique absente');
    assert.match(english.adviceText,/brouillon/i);
+   assert.match(english.adviceText,/reprends les mots importants de la question/i);
+   assert.match(english.adviceText,/Ne recopie pas la question telle quelle/i);
    assert.equal(english.hasCourseSuggestion,false,name+' : cours proposé dans le bonus anglais');
    assert.equal(english.linkCount,0);
    assert.equal(english.count,10);
