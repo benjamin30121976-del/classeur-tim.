@@ -1166,9 +1166,17 @@ async function reviseSaturday20261114(db,uid,payload={}){
  const [after,history,afterPublic]=await Promise.all([
   db.get(privatePath),db.get(archivePath),db.get(attemptPath)
  ]);
+ const sameSavedAnswers=Array.isArray(after?.answers)&&after.answers.length===20&&
+  review.answers.every((a,i)=>after.answers[i]?.question===a.question&&
+   after.answers[i]?.response===a.response&&after.answers[i]?.points===a.points&&
+   after.answers[i]?.correct===a.correct);
+ const samePublicAttempt=afterPublic?.exerciseId===publicRecord.exerciseId&&
+  afterPublic?.authorUid===publicRecord.authorUid&&
+  afterPublic?.xp===publicRecord.xp&&
+  afterPublic?.correctionStatus===publicRecord.correctionStatus&&
+  afterPublic?.submittedAt===publicRecord.submittedAt;
  if(!after||!history||after.gradeRevision?.version!==SATURDAY_REVISION||
-    after.score!==review.newScore||JSON.stringify(after.answers)!==JSON.stringify(review.answers)||
-    JSON.stringify(afterPublic)!==JSON.stringify(publicRecord))
+    after.score!==review.newScore||!sameSavedAnswers||!samePublicAttempt)
   throw new ApiFault(502,'saturday-review-postcheck-failed');
  return {status:'corrected',questions:[3,12,15],total:20,
   oldScore:review.oldScore,newScore:review.newScore,xpUnchanged:true,
