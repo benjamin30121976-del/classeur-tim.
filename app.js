@@ -980,7 +980,7 @@ if(old){
    root.append(notice('Ton exercice est enregistré, mais le résultat n’a pas pu s’afficher. Tu ne dois pas le recommencer.'));
    root.append(button('Ouvrir ma note et mon corrigé',()=>openExercise(id),'mission-launch'));
   }
-},'btn');root.append(E('p','small','Une seule validation. Pour les défis, la note et la correction sont immédiates ; les devoirs scolaires restent à 0 XP et sous contrôle du parent.'),submit);}
+},'btn');if(!isHomeworkDetail)root.append(E('p','small','Une seule validation. Pour les défis, la note et la correction sont immédiates ; les devoirs scolaires restent à 0 XP et sous contrôle du parent.'));root.append(submit);}
 if(!old && !window.__TIM_PARENT && controls.length>1){
   const questionNodes=[...form.querySelectorAll('.q')];
   const submit=root.querySelector('button.btn');
