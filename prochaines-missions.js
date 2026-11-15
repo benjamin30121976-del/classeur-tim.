@@ -109,12 +109,12 @@ function card(task,opts,done,today,unlinked=false){
  return node;
 }
 function collect(data,now=new Date()){
- const today=parisToday(now),all=packAssignments(data).filter(x=>daysUntil(x.due,today)>=1);
- const tomorrow=all.filter(x=>daysUntil(x.due,today)===1);
- const later=all.filter(x=>daysUntil(x.due,today)>=2);
- const officialIds=new Set(all.map(x=>[x.id,...x.keys]).flat());
- const extra=bonuses(data).filter(ex=>daysUntil(ex.homeworkDue,today)>=1&&!all.some(t=>linked(ex,t)));
- return {today,all,tomorrow,later,extra,officialIds};
+ // Un devoir n'apparaît ici qu'à J-2 ou plus tôt.
+ // À J-1, Tim le prépare dans les bonus déjà existants : pas de doublon.
+ const today=parisToday(now);
+ const all=packAssignments(data).filter(x=>daysUntil(x.due,today)>=2);
+ const later=all;
+ return {today,all,later,examCount:all.filter(x=>x.isExam).length};
 }
 function render(root,opts={}){
  if(!root)return;
@@ -125,7 +125,7 @@ function render(root,opts={}){
  const copy=E('div','future-hero-copy');
  copy.append(E('span','future-overline','OBJECTIF : PRENDRE DE L’AVANCE'),E('h2','','Mes prochaines missions'),E('p','','Devoirs, interrogations et révisions : prépare-toi plusieurs jours avant la date !'));
  const figures=E('div','future-numbers');
- for(const [n,label] of [[state.tomorrow.length,'pour demain'],[state.later.length,'à venir'],[state.extra.length,'bonus à préparer']]){
+ for(const [n,label] of [[state.later.length,'missions à venir'],[state.examCount,'contrôles annoncés']]){
   const stat=E('div','future-number');stat.append(E('strong','',n),E('small','',label));figures.append(stat);
  }
  copy.append(figures);hero.append(copy,E('span','future-hero-symbol','✦'));root.append(hero);
@@ -138,7 +138,7 @@ function render(root,opts={}){
  }
  root.append(filters);
  const include=t=>selected==='all'||(selected==='exam'&&t.isExam)||(selected==='homework'&&!t.isExam);
- const sections=[['Demain','Ces devoirs ont quitté « À venir » : ils sont maintenant à préparer pour demain.',state.tomorrow],['Les jours suivants','Répartis le travail sur plusieurs jours, sans attendre la veille.',state.later]];
+ const sections=[['Les jours suivants','À partir d’après-demain : prépare tes devoirs et contrôles plusieurs jours à l’avance.',state.later]];
  for(const [label,description,list] of sections){
   const section=E('section','future-section');
   section.append(E('h3','future-section-title',label),E('p','future-section-intro',description));
@@ -150,22 +150,14 @@ function render(root,opts={}){
   }else section.append(E('div','future-empty','Aucun '+(selected==='exam'?'contrôle':selected==='homework'?'devoir':'travail')+' annoncé dans cette rubrique avec les données actuellement disponibles.'));
   root.append(section);
  }
- if(selected==='all'&&state.extra.length){
-  const section=E('section','future-section');
-  section.append(E('h3','future-section-title','Bonus disponibles pour les prochains jours'),E('p','future-section-intro','Ces entraînements sont créés dans le classeur. Leur date ne prouve pas à elle seule une consigne ENT.'));
-  const grid=E('div','future-list');
-  for(const ex of state.extra){
-   grid.append(card({subject:ex.subject||'Révision',due:ex.homeworkDue,title:ex.title||'Entraînement',description:ex.instructions||'',isExam:false,ex},{...opts,bonuses:allBonuses},done,state.today,true));
-  }
-  section.append(grid);root.append(section);
- }
+
 }
 function renderTeaser(root,data,open){
  if(!root)return;
  const state=collect(data||window.__TIM_DATA);
  const b=E('button','future-home-teaser');b.type='button';
  const textBox=E('span','future-home-copy');
- textBox.append(E('span','future-home-kicker','CALENDRIER DES MISSIONS'),E('strong','','Prends de l’avance !'),E('small','',state.tomorrow.length+' pour demain · '+state.later.length+' pour les jours suivants'));
+ textBox.append(E('span','future-home-kicker','CALENDRIER DES MISSIONS'),E('strong','','Prends de l’avance !'),E('small','',state.later.length+' mission'+(state.later.length>1?'s':'')+' à anticiper'));
  b.append(E('span','future-home-icon','▣'),textBox,E('span','future-home-arrow','→'));
  b.addEventListener('click',open);root.append(b);
 }
