@@ -67,10 +67,15 @@
   const givenParallel=/(?:\((?:MN|DE)\)|\b(?:MN|DE)\b)\s+est\s+parall[eè]le\b/i.test(prompt)||
     /\bavec\s+\((?:MN|DE)\)\s*(?:parall[eè]le|∥)/i.test(prompt);
   const knownDifferent=/diff[eé]rent|ne sont pas parall[eè]le|non parall[eè]le/.test(normalized);
+  // Une égalité de rapports énoncée entraîne réellement (MN)//(BC)
+  // par la réciproque de Thalès. Le schéma ne doit PAS contredire les
+  // données : dessiner le segment parallèle, mais sans codage ni marque
+  // de parallélisme (le raisonnement reste demandé à Tim).
+  const equalRatiosGiven=/(?:AM\s*\/\s*AB\s*=\s*AN\s*\/\s*AC|AD\s*\/\s*AB\s*=\s*AE\s*\/\s*AC)/i.test(prompt);
   let ratio1=nums(data,'A'+a,'AB'),ratio2=nums(data,'A'+b,'AC');
   if(!Number.isFinite(ratio1)||ratio1<=0||ratio1>=1)ratio1=.44;
   if(!Number.isFinite(ratio2)||ratio2<=0||ratio2>=1)
-   ratio2=givenParallel?ratio1:(knownDifferent?.57:.54); // Ne pas dessiner une parallèle à démontrer.
+   ratio2=(givenParallel||equalRatiosGiven)?ratio1:(knownDifferent?.57:.54);
   const {fig,svg,caption}=base('thales','Triangle ABC, '+a+' sur AB et '+b+' sur AC, segments '+a+b+' et BC dessinés');
   const pts=crossed?{A:[196,152],B:[337,51],C:[338,257]}:{A:[199,43],B:[60,249],C:[342,249]};
   pts[a]=interpolate(pts.A,pts.B,ratio1);

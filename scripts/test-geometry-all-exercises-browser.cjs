@@ -116,12 +116,31 @@ const pyth={id:'M26PYT1001',kind:'school',subject:'Mathématiques',title:'Archiv
     const marks=[...figure.querySelectorAll('svg text')].map(el=>el.textContent);
     const caption=figure.querySelector('figcaption')?.textContent||'';
     const shown=window.TIM_GEOMETRY_DIAGRAMS.displayPrompt(ex,0,ex.questions[0].q);
-    return {marks,caption,shown};
+    const slopes=fig=>{
+     const lines=[...fig.querySelectorAll('svg line')];
+     if(lines.length!==4)return null;
+     const vector=line=>[Number(line.getAttribute('x2'))-Number(line.getAttribute('x1')),
+      Number(line.getAttribute('y2'))-Number(line.getAttribute('y1'))];
+     const [dxBC,dyBC]=vector(lines[2]),[dxMN,dyMN]=vector(lines[3]);
+     return dxBC*dyMN-dyBC*dxMN;
+    };
+    const numericEqual=window.TIM_GEOMETRY_DIAGRAMS.renderPrompt(
+     'Dans le triangle ABC, AM = 2, AB = 6, AN = 3, AC = 9. Vérifie les rapports.','Thalès');
+    const numericDifferent=window.TIM_GEOMETRY_DIAGRAMS.renderPrompt(
+     'Dans le triangle ABC, AM = 3, AB = 9, AN = 6, AC = 12. Vérifie les rapports.','Thalès');
+    return {marks,caption,shown,diagramCross:slopes(figure),
+     numericEqualCross:slopes(numericEqual),numericDifferentCross:slopes(numericDifferent)};
    },stale);
    assert(consistent.shown.includes('M est sur [AB]')&&consistent.shown.includes('N sur [AC]'),
     'Le texte présenté doit bien être celui de M et N');
    assert(consistent.marks.includes('M')&&consistent.marks.includes('N'),
     'Le schéma de la question 1 doit afficher les deux points M et N : '+JSON.stringify(consistent));
+   assert(Number.isFinite(consistent.diagramCross)&&Math.abs(consistent.diagramCross)<1e-6,
+    'Avec AM/AB = AN/AC le dessin doit être géométriquement cohérent : (MN)//(BC), sans donner la réponse. '+JSON.stringify(consistent));
+   assert(Number.isFinite(consistent.numericEqualCross)&&Math.abs(consistent.numericEqualCross)<1e-6,
+    'Les longueurs 2/6=3/9 doivent produire des segments parallèles. '+JSON.stringify(consistent));
+   assert(Number.isFinite(consistent.numericDifferentCross)&&Math.abs(consistent.numericDifferentCross)>1e-6,
+    'Les longueurs 3/9 et 6/12 inégales ne doivent pas produire des segments parallèles. '+JSON.stringify(consistent));
    assert(!consistent.marks.includes('D')&&!consistent.marks.includes('E'),
     'Le schéma affiche encore les anciens points D et E');
    assert.match(consistent.caption,/égalité des rapports/);
