@@ -9,6 +9,7 @@ const PASSWORD=process.env.TIM_PARENT_PASSWORD||'';
 const URL=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
 const TARGET_IMPORT_ONLY=(()=>{try{return /controle-import-json-android/.test(JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion||'');}catch{return false;}})();
 const TARGET_BONUS_AUDIT=(()=>{try{return /controle-bonus-parent-20261114/.test(JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion||'');}catch{return false;}})();
+const TARGET_MATH_ENT_LINK=(()=>{try{return JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion==='lien-ent-thales-20261115-v1';}catch{return false;}})();
 const TARGET_RECHECK=process.env.TIM_AUDIT_RECODING==='1';
 const TARGET_SATURDAY_REVISE=(()=>{try{return JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion==='rectifier-copie-samedi-20261114-v1';}catch{return false;}})()&&['preview','apply'].includes(process.env.TIM_SATURDAY_REVISE||'');
 const TARGET_SATURDAY_FULL_CREDIT=(()=>{try{return JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion==='plein-credit-samedi-20261115-v2';}catch{return false;}})()&&['preview','apply'].includes(process.env.TIM_SATURDAY_FULL_CREDIT||'');
@@ -65,6 +66,32 @@ async function inspect(browser,label,viewport){
     check(label+' menu Parent visible',stats.parentNav);
     check(label+' lecons chargees',stats.lessons>0,'Nombre : '+stats.lessons);
     check(label+' défi du jour supprimé du classeur',stats.dailyChallenges===0,'Défis quotidiens visibles : '+stats.dailyChallenges);
+
+    // Contrôle cible du lien dans le BONUS DEVOIR. Parent uniquement, lecture seule.
+    // Ne jamais soumettre de réponse ni publier de copie, note ou XP.
+    if(TARGET_MATH_ENT_LINK){
+      const id='BD1611_MA01';
+      const exists=await page.evaluate(id=>(window.__TIM_DATA?.exercises||[]).some(x=>x.id===id&&x.homeworkBonus===true),id);
+      check(label+' bonus devoir de Thalès disponible',exists,'Catalogue contrôlé sans réponse ni copie');
+      if(exists){
+        await page.evaluate(id=>window.openExercise(id,{skipOpening:true}),id);
+        const link=page.locator('#exercise-detail.active button.math-homework-ent-link').first();
+        const visible=await link.isVisible().catch(()=>false);
+        check(label+' lien vers la leçon ENT visible',visible);
+        if(visible){
+          await link.click({timeout:9000});
+          const title=await page.locator('#matieres-content .math-path .spx-hero h2').first().textContent({timeout:9000});
+          const teacher=await page.locator('#matieres-content .math-reading-section').first().textContent({timeout:9000});
+          check(label+' arrivée sur séance ENT 12 novembre',
+            /Cours ENT.*12 novembre.*réciproque de Thalès/i.test(title||'')&&
+            /Leçon : la réciproque de Thalès/i.test(teacher||''),
+            'Séance authentique visible ; aucun exercice validé');
+          const width=await page.evaluate(()=>document.documentElement.scrollWidth-document.documentElement.clientWidth);
+          check(label+' affichage mobile sans débordement',width<=16,'Dépassement horizontal : '+width+' px');
+        }
+      }
+      return;
+    }
 
     // Contrôle ponctuel de la conservation de la BARRE XP : aucune copie
     // soumise, aucun ancien diagnostic de note du samedi répété.
