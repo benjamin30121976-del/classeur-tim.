@@ -3,6 +3,9 @@ on:
   pull_request:
     paths:
       - 'worker/mixed-challenges.mjs'
+      - 'worker/sunday-bilan-20261115.mjs'
+      - 'worker/test/sunday-bilan-20261115.test.mjs'
+      - 'tools/test/sunday-bilan-ui.readonly.cjs'
       - 'worker/saturday-20261114-review.mjs'
       - 'worker/test/saturday-20261114-review.test.mjs'
       - 'worker/test/saturday-20261114-server.test.mjs'
@@ -14,6 +17,9 @@ on:
     branches: [main]
     paths:
       - 'worker/mixed-challenges.mjs'
+      - 'worker/sunday-bilan-20261115.mjs'
+      - 'worker/test/sunday-bilan-20261115.test.mjs'
+      - 'tools/test/sunday-bilan-ui.readonly.cjs'
       - 'worker/saturday-20261114-review.mjs'
       - 'worker/test/saturday-20261114-review.test.mjs'
       - 'worker/test/saturday-20261114-server.test.mjs'
@@ -46,6 +52,7 @@ jobs:
       - name: Vérifier la syntaxe des modules
         run: |
           node --check worker/mixed-challenges.mjs
+          node --check worker/sunday-bilan-20261115.mjs
           node --check worker/saturday-20261114-review.mjs
           node --check worker/math-answer-equivalence.mjs
           node --check worker/server.mjs
@@ -53,7 +60,7 @@ jobs:
           node --check boot.js
           node --check app.js
       - name: Vérifier les 30 questions, 3 matières, notes et traductions
-        run: node --test worker/test/mixed-challenges.test.mjs worker/test/mixed-pedagogie-20261115.test.mjs worker/test/mixed-parent-preview.test.mjs worker/test/course-fallback.test.mjs worker/test/saturday-20261114-review.test.mjs worker/test/saturday-20261114-server.test.mjs
+        run: node --test worker/test/mixed-challenges.test.mjs worker/test/mixed-pedagogie-20261115.test.mjs worker/test/mixed-parent-preview.test.mjs worker/test/course-fallback.test.mjs worker/test/saturday-20261114-review.test.mjs worker/test/saturday-20261114-server.test.mjs worker/test/sunday-bilan-20261115.test.mjs
       - name: Vérifier les règles historiques des XP
         run: node --test functions/test/xp.test.mjs
       - name: Résumé
@@ -73,3 +80,4 @@ jobs:
         run: |
           node tools/test/mixed-ui.readonly.cjs
           node tools/test/mixed-parent-ui.readonly.cjs
+          node tools/test/sunday-bilan-ui.readonly.cjs

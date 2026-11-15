@@ -1407,7 +1407,7 @@ function dailyMissionPanel(){
 function missionCard(kind){
  if(kind==='daily')return null;
  const meta=window.__TIM_CHALLENGES||{},id=kind==='weekly'?meta.weekly:meta.sunday;
- const ex=DATA.exercises.find(x=>x.id===id),done=ex&&attemptFor(ex.id),sunday=kind==='sunday';
+ const ex=DATA.exercises.find(x=>x.id===id),sunday=kind==='sunday',legacySundayDone=sunday&&id==='SUNDAY_BILAN_20261115'?attemptFor('SUNDAY_20261115'):null,done=ex&&(attemptFor(ex.id)||legacySundayDone);
  const c=E('section',sunday?'sunday-card game-challenge':'weekly-card game-challenge');
  const head=E('div','challenge-top');
  head.append(E('strong','',sunday?'👑 GRAND DÉFI DU DIMANCHE':'🏆 DÉFI DU SAMEDI'),E('span','challenge-xp-tag',sunday?'JUSQU’À +20 XP':'JUSQU’À +10 XP'));
@@ -1415,7 +1415,7 @@ function missionCard(kind){
  const body=E('div','challenge-main'),copy=E('div','challenge-main-copy');
  if(!ex){copy.append(E('p','challenge-detail','Le grand contrôle nécessite au moins 20 questions issues des cours disponibles.'));}
  else{
-  copy.append(E('p','challenge-detail',sunday?'20 questions de révision sur les leçons depuis la rentrée.':'20 questions sur les leçons de la semaine et les révisions.'));
+  copy.append(E('p','challenge-detail',id==='SUNDAY_BILAN_20261115'?'20 questions : 10 sur les cours de la semaine et 10 révisions depuis septembre. Réponses écrites en plusieurs cadres.':sunday?'20 questions de révision sur les leçons depuis la rentrée.':'20 questions sur les leçons de la semaine et les révisions.'));
   copy.append(E('p','challenge-meta',ex.realLessons.length+' leçon'+(ex.realLessons.length>1?'s':'')+' · '+(sunday?'Depuis septembre':'Contrôle hebdomadaire')));
   copy.append(E('p','challenge-success','🎯 Dès 17/20 : '+(sunday?'20':'10')+' XP'));
  }
@@ -1431,6 +1431,7 @@ function missionCard(kind){
  const dow=new Date((meta.today||'2026-11-08')+'T12:00:00Z').getUTCDay(),open=sunday?dow===0:dow===6;
  const actions=E('div','challenge-card-actions');
  if(!ex)actions.append(badge('À venir'));
+ else if(done&&legacySundayDone)actions.append(badge('✓ Défi du dimanche déjà validé · copie conservée','green'));
  else if(done)actions.append(badge('✓ Déjà validé · '+(done.score===null?'correction en attente':done.score+'/'+done.total),'green'),button('Voir ma validation',()=>openExercise(ex.id),'small-cta'));
  else if(!open)actions.append(badge(sunday?'Disponible dimanche':'Disponible samedi'));
  else if(window.__TIM_GUEST)actions.append(badge('Lecture seule · invité'));
