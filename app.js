@@ -1607,7 +1607,7 @@ renderHome();renderLessonIndex();renderExerciseIndex();renderRevisions();renderA
 /* Retour pédagogique depuis une correction vers la sous-leçon concernée.
    Sans soumettre de questionnaire ni modifier les copies déjà validées. */
 window.TIM_PEDAGOGY_NAVIGATE=(subject,lessonId)=>{
- if(!['Espagnol','Mathématiques','Physique-chimie','Anglais','SVT','Histoire-géographie','Français'].includes(subject))return;
+ if(!['Espagnol','Mathématiques','Physique-chimie','Anglais','SVT','Histoire-géographie','EMC','Français'].includes(subject))return;
  if(typeof lessonId!=='string'||lessonId.length>40)return;
  page('matieres');
  renderMatiere(subject,lessonId);
