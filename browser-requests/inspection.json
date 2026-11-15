@@ -28,8 +28,8 @@
     {
       "type": "click",
       "selector": ".mission-hero .lobo-go",
-      "name": "bonus-devoirs-cartes-compactes-20261115"
+      "name": "bonus-devoirs-nouveau-design-20261115"
     }
   ],
-  "note": "Contrôle de publication de la nouvelle présentation Bonus devoirs (PR ciblée): navigation Invité Chromium bureau/Android, captures après ouverture de l'onglet. Lecture seule, aucun exercice validé, aucune donnée Tim modifiée."
+  "note": "Contrôle Chromium/Playwright après fusion PR #94 (matière affichée d’abord, couleurs par matière et sujet ensuite). Navigation publique lecture seule sur mobile et bureau ; aucune réponse validée, aucune écriture Firebase. En mode Invité, les exercices privés peuvent être absents, ne pas conclure que les cartes sont vérifiées."
 }
