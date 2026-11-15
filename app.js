@@ -1117,7 +1117,7 @@ const parisDay=window.TIM_XP.day;
 const weekMonday=window.TIM_XP.xpPeriodStart;
 function xpBarExceptionNotice(){
  const today=parisDay(new Date());
- if(today==='2026-11-15')return 'Exception exceptionnelle : la barre XP sera conservée le lundi 16 novembre. Prochaine remise à zéro le lundi 23 novembre.';
+ if(today==='2026-11-15')return 'Cette semaine, la barre XP sera exceptionnellement conservée le lundi 16 novembre. Prochaine remise à zéro le lundi 23 novembre.';
  if(window.TIM_XP.xpCarryActive(today))return 'Exception cette semaine : les XP du 9 au 15 novembre restent sur la barre jusqu’au dimanche 22. Remise à zéro le lundi 23 novembre.';
  return '';
 }
@@ -1225,7 +1225,9 @@ function makeRewardsTile(){const b=E('button','reward-open');b.type='button';
  const text=E('span');text.append(E('strong','','🎁 MES RÉCOMPENSES'),E('small','','Comment fonctionnent les XP, les défis et les gains ?'));
  b.append(text,E('span','','›'));b.addEventListener('click',()=>{
   const dialog=document.getElementById('rewards-dialog'),body=clear(document.getElementById('rewards-explanation'));
-  body.append(E('p','','Les XP des défis sont habituellement comptés du lundi au dimanche. Le compteur revient à zéro chaque lundi, sauf pendant l’exception du 16 au 22 novembre 2026. La récompense est à valider et à verser par le parent ; les montants ne se cumulent pas.'));
+  body.append(E('p','',xpBarExceptionNotice()?
+   'Les XP des défis sont habituellement comptés du lundi au dimanche. Cette semaine seulement, la barre conserve la progression précédente. La récompense est à valider par le parent ; les montants ne se cumulent pas.':
+   'Les XP des défis sont comptés du lundi au dimanche. Le compteur revient à zéro chaque lundi. La récompense est à valider et à verser par le parent ; les montants ne se cumulent pas.'));
   if(xpBarExceptionNotice())body.append(E('p','',xpBarExceptionNotice()));
   const table=E('table'),heads=E('tr');for(const t of ['XP de la semaine','Récompense'])heads.append(E('th','',t));table.append(heads);
   for(const [score,amount] of [[19,'2 €'],[38,'5 €'],[75,'10 €']]){const row=E('tr');row.append(E('td','',score+' XP'),E('td','',amount));table.append(row);}body.append(table);
