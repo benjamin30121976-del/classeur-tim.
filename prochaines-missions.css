@@ -8,7 +8,7 @@
 .future-hero h2{font-size:clamp(29px,6vw,47px);line-height:1.06;color:#fff;margin:0 0 11px;max-width:520px}
 .future-hero p{font-size:clamp(14px,2.8vw,17px);color:#e3edff;line-height:1.5;max-width:525px;margin:0 0 20px}
 .future-hero-symbol{position:absolute;right:4%;top:-28px;font-size:clamp(116px,23vw,220px);color:#a7e7f017;transform:rotate(14deg);pointer-events:none}
-.future-numbers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;max-width:510px}
+.future-numbers{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;max-width:510px}
 .future-number{padding:11px 10px;background:#07182f8c;border:1px solid #b0c0f33f;border-radius:14px;display:flex;flex-direction:column;gap:2px;min-width:0}
 .future-number strong{font-size:27px;color:#e3ff93;line-height:1;font-variant-numeric:tabular-nums}
 .future-number small{font-size:11px;color:#e4eaf6;line-height:1.25}
