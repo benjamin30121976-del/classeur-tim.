@@ -192,7 +192,7 @@ function groupsForLessons(rows,subject){
  return topics.sort((a,b)=>a.localeCompare(b,'fr')).map(t=>({title:t,topics:[t],icon:'▤',sub:'Cours, devoirs et entraînements'}));
 }
 function setLessonSubject(name){
- if(name==='Physique-chimie'&&window.TIM_PHYSIQUE_PATH){page('matieres');renderMatiere(name);return;}if(name==='Anglais'&&window.TIM_ENGLISH_PATH){page('matieres');renderMatiere(name);return;}if(name==='SVT'&&window.TIM_SVT_PATH){page('matieres');renderMatiere(name);return;}if(name==='Histoire-géographie'&&window.TIM_HG_PATH){page('matieres');renderMatiere(name);return;}if(name==='Français'&&window.TIM_FR_PATH){page('matieres');renderMatiere(name);return;}
+ if(name==='Physique-chimie'&&window.TIM_PHYSIQUE_PATH){page('matieres');renderMatiere(name);return;}if(name==='Anglais'&&window.TIM_ENGLISH_PATH){page('matieres');renderMatiere(name);return;}if(name==='SVT'&&window.TIM_SVT_PATH){page('matieres');renderMatiere(name);return;}if(name==='Histoire-géographie'&&window.TIM_HG_PATH){page('matieres');renderMatiere(name);return;}if(name==='EMC'&&window.TIM_HG_PATH){page('matieres');renderMatiere(name);return;}if(name==='Français'&&window.TIM_FR_PATH){page('matieres');renderMatiere(name);return;}
  lessonSubject=name;lessonGroup='';
  const selector=document.getElementById('lesson-topic');
  const topics=[...new Set(DATA.lessons.filter(l=>!name||subjectOf(l)===name).map(chapterOf))].sort((a,b)=>a.localeCompare(b,'fr'));
@@ -210,7 +210,7 @@ function renderLessonIndex(){
  const subjects=[...new Set([...SCHOOL_SUBJECTS,...DATA.lessons.map(subjectOf)])];
  if(!lessonSubject&&!q){
   root.className='matter-grid';document.getElementById('lesson-count').textContent='Choisis d’abord une matière :';
-  for(const name of subjects){const count=DATA.lessons.filter(l=>subjectOf(l)===name).length;
+  for(const name of subjects){const count=name==='EMC'?(window.TIM_HG_PACK?.lessons||[]).filter(x=>/\(EMC\)/.test(x.chapter||'')).length:DATA.lessons.filter(l=>subjectOf(l)===name).length;
    const b=E('button','matter-card');b.type='button';
    b.append(E('strong','',name),E('small','',count+' cours enregistré(s)'));
    if(count)b.addEventListener('click',()=>setLessonSubject(name));else b.disabled=true;
@@ -507,12 +507,13 @@ function openHgTrainingFromExercises(id,lessonId,title){
  if(!/^HGQ_L0[1-8]_0[1-2]$/.test(id)||!window.TIM_HG_TRAINING?.mount){
   alert('Questionnaire Histoire-géographie indisponible.');return;
  }
- exerciseSubject='Histoire-géographie';
+ const targetSubject=/^HG_BIS0[6-8]$/.test(String(lessonId||''))?'EMC':'Histoire-géographie';
+ exerciseSubject=targetSubject;
  page('exercices');
  const index=document.getElementById('exercise-index'),detail=document.getElementById('exercise-detail');
  index.classList.add('hide');
  const root=clear(detail);root.classList.add('active');
- root.append(button('← Retour aux exercices d’histoire-géographie',()=>{
+ root.append(button('← Retour aux exercices de '+targetSubject,()=>{
   detail.classList.remove('active');index.classList.remove('hide');
   renderExerciseIndex();scrollTop();
  },'plain back'));
@@ -520,7 +521,7 @@ function openHgTrainingFromExercises(id,lessonId,title){
  root.append(E('p','intro',window.__TIM_PARENT?
   'Mode Parent : dix questions, correction complète, sans enregistrer de note ou XP pour Tim.':
   'Dix questions. Une seule tentative, note et correction immédiatement après validation.'));
- root.append(button('Revoir la leçon BIS',()=>{page('matieres');renderMatiere('Histoire-géographie',lessonId);},'plain'));
+ root.append(button('Revoir la leçon BIS',()=>{page('matieres');renderMatiere(targetSubject,lessonId);},'plain'));
  const slot=E('div','hg-global-training-slot');root.append(slot);
  Promise.resolve(window.TIM_HG_TRAINING.mount(id,slot)).catch(e=>slot.append(notice('Exercice indisponible : '+String(e?.message||e))));
  scrollTop();
@@ -528,10 +529,11 @@ function openHgTrainingFromExercises(id,lessonId,title){
 function renderHgExerciseDirectory(root,toolbar){
  const finder=document.getElementById('exercise-search').closest('.toolrow');
  finder.classList.add('hide');root.className='clicklist';
- toolbar.append(button('← Toutes les matières',()=>{exerciseSubject='';exerciseGroup='';exerciseMode='';renderExerciseIndex();scrollTop();},'group-back'),E('h3','','🌍 Histoire-géographie — Mes exercices'));
- const pack=window.TIM_HG_PACK,chapters=pack?.chapters||[],bis=pack?.bis||[];
+ const emcOnly=exerciseSubject==='EMC';
+ toolbar.append(button('← Toutes les matières',()=>{exerciseSubject='';exerciseGroup='';exerciseMode='';renderExerciseIndex();scrollTop();},'group-back'),E('h3','',emcOnly?'⚖ EMC — Mes exercices':'🌍 Histoire-géographie — Mes exercices'));
+ const pack=window.TIM_HG_PACK,chapters=(pack?.chapters||[]).filter(x=>!emcOnly||/\(EMC\)/.test(x)),bis=(pack?.bis||[]).filter(x=>chapters.includes(x.group));
  if(!bis.length){root.append(notice('Les leçons Histoire-géographie ne sont pas disponibles.'));return;}
- document.getElementById('exercise-count').textContent='Histoire-géographie · '+((window.TIM_HG_PACK?.bis?.length||0)*2)+' exercices de 10 questions';
+ document.getElementById('exercise-count').textContent=(emcOnly?'EMC':'Histoire-géographie')+' · '+(bis.length*2)+' exercices de 10 questions';
  root.append(E('p','exercise-type-prompt',window.__TIM_PARENT?
   'Choisis un questionnaire : essai Parent sans enregistrer de copie ni de XP.':
   'Choisis la leçon et le type de questions. Chaque exercice ne se valide qu’une fois.'));
@@ -539,10 +541,10 @@ function renderHgExerciseDirectory(root,toolbar){
   const lessons=bis.filter(b=>b.group===chapter);
   const section=E('section','hg-exercise-lesson');
   section.style.cssText='margin:12px 0;padding:14px;background:#f3f9fb;color:#244451;border:1px solid #b9d8d5;border-radius:14px';
-  section.append(E('h3','','🌍 '+chapter));
+  section.append(E('h3','',(emcOnly?'⚖ ':'🌍 ')+chapter));
   for(const b of lessons){
    section.append(E('h4','',b.title));
-   section.append(button('Leçon BIS illustrée',()=>{page('matieres');renderMatiere('Histoire-géographie',b.id);},'plain'));
+   section.append(button('Leçon BIS illustrée',()=>{page('matieres');renderMatiere(emcOnly?'EMC':'Histoire-géographie',b.id);},'plain'));
    for(let i=1;i<=2;i++){
     const id='HGQ_L'+b.id.slice(-2)+'_0'+i;
     section.append(cardAction('Exercice '+i+' — '+(i===1?'Comprendre les notions':'Répondre par écrit'),
@@ -555,11 +557,12 @@ function renderHgExerciseDirectory(root,toolbar){
  }
  const ent=E('details','panel');
  ent.style.cssText='margin:15px 0;padding:12px';
- ent.append(E('summary','','Consignes et devoirs d’origine ENT · '+pack.homework.length));
+ const displayedHomework=emcOnly?pack.homework.filter(h=>/\bemc\b|\bivg\b|\bveil\b|\brepublique\b|institutions europeennes/i.test([h.title,h.content].join(' '))):pack.homework;
+  ent.append(E('summary','','Consignes et devoirs d’origine ENT · '+displayedHomework.length));
  ent.append(E('p','','Ces consignes ont été récupérées du cahier de textes et ne sont pas automatiquement des exercices réalisés ou notés par Tim.'));
- for(const h of pack.homework)ent.append(E('p','',h.due.slice(8,10)+'/'+h.due.slice(5,7)+' — '+h.title+' : '+h.content));
+ for(const h of displayedHomework)ent.append(E('p','',h.due.slice(8,10)+'/'+h.due.slice(5,7)+' — '+h.title+' : '+h.content));
  root.append(ent);
- if(pack.attachments?.length){
+ if(!emcOnly&&pack.attachments?.length){
   const original=E('section','panel');
   original.style.cssText='margin:12px 0;padding:14px';
   original.append(E('h3','','Fichier original du professeur : '+pack.attachments[0].name));
@@ -683,7 +686,7 @@ function renderExerciseIndex(){
  if(exerciseSubject==='Physique-chimie'){renderPhysicsExerciseDirectory(root,toolbar);return;}
  if(exerciseSubject==='Anglais'){renderEnglishExerciseDirectory(root,toolbar);return;}
   if(exerciseSubject==='SVT'){renderSvtExerciseDirectory(root,toolbar);return;}
-  if(exerciseSubject==='Histoire-géographie'){renderHgExerciseDirectory(root,toolbar);return;}
+  if(exerciseSubject==='Histoire-géographie'||exerciseSubject==='EMC'){renderHgExerciseDirectory(root,toolbar);return;}
  if(exerciseSubject==='Français'){renderFrExerciseDirectory(root,toolbar);return;}
  if(exerciseSubject==='Mathématiques'){renderMathOfficialExercises(root,toolbar);return;}
  if(!exerciseSubject){
@@ -717,7 +720,7 @@ function renderExerciseIndex(){
   overview.append(button('📚 DEVOIRS DE L’ÉCOLE',()=>{exerciseSubject='';exerciseMode='school-all';renderExerciseIndex();},'exercise-v12-overview-button school'));
   root.append(overview,bonusMissionPanel(false));
   const icons=['🇪🇸','∑','⚗','EN','📖','🌍','⚖','🌱','⚙'];
-  SCHOOL_SUBJECTS.forEach((name,i)=>{const count=name==='Physique-chimie'?23:name==='Anglais'?11:name==='SVT'?14:name==='Histoire-géographie'?(window.TIM_HG_PACK?.bis?.length||0)*2:name==='Français'?22:name==='Mathématiques'?2+bases.filter(e=>(e.subject||'Espagnol')===name).length:bases.filter(e=>(e.subject||'Espagnol')===name).length;
+  SCHOOL_SUBJECTS.forEach((name,i)=>{const count=name==='Physique-chimie'?23:name==='Anglais'?11:name==='SVT'?14:name==='Histoire-géographie'?(window.TIM_HG_PACK?.bis?.length||0)*2:name==='EMC'?(window.TIM_HG_PACK?.bis||[]).filter(x=>/\(EMC\)/.test(x.group||'')).length*2:name==='Français'?22:name==='Mathématiques'?2+bases.filter(e=>(e.subject||'Espagnol')===name).length:bases.filter(e=>(e.subject||'Espagnol')===name).length;
     const b=E('button','matter-card'+(name==='Espagnol'?' matter-espanol':''));b.type='button';
     b.append(E('span','ico',name==='Anglais'?'🇬🇧':name==='SVT'?'🌱':name==='Histoire-géographie'?'🌍':name==='Français'?'📖':icons[i]||'▤'),E('strong','',name),E('small','',count?count+' exercice(s) disponible(s)':'À compléter avec les cours de Tim'));
     if(count)b.addEventListener('click',()=>{exerciseSubject=name;exerciseGroup='';exerciseMode='';document.getElementById('exercise-search').value='';renderExerciseIndex();scrollTop();});
@@ -1506,7 +1509,7 @@ function renderMatieres(){
  const wrap=E('div','matter-grid');
  const icons=['🇪🇸','∑','⚗','EN','📖','🌍','⚖','🌱','⚙'];
  for(let i=0;i<SCHOOL_SUBJECTS.length;i++){
-  const name=SCHOOL_SUBJECTS[i],n=name==='Espagnol'&&window.TIM_SPANISH_ENT_EXACT?.lessonCount?window.TIM_SPANISH_ENT_EXACT.lessonCount():name==='Espagnol'?(DATA.metadata?.spanishEnt?.lessons?.length||0):name==='SVT'?(window.TIM_SVT_PACK?.lessons?.length||0):name==='Histoire-géographie'?(window.TIM_HG_PACK?.lessons?.length||0):name==='Français'?(window.TIM_FR_PACK?.lessons?.length||0):DATA.lessons.filter(x=>(x.subject||'Espagnol')===name).length,ex=name==='Physique-chimie'?23:name==='Anglais'?11:name==='SVT'?14:name==='Histoire-géographie'?(window.TIM_HG_PACK?.bis?.length||0)*2:name==='Français'?22:name==='Mathématiques'?2+DATA.exercises.filter(x=>(x.subject||'Espagnol')===name).length:name==='Espagnol'&&window.TIM_SPANISH_SIMPLIFIED?42:DATA.exercises.filter(x=>(x.subject||'Espagnol')===name).length;
+  const name=SCHOOL_SUBJECTS[i],n=name==='Espagnol'&&window.TIM_SPANISH_ENT_EXACT?.lessonCount?window.TIM_SPANISH_ENT_EXACT.lessonCount():name==='Espagnol'?(DATA.metadata?.spanishEnt?.lessons?.length||0):name==='SVT'?(window.TIM_SVT_PACK?.lessons?.length||0):name==='Histoire-géographie'?(window.TIM_HG_PACK?.lessons?.length||0):name==='EMC'?(window.TIM_HG_PACK?.lessons||[]).filter(x=>/\(EMC\)/.test(x.chapter||'')).length:name==='Français'?(window.TIM_FR_PACK?.lessons?.length||0):DATA.lessons.filter(x=>(x.subject||'Espagnol')===name).length,ex=name==='Physique-chimie'?23:name==='Anglais'?11:name==='SVT'?14:name==='Histoire-géographie'?(window.TIM_HG_PACK?.bis?.length||0)*2:name==='EMC'?(window.TIM_HG_PACK?.bis||[]).filter(x=>/\(EMC\)/.test(x.group||'')).length*2:name==='Français'?22:name==='Mathématiques'?2+DATA.exercises.filter(x=>(x.subject||'Espagnol')===name).length:name==='Espagnol'&&window.TIM_SPANISH_SIMPLIFIED?42:DATA.exercises.filter(x=>(x.subject||'Espagnol')===name).length;
   const b=E('button','matter-card'+(name==='Espagnol'?' matter-espanol':''));b.type='button';b.append(E('span','ico',name==='Anglais'?'🇬🇧':name==='SVT'?'🌱':name==='Histoire-géographie'?'🌍':name==='Français'?'📖':icons[i]||'▤'),E('strong','',name),E('small','',n+' leçon(s) · '+ex+' exercice(s)'+(!n?' · Cours ENT à ajouter':'') ));
   if(n||(name==='Espagnol'&&window.__TIM_PARENT&&window.TIM_SPANISH_ENT_EXACT))b.addEventListener('click',()=>renderMatiere(name));else{b.title='Les vrais cours de Tim ne sont pas encore ajoutés';b.disabled=true;b.style.opacity='.55';}
   wrap.append(b);
@@ -1531,6 +1534,7 @@ function renderMatiere(name,openLessonId=null,openEntId=null){
  if(name==='Anglais'&&window.TIM_ENGLISH_PATH){window.TIM_ENGLISH_PATH.render(root,{lessons:DATA.lessons,back:renderMatieres,openLessonId});return;}
   if(name==='SVT'&&window.TIM_SVT_PATH){window.TIM_SVT_PATH.render(root,{back:renderMatieres,openLessonId});return;}
   if(name==='Histoire-géographie'&&window.TIM_HG_PATH){window.TIM_HG_PATH.render(root,{back:renderMatieres,openLessonId});return;}
+   if(name==='EMC'&&window.TIM_HG_PATH){window.TIM_HG_PATH.render(root,{back:renderMatieres,openLessonId,emcOnly:true});return;}
  if(name==='Français'&&window.TIM_FR_PATH){window.TIM_FR_PATH.render(root,{back:renderMatieres,openLessonId});return;}
   if(name==='Mathématiques'&&window.TIM_MATH_PATH){
   window.TIM_MATH_PATH.render(root,{
