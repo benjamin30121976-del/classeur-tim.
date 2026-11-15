@@ -79,7 +79,7 @@ function card(task,opts,done,today,unlinked=false){
  node.append(pill(unlinked?'Entraînement créé dans le classeur':task.isExam?'Évaluation annoncée dans l’ENT':'Devoir indiqué dans l’ENT','type'));
  if(task.description)node.append(E('p','future-description',task.description));
  if(!unlinked){
-  node.append(E('p','future-source','Consigne ENT conservée · Une coche ENT ne prouve pas que Tim a fait le devoir.'));
+  node.append(E('p','future-source','Consigne issue de l’ENT · Travail officiel'));
  }
  const matched=opts.bonuses.filter(ex=>linked(ex,task));
  const available=unlinked?(task.ex?[task.ex]:[]):matched;
@@ -129,7 +129,7 @@ function render(root,opts={}){
   const stat=E('div','future-number');stat.append(E('strong','',n),E('small','',label));figures.append(stat);
  }
  copy.append(figures);hero.append(copy,E('span','future-hero-symbol','✦'));root.append(hero);
- const warning=E('p','future-sync-note','Affichage basé sur les données ENT déjà importées dans le classeur. Les nouveaux devoirs n’apparaissent qu’après une actualisation ENT et leur intégration.');
+ const warning=E('p','future-sync-note','Calendrier établi à partir des données ENT déjà importées ; il ne se met pas à jour sans nouvelle collecte. Une coche ENT ne prouve pas que Tim a terminé le devoir.');
  root.append(warning);
  const filters=E('div','future-filters');
  for(const [mode,label] of [['all','Tout voir'],['exam','Contrôles'],['homework','Devoirs']]){
