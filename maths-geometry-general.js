@@ -55,8 +55,12 @@
  function thales(prompt,context){
   const normalized=clean(prompt);
   const crossed=/crois[eé]e|papillon/.test(normalized);
-  const small=(/\bAD\b|\bAE\b|\bDE\b|\bD\s*(?:sur|appartient)/i.test(prompt)||
-    /\bA[\s,–-]*D[\s,–-]*B\b/i.test(prompt))?['D','E']:['M','N'];
+  // Ne jamais confondre le segment (DE) avec le mot français « de » :
+  // les symboles de points sont en MAJUSCULES et sensibles à la casse.
+  const hasDE=/\b(?:AD|AE|DE)\b/.test(prompt)||
+    /\bD\s*(?:sur|appartient)/.test(prompt)||
+    /\bA[\s,–-]*D[\s,–-]*B\b/.test(prompt);
+  const small=hasDE?['D','E']:['M','N'];
   const a=small[0],b=small[1];
   const data=lengths(prompt);
   // Une question « peut-on conclure (MN)//(BC) ? » n'est PAS une donnée.
