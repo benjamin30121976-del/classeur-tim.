@@ -557,7 +557,9 @@ function renderHgExerciseDirectory(root,toolbar){
  }
  const ent=E('details','panel');
  ent.style.cssText='margin:15px 0;padding:12px';
- const displayedHomework=emcOnly?pack.homework.filter(h=>/\bemc\b|\bivg\b|\bveil\b|\brepublique\b|institutions europeennes/i.test([h.title,h.content].join(' '))):pack.homework;
+ // Cette liste vient des identifiants réels de l'ENT, pas d'une recherche de mots approximative.
+ const emcHomeworkIds=new Set(['10099~213498','10099~213669','10099~214592','10099~214770','10099~215099']);
+ const displayedHomework=emcOnly?pack.homework.filter(h=>emcHomeworkIds.has(h.id)):pack.homework;
   ent.append(E('summary','','Consignes et devoirs d’origine ENT · '+displayedHomework.length));
  ent.append(E('p','','Ces consignes ont été récupérées du cahier de textes et ne sont pas automatiquement des exercices réalisés ou notés par Tim.'));
  for(const h of displayedHomework)ent.append(E('p','',h.due.slice(8,10)+'/'+h.due.slice(5,7)+' — '+h.title+' : '+h.content));
