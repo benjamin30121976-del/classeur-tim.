@@ -8,6 +8,7 @@ on:
     paths:
       - 'browser-requests/parent.json'
       - 'outils/inspecter-parent-securise.cjs'
+      - 'outils/auditer-copie-samedi-chiffree.cjs'
       - 'outils/auditer-recotation-samedi-20261115.cjs'
       - 'outils/reviser-copie-samedi-parent.cjs'
       - 'worker/saturday-20261114-review.mjs'
@@ -29,6 +30,7 @@ jobs:
       TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
       TIM_AUDIT_RECODING: ${{ github.event_name == 'pull_request' && '1' || '0' }}
       TIM_SATURDAY_REVISE: ${{ github.event_name == 'pull_request' && 'preview' || github.event_name == 'push' && 'apply' || 'off' }}
+      TIM_ENCRYPTED_COPY_AUDIT: ${{ github.event_name == 'pull_request' && '1' || '0' }}
     steps:
       - uses: actions/checkout@v4
       - name: Verifier la syntaxe JavaScript des exercices
@@ -43,6 +45,7 @@ jobs:
           node --check outils/inspecter-parent-securise.cjs
           node --check outils/auditer-recotation-samedi-20261115.cjs
           node --check outils/reviser-copie-samedi-parent.cjs
+          node --check outils/auditer-copie-samedi-chiffree.cjs
           node --check worker/saturday-20261114-review.mjs
       - name: Tester les 23 évaluations et la sécurité des tentatives
         run: node --test worker/test/math-training.test.mjs worker/test/saturday-20261114-review.test.mjs worker/test/saturday-20261114-server.test.mjs
