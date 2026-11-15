@@ -558,7 +558,10 @@ async function startSession(user){
  const effectiveDailyIds=mixedChallengePlan?
    mixedChallengePlan.filter(ex=>ex.kind==='daily').map(ex=>ex.id):
    missionPlan.meta.dailyIds;
+ // Utiliser la carte du dimanche déjà prévue, avec son questionnaire réel côté serveur.
+ const effectiveSunday=mixedChallengePlan?.find(ex=>ex.kind==='sunday'&&ex.questions?.length===20)?.id||missionPlan.meta.sunday;
  window.__TIM_CHALLENGES={...missionPlan.meta,
+  sunday:effectiveSunday,
   dailyIds:effectiveDailyIds,daily:effectiveDailyIds[0]||null,
   dailyBankStatus:mixedChallengePlan?(mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='Français'))?'seven-subjects':mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='Histoire-géographie'))?'six-subjects':mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='SVT'))?'five-subjects':mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='Anglais'))?'four-subjects':'three-subjects'):mixedDaily?'mixed':'classic'};
  window.__TIM_NEXT_DAILY=effectiveDailyIds[0]||null;
