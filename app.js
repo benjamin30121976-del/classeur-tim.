@@ -24,7 +24,7 @@ function button(label,handler,cls='plain'){let b=E('button',cls,label);b.type='b
 function badge(text,cls=''){return E('span','pill '+cls,text);}
 function notice(text,cls='note info'){return E('div',cls,text);}
 function scrollTop(){window.scrollTo(0,0);requestAnimationFrame(()=>window.scrollTo(0,0));}
-function page(name){if(name==='parent' && !window.__TIM_PARENT){name='home';}if(name==='dico')renderDico('hub');if(name==='cours'){document.getElementById('lesson-index').classList.remove('hide');document.getElementById('lesson-detail').classList.remove('active');}if(name==='exercices'){document.getElementById('exercise-index').classList.remove('hide');document.getElementById('exercise-detail').classList.remove('active');}for(const p of document.querySelectorAll('.page'))p.classList.toggle('active',p.id===name);for(const b of document.querySelectorAll('[data-nav]')){b.classList.toggle('selected',b.dataset.nav===name);b.setAttribute('aria-current',b.dataset.nav===name?'page':'false');}scrollTop();if(name==='matieres')renderMatieres();if(name==='cours')renderLessonIndex();if(name==='exercices')renderExerciseIndex();if(name==='parent')renderParent();refreshXPHeader();if(name==='difficultes')renderDifficulties();if(name==='home')renderHome();if(name==='revisions')renderRevisions();if(name==='aide')document.getElementById('help-query').focus();}
+function page(name){if(name==='parent' && !window.__TIM_PARENT){name='home';}if(name==='dico')renderDico('hub');if(name==='cours'){document.getElementById('lesson-index').classList.remove('hide');document.getElementById('lesson-detail').classList.remove('active');}if(name==='exercices'){document.getElementById('exercise-index').classList.remove('hide');document.getElementById('exercise-detail').classList.remove('active');}for(const p of document.querySelectorAll('.page'))p.classList.toggle('active',p.id===name);for(const b of document.querySelectorAll('[data-nav]')){b.classList.toggle('selected',b.dataset.nav===name);b.setAttribute('aria-current',b.dataset.nav===name?'page':'false');}scrollTop();if(name==='matieres')renderMatieres();if(name==='cours')renderLessonIndex();if(name==='exercices')renderExerciseIndex();if(name==='prochaines')renderProchaines();if(name==='parent')renderParent();refreshXPHeader();if(name==='difficultes')renderDifficulties();if(name==='home')renderHome();if(name==='revisions')renderRevisions();if(name==='aide')document.getElementById('help-query').focus();}
 document.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()=>{if(b.dataset.nav==='exercices'){exerciseSubject='';exerciseGroup='';exerciseMode='';document.getElementById('exercise-search').value='';}page(b.dataset.nav);}));
 function lessonBy(id){return DATA.lessons.find(l=>l.id===id);}
 function exerciseBy(id){return DATA.exercises.find(e=>e.id===id);}
@@ -1480,12 +1480,22 @@ function frHomeExercises(){
 function makeSoundSettings(){const zone=E('div','sound-settings');zone.append(E('span','','🔊 Bruit des touches : '));
  const selector=E('select');selector.setAttribute('aria-label','Son des boutons');for(const [value,name] of [['bulle','Bulle · pop'],['arcade','Tir arcade · pew'],['muet','Sans bruit']])selector.add(new Option(name,value));selector.value=window.TIM_SOUND?.mode||'bulle';selector.addEventListener('change',()=>window.TIM_SOUND?.setMode(selector.value));zone.append(selector);return zone;
 }
+function renderProchaines(){
+ const root=document.getElementById('prochaines-content');
+ if(!root)return;
+ window.TIM_NEXT_MISSIONS?.render(root,{
+  data:DATA,attempts:attempts(),
+  openBonus:id=>{page('exercices');openExercise(id);},
+  openSubject:subject=>{page('matieres');renderMatiere(subject);}
+ });
+}
 function renderHome(){
  const root=clear(document.getElementById('home-content'));refreshXPHeader();
  const hero=E('section','mission-hero');
  const copy=E('div','mission-copy');copy.append(E('div','shout','RÉVISIONS DES DEVOIRS'),E('h1','','MES DEVOIRS EN BONUS'),E('p','','Des exercices préparés ensemble pour réviser les devoirs. Note, correction et XP selon le barème de chaque exercice.'));
  copy.append(button('Ouvrir mes exercices bonus →',()=>{exerciseSubject='';exerciseGroup='';exerciseMode='homework-bonus';page('exercices');},'lobo-go'));hero.append(copy);const wolf=E('img','mission-wolf');wolf.src='./assets/loup-accueil.webp';wolf.alt='Le loup jongleur du classeur';hero.append(wolf);// Défis quotidiens rétablis avec les images originales du parent.
  root.append(hero);
+ window.TIM_NEXT_MISSIONS?.renderTeaser(root,DATA,()=>page('prochaines'));
  if(window.__TIM_READONLY_FALLBACK)
   root.append(notice('Accès provisoire : le serveur des cours est indisponible. Les leçons et les défis sont consultables, mais la validation des réponses et les XP sont suspendus sur cet appareil. Actualise la page pour rétablir le compte complet.'));
  else if(window.__TIM_ADDONS_INCOMPLETE)
