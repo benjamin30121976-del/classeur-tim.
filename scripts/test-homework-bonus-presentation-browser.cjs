@@ -156,6 +156,10 @@ const ex={
     path:path.join(output,'bonus-devoir-design-'+name+'.png'),
     animations:'disabled'
    });
+   // Le menu doit réapparaître lorsqu'on revient à Matières ou à l'accueil.
+   await page.evaluate(()=>document.getElementById('exercices').classList.remove('active'));
+   const menuBack=await page.locator('.tabs').evaluate(el=>getComputedStyle(el).display);
+   assert.notEqual(menuBack,'none',name+' : navigation générale absente après avoir quitté le devoir');
    console.log('OK design bonus devoir '+name+' : '+JSON.stringify(result));
    await page.close();
   }
