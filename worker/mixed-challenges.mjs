@@ -10,6 +10,7 @@ import {HG_QCM,HG_WRITTEN} from './hg-questions.mjs';
 import {FR_QCM,FR_WRITTEN} from './fr-questions.mjs';
 import {sameShortAnswer,numericEquivalent} from './short-answer-equivalence.mjs';
 import {numericMathAnswerMatches} from './math-answer-equivalence.mjs';
+import {SUNDAY_BILAN_20261115} from './sunday-bilan-20261115.mjs';
 
 const n=(s)=>String(s).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase()
  .replace(/[¿?¡!.,;:]/g,'').replace(/[’‘]/g,"'").replace(/\s+/g,' ').trim();
@@ -356,6 +357,7 @@ function selectQuestions(id,kind){
  });
 }
 export function isMixedMissionId(id){
+ if(id==='SUNDAY_BILAN_20261115')return true;
  const daily=/^DAY_(20\d{6})_(0[1-6])$/.exec(String(id||''));
  if(daily){
   const newFriday=daily[1]==='20261113'&&['04','05','06'].includes(daily[2]);
@@ -369,6 +371,7 @@ export function isMixedMissionId(id){
   new Date(dayString(sunday[1])+'T12:00:00Z').getUTCDay()===0);
 }
 export function mixedMission(id){
+ if(id==='SUNDAY_BILAN_20261115')return SUNDAY_BILAN_20261115;
  if(!isMixedMissionId(id))return null;
  const daily=/^DAY_(20\d{6})_(0[1-6])$/.exec(id),sunday=/^SUNDAY_(20\d{6})$/.exec(id);
  const kind=daily?'daily':sunday?'sunday':'weekly';
@@ -396,7 +399,7 @@ export function mixedPlan(now=new Date()){
  // Les nouvelles missions du vendredi utilisent donc _04, _05 et _06.
  const dailyNumbers=compact==='20261113'?[4,5,6]:compact>='20261116'?[1,2,3]:[];
  const dailyIds=dow>=1&&dow<=5?dailyNumbers.map(i=>'DAY_'+compact+'_0'+i):[];
- const weekly=weekId(today),sunday='SUNDAY_'+addDays(monday(today),6).replace(/-/g,'');
+ const weekly=weekId(today),sunday=today==='2026-11-15'?'SUNDAY_BILAN_20261115':'SUNDAY_'+addDays(monday(today),6).replace(/-/g,'');
  const ids=[...dailyIds,weekly,sunday];
  return {day:today,dailyIds,weekly,sunday,exercises:ids.map(mixedMission).filter(Boolean)};
 }
@@ -404,6 +407,7 @@ export function publicMixedMission(mission){
  if(!mission)return null;
  return {...mission,questions:mission.questions.map(q=>{
   const {right,also,why,parts,answer,unit,...publicFields}=q;
+  if(q.type==='structured')publicFields.fields=(q.fields||[]).map(({accepted,...field})=>field);
   return publicFields;
  })};
 }
@@ -490,6 +494,45 @@ export function gradeMixedMission(mission,responses,translationsUsed=[],{allowIn
  const answers=mission.questions.map((q,i)=>{
   const raw=String(responses[i]??'');
   if(raw.length>2000)throw Error('Réponse trop longue');
+  if(q.type==='structured'){
+   // Cadres guidés : comparaison de réponses ciblées, sans notation arbitraire d'un texte libre.
+   let values;try{values=JSON.parse(raw);}catch{throw Error('Cadres invalides');}
+   if(!Array.isArray(values)||values.length!==q.fields.length||
+      values.some(v=>typeof v!=='string'||v.length>500))throw Error('Cadres invalides');
+   if(!allowIncomplete&&values.some(v=>!v.trim()))throw Error('Cadres incomplets');
+   const clean=(value,lang)=>{let v=String(value??'').trim().toLowerCase();
+     if(lang!=='Espagnol')v=v.normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+     return v.replace(/[’‘]/g,"'").replace(/[.,;:!?¡¿]/g,'')
+       .replace(/\s*([×*+=()\/−-])\s*/g,'$1').replace(/\s+/g,' ').trim();
+   };
+   const compact=(value,lang)=>clean(value,lang).replace(/\s+/g,'').replace(/[×*]/g,'').replace(/\^2/g,'²').replace(/\^7/g,'⁷');
+   const used=new Set();
+   const fieldResults=q.fields.map((f,j)=>{
+     const response=values[j],actual=clean(response,q.subject),cactual=compact(response,q.subject);
+     const accepted=f.accepted||[];
+     const matched=accepted.find(a=>{
+       const expected=clean(a,q.subject),cexpected=compact(a,q.subject);
+       if(actual===expected||cactual===cexpected)return true;
+       if(q.number===2&&j===3)return /6\(x\+2\)/.test(cactual);
+       if(q.number===12&&j===3)return /\bbc\b/.test(actual)&&/10\s*cm/.test(actual);
+       if(q.number===19&&j===0)return /additionn/.test(actual)&&/exposant/.test(actual);
+       return false;
+     });
+     let correct=Boolean(matched);
+     if(q.number===4&&correct){
+       const canonical=clean(matched,q.subject);
+       if(used.has(canonical))correct=false;else used.add(canonical);
+     }
+     const points=correct?f.points:0;
+     return {label:f.name,response,correct,points,expected:accepted[0]||'',instruction:f.instruction};
+   });
+   const points=Math.round(fieldResults.reduce((n,f)=>n+f.points,0)*100)/100;
+   score+=points;
+   const correct=points>=0.999;
+   return {question:q.q,response:raw,correct,points,fieldResults,
+     expected:q.why,subject:q.subject,skill:q.skill,lessonId:q.lessonId,
+     lessonReview:q.lessonReview,explanation:correct?'Réponse complète et correcte.':q.why};
+  }
   if(q.type==='reason'){
    if(allowIncomplete&&!raw.trim())return {question:q.q,response:'',correct:false,points:0,
     expected:q.why,methodResponse:'Sans réponse',calculationResponse:'',conclusionResponse:'',
