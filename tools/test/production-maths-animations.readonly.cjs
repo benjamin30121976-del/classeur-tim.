@@ -31,6 +31,27 @@ async function main(){
    let body={};try{body=await response.json();}catch{}
    report.backend={status:response.status(),platform:body.platform||null,available:body.available===true,contentType:type};
   }catch(e){report.backend={available:false,error:String(e.message).slice(0,120)};}
+  // Exception XP du 16 au 22 novembre : contrôler les RESSOURCES en
+  // production, et pas seulement les fichiers présents sur GitHub.
+  const sources=[
+   {path:'/',need:['xp-rules.js?v=xp-barre-exception-16nov-20261115-v1',
+     'boot.js?v=xp-barre-exception-16nov-20261115-v1']},
+   {path:'/xp-rules.js',need:['xpPeriodStart','2026-11-16','2026-11-09']},
+   {path:'/boot.js',need:['app.js?v=xp-barre-exception-16nov-20261115-v1']},
+   {path:'/app.js',need:['MES XP CONSERVÉS','Remise à zéro le lundi 23 novembre',
+     'window.TIM_XP.xpPeriodStart']}
+  ];
+  report.xpPublication=[];
+  for(const entry of sources){
+   const response=await probePage.request.get(new URL(entry.path,base).href,{timeout:25000});
+   const body=await response.text();
+   const missing=entry.need.filter(item=>!body.includes(item));
+   const valid=response.ok()&&missing.length===0;
+   report.xpPublication.push({path:entry.path,status:response.status(),valid,
+    missingCount:missing.length});
+   console.log((valid?'OK':'ECHEC')+' Barre XP publiée : '+entry.path+
+    ', HTTP '+response.status()+', marqueurs manquants '+missing.length);
+  }
   await probePage.close();
   for(const [device,size] of [['telephone',{width:390,height:844}],['ordinateur',{width:1280,height:860}]]){
    const page=await browser.newPage({viewport:size,locale:'fr-FR'});
@@ -49,6 +70,17 @@ async function main(){
     row.checks.enterGuest=await page.locator('#guest-enter').isVisible();
     row.checks.introButton=await page.locator('#intro-skip').count()>0;
     row.checks.scriptTags=await page.evaluate(()=>[...document.scripts].map(x=>(x.getAttribute('src')||'').split('?')[0]).filter(Boolean));
+    row.checks.xpPeriodPublished=await page.evaluate(()=>{
+      const r=window.TIM_XP;
+      return r&&typeof r.xpPeriodStart==='function'&&
+       r.monday('2026-11-16')==='2026-11-16'&&
+       r.xpPeriodStart('2026-11-16')==='2026-11-09'&&
+       r.xpPeriodStart('2026-11-22')==='2026-11-09'&&
+       r.xpPeriodStart('2026-11-23')==='2026-11-23';
+    });
+    console.log((row.checks.xpPeriodPublished?'OK':'ECHEC')+' Barre XP du site sur '+device+
+      ' : conservation 16-22, retour normal 23.');
+
     await page.screenshot({path:path.join(out,device+'-accueil.jpg'),type:'jpeg',quality:68,fullPage:true,timeout:20000});
     if(row.checks.enterGuest){
      await page.locator('#guest-enter').click({timeout:15000});
@@ -103,6 +135,7 @@ async function main(){
   'Aucune connexion Parent/Tim ni exercice validé. Toute requête POST a été bloquée.',
   '','## État du serveur privé','- API Cloudflare : '+JSON.stringify(report.backend||{}),'','## Ressources du site public'];
  for(const [key,v] of Object.entries(report.staticFiles))lines.push('- '+key+' : HTTP '+v.status+', '+(v.available?'fichier correct':'absent ou mauvais type')+' ('+v.contentType+')');
+ for(const x of report.xpPublication||[])lines.push('- Barre XP / publication '+x.path+' : '+(x.valid?'validée':'absente')+' (HTTP '+x.status+')');
  for(const d of report.devices){
   lines.push('','## '+d.device,'- Page HTTP : '+d.checks.http,
    '- Accès Visiteur : '+Boolean(d.checks.guestOpened),
@@ -110,7 +143,8 @@ async function main(){
    '- Chapitres mathématiques : '+(d.checks.mathGroupCount??'non mesuré'),
    '- Leçons BIS vues dans le code : '+(d.checks.javascriptCapabilities?.mathBisCount??'non mesuré'),
    '- Lecteur animations chargé : '+Boolean(d.checks.javascriptCapabilities?.animations),
-   '- Requêtes non-GET empêchées : '+d.blockedNonGet);
+   '- Requêtes non-GET empêchées : '+d.blockedNonGet,
+   '- Calcul de la période XP réellement chargé : '+Boolean(d.checks.xpPeriodPublished));
   if(d.checks.mathHeadings?.length)lines.push('- Rubriques : '+d.checks.mathHeadings.join(' / '));
   for(const error of d.errors)lines.push('- Avertissement : '+error);
  }
@@ -118,5 +152,6 @@ async function main(){
  fs.writeFileSync(path.join(out,'rapport.json'),JSON.stringify(report,null,2)+'\n');
  console.log(lines.join('\n'));
  if(report.devices.every(d=>!d.checks.http||d.checks.http>=400))process.exitCode=1;
+ if(!report.xpPublication?.every(x=>x.valid)||!report.devices.every(d=>d.checks.xpPeriodPublished))process.exitCode=1;
 }
 main().catch(e=>{console.error('Audit échoué : '+e.message);process.exitCode=1;});
