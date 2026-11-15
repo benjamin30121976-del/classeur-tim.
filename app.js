@@ -872,7 +872,7 @@ function openExercise(id,options={}){const ex=exerciseBy(id);if(!ex)return;
    'Lis tout l’énoncé et repère ce qui est demandé.',
    'Si besoin, fais un brouillon : note les données utiles, les calculs ou les mots-clés.',
    'Quand tu dois écrire une réponse, reprends les mots importants de la question pour commencer ta phrase. Ne recopie pas la question telle quelle.',
-   'Explique ensuite ton raisonnement avec une phrase complète si la question le demande.'
+   'Explique ensuite ton raisonnement avec une phrase complète si la question le demande.',
    'Relis chaque réponse avant de valider définitivement.'
   ])steps.append(E('li','',tip));
   content.append(steps);
