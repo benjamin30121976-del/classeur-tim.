@@ -54,6 +54,22 @@ function bisContent(root,b){
  if(b.id==='HG_BIS08')add(root,'p','Précision institutionnelle : le Conseil de l’Europe n’est pas le Conseil européen. Il n’est pas une institution de l’Union européenne.');
  if(b.id==='HG_BIS09')add(root,'p','Repères : 1933, construction de la dictature ; 1935, lois de Nuremberg ; 1939–1945, guerre et Shoah. En 1945, l’Allemagne nazie est vaincue. Schéma créé pour apprendre, non fourni dans l’ENT.');
 }
+// Associations ENT explicites : la date de remise n'est pas toujours la date de séance.
+// Ne pas rattacher le cours à recopier pour le 9 novembre à la séance du 9 novembre
+// lorsqu'il a été donné pendant celle du 6.
+const ENT_LINKED_HOMEWORK={
+ '10099~6402886':['10099~213498','10099~213669'],
+ '10099~6402837':['10099~214592'],
+ '10099~6402820':['10099~214770','10099~215099'],
+ '10099~6402787':['10099~215396']
+};
+const LINKED_HOMEWORK_IDS=new Set(Object.values(ENT_LINKED_HOMEWORK).flat());
+function homeworkForCourse(course,pack){
+ const ids=ENT_LINKED_HOMEWORK[course.entId];
+ if(ids)return pack.homework.filter(h=>ids.includes(h.id));
+ return pack.homework.filter(h=>h.lessonEntId===course.entId||(
+  h.due===course.date&&!LINKED_HOMEWORK_IDS.has(h.id)));
+}
 function session(course,bis,pack){
  const details=E('details',undefined,'tim-es-lesson');
  details.style.cssText='background:#18243c;border:1px solid #5b6983;border-radius:13px;margin:11px 0;padding:12px';
@@ -75,7 +91,7 @@ function session(course,bis,pack){
     add(pane,'p','Résumé des informations disponibles dans l’ENT : le texte complet de cette séance n’a pas été retrouvé.','lesson-caution');
     add(pane,'p',course.summary);
    }else add(pane,'p','Cette séance est inscrite à l’ENT, mais aucun cours détaillé n’est fourni dans l’archive.');
-   const due=pack.homework.filter(h=>h.due===course.date||h.lessonEntId===course.entId);
+   const due=homeworkForCourse(course,pack);
    if(due.length){add(pane,'h4','Consignes et travaux liés à cette séance');
     for(const h of due){add(pane,'p','Pour le '+fr(h.due)+' — '+h.title+' : '+h.content);if(h.originalText){add(pane,'h4','Texte original donné à copier dans l’ENT');add(pane,'p',h.originalText);}}
     add(pane,'p','Les travaux cochés dans l’ENT ne prouvent pas que les corrections individuelles sont connues.');}
@@ -88,7 +104,7 @@ function session(course,bis,pack){
    add(pane,'p','Relis les explications, puis entraîne-toi sur dix questions. La correction indiquera ce qu’il faut revoir.');
   }else if(tab==='entex'){
    add(pane,'h3','4 · Exercices et documents ENT du professeur');
-   const tasks=pack.homework.filter(h=>h.due===course.date||h.lessonEntId===course.entId);
+   const tasks=homeworkForCourse(course,pack);
    if(!tasks.length)add(pane,'p','Pas d’exercice détaillé du professeur rattaché à cette séance.');
    for(const h of tasks){add(pane,'p','Consigne pour le '+fr(h.due)+' — '+h.title+' : '+h.content);if(h.originalText){add(pane,'h4','Transcription ENT à recopier');add(pane,'p',h.originalText);}}
    const attached=pack.attachments.filter(d=>d.target===course.id);
@@ -116,17 +132,21 @@ function session(course,bis,pack){
 }
 function render(root,opts={}){
  const pack=window.TIM_HG_PACK;
- root.replaceChildren(btn('← Toutes les matières',()=>opts.back?.()),E('h2','Histoire-géographie — Mes leçons'));
- if(!pack?.lessons?.length){add(root,'p','Le dossier Histoire-géographie est temporairement indisponible.');return;}
- add(root,'p',pack.lessons.length+' séances ENT classées par date · '+pack.bis.length+' leçons BIS · '+(pack.bis.length*2)+' exercices de 10 questions.');
- add(root,'p','Archives ENT du 12 novembre et collecte ciblée du 13. Si le professeur ne donne qu’un titre, la leçon BIS est un ajout distinct : aucun texte officiel n’est inventé.','lesson-caution');
- if(window.__TIM_PARENT&&!window.__TIM_GUEST&&window.TIM_HG_DOCUMENTS?.parentImport)root.append(window.TIM_HG_DOCUMENTS.parentImport());
+ const emcOnly=opts.emcOnly===true;
+ const visibleChapters=(pack?.chapters||[]).filter(x=>!emcOnly||/\(EMC\)/.test(x));
+ const visibleLessons=(pack?.lessons||[]).filter(x=>visibleChapters.includes(x.chapter));
+ const visibleBis=(pack?.bis||[]).filter(x=>visibleChapters.includes(x.group));
+ root.replaceChildren(btn('← Toutes les matières',()=>opts.back?.()),E('h2',emcOnly?'EMC — Mes leçons':'Histoire-géographie — Mes leçons'));
+ if(!visibleLessons.length){add(root,'p',emcOnly?'Aucune séance EMC identifiée dans le classeur pour le moment.':'Le dossier Histoire-géographie est temporairement indisponible.');return;}
+ add(root,'p',visibleLessons.length+' séances ENT classées par date · '+visibleBis.length+' leçons BIS · '+(visibleBis.length*2)+' exercices de 10 questions.');
+ add(root,'p',emcOnly?'Les cours EMC déjà archivés dans Histoire-géographie sont présentés ici sans duplication de copies, notes ou XP. Les documents ENT et les leçons BIS restent distincts.':'Archives ENT du 12 novembre et collecte ciblée du 13. Si le professeur ne donne qu’un titre, la leçon BIS est un ajout distinct : aucun texte officiel n’est inventé.','lesson-caution');
+ if(!emcOnly&&window.__TIM_PARENT&&!window.__TIM_GUEST&&window.TIM_HG_DOCUMENTS?.parentImport)root.append(window.TIM_HG_DOCUMENTS.parentImport());
  const exam=pack.homework.find(h=>h.due==='2026-11-18'&&/évaluation/i.test(h.title));
  if(exam){const panel=E('section',undefined,'panel');
   add(panel,'h3','Évaluation d’EMC annoncée — mercredi 18 novembre');
   add(panel,'p','L’ENT mentionne « évaluation EMC », sans préciser son sujet exact. Les leçons sur les principes républicains, la loi Veil et les institutions européennes fournissent une révision, mais le programme de contrôle n’est pas confirmé.');
   root.append(panel);}
- for(const chapter of pack.chapters){
+ for(const chapter of visibleChapters){
   const rows=pack.lessons.filter(x=>x.chapter===chapter),bis=pack.bis.filter(b=>b.group===chapter);
   const chosen=bis.find(b=>b.id===opts.openLessonId);
   const courseFor=chosen?(rows.find(c=>c.date===chosen.date)||rows[rows.length-1]):null;
@@ -139,13 +159,14 @@ function render(root,opts={}){
     group.open=true;item.details.open=true;item.openTab(chosen?'bis':'ent');
    }
   }
-  if(!opts.openLessonId&&chapter==='Nazisme : dictature et persécutions'){group.open=true;listing.lastElementChild?.setAttribute('open','');}
+  if(!opts.openLessonId&&chapter==='Nazisme : dictature et persécutions'&&!emcOnly){group.open=true;listing.lastElementChild?.setAttribute('open','');}
+  if(!opts.openLessonId&&emcOnly&&chapter===visibleChapters[0])group.open=true;
   root.append(group);
  }
  const missing=E('details',undefined,'panel');missing.append(E('summary','Documents ENT manquants ou incomplets'));
  for(const m of pack.missing)add(missing,'p','• '+m);
  root.append(missing);
- const progress=E('details',undefined,'panel');progress.append(E('summary','Notes, copies et corrections en histoire-géographie'));
+ const progress=E('details',undefined,'panel');progress.append(E('summary',emcOnly?'Notes et corrections EMC (historique partagé avec Histoire-géographie)':'Notes, copies et corrections en histoire-géographie'));
  const slot=E('div');progress.append(slot);progress.addEventListener('toggle',()=>{if(progress.open)window.TIM_HG_TRAINING?.renderProgress(slot)});root.append(progress);
  const sources=E('details',undefined,'panel');sources.append(E('summary','Références pour vérifier les leçons BIS'));
  for(const item of pack.sources){const p=E('p');const a=E('a',item.title);a.href=item.url;a.target='_blank';a.rel='noopener noreferrer';p.append(a);sources.append(p);}root.append(sources);
