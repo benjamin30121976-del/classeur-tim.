@@ -85,6 +85,50 @@ async function main(){
       row.checks.mathTrainingLabel=(await mat.locator('[data-math-train]').allTextContents()).slice(0,5);
       row.checks.mathNote=(await mat.innerText()).slice(0,650);
      }
+     // Contrôle du site réellement publié, sans identifiants ni validation.
+     // Le mode invité ne doit jamais créer de copie, note, tentative ou XP.
+     // Parcours publié, même lecture par cartes que Espagnol/Mathématiques.
+     await page.locator('[data-nav="matieres"]').first().click();
+     await page.waitForFunction(()=>[...document.querySelectorAll('#matieres-content button.matter-card')]
+       .some(b=>b.textContent.includes('EMC')&&!b.disabled),null,{timeout:18000});
+     const emc=mat.locator('button.matter-card').filter({hasText:'EMC'}).first();
+     if(!(await emc.count())||!(await emc.isEnabled()))throw Error('Matière EMC non publiée');
+     await emc.click();
+     row.checks.emcDiagnostics=await page.evaluate(()=>({
+       headings:[...document.querySelectorAll('#matieres-content h2')].map(n=>n.textContent).slice(0,8),
+       hasNewCss:Boolean(document.querySelector('link[href*="emc-parcours.css"]')),
+       htmlScript:[...document.scripts].map(n=>n.src).find(s=>s.includes('histoire-geographie-parcours.js'))?.split('?')[1]||'',
+       activatedSection:document.querySelector('#matieres-content')?.textContent?.slice(0,240)||'',
+       cards:document.querySelectorAll('#matieres-content .spx-card').length
+     }));
+     await page.waitForFunction(()=>document.querySelector('#matieres-content .emc-view .spx-hero h2')?.textContent?.includes('Mes leçons d’EMC'),null,{timeout:20000});
+     row.checks.emc=await page.evaluate(()=>{
+       const container=document.querySelector('#matieres-content');
+       const pack=window.TIM_HG_PACK||{};
+       return {
+         heading:container.querySelector('.emc-view .spx-hero h2')?.textContent||'',
+         cards:container.querySelectorAll('.emc-view .spx-card').length,
+         bis:(pack.bis||[]).filter(b=>/\(EMC\)/.test(b.group||'')).length,
+         lessons:(pack.lessons||[]).filter(c=>/\(EMC\)/.test(c.chapter||'')).length,
+         hgUnchanged:(pack.lessons||[]).length===25&&(pack.chapters||[]).length===9,
+         horizontalOverflow:document.documentElement.scrollWidth>window.innerWidth+2
+       };
+     });
+     if(row.checks.emc.cards!==3||row.checks.emc.lessons!==5||row.checks.emc.bis!==3||
+        !row.checks.emc.hgUnchanged||row.checks.emc.horizontalOverflow)
+       throw Error('Accueil EMC publié non conforme : '+JSON.stringify(row.checks.emc));
+     await mat.locator('.emc-view .spx-card').first().click();
+     if(await mat.locator('.emc-view .spx-row').count()!==3)
+       throw Error('Une BIS et deux cours ENT attendus sur le premier chapitre');
+     await mat.locator('.emc-view .spx-row').first().click();
+     if(await mat.locator('.emc-view .hg-bis-illustration').count()!==1)
+       throw Error('Leçon BIS doit s’afficher une seule fois avec son schéma');
+     for(const name of ['Cours ENT','Leçon BIS','Je n’ai pas compris','Exercices ENT','Entraînement']){
+       if(!(await mat.locator('.emc-view .emc-shortcuts').getByRole('button',{name,exact:true}).count()))
+         throw Error('Rubrique EMC absente : '+name);
+     }
+     row.checks.emcReady=true;
+     await page.screenshot({path:path.join(out,device+'-emc-publie.jpg'),type:'jpeg',quality:72,fullPage:true,timeout:20000});
      row.checks.javascriptCapabilities=await page.evaluate(()=>({
       mathPath:Boolean(window.TIM_MATH_PATH),
       mathBisCount:window.TIM_MATHS_BIS_PACK?.lessons?.length??null,
@@ -110,6 +154,7 @@ async function main(){
    '- Chapitres mathématiques : '+(d.checks.mathGroupCount??'non mesuré'),
    '- Leçons BIS vues dans le code : '+(d.checks.javascriptCapabilities?.mathBisCount??'non mesuré'),
    '- Lecteur animations chargé : '+Boolean(d.checks.javascriptCapabilities?.animations),
+   '- EMC publiée et inspectée : '+Boolean(d.checks.emcReady)+' · '+JSON.stringify(d.checks.emc||{})+' · diagnostic : '+JSON.stringify(d.checks.emcDiagnostics||{}),
    '- Requêtes non-GET empêchées : '+d.blockedNonGet);
   if(d.checks.mathHeadings?.length)lines.push('- Rubriques : '+d.checks.mathHeadings.join(' / '));
   for(const error of d.errors)lines.push('- Avertissement : '+error);
@@ -117,6 +162,7 @@ async function main(){
  fs.writeFileSync(path.join(out,'rapport.md'),lines.join('\n')+'\n');
  fs.writeFileSync(path.join(out,'rapport.json'),JSON.stringify(report,null,2)+'\n');
  console.log(lines.join('\n'));
+ if(report.devices.some(d=>!d.checks.emcReady))process.exitCode=1;
  if(report.devices.every(d=>!d.checks.http||d.checks.http>=400))process.exitCode=1;
 }
 main().catch(e=>{console.error('Audit échoué : '+e.message);process.exitCode=1;});
