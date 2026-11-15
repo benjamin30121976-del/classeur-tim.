@@ -55,8 +55,12 @@
  function thales(prompt,context){
   const normalized=clean(prompt);
   const crossed=/crois[eé]e|papillon/.test(normalized);
-  const small=(/\bAD\b|\bAE\b|\bDE\b|\bD\s*(?:sur|appartient)/i.test(prompt)||
-    /\bA[\s,–-]*D[\s,–-]*B\b/i.test(prompt))?['D','E']:['M','N'];
+  // Ne jamais confondre le segment (DE) avec le mot français « de » :
+  // les symboles de points sont en MAJUSCULES et sensibles à la casse.
+  const hasDE=/\b(?:AD|AE|DE)\b/.test(prompt)||
+    /\bD\s*(?:sur|appartient)/.test(prompt)||
+    /\bA[\s,–-]*D[\s,–-]*B\b/.test(prompt);
+  const small=hasDE?['D','E']:['M','N'];
   const a=small[0],b=small[1];
   const data=lengths(prompt);
   // Une question « peut-on conclure (MN)//(BC) ? » n'est PAS une donnée.
@@ -66,7 +70,8 @@
   const knownDifferent=/diff[eé]rent|ne sont pas parall[eè]le|non parall[eè]le/.test(normalized);
   let ratio1=nums(data,'A'+a,'AB'),ratio2=nums(data,'A'+b,'AC');
   if(!Number.isFinite(ratio1)||ratio1<=0||ratio1>=1)ratio1=.44;
-  if(!Number.isFinite(ratio2)||ratio2<=0||ratio2>=1)ratio2=knownDifferent?.57:ratio1;
+  if(!Number.isFinite(ratio2)||ratio2<=0||ratio2>=1)
+   ratio2=givenParallel?ratio1:(knownDifferent?.57:.54); // Ne pas dessiner une parallèle à démontrer.
   const {fig,svg,caption}=base('thales','Triangle ABC, '+a+' sur AB et '+b+' sur AC, segments '+a+b+' et BC dessinés');
   const pts=crossed?{A:[196,152],B:[337,51],C:[338,257]}:{A:[199,43],B:[60,249],C:[342,249]};
   pts[a]=interpolate(pts.A,pts.B,ratio1);
@@ -83,8 +88,12 @@
   for(const [key,point] of Object.entries(places))if(data[key])measure(svg,...point,span(data,key));
   if(givenParallel){
    caption.textContent='Les droites '+a+b+' et BC sont indiquées parallèles dans l’énoncé. Schéma non à l’échelle.';
+  }else if(/AM\s*\/\s*AB\s*=\s*AN\s*\/\s*AC/i.test(prompt)&&Object.keys(data).length===0){
+   caption.textContent='L’égalité des rapports est donnée dans l’énoncé : aucun calcul numérique n’est demandé. Utilise les conditions de la réciproque de Thalès. Schéma non à l’échelle.';
+  }else if(Object.keys(data).length>0){
+   caption.textContent='Repère les longueurs indiquées et vérifie les rapports. La forme du dessin ne suffit pas pour conclure. Schéma non à l’échelle.';
   }else{
-   caption.textContent='Les droites ('+a+b+') et (BC) sont-elles parallèles ? Compare les longueurs données. Le dessin seul ne permet pas de répondre. Schéma non à l’échelle.';
+   caption.textContent='Repère les points '+a+' et '+b+' sur les côtés du triangle. Le dessin ne suffit pas pour conclure. Schéma non à l’échelle.';
   }
   return fig;
  }
@@ -176,7 +185,9 @@
  function render(ex,index){
   if(!ex||ex.subject!=='Mathématiques')return null;
   const q=ex.questions?.[index];if(!q)return null;
-  const prompt=String(q.q||q.prompt||'');
+  // Le schéma doit utiliser exactement l'énoncé affiché à Tim.
+  // BD1611_MA01 possède des énoncés clarifiés qui remplacent q.q à l'écran.
+  const prompt=displayPrompt(ex,index,String(q.q||q.prompt||''));
   const hint=String(ex.title||'')+' '+String(ex.topic||'')+' '+String(ex.chapter||'');
   let shared='';
   if((/quel(?:le)? est (?:son|sa)|quel est le (?:perimetre|périmètre)/i.test(prompt))&&ex.questions?.length){
