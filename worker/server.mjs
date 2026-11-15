@@ -69,7 +69,7 @@ async function resolveExercise(db,id){
  if(isMixedMissionId(id)){
   const mission=mixedMission(id);
   if(!mission)throw new ApiFault(404,'mission-not-found');
-  if(!isMissionOpen(mission))throw new ApiFault(409,'mission-not-open');
+  if(!isMissionOpen(mission)&&!(id==='SUNDAY_BILAN_20261115'&&parisDate(new Date())==='2026-11-15'))throw new ApiFault(409,'mission-not-open');
   return {exercise:{...publicMixedMission(mission),enabled:true},key:null,mixedSource:mission};
  }
  if(isSpanishDailyMissionId(id)){
@@ -133,10 +133,12 @@ async function submitExercise(db,uid,payload){
   }else evaluated=spanishSource?gradeSpanishDailyMission(spanishSource,answers):grade(exercise,key,answers);
  }catch{throw new ApiFault(400,'invalid-answers');}
  const transaction=await db.transaction();
- const [publicRecord,privateRecord,xpRecord]=await Promise.all([
-  db.get('attempts/'+id,transaction),db.get('privateAttempts/'+id,transaction),db.get('xpState/tim',transaction)
+ const alternateSundayId=id==='SUNDAY_BILAN_20261115'?'SUNDAY_20261115':id==='SUNDAY_20261115'?'SUNDAY_BILAN_20261115':null;
+ const [publicRecord,privateRecord,xpRecord,alternateSundayRecord]=await Promise.all([
+  db.get('attempts/'+id,transaction),db.get('privateAttempts/'+id,transaction),db.get('xpState/tim',transaction),
+  alternateSundayId?db.get('attempts/'+alternateSundayId,transaction):Promise.resolve(null)
  ]);
- if(publicRecord||privateRecord)throw new ApiFault(409,'already-exists');
+ if(publicRecord||privateRecord||alternateSundayRecord)throw new ApiFault(409,'already-exists');
  const today=parisDate(new Date()),week=xpPeriodStart(today),state=xpRecord||{};
  const current=state.date===today?state:{earned:0,lost:0,bonus:0};
  const weekEarned=state.week===week?Number(state.weekEarned||0):0;
