@@ -108,7 +108,7 @@ function open(ex,ctx={}){
     const panel=E('div',undefined,'mix-structured-field');
     panel.append(E('p',(j+1)+'. '+f.name+' · '+Number(f.points).toLocaleString('fr-FR')+' pt','mix-step-label'));
     panel.append(E('p',f.instruction,'mix-muted'));
-    const field=E('textarea',undefined,'mix-textarea');field.rows=2;field.maxLength=500;
+    const field=E('textarea',undefined,'mix-textarea');field.rows=2;field.maxLength=300;
     field.placeholder='Écris ta réponse ou JSP si tu ne sais pas.';field.value=current[j]||'';
     field.disabled=!!old||guest||serviceReadOnly;
     field.oninput=()=>{current[j]=field.value;state.answers[i]=JSON.stringify(current);persist();};
