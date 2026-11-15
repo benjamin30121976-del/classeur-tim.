@@ -31,6 +31,30 @@ async function main(){
    let body={};try{body=await response.json();}catch{}
    report.backend={status:response.status(),platform:body.platform||null,available:body.available===true,contentType:type};
   }catch(e){report.backend={available:false,error:String(e.message).slice(0,120)};}
+  // Audit public : vérifier le JS et sa version effectivement servis par Cloudflare.
+  // Lecture seule, sans connexion ni copie, et sans modifier le site.
+  const bootResp=await probePage.request.get(new URL('/boot.js',base).href,{timeout:30000});
+  const bootSource=await bootResp.text();
+  const appTag=bootSource.match(/app\.js\?v=[^'"\\s]+/);
+  const appUrl=appTag?new URL('/'+appTag[0],base).href:null;
+  let appSource='',appStatus=null;
+  if(appUrl){
+    const appResp=await probePage.request.get(appUrl,{timeout:30000});
+    appStatus=appResp.status();appSource=await appResp.text();
+  }
+  const begin=appSource.indexOf('function openExercise(id,options={}){');
+  const finish=appSource.indexOf('\\nfunction ',begin+1);
+  const component=appSource.slice(begin,finish>begin?finish:begin+14000);
+  report.advicePublished={
+    bootHttp:bootResp.status(),
+    appHttp:appStatus,
+    appVersion:appTag?.[0]||'version inconnue',
+    cacheUpdated:Boolean(appTag?.[0]?.includes('conseil-redaction-v3')),
+    newSentence:component.includes('reprends les mots importants de la question pour commencer ta phrase'),
+    noCopyReminder:component.includes('Ne recopie pas la question telle quelle'),
+    noCoursePanel:!component.includes('Cours et informations complémentaires'),
+    keepsChallengesProtected:component.includes("!existing&&!['bonus-day','daily','weekly','sunday'].includes(ex.kind)")
+  };
   await probePage.close();
   for(const [device,size] of [['telephone',{width:390,height:844}],['ordinateur',{width:1280,height:860}]]){
    const page=await browser.newPage({viewport:size,locale:'fr-FR'});
@@ -103,6 +127,7 @@ async function main(){
   'Aucune connexion Parent/Tim ni exercice validé. Toute requête POST a été bloquée.',
   '','## État du serveur privé','- API Cloudflare : '+JSON.stringify(report.backend||{}),'','## Ressources du site public'];
  for(const [key,v] of Object.entries(report.staticFiles))lines.push('- '+key+' : HTTP '+v.status+', '+(v.available?'fichier correct':'absent ou mauvais type')+' ('+v.contentType+')');
+ lines.push('- Conseil de rédaction publié : '+JSON.stringify(report.advicePublished||{}));
  for(const d of report.devices){
   lines.push('','## '+d.device,'- Page HTTP : '+d.checks.http,
    '- Accès Visiteur : '+Boolean(d.checks.guestOpened),
@@ -117,6 +142,7 @@ async function main(){
  fs.writeFileSync(path.join(out,'rapport.md'),lines.join('\n')+'\n');
  fs.writeFileSync(path.join(out,'rapport.json'),JSON.stringify(report,null,2)+'\n');
  console.log(lines.join('\n'));
+ if(!report.advicePublished?.cacheUpdated||!report.advicePublished?.newSentence||!report.advicePublished?.noCopyReminder||!report.advicePublished?.noCoursePanel||!report.advicePublished?.keepsChallengesProtected)process.exitCode=1;
  if(report.devices.every(d=>!d.checks.http||d.checks.http>=400))process.exitCode=1;
 }
 main().catch(e=>{console.error('Audit échoué : '+e.message);process.exitCode=1;});
