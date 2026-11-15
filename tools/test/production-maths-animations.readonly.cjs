@@ -35,7 +35,7 @@ async function main(){
   // Lecture seule, sans connexion ni copie, et sans modifier le site.
   const bootResp=await probePage.request.get(new URL('/boot.js',base).href,{timeout:30000});
   const bootSource=await bootResp.text();
-  const appTag=bootSource.match(/app\.js\?v=[^'"\\s]+/);
+  const appTag=bootSource.match(/app\.js\?v=[^'"\s]+/);
   const appUrl=appTag?new URL('/'+appTag[0],base).href:null;
   let appSource='',appStatus=null;
   if(appUrl){
@@ -43,7 +43,7 @@ async function main(){
     appStatus=appResp.status();appSource=await appResp.text();
   }
   const begin=appSource.indexOf('function openExercise(id,options={}){');
-  const finish=appSource.indexOf('\\nfunction ',begin+1);
+  const finish=appSource.indexOf('\nfunction ',begin+1);
   const component=appSource.slice(begin,finish>begin?finish:begin+14000);
   report.advicePublished={
     bootHttp:bootResp.status(),
