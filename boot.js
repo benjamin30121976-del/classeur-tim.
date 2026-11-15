@@ -1351,6 +1351,15 @@ async function startSession(user){
   const panel=document.createElement('section');panel.id='parent-corrections';panel.style.cssText='margin:16px auto;padding:16px;max-width:850px;border:1px solid #6788b2;border-radius:16px;background:#14253e;color:white';
   panel.innerHTML='<h2>Résultats et copies de Tim</h2><p id="pending-corrections-status">Chargement…</p><div id="pending-corrections-list"></div>';
   document.getElementById('account-strip').after(panel);
+  // Date réelle de validation, sans approximation pour les copies anciennes.
+  const formatCompletedAt=value=>{
+   if(!value)return null;
+   const date=typeof value?.toDate==='function'?value.toDate():
+    Number.isFinite(value?.seconds)?new Date(value.seconds*1000):new Date(value);
+   return date instanceof Date&&Number.isFinite(date.getTime())
+    ?date.toLocaleString('fr-FR',{timeZone:'Europe/Paris',day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'})
+    :null;
+  };
   const refreshCorrections=async()=>{
    const status=panel.querySelector('#pending-corrections-status');
    const list=panel.querySelector('#pending-corrections-list');
@@ -1379,7 +1388,7 @@ async function startSession(user){
        title:String(detail.title||titles.get(d.id)||data.title||d.id),
        score:Number.isFinite(detail.score)?detail.score:null,
        total:Number.isFinite(detail.total)?detail.total:null,
-       correctionStatus:data.correctionStatus==='released'?'released':'pending-parent',xp:Number(data.xp||0)
+       correctionStatus:data.correctionStatus==='released'?'released':'pending-parent',xp:Number(data.xp||0),submittedAt:data.submittedAt||detail.submittedAt||null
       };
      });
      // Les copies privées dont la tentative publique manquerait ne sont
@@ -1390,7 +1399,7 @@ async function startSession(user){
        id,title:String(data.title||titles.get(id)||id),
        score:Number.isFinite(data.score)?data.score:null,
        total:Number.isFinite(data.total)?data.total:null,
-       correctionStatus:'pending-parent',orphan:true
+       correctionStatus:'pending-parent',orphan:true,submittedAt:data.submittedAt||null
       });
      }
     }catch(readError){
@@ -1400,6 +1409,17 @@ async function startSession(user){
      list.append(note);
      console.warn('Lecture directe du suivi Parent refusée :',readError.code||readError.message);
      return;
+    }
+   }
+   // Le rapport du service ne renvoie pas la date de soumission : lire les
+   // horodatages originaux, sans toucher aux tentatives ni aux notes.
+   if(releaseServiceAvailable){
+    try{
+     const savedAttempts=await getDocs(collection(db,'attempts'));
+     const savedDates=new Map(savedAttempts.docs.map(d=>[d.id,d.data().submittedAt||null]));
+     attempts=attempts.map(item=>({...item,submittedAt:item.submittedAt||savedDates.get(item.id)||null}));
+    }catch(dateError){
+     console.warn('Dates de validation momentanément indisponibles :',dateError?.code||dateError?.message);
     }
    }
    // Les documents TRH_ sont de simples relevés de traduction. Ils ne sont
@@ -1476,7 +1496,11 @@ async function startSession(user){
     const score=Number.isFinite(item.score)&&Number.isFinite(item.total)?item.score+'/'+item.total:'Note indisponible';
     summary.textContent=exerciseTitle+' · '+score+' · '+(isAutomatic?'Corrigé immédiatement':isReleased?'Correction autorisée':'Correction en attente')+(isMission&&Number.isFinite(item.xp)?' · '+(item.xp>=0?'+':'')+item.xp+' XP':'');
     summary.style.cssText='margin:5px 0 10px;color:#cbd9ee';
-    line.append(heading,summary);
+    const completedAt=formatCompletedAt(item.submittedAt||item.date);
+    const dateLine=document.createElement('p');
+    dateLine.textContent=completedAt?'Réalisé le '+completedAt:'Date de réalisation non disponible';
+    dateLine.style.cssText='margin:4px 0 10px;color:#cbd9ee;font-size:14px';
+    line.append(heading,summary,dateLine);
     if((/^ESE_L14_0[1-3]$/.test(String(item.id||''))||ex?.questionBank==='mixed-202611-v1')&&Number.isInteger(item.translationHelpCount)){
      const help=document.createElement('p');
      help.textContent='Aide de traduction : '+item.translationHelpCount+' question(s) sur 10, sans pénalité.';
