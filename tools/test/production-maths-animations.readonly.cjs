@@ -94,6 +94,13 @@ async function main(){
      const emc=mat.locator('button.matter-card').filter({hasText:'EMC'}).first();
      if(!(await emc.count())||!(await emc.isEnabled()))throw Error('Matière EMC non publiée');
      await emc.click();
+     row.checks.emcDiagnostics=await page.evaluate(()=>({
+       headings:[...document.querySelectorAll('#matieres-content h2')].map(n=>n.textContent).slice(0,8),
+       hasNewCss:Boolean(document.querySelector('link[href*="emc-parcours.css"]')),
+       htmlScript:[...document.scripts].map(n=>n.src).find(s=>s.includes('histoire-geographie-parcours.js'))?.split('?')[1]||'',
+       activatedSection:document.querySelector('#matieres-content')?.textContent?.slice(0,240)||'',
+       cards:document.querySelectorAll('#matieres-content .spx-card').length
+     }));
      await page.waitForFunction(()=>document.querySelector('#matieres-content .emc-view .spx-hero h2')?.textContent?.includes('Mes leçons d’EMC'),null,{timeout:20000});
      row.checks.emc=await page.evaluate(()=>{
        const container=document.querySelector('#matieres-content');
@@ -147,7 +154,7 @@ async function main(){
    '- Chapitres mathématiques : '+(d.checks.mathGroupCount??'non mesuré'),
    '- Leçons BIS vues dans le code : '+(d.checks.javascriptCapabilities?.mathBisCount??'non mesuré'),
    '- Lecteur animations chargé : '+Boolean(d.checks.javascriptCapabilities?.animations),
-   '- EMC publiée et inspectée : '+Boolean(d.checks.emcReady)+' · '+JSON.stringify(d.checks.emc||{}),
+   '- EMC publiée et inspectée : '+Boolean(d.checks.emcReady)+' · '+JSON.stringify(d.checks.emc||{})+' · diagnostic : '+JSON.stringify(d.checks.emcDiagnostics||{}),
    '- Requêtes non-GET empêchées : '+d.blockedNonGet);
   if(d.checks.mathHeadings?.length)lines.push('- Rubriques : '+d.checks.mathHeadings.join(' / '));
   for(const error of d.errors)lines.push('- Avertissement : '+error);
