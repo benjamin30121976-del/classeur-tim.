@@ -28,10 +28,11 @@ jobs:
           node --check worker/auth.mjs
           node --check worker/firestore.mjs
           node --check worker/server.mjs
+          node --check worker/saturday-20261114-review.mjs
           node --check functions/grading.mjs
           node --check functions/xp.mjs
       - name: Tests de sécurité et de notation dans une base fictive
-        run: node --test tools/test/cloudflare-spark-backend.test.mjs tools/test/cloudflare-spark-auth.test.mjs worker/test/mth12-bank-diagnostics.test.mjs worker/test/mth12-question10-fix.test.mjs
+        run: node --test tools/test/cloudflare-spark-backend.test.mjs tools/test/cloudflare-spark-auth.test.mjs worker/test/mth12-bank-diagnostics.test.mjs worker/test/mth12-question10-fix.test.mjs worker/test/saturday-20261114-review.test.mjs worker/test/saturday-20261114-server.test.mjs
       - name: Confirmer le branchement conditionnel côté navigateur
         run: |
           node - <<'NODE'

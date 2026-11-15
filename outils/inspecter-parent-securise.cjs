@@ -10,6 +10,7 @@ const URL=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
 const TARGET_IMPORT_ONLY=(()=>{try{return /controle-import-json-android/.test(JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion||'');}catch{return false;}})();
 const TARGET_BONUS_AUDIT=(()=>{try{return /controle-bonus-parent-20261114/.test(JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion||'');}catch{return false;}})();
 const TARGET_RECHECK=process.env.TIM_AUDIT_RECODING==='1';
+const TARGET_SATURDAY_REVISE=(()=>{try{return JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion==='rectifier-copie-samedi-20261114-v1';}catch{return false;}})()&&['preview','apply'].includes(process.env.TIM_SATURDAY_REVISE||'');
 const output=path.join(process.cwd(),'browser-parent-results');
 fs.mkdirSync(output,{recursive:true});
 const data={site:URL,date:new Date().toISOString(),checks:[],devices:[],notes:[],pageErrors:[],subjectInventory:[],educationInventory:[],lessonIndex:[],exerciseIndex:[],integrity:[]};
@@ -64,6 +65,10 @@ async function inspect(browser,label,viewport){
     check(label+' lecons chargees',stats.lessons>0,'Nombre : '+stats.lessons);
     check(label+' défi du jour supprimé du classeur',stats.dailyChallenges===0,'Défis quotidiens visibles : '+stats.dailyChallenges);
 
+    if(TARGET_SATURDAY_REVISE){
+      await require('./reviser-copie-samedi-parent.cjs')(page,check,process.env.TIM_SATURDAY_REVISE);
+      return;
+    }
     if(TARGET_RECHECK){
       if(label==='ordinateur')await require('./auditer-recotation-samedi-20261115.cjs')(page,check);
       else check('Audit Parent mobile sans validation',true,'Compte ouvert ; aucun exercice de Tim validé.');
