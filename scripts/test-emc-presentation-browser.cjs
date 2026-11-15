@@ -66,6 +66,28 @@ assert.match(app,/exerciseSubject==='EMC'/, 'Exercices EMC non accessibles');
     assert(tabs.some(t=>t.includes(text)), 'Onglet manquant: '+text);
    await page.locator('details.tim-es-lesson').first().getByRole('button',{name:'Leçon BIS'}).click();
    assert(await page.locator('details.tim-es-lesson').first().getByText('Comprendre la leçon pas à pas').count()>0);
+   // Vérifier les vrais rattachements : devoir pour le 9, mais donné en séance du 6.
+   const linked=await page.evaluate(()=>{
+    const root=document.querySelector('#root');
+    const sessions=[...root.querySelectorAll('details.tim-es-lesson')];
+    const textFor=date=>{
+     const item=sessions.find(x=>x.querySelector('summary')?.textContent.startsWith(date));
+     if(!item)return '';
+     item.open=true;
+     item.querySelector('button[data-tab="ent"]')?.click();
+     return item.querySelector('section.panel')?.textContent||'';
+    };
+    return {
+     six:textFor('06/11/2026'),
+     nine:textFor('09/11/2026'),
+     twelve:textFor('12/11/2026'),
+     homeworkIds:window.TIM_HG_PACK.homework.map(x=>x.id)
+    };
+   });
+   assert.match(linked.six,/III.*valeurs et principes de la République/i,'Cours EMC du 6 novembre non rattaché au devoir du 9');
+   assert.doesNotMatch(linked.nine,/III.*valeurs et principes de la République/i,'Cours donné le 6 rattaché à tort au 9');
+   assert.match(linked.twelve,/institutions de justice/i,'Cours sur les institutions de la séance du 12 non accessible');
+   assert.deepEqual(['10099~213498','10099~213669','10099~214592','10099~214770','10099~215099'].filter(x=>linked.homeworkIds.includes(x)).length,5);
    const output=path.join(dir,'browser-results','emc-presentation');
    fs.mkdirSync(output,{recursive:true});
    await page.screenshot({path:path.join(output,'emc-'+device+'.png'),fullPage:true,animations:'disabled'});
