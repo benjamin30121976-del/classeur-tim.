@@ -507,7 +507,7 @@ function openHgTrainingFromExercises(id,lessonId,title){
  if(!/^HGQ_L0[1-8]_0[1-2]$/.test(id)||!window.TIM_HG_TRAINING?.mount){
   alert('Questionnaire Histoire-géographie indisponible.');return;
  }
- const targetSubject=/^HG_BIS0[6-8]$/.test(String(lessonId||''))?'EMC':'Histoire-géographie';
+ const targetSubject=exerciseSubject==='EMC'?'EMC':'Histoire-géographie';
  exerciseSubject=targetSubject;
  page('exercices');
  const index=document.getElementById('exercise-index'),detail=document.getElementById('exercise-detail');
