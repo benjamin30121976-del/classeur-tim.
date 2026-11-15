@@ -60,12 +60,13 @@ const ex={
     const button=(txt,fn,cls)=>{const el=E('button',cls,txt);el.type='button';el.onclick=fn;return el;};
     window.__TIM_PARENT=false;window.__TIM_GUEST=false;window.__CLOUD_ATTEMPTS=[];
     window.TIM_EXERCISE={mode:()=> 'bonus'};
+    window.__TIM_TEST_EXERCISE=exercise;
     const stub={
      document,window,E,button,badge:()=>E('span','badge','3e D'),
      notice:(s,cls)=>E('div','notice '+(cls||''),s),
      page:()=>{},clear:n=>(n.replaceChildren(),n),
      lessonBy:()=>({id:'MBIS05',title:'Thalès : reconnaître la configuration'}),
-     exerciseBy:()=>exercise,attemptFor:()=>null,
+     exerciseBy:()=>window.__TIM_TEST_EXERCISE,attemptFor:()=>null,
      drafts:()=>({}),makeAttachmentPanel:(kind,id,opts)=>{
       const n=E('section','attachment-panel');n.hidden=!!opts?.hideIfEmpty;
       return n;},
@@ -77,8 +78,9 @@ const ex={
      alert:()=>{},exerciseDescription:x=>x.description||'',
      badge:()=>E('span','badge','3e D')
     };
-    Function(...Object.keys(stub),source+';return openExercise')(
-     ...Object.values(stub))(exercise.id,{skipOpening:true});
+    window.__TIM_TEST_OPEN=Function(...Object.keys(stub),source+';return openExercise')(
+     ...Object.values(stub));
+    window.__TIM_TEST_OPEN(exercise.id,{skipOpening:true});
    },{source,exercise:ex});
    const result=await page.evaluate(()=>{
     const root=document.getElementById('exercise-detail');
@@ -103,7 +105,11 @@ const ex={
      disclaimers:card?.querySelectorAll('.homework-detail-disclaimer')?.length,
      oldIntro:root.querySelectorAll(':scope > .intro, :scope > .note.info').length,
      extraAttached:root.querySelector('.attachment-panel')?.hidden,
-     coursesClosed:root.querySelector('.homework-detail-courses')?.open===false,
+     adviceClosed:root.querySelector('.exercise-method-advice')?.open===false,
+     adviceTitle:root.querySelector('.exercise-method-advice>summary')?.textContent,
+     methodText:root.querySelector('.exercise-method-advice')?.textContent,
+     courseLinks:[...root.querySelectorAll('a,button')].filter(el=>/cours ENT|leçon BIS correspondante|Voir la leçon|Revoir les leçons/i.test(el.textContent)).map(el=>el.textContent),
+
      xpVisible:!!xp&&getComputedStyle(xp).display!=='none',
      xpContrast:contrast(getComputedStyle(xp).color,getComputedStyle(xp).backgroundColor),
      qCount:root.querySelectorAll('.q').length,
@@ -133,7 +139,11 @@ const ex={
    assert.equal(result.disclaimers,1);
    assert.equal(result.oldIntro,0,name+' : anciens paragraphes toujours présents');
    assert.equal(result.extraAttached,true,name+' : rubrique pièces jointes vide non masquée');
-   assert.equal(result.coursesClosed,true,name+' : cours doit rester replié');
+   assert.equal(result.adviceClosed,true,name+' : conseils doivent être repliés');
+   assert.equal(result.adviceTitle,'Conseils pour répondre',name+' : intitulé des conseils incorrect');
+   assert.match(result.methodText,/fais un brouillon/i,name+' : conseil brouillon absent');
+   assert.match(result.methodText,/Relis chaque réponse/i,name+' : conseil relecture absent');
+   assert.deepEqual(result.courseLinks,[],name+' : ne pas proposer un cours pendant l’exercice');
    assert.equal(result.xpVisible,true,name+' : barème bonus doit être consultable');
    assert(result.xpContrast>=4.5,name+' : contraste de la règle XP insuffisant : '+result.xpContrast);
    assert.equal(result.qCount,10);
@@ -156,6 +166,45 @@ const ex={
     path:path.join(output,'bonus-devoir-design-'+name+'.png'),
     animations:'disabled'
    });
+   // Contrôle de la capture transmise : bonus de devoir d'anglais (sans figure).
+   // Réutilise le vrai openExercise avec données fictives et interdit toute écriture.
+   await page.evaluate(()=>{
+    const english={
+     id:'BD1611_EN01',title:'16/11 — Évaluation : musique, -ness et prétérit',
+     subject:'Anglais',homeworkBonus:true,level:'3e D',lesson:'EN_BIS01',
+     instructions:'Lis bien la question et vérifie que tu as répondu avant de passer à la suivante.',
+     questions:Array.from({length:10},(_,i)=>({
+      type:'mc',
+      q:i===0?'Selon la leçon « The Sounds of Music », quel instrument jouait Louis Armstrong ?':'Quel mot complète cette phrase ?',
+      options:['Le violon','La trompette','La flûte','Le piano'],right:1
+     }))
+    };
+    window.__TIM_TEST_EXERCISE=english;
+    window.__TIM_TEST_OPEN(english.id,{skipOpening:true});
+   });
+   const english=await page.evaluate(()=>{
+    const root=document.querySelector('#exercise-detail');
+    return {
+     heading:root.querySelector('.homework-detail-hero h2')?.textContent,
+     advice:root.querySelector('.exercise-method-advice>summary')?.textContent,
+     adviceText:root.querySelector('.exercise-method-advice')?.textContent,
+     hasCourseSuggestion:/Cours et informations complémentaires|Voir la leçon correspondante|Revoir les leçons d’espagnol|Cours ENT du 12 novembre/.test(root.textContent),
+     linkCount:[...root.querySelectorAll('a,button')].filter(x=>/cours ENT|leçon BIS correspondante|Voir la leçon/i.test(x.textContent)).length,
+     count:root.querySelectorAll('.q').length,
+     visible:root.querySelectorAll('.q.quiz-current').length,
+     viewportOK:document.documentElement.scrollWidth<=innerWidth+2
+    };
+   });
+   assert.match(english.heading,/musique.*ness.*prétérit/i,name+' : titre anglais absent');
+   assert.equal(english.advice,'Conseils pour répondre',name+' : aide méthodologique absente');
+   assert.match(english.adviceText,/brouillon/i);
+   assert.equal(english.hasCourseSuggestion,false,name+' : cours proposé dans le bonus anglais');
+   assert.equal(english.linkCount,0);
+   assert.equal(english.count,10);
+   assert.equal(english.visible,1);
+   assert.equal(english.viewportOK,true,name+' : affichage anglais déborde');
+   await page.locator('#exercise-detail').screenshot({path:path.join(output,'bonus-devoir-anglais-sans-cours-'+name+'.png'),animations:'disabled'});
+   console.log('OK bonus devoir anglais sans cours '+name+' : '+JSON.stringify(english));
    // Le menu doit réapparaître lorsqu'on revient à Matières ou à l'accueil.
    await page.evaluate(()=>document.getElementById('exercices').classList.remove('active'));
    const menuBack=await page.locator('.tabs').evaluate(el=>getComputedStyle(el).display);

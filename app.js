@@ -828,9 +828,7 @@ function openExercise(id,options={}){const ex=exerciseBy(id);if(!ex)return;
   document.getElementById('exercise-index').classList.remove('hide');
   renderExerciseIndex();scrollTop();
  },'plain back'));
- const actualLesson=lessonBy(ex.lesson);
- const isThalesENT=ex.homeworkBonus===true&&ex.subject==='Mathématiques'&&
-  (ex.id==='BD1611_MA01'||/r[eé]ciproque\s+de\s+thal[eè]s/i.test(ex.title));
+ // L'écran d'exercice ne propose pas de cours ENT/BIS : la matière a son espace dédié.
  if(isHomeworkDetail){
   // La liste « Bonus devoirs » était déjà modernisée. Réutiliser cette
   // hiérarchie dans le détail au lieu de l'ancien écran générique.
@@ -853,36 +851,35 @@ function openExercise(id,options={}){const ex=exerciseBy(id);if(!ex)return;
    E('p','homework-detail-disclaimer','Exercice créé dans le classeur pour réviser. Ce n’est pas la fiche originale du professeur.'));
   topic.append(band,body);
   root.append(topic);
-  const courses=E('details','homework-detail-courses');
-  const related=E('div','homework-detail-links');
-  if(isThalesENT)related.append(button('Cours ENT du 12 novembre · Thalès',
-   ()=>{page('matieres');renderMatiere('Mathématiques',null,'TIM_ENT_20261112');},
-   'math-homework-ent-link'));
-  if(actualLesson)related.append(button('Leçon BIS correspondante',()=>openLesson(ex.lesson),'plain'));
-  if(ex.instructions)related.append(E('p','homework-detail-source-note',ex.instructions));
-  // Conserver la règle déjà validée : aucun renvoi de cours avant un défi bonus.
-  if(ex.kind!=='bonus-day'&&related.childNodes.length){
-   courses.append(E('summary','','Cours et informations complémentaires'),related);
-   root.append(courses);
-  }
+  // Conseils de méthode affichés après le titre, sans cours ni réponse suggérée.
  }else{
   root.append(badge(ex.level),E('h2','',ex.title));
   root.append(E('p','intro',exerciseDescription(ex)));
-  if(ex.kind==='bonus-day'){
- // Pas d'indice ni de renvoi à une leçon avant la validation d'un défi bonus.
-  }else if(ex.kind==='daily'&&ex.questionBank==='spanish-ent-v1'){
-   root.append(E('p','small','Révision de plusieurs leçons d’espagnol : vocabulaire, phrases, traduction et conjugaison.'));
-   root.append(button('Revoir les leçons d’espagnol',()=>{page('matieres');renderMatiere('Espagnol');},'plain'));
-  }else{
-   if(ex.kind==='bonus-day'&&!actualLesson)root.append(E('p','small','Entraînement bonus sur ce thème. Ce n’est pas un cours original de la professeure.'));
-   else root.append(E('p','small','Leçon associée : '+(actualLesson?.title||(ex.subject==='Mathématiques'?ex.chapter||'Voir les cours de la matière':'Voir les cours de la matière'))));
-   if(actualLesson)root.append(button('Voir la leçon correspondante',()=>openLesson(ex.lesson),'plain'));
-  }
+  // La description et l'énoncé suffisent : aucun lien ni suggestion de cours.
   if(ex.instructions&&!completedChallenge){
    const instructions=E('div','note info',ex.instructions);
    instructions.style.cssText='white-space:pre-line;font-size:16px;line-height:1.65;margin:12px 0;padding:16px;border:2px solid #e9b84a;border-radius:14px';
    root.append(instructions);
   }
+ }
+ // Aide purement méthodologique : jamais de cours ni de réponse avant validation.
+ // Ne pas modifier les défis (dont les règles interdisent tout indice).
+ if(!existing&&!['bonus-day','daily','weekly','sunday'].includes(ex.kind)){
+  const advice=E('details','exercise-method-advice'+(isHomeworkDetail?' homework-detail-advice':''));
+  advice.append(E('summary','','Conseils pour répondre'));
+  const content=E('div','exercise-method-content'),steps=E('ul','exercise-method-list');
+  for(const tip of [
+   'Lis tout l’énoncé et repère ce qui est demandé.',
+   'Si besoin, fais un brouillon : note les données utiles, les calculs ou les mots-clés.',
+   'Pour une réponse écrite, explique ton raisonnement et rédige une phrase claire.',
+   'Relis chaque réponse avant de valider définitivement.'
+  ])steps.append(E('li','',tip));
+  content.append(steps);
+  // Conserver les consignes propres au devoir sans les transformer en renvois de cours.
+  if(isHomeworkDetail&&ex.instructions){
+   content.append(E('p','homework-detail-source-note',ex.instructions));
+  }
+  advice.append(content);root.append(advice);
  }
  if(!completedChallenge)root.append(makeAttachmentPanel('exercise',ex.id,{hideIfEmpty:isHomeworkDetail}));
 if(!window.__TIM_GUEST&&!ex.kind&&!attemptFor(ex.id)){

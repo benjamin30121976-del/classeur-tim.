@@ -84,7 +84,16 @@ test('raisonnement écrit demandé pour les deux derniers problèmes',()=>{
 test('interface : aucune leçon avant le défi, import sans leçon accepté uniquement pour bonus',()=>{
  const app=readFileSync(new URL('../../app.js',import.meta.url),'utf8');
  const boot=readFileSync(new URL('../../boot.js',import.meta.url),'utf8');
- assert(app.includes("if(ex.kind==='bonus-day'){\n // Pas d'indice ni de renvoi à une leçon avant la validation d'un défi bonus."));
+ const exerciseStart=app.indexOf('function openExercise(id,options={}){');
+ const exerciseEnd=app.indexOf('\nfunction ',exerciseStart+1);
+ const exerciseUI=app.slice(exerciseStart,exerciseEnd);
+ assert(exerciseStart>0&&exerciseEnd>exerciseStart,'Composant exercice accessible');
+ assert(exerciseUI.includes("!existing&&!['bonus-day','daily','weekly','sunday'].includes(ex.kind)"),
+  'Aucun conseil ni indice avant le défi bonus');
+ assert(!exerciseUI.includes('Cours et informations complémentaires'),
+  'Ne pas proposer de cours dans un questionnaire');
+ assert(!exerciseUI.includes('Voir la leçon correspondante'),
+  'Ne pas proposer une leçon avant réponse');
  assert(boot.includes("const bonusWithoutLesson=ex.kind==='bonus-day'&&!ex.lesson;"));
  assert(app.includes("if(lesson)p.append(button('Revoir la leçon : '+lesson.title"));
 });
