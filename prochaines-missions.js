@@ -43,7 +43,7 @@ function packAssignments(data){
    const title=text(h.title||h.label||'Travail à préparer');
    const description=text(h.content||h.description||h.instructions||'');
    const keys=new Set([id,String(h.id||''),String(h.entId||'')].filter(Boolean));
-   const isExam=/\b(contr[oô]le|[eé]valuation|interro(?:gation)?|dict[eé]e|test)\b/i.test(title+' '+description);
+   const isExam=/(?:^|[^A-Za-zÀ-ÿ])(contr[oô]le|[eé]valuation|interro(?:gation)?|dict[eé]e|test)(?=$|[^A-Za-zÀ-ÿ])/i.test(title+' '+description);
    const key=(id||title.toLowerCase())+'|'+due+'|'+subject;
    if(!found.has(key))found.set(key,{id,keys,subject,due,title,description,isExam,origin:'ENT'});
   }
