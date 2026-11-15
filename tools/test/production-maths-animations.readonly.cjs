@@ -31,6 +31,29 @@ async function main(){
    let body={};try{body=await response.json();}catch{}
    report.backend={status:response.status(),platform:body.platform||null,available:body.available===true,contentType:type};
   }catch(e){report.backend={available:false,error:String(e.message).slice(0,120)};}
+  // Vérifier les vrais fichiers servis par Cloudflare après PR #85.
+  // Le nom du fichier GitHub ne suffit pas : les ressources doivent être
+  // présentes sur le domaine de production. GET uniquement.
+  const expectedPublished=[
+   {url:'/',markers:['maths-bonus-figures.js?v=consignes-bonus-20261115-v1',
+    'maths-geometry-general.js?v=consigne-claire-20261115-v1',
+    'mixed-challenges-ui.js?v=pedagogie-samedi-20261115-v1']},
+   {url:'/maths-bonus-figures.js',markers:['const GUIDES=','function taskGuide(ex)']},
+   {url:'/maths-geometry-general.js',markers:['Le dessin seul ne permet pas de répondre']},
+   {url:'/mixed-challenges-ui.js',markers:['Je lis la question : quel résultat doit-on trouver ?',
+    'Une partie de ta réponse est correcte']},
+   {url:'/app.js',markers:['Consigne en clair — ','showTaskGuide(root)']}
+  ];
+  report.publishedFiles=[];
+  for(const item of expectedPublished){
+   const response=await probePage.request.get(new URL(item.url,base).href,{timeout:30000});
+   const body=await response.text();
+   const missing=item.markers.filter(text=>!body.includes(text));
+   const ok=response.ok()&&missing.length===0;
+   report.publishedFiles.push({url:item.url,http:response.status(),ok,missingCount:missing.length});
+   console.log((ok?'OK':'ECHEC')+' Cloudflare publication : '+item.url+
+    ' HTTP '+response.status()+' ; version attendue '+(ok?'présente':'absente'));
+  }
   await probePage.close();
   for(const [device,size] of [['telephone',{width:390,height:844}],['ordinateur',{width:1280,height:860}]]){
    const page=await browser.newPage({viewport:size,locale:'fr-FR'});
@@ -103,6 +126,7 @@ async function main(){
   'Aucune connexion Parent/Tim ni exercice validé. Toute requête POST a été bloquée.',
   '','## État du serveur privé','- API Cloudflare : '+JSON.stringify(report.backend||{}),'','## Ressources du site public'];
  for(const [key,v] of Object.entries(report.staticFiles))lines.push('- '+key+' : HTTP '+v.status+', '+(v.available?'fichier correct':'absent ou mauvais type')+' ('+v.contentType+')');
+ for(const file of report.publishedFiles||[])lines.push('- Publication '+file.url+' : '+(file.ok?'version correcte':'version non vérifiée')+', HTTP '+file.http);
  for(const d of report.devices){
   lines.push('','## '+d.device,'- Page HTTP : '+d.checks.http,
    '- Accès Visiteur : '+Boolean(d.checks.guestOpened),
@@ -117,6 +141,8 @@ async function main(){
  fs.writeFileSync(path.join(out,'rapport.md'),lines.join('\n')+'\n');
  fs.writeFileSync(path.join(out,'rapport.json'),JSON.stringify(report,null,2)+'\n');
  console.log(lines.join('\n'));
- if(report.devices.every(d=>!d.checks.http||d.checks.http>=400))process.exitCode=1;
+ if(report.devices.some(d=>!d.checks.guestOpened||d.checks.http!==200))
+  process.exitCode=1;
+ if(!report.publishedFiles?.every(x=>x.ok))process.exitCode=1;
 }
 main().catch(e=>{console.error('Audit échoué : '+e.message);process.exitCode=1;});
