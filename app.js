@@ -850,7 +850,8 @@ function openExercise(id,options={}){const ex=exerciseBy(id);if(!ex)return;
    'math-homework-ent-link'));
   if(actualLesson)related.append(button('Leçon BIS correspondante',()=>openLesson(ex.lesson),'plain'));
   if(ex.instructions)related.append(E('p','homework-detail-source-note',ex.instructions));
-  if(related.childNodes.length){
+  // Conserver la règle déjà validée : aucun renvoi de cours avant un défi bonus.
+  if(ex.kind!=='bonus-day'&&related.childNodes.length){
    courses.append(E('summary','','Cours et informations complémentaires'),related);
    root.append(courses);
   }
@@ -858,7 +859,7 @@ function openExercise(id,options={}){const ex=exerciseBy(id);if(!ex)return;
   root.append(badge(ex.level),E('h2','',ex.title));
   root.append(E('p','intro',exerciseDescription(ex)));
   if(ex.kind==='bonus-day'){
-   // Un défi bonus ne dévoile aucune aide avant validation.
+ // Pas d'indice ni de renvoi à une leçon avant la validation d'un défi bonus.
   }else if(ex.kind==='daily'&&ex.questionBank==='spanish-ent-v1'){
    root.append(E('p','small','Révision de plusieurs leçons d’espagnol : vocabulaire, phrases, traduction et conjugaison.'));
    root.append(button('Revoir les leçons d’espagnol',()=>{page('matieres');renderMatiere('Espagnol');},'plain'));
