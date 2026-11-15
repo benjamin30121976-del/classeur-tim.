@@ -121,7 +121,7 @@ const pyth={id:'M26PYT1001',kind:'school',subject:'Mathématiques',title:'Archiv
    assert(consistent.shown.includes('M est sur [AB]')&&consistent.shown.includes('N sur [AC]'),
     'Le texte présenté doit bien être celui de M et N');
    assert(consistent.marks.includes('M')&&consistent.marks.includes('N'),
-    'Le schéma de la question 1 doit afficher les deux points M et N');
+    'Le schéma de la question 1 doit afficher les deux points M et N : '+JSON.stringify(consistent));
    assert(!consistent.marks.includes('D')&&!consistent.marks.includes('E'),
     'Le schéma affiche encore les anciens points D et E');
    assert.match(consistent.caption,/égalité des rapports/);
