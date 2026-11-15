@@ -8,6 +8,7 @@ on:
     paths:
       - 'browser-requests/parent.json'
       - 'outils/inspecter-parent-securise.cjs'
+      - 'outils/auditer-recotation-samedi-20261115.cjs'
       - '.github/workflows/inspection-parent-authentifie.yml'
   workflow_dispatch:
 permissions:
@@ -23,6 +24,7 @@ jobs:
       TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
       TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
       TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
+      TIM_AUDIT_RECODING: ${{ github.event_name == 'pull_request' && '1' || '0' }}
     steps:
       - uses: actions/checkout@v4
       - name: Verifier la syntaxe JavaScript des exercices
@@ -35,6 +37,7 @@ jobs:
           node --check worker/maths-training-extra.mjs
           node --check worker/test/math-training.test.mjs
           node --check outils/inspecter-parent-securise.cjs
+          node --check outils/auditer-recotation-samedi-20261115.cjs
       - name: Tester les 23 évaluations et la sécurité des tentatives
         run: node --test worker/test/math-training.test.mjs
       - name: Verifier la configuration des secrets sans les afficher

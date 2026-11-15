@@ -732,6 +732,8 @@ function openExercise(id,options={}){const ex=exerciseBy(id);if(!ex)return;
  // Figures ajoutées en lecture seule : les énoncés/scores Firestore restent intacts.
  const bonusPrompt=(q,i)=>window.TIM_BONUS_FIGURES?.displayPrompt?.(ex,i,q.q)||q.q;
  const bonusFigure=(place,i)=>{const fig=window.TIM_BONUS_FIGURES?.render?.(ex,i);if(fig)place.append(fig);};
+ const bonusTaskGuide=()=>window.TIM_BONUS_FIGURES?.taskGuide?.(ex)||null;
+ const showTaskGuide=place=>{const guide=bonusTaskGuide();if(guide)place.append(E('p','small','Consigne en clair — '+guide));};
  // Seulement à l'entrée d'un exercice neuf du compte élève.
  // Pas de nouvelle lecture lors des corrections, consultations ou actualisations.
  if(!options.skipOpening&&!window.__TIM_PARENT&&!window.__TIM_GUEST&&!attemptFor(id)&&window.TIM_ANIMATIONS?.playOpening){
@@ -768,14 +770,17 @@ if(ex.kind==='bonus-day'){
  root.append(E('p','small','Révision de plusieurs leçons d’espagnol : vocabulaire, phrases, traduction et conjugaison.'));
  root.append(button('Revoir les leçons d’espagnol',()=>{page('matieres');renderMatiere('Espagnol');},'plain'));
 }else{
- root.append(E('p','small','Leçon associée : '+(lessonBy(ex.lesson)?.title||(ex.subject==='Mathématiques'?ex.chapter||'Cours ENT de mathématiques':'Voir les cours de la matière'))));
- if(lessonBy(ex.lesson))root.append(button('Voir la leçon correspondante',()=>openLesson(ex.lesson),'plain'));
+ const actualLesson=lessonBy(ex.lesson);
+ if(ex.kind==='bonus-day'&&!actualLesson)root.append(E('p','small','Entraînement bonus sur ce thème. Ce n’est pas un cours original de la professeure.'));
+ else root.append(E('p','small','Leçon associée : '+(actualLesson?.title||(ex.subject==='Mathématiques'?ex.chapter||'Voir les cours de la matière':'Voir les cours de la matière'))));
+ if(actualLesson)root.append(button('Voir la leçon correspondante',()=>openLesson(ex.lesson),'plain'));
 }
 if(ex.instructions&&!completedChallenge){const instructions=E('div','note info',ex.instructions);instructions.style.cssText='white-space:pre-line;font-size:16px;line-height:1.65;margin:12px 0;padding:16px;border:2px solid #e9b84a;border-radius:14px';root.append(instructions);}
 if(!completedChallenge)root.append(makeAttachmentPanel('exercise',ex.id));if(!window.__TIM_GUEST&&!ex.kind&&!attemptFor(ex.id)){
  const mode=window.TIM_EXERCISE.mode(ex);
  const modeInfo=notice(mode==='school'?'📚 DEVOIR DE L’ÉCOLE · 0 XP. Ton parent débloquera la correction.':mode==='bonus'?'⭐ EXERCICE BONUS · 100 % = +2 XP ; dès 60 % = +1 XP ; sinon 0. Maximum +3 XP par jour.':'Cet exercice n’est pas encore disponible.');modeInfo.id='tim-exercise-mode-info';root.append(modeInfo);
 }
+showTaskGuide(root); // Un seul rappel court au début du bonus, pas dix répétitions.
 if(window.__TIM_GUEST){root.append(notice('Visite en lecture seule : tu peux voir les questions, mais tu ne peux ni répondre ni valider.','guest-preview'));
  for(const [i,q] of ex.questions.entries()){const row=E('div','q');row.append(E('strong','',(i+1)+'. '+bonusPrompt(q,i)));bonusFigure(row,i);if(q.type==='mc'){const ul=E('ul');for(const option of q.options)ul.append(E('li','',option));row.append(ul);}root.append(row);}return;}
 const old=existing,draft=drafts()[ex.id]||[];let form=E('div','panel');let controls=[];

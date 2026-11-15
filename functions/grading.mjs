@@ -1,5 +1,6 @@
 // Copie du moteur de notation V16, uniquement côté serveur.
 import {assessRectanglePerimeterReasoning} from './perimeter-reasoning.mjs';
+import {numericMathAnswerMatches} from '../worker/math-answer-equivalence.mjs';
 export const normalize = value => String(value ?? '').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[¿?¡!.,;:]/g,'').replace(/\s+/g,' ').trim();
 // Réponses de maths : accepte les signes typographiques, les espaces et les écritures d'exposants sans changer la valeur demandée.
 export const normalizeMath = value => String(value ?? '').toLowerCase().trim()
@@ -10,6 +11,9 @@ export const normalizeMath = value => String(value ?? '').toLowerCase().trim()
  * N'accepter que la valeur attendue, éventuellement précédée d'un libellé clair.
  * Ne jamais prendre le dernier nombre d'un calcul approximatif comme preuve. */
 function mathWrittenAnswerMatches(expected, written, question){
+ // Les calculs équivalents et les phrases-réponses sont valides, à condition
+ // que chaque égalité soit mathématiquement juste et que l'unité convienne.
+ if(numericMathAnswerMatches(written,expected,question?.q||''))return true;
  const expectedMath=normalizeMath(expected);
  const actual=normalizeMath(written);
  if(actual===expectedMath)return true;
