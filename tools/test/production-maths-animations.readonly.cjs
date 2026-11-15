@@ -31,6 +31,18 @@ async function main(){
    let body={};try{body=await response.json();}catch{}
    report.backend={status:response.status(),platform:body.platform||null,available:body.available===true,contentType:type};
   }catch(e){report.backend={available:false,error:String(e.message).slice(0,120)};}
+  // Vérifier la version du code effectivement servie par Cloudflare (et non GitHub).
+  const exerciseResp=await probePage.request.get(new URL('/app.js?v=xp-barre-exception-16nov-bonus-devoir-detail-20261115-v5-sans-cours-20261115-v2',base).href,{timeout:30000});
+  const exerciseSource=await exerciseResp.text();
+  const begin=exerciseSource.indexOf('function openExercise(id,options={}){');
+  const finish=exerciseSource.indexOf('\nfunction ',begin+1);
+  const rendered=exerciseSource.slice(begin,finish);
+  report.homeworkPublished={
+    status:exerciseResp.status(),
+    markerPresent:rendered.includes('Conseils pour répondre'),
+    oldCoursePromptAbsent:!rendered.includes('Cours et informations complémentaires')&&!rendered.includes('Voir la leçon correspondante'),
+    nonDestructive:rendered.includes("!existing&&!['bonus-day','daily','weekly','sunday'].includes(ex.kind)")
+  };
   await probePage.close();
   for(const [device,size] of [['telephone',{width:390,height:844}],['ordinateur',{width:1280,height:860}]]){
    const page=await browser.newPage({viewport:size,locale:'fr-FR'});
@@ -85,6 +97,33 @@ async function main(){
       row.checks.mathTrainingLabel=(await mat.locator('[data-math-train]').allTextContents()).slice(0,5);
       row.checks.mathNote=(await mat.innerText()).slice(0,650);
      }
+     // Reprendre la navigation existante en mode Visiteur. Pas de compte Tim,
+     // et toutes les requêtes d'écriture sont bloquées plus haut.
+     await page.locator('[data-nav="home"]').first().click();
+     await page.locator('#home-content .lobo-go').click();
+     await page.locator('#exercise-list .homework-bonus-card').first().waitFor({state:'visible',timeout:15000});
+     const english=page.locator('#exercise-list .homework-bonus-card').filter({hasText:'Anglais'}).first();
+     if(!await english.count())throw Error('Bonus devoir anglais absent en mode Visiteur');
+     await english.click();
+     await page.waitForFunction(()=>!!document.querySelector('#exercise-detail.homework-bonus-detail.active .exercise-method-advice'),null,{timeout:15000});
+     row.checks.homework=await page.evaluate(()=>{
+       const root=document.querySelector('#exercise-detail');
+       return {
+        title:root.querySelector('.homework-detail-hero h2')?.textContent,
+        advice:root.querySelector('.exercise-method-advice > summary')?.textContent,
+        adviceClosed:root.querySelector('.exercise-method-advice')?.open===false,
+        noCoursePanel:root.querySelector('.homework-detail-courses')===null,
+        noCourseLink:[...root.querySelectorAll('button,a')].every(el=>!/cours ENT|leçon BIS correspondante|voir la leçon/i.test(el.textContent)),
+        tenQuestions:root.querySelectorAll('.q').length===10,
+        horizontalOverflow:document.documentElement.scrollWidth>innerWidth+2
+       };
+     });
+     await page.screenshot({path:path.join(out,device+'-anglais-bonus-sans-cours.jpg'),type:'jpeg',quality:75,fullPage:true,timeout:20000});
+     if(row.checks.homework.advice!=='Conseils pour répondre'||!row.checks.homework.adviceClosed||
+        !row.checks.homework.noCoursePanel||!row.checks.homework.noCourseLink||
+        !row.checks.homework.tenQuestions||row.checks.homework.horizontalOverflow)
+       throw Error('Bonus anglais publié non conforme : '+JSON.stringify(row.checks.homework));
+     row.checks.homeworkReady=true;
      row.checks.javascriptCapabilities=await page.evaluate(()=>({
       mathPath:Boolean(window.TIM_MATH_PATH),
       mathBisCount:window.TIM_MATHS_BIS_PACK?.lessons?.length??null,
@@ -103,6 +142,7 @@ async function main(){
   'Aucune connexion Parent/Tim ni exercice validé. Toute requête POST a été bloquée.',
   '','## État du serveur privé','- API Cloudflare : '+JSON.stringify(report.backend||{}),'','## Ressources du site public'];
  for(const [key,v] of Object.entries(report.staticFiles))lines.push('- '+key+' : HTTP '+v.status+', '+(v.available?'fichier correct':'absent ou mauvais type')+' ('+v.contentType+')');
+ lines.push('- Bonus devoirs effectivement servis : '+JSON.stringify(report.homeworkPublished));
  for(const d of report.devices){
   lines.push('','## '+d.device,'- Page HTTP : '+d.checks.http,
    '- Accès Visiteur : '+Boolean(d.checks.guestOpened),
@@ -110,13 +150,16 @@ async function main(){
    '- Chapitres mathématiques : '+(d.checks.mathGroupCount??'non mesuré'),
    '- Leçons BIS vues dans le code : '+(d.checks.javascriptCapabilities?.mathBisCount??'non mesuré'),
    '- Lecteur animations chargé : '+Boolean(d.checks.javascriptCapabilities?.animations),
-   '- Requêtes non-GET empêchées : '+d.blockedNonGet);
+   '- Requêtes non-GET empêchées : '+d.blockedNonGet,
+   '- Bonus devoir anglais sans cours : '+Boolean(d.checks.homeworkReady)+' · '+JSON.stringify(d.checks.homework||{}));
   if(d.checks.mathHeadings?.length)lines.push('- Rubriques : '+d.checks.mathHeadings.join(' / '));
   for(const error of d.errors)lines.push('- Avertissement : '+error);
  }
  fs.writeFileSync(path.join(out,'rapport.md'),lines.join('\n')+'\n');
  fs.writeFileSync(path.join(out,'rapport.json'),JSON.stringify(report,null,2)+'\n');
  console.log(lines.join('\n'));
+ if(!report.homeworkPublished?.markerPresent||!report.homeworkPublished?.oldCoursePromptAbsent||!report.homeworkPublished?.nonDestructive||
+    report.devices.some(d=>!d.checks.homeworkReady))process.exitCode=1;
  if(report.devices.every(d=>!d.checks.http||d.checks.http>=400))process.exitCode=1;
 }
 main().catch(e=>{console.error('Audit échoué : '+e.message);process.exitCode=1;});
