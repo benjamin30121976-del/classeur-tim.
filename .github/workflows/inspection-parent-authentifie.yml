@@ -8,6 +8,8 @@ on:
     paths:
       - 'browser-requests/parent.json'
       - 'outils/inspecter-parent-securise.cjs'
+      - 'functions/xp-week-exception.mjs'
+      - 'functions/test/xp-week-exception.test.mjs'
       - 'outils/auditer-recotation-samedi-20261115.cjs'
       - 'outils/reviser-copie-samedi-parent.cjs'
       - 'outils/plein-credit-samedi-parent.cjs'
@@ -30,9 +32,10 @@ jobs:
       TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
       TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
       TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
-      TIM_AUDIT_RECODING: ${{ github.event_name == 'pull_request' && '1' || '0' }}
-      TIM_SATURDAY_REVISE: ${{ github.event_name == 'pull_request' && 'preview' || github.event_name == 'push' && 'apply' || 'off' }}
-      TIM_SATURDAY_FULL_CREDIT: ${{ github.event_name == 'pull_request' && 'preview' || github.event_name == 'push' && 'apply' || 'off' }}
+      TIM_AUDIT_RECODING: '0'
+      TIM_SATURDAY_REVISE: 'off'
+      TIM_SATURDAY_FULL_CREDIT: 'off'
+      TIM_XP_CARRY_INSPECT: ${{ github.head_ref == 'exception-barre-xp-du-16-au-22-novembre-2026' && '1' || '0' }}
     steps:
       - uses: actions/checkout@v4
       - name: Verifier la syntaxe JavaScript des exercices
@@ -45,6 +48,7 @@ jobs:
           node --check worker/maths-training-extra.mjs
           node --check worker/test/math-training.test.mjs
           node --check outils/inspecter-parent-securise.cjs
+          node --check functions/xp-week-exception.mjs
           node --check outils/auditer-recotation-samedi-20261115.cjs
           node --check outils/reviser-copie-samedi-parent.cjs
           node --check outils/plein-credit-samedi-parent.cjs

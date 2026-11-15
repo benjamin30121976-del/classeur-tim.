@@ -1,9 +1,21 @@
 name: Contrôle barème XP des exercices des leçons
 on:
+  pull_request:
+    paths:
+      - 'functions/xp-week-exception.mjs'
+      - 'functions/test/xp-week-exception.test.mjs'
+      - 'worker/server.mjs'
+      - 'xp-rules.js'
+      - 'app.js'
+      - 'boot.js'
+      - 'index.html'
+      - '.github/workflows/verifier-bareme-lecons.yml'
   push:
     branches: [main, audit-correction-immediate-20261113]
     paths:
       - 'functions/xp.mjs'
+      - 'functions/xp-week-exception.mjs'
+      - 'functions/test/xp-week-exception.test.mjs'
       - 'functions/test/xp.test.mjs'
       - 'functions/spanish-nov12-training.mjs'
       - 'functions/test/spanish-nov12-training.test.mjs'
@@ -36,6 +48,7 @@ jobs:
       - name: Contrôler les fichiers exécutés sur le site
         run: |
           node --check functions/xp.mjs
+          node --check functions/xp-week-exception.mjs
           node --check worker/server.mjs
           node --check worker/spanish-lesson-xp.mjs
           node --check espagnol-simplifie.js
@@ -48,6 +61,6 @@ jobs:
           node --check app.js
       - name: Tester +1 / +0,5 / 0 XP pour espagnol, maths, physique-chimie
         run: |
-          node --test functions/test/xp.test.mjs functions/test/spanish-nov12-training.test.mjs tools/test/maths-12nov-training.test.mjs worker/test/lesson-training-xp.test.mjs worker/test/spanish-parent-preview.test.mjs worker/test/math-training.test.mjs worker/test/physics-training.test.mjs
+          node --test functions/test/xp.test.mjs functions/test/xp-week-exception.test.mjs functions/test/spanish-nov12-training.test.mjs tools/test/maths-12nov-training.test.mjs worker/test/lesson-training-xp.test.mjs worker/test/spanish-parent-preview.test.mjs worker/test/math-training.test.mjs worker/test/physics-training.test.mjs
       - name: Résumé
         run: echo 'Barème vérifié sans connexion Parent ou Tim, sans soumettre aucun exercice.' >> "$GITHUB_STEP_SUMMARY"

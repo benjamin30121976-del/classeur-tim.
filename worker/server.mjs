@@ -6,6 +6,7 @@ import {firestore,createWrite,upsertWrite,updateWrite,NOW} from './firestore.mjs
 import {grade} from '../functions/grading.mjs';
 import {mathNov12ForParentImport} from '../maths-12nov-training.mjs';
 import {rawPoints,cappedPoints} from '../functions/xp.mjs';
+import {xpPeriodStart} from '../functions/xp-week-exception.mjs';
 import {buildMission,isMissionId,isMissionOpen} from '../functions/missions-v18.mjs';
 import {SPANISH_COURSE} from '../functions/spanish-training-curriculum.mjs';
 import {isMixedMissionId,mixedMission,mixedPlan,publicMixedMission,gradeMixedMission} from './mixed-challenges.mjs';
@@ -51,11 +52,6 @@ function parisDate(date){
  const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(date);
  const x=t=>parts.find(p=>p.type===t)?.value;
  return x('year')+'-'+x('month')+'-'+x('day');
-}
-function mondayOf(date){
- const m=new Date(date+'T12:00:00Z');
- m.setUTCDate(m.getUTCDate()-(m.getUTCDay()+6)%7);
- return m.toISOString().slice(0,10);
 }
 const noStore={'Content-Type':'application/json; charset=utf-8','Cache-Control':'no-store','X-Content-Type-Options':'nosniff'};
 const respond=(body,status=200)=>new Response(JSON.stringify(body),{status,headers:noStore});
@@ -141,7 +137,7 @@ async function submitExercise(db,uid,payload){
   db.get('attempts/'+id,transaction),db.get('privateAttempts/'+id,transaction),db.get('xpState/tim',transaction)
  ]);
  if(publicRecord||privateRecord)throw new ApiFault(409,'already-exists');
- const today=parisDate(new Date()),week=mondayOf(today),state=xpRecord||{};
+ const today=parisDate(new Date()),week=xpPeriodStart(today),state=xpRecord||{};
  const current=state.date===today?state:{earned:0,lost:0,bonus:0};
  const weekEarned=state.week===week?Number(state.weekEarned||0):0;
  const weekXp=state.week===week?Number(state.weekXp??state.weekEarned??0):0;
@@ -342,7 +338,7 @@ export async function submitMathTraining(db,uid,payload,env){
   db.get('xpState/tim',tx)
  ]);
  if(existing)throw new ApiFault(409,'already-exists');
- const today=parisDate(new Date()),week=mondayOf(today),state=xpRecord||{};
+ const today=parisDate(new Date()),week=xpPeriodStart(today),state=xpRecord||{};
  const current=state.date===today?state:{earned:0,lost:0,bonus:0};
  const weekEarned=state.week===week?Number(state.weekEarned||0):0;
  const weekXp=state.week===week?Number(state.weekXp??state.weekEarned??0):0;
@@ -403,7 +399,7 @@ async function submitPhysicsTraining(db,uid,payload){
   db.get('xpState/tim',tx)
  ]);
  if(old)throw new ApiFault(409,'already-exists');
- const today=parisDate(new Date()),week=mondayOf(today),state=xpRecord||{};
+ const today=parisDate(new Date()),week=xpPeriodStart(today),state=xpRecord||{};
  const current=state.date===today?state:{earned:0,lost:0,bonus:0};
  const weekEarned=state.week===week?Number(state.weekEarned||0):0;
  const weekXp=state.week===week?Number(state.weekXp??state.weekEarned??0):0;
@@ -482,7 +478,7 @@ async function submitEnglishTraining(db,uid,payload){
   db.get('xpState/tim',tx)
  ]);
  if(old)throw new ApiFault(409,'already-exists');
- const today=parisDate(new Date()),week=mondayOf(today),state=xpRecord||{};
+ const today=parisDate(new Date()),week=xpPeriodStart(today),state=xpRecord||{};
  const current=state.date===today?state:{earned:0,lost:0,bonus:0};
  const weekEarned=state.week===week?Number(state.weekEarned||0):0;
  const weekXp=state.week===week?Number(state.weekXp??state.weekEarned??0):0;
@@ -562,7 +558,7 @@ async function submitSvtTraining(db,uid,payload){
   db.get('xpState/tim',tx)
  ]);
  if(old)throw new ApiFault(409,'already-exists');
- const today=parisDate(new Date()),week=mondayOf(today),state=xpRecord||{};
+ const today=parisDate(new Date()),week=xpPeriodStart(today),state=xpRecord||{};
  const current=state.date===today?state:{earned:0,lost:0,bonus:0};
  const weekEarned=state.week===week?Number(state.weekEarned||0):0;
  const weekXp=state.week===week?Number(state.weekXp??state.weekEarned??0):0;
@@ -642,7 +638,7 @@ async function submitHgTraining(db,uid,payload){
   db.get('xpState/tim',tx)
  ]);
  if(old)throw new ApiFault(409,'already-exists');
- const today=parisDate(new Date()),week=mondayOf(today),state=xpRecord||{};
+ const today=parisDate(new Date()),week=xpPeriodStart(today),state=xpRecord||{};
  const current=state.date===today?state:{earned:0,lost:0,bonus:0};
  const weekEarned=state.week===week?Number(state.weekEarned||0):0;
  const weekXp=state.week===week?Number(state.weekXp??state.weekEarned??0):0;
@@ -722,7 +718,7 @@ async function submitFrTraining(db,uid,payload){
   db.get('xpState/tim',tx)
  ]);
  if(old)throw new ApiFault(409,'already-exists');
- const today=parisDate(new Date()),week=mondayOf(today),state=xpRecord||{};
+ const today=parisDate(new Date()),week=xpPeriodStart(today),state=xpRecord||{};
  const current=state.date===today?state:{earned:0,lost:0,bonus:0};
  const weekEarned=state.week===week?Number(state.weekEarned||0):0;
  const weekXp=state.week===week?Number(state.weekXp??state.weekEarned??0):0;
@@ -796,7 +792,7 @@ async function submitMathEntTask(db,uid,payload){
  const tx=await db.transaction();
  const [old,xpState]=await Promise.all([db.get('mathEntAttempts/'+id,tx),db.get('xpState/tim',tx)]);
  if(old)throw new ApiFault(409,'already-exists');
- const today=parisDate(new Date()),week=mondayOf(today),state=xpState||{};
+ const today=parisDate(new Date()),week=xpPeriodStart(today),state=xpState||{};
  const current=state.date===today?state:{earned:0,lost:0,bonus:0};
  const weekEarned=state.week===week?Number(state.weekEarned||0):0;
  const weekXp=state.week===week?Number(state.weekXp??state.weekEarned??0):0;
@@ -866,7 +862,7 @@ async function submitPhysicsEntTask(db,uid,payload){
   db.get('physicsEntAttempts/'+id,tx),db.get('xpState/tim',tx)
  ]);
  if(old)throw new ApiFault(409,'already-exists');
- const today=parisDate(new Date()),week=mondayOf(today),state=weekRecord||{};
+ const today=parisDate(new Date()),week=xpPeriodStart(today),state=weekRecord||{};
  const current=state.date===today?state:{earned:0,lost:0,bonus:0};
  const weekEarned=state.week===week?Number(state.weekEarned||0):0;
  const weekXp=state.week===week?Number(state.weekXp??state.weekEarned??0):0;
@@ -967,7 +963,7 @@ async function submitSpanishEntTraining(db,uid,payload){
   db.get('xpState/tim',transaction)
  ]);
  if(old)throw new ApiFault(409,'already-exists');
- const today=parisDate(new Date()),week=mondayOf(today),state=xpRecord||{};
+ const today=parisDate(new Date()),week=xpPeriodStart(today),state=xpRecord||{};
  const current=state.date===today?state:{earned:0,lost:0,bonus:0};
  const weekEarned=state.week===week?Number(state.weekEarned||0):0;
  const weekXp=state.week===week?Number(state.weekXp??state.weekEarned??0):0;

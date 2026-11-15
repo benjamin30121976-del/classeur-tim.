@@ -66,6 +66,24 @@ async function inspect(browser,label,viewport){
     check(label+' lecons chargees',stats.lessons>0,'Nombre : '+stats.lessons);
     check(label+' défi du jour supprimé du classeur',stats.dailyChallenges===0,'Défis quotidiens visibles : '+stats.dailyChallenges);
 
+    // Contrôle ponctuel de la conservation de la BARRE XP : aucune copie
+    // soumise, aucun ancien diagnostic de note du samedi répété.
+    if(process.env.TIM_XP_CARRY_INSPECT==='1'){
+      const {xpPeriodStart}=await import('../functions/xp-week-exception.mjs');
+      const dates=['2026-11-15','2026-11-16','2026-11-22','2026-11-23'];
+      const actual=dates.map(x=>xpPeriodStart(x));
+      const expected=['2026-11-09','2026-11-09','2026-11-09','2026-11-23'];
+      check(label+' calendrier exception barre XP',
+        JSON.stringify(actual)===JSON.stringify(expected),
+        'Barre maintenue le 16/11, reprise normale le 23/11. Aucun écrit Firestore.');
+      const loaded=await page.evaluate(()=>({account:window.__TIM_PARENT===true,
+        xpRules:typeof window.TIM_XP?.monday==='function',
+        xpProgress:!!document.querySelector('.xp-showcase, .xp-art-track, #xp-header')}));
+      check(label+' accès Parent et jauge XP en lecture seule',
+       loaded.account&&loaded.xpRules&&loaded.xpProgress,
+       'Session Parent disponible ; aucune copie soumise ni XP recalculé.');
+      return;
+    }
     if(TARGET_SATURDAY_FULL_CREDIT){
       await require('./plein-credit-samedi-parent.cjs')(page,check,process.env.TIM_SATURDAY_FULL_CREDIT);
       return;
