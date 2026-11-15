@@ -14,7 +14,7 @@ const fail=msg=>{throw Error('saturday-full-credit-'+msg);};
 const close=(a,b)=>Number.isFinite(a)&&Number.isFinite(b)&&Math.abs(a-b)<1e-8;
 const clean=s=>String(s??'').trim()
  .replace(/[×*]/g,'x').replace(/[−–—]/g,'-').replace(/,/g,'.')
- .replace(/\s*([+=\/x])\s*/g,'').replace(/\s+/g,' ');
+ .replace(/\s*([+=\/x])\s*/g,'$1').replace(/\s+/g,' ');
 const proof12=s=>/^(?:p=)?6\+6=12(?:\s+|;\s*)(?:p=)?12x2=24(?:\s*cm)?$/i.test(clean(s));
 const proof15=s=>/^6\/24=0\.25(?:\s+|;\s*)0\.25x4=1$/i.test(clean(s));
 
