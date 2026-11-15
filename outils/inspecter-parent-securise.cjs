@@ -10,7 +10,8 @@ const URL=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
 const TARGET_IMPORT_ONLY=(()=>{try{return /controle-import-json-android/.test(JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion||'');}catch{return false;}})();
 const TARGET_BONUS_AUDIT=(()=>{try{return /controle-bonus-parent-20261114/.test(JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion||'');}catch{return false;}})();
 const TARGET_RECHECK=process.env.TIM_AUDIT_RECODING==='1';
-const TARGET_SUNDAY_AUDIT=process.env.TIM_SUNDAY_AUDIT==='1';
+const TARGET_SUNDAY_AUDIT=process.env.TIM_SUNDAY_AUDIT==='1'&&
+  new Intl.DateTimeFormat('fr-CA',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())==='2026-11-15';
 const TARGET_SATURDAY_REVISE=(()=>{try{return JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion==='rectifier-copie-samedi-20261114-v1';}catch{return false;}})()&&['preview','apply'].includes(process.env.TIM_SATURDAY_REVISE||'');
 const TARGET_SATURDAY_FULL_CREDIT=(()=>{try{return JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion==='plein-credit-samedi-20261115-v2';}catch{return false;}})()&&['preview','apply'].includes(process.env.TIM_SATURDAY_FULL_CREDIT||'');
 const output=path.join(process.cwd(),'browser-parent-results');
