@@ -72,6 +72,7 @@ test('Aucune altération de l’ancien questionnaire ni des tentatives',()=>{
  assert(!pack.exercises.some(x=>x.id==='BD1611_HG01'));
  const app=fs.readFileSync(new URL('../../app.js',import.meta.url),'utf8');
  assert.match(app,/newerNazismBonus/);
+ assert.match(app,/id==='BD16_HG_CAHIER'\?'HG_BIS09':id/);
  assert.match(app,/!attemptFor\(e\.id\)/);
  assert(!/deleteDoc\(.*BD1611_HG01/.test(app));
 });
