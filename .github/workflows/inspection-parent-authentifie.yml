@@ -9,6 +9,9 @@ on:
       - 'browser-requests/parent.json'
       - 'outils/inspecter-parent-securise.cjs'
       - 'outils/auditer-recotation-samedi-20261115.cjs'
+      - 'outils/reviser-copie-samedi-parent.cjs'
+      - 'worker/saturday-20261114-review.mjs'
+      - 'worker/server.mjs'
       - '.github/workflows/inspection-parent-authentifie.yml'
   workflow_dispatch:
 permissions:
@@ -25,6 +28,7 @@ jobs:
       TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
       TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
       TIM_AUDIT_RECODING: ${{ github.event_name == 'pull_request' && '1' || '0' }}
+      TIM_SATURDAY_REVISE: ${{ github.event_name == 'pull_request' && 'preview' || github.event_name == 'push' && 'apply' || 'off' }}
     steps:
       - uses: actions/checkout@v4
       - name: Verifier la syntaxe JavaScript des exercices
@@ -38,8 +42,10 @@ jobs:
           node --check worker/test/math-training.test.mjs
           node --check outils/inspecter-parent-securise.cjs
           node --check outils/auditer-recotation-samedi-20261115.cjs
+          node --check outils/reviser-copie-samedi-parent.cjs
+          node --check worker/saturday-20261114-review.mjs
       - name: Tester les 23 évaluations et la sécurité des tentatives
-        run: node --test worker/test/math-training.test.mjs
+        run: node --test worker/test/math-training.test.mjs worker/test/saturday-20261114-review.test.mjs worker/test/saturday-20261114-server.test.mjs
       - name: Verifier la configuration des secrets sans les afficher
         id: verify
         run: |
