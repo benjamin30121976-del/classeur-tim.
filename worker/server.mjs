@@ -9,6 +9,7 @@ import {rawPoints,cappedPoints} from '../functions/xp.mjs';
 import {buildMission,isMissionId,isMissionOpen} from '../functions/missions-v18.mjs';
 import {SPANISH_COURSE} from '../functions/spanish-training-curriculum.mjs';
 import {isMixedMissionId,mixedMission,mixedPlan,publicMixedMission,gradeMixedMission} from './mixed-challenges.mjs';
+import {examineSaturdayCopy,SATURDAY_COPY_ID,SATURDAY_REVISION} from './saturday-20261114-review.mjs';
 import {mathId,mathPublicTaskPrivate,gradeMathTaskPrivate,MATH_BANK_VERSION,validateMathFragment} from './math-private-kv.mjs';
 import {spanishEntTrainingId,spanishEntTask,spanishEntPublicTask,gradeSpanishEntTask,isSpanishDailyMissionId,spanishDailyMissionIds,buildSpanishDailyMission,gradeSpanishDailyMission} from './spanish-ent-training.mjs';
 import {spanishLessonXp} from './spanish-lesson-xp.mjs';
@@ -1111,9 +1112,73 @@ async function correctMathNov12Question10(db,uid,payload={}){
  return {status:'already-corrected',id:'MTH12_03',question:10,otherQuestionsUnchanged:true};
 }
 
+/* Révision ciblée d'une copie réellement remise.
+   Deux documents seulement sont écrits atomiquement : une archive IMMUTABLE
+   de l'original et la note/correction de la copie privée. Aucune écriture des
+   tentatives, de l'XP, des ressources pédagogiques ou de la branche de cours. */
+async function reviseSaturday20261114(db,uid,payload={}){
+ permitted(uid,'parent');
+ const mode=payload?.mode;
+ if(mode!=='preview'&&mode!=='apply')throw new ApiFault(400,'saturday-review-mode-invalid');
+ if(mode==='apply'&&payload.approval!=='WEEK_2026W46_PARENT_REQUEST_20261115')
+  throw new ApiFault(403,'saturday-review-approval-required');
+ const archivePath='gradingReviewHistory/'+SATURDAY_COPY_ID;
+ const privatePath='privateAttempts/'+SATURDAY_COPY_ID;
+ const attemptPath='attempts/'+SATURDAY_COPY_ID;
+ const tx=mode==='apply'?await db.transaction():null;
+ const [original,publicRecord,archive]=await Promise.all([
+  db.get(privatePath,tx),db.get(attemptPath,tx),db.get(archivePath,tx)
+ ]);
+ if(original?.gradeRevision?.version===SATURDAY_REVISION){
+  if(!archive||archive.version!==SATURDAY_REVISION)
+   throw new ApiFault(409,'saturday-review-history-inconsistent');
+  if(original.score!==archive.correctedScore)throw new ApiFault(409,'saturday-review-score-inconsistent');
+  return {status:'already-corrected',xpUnchanged:true,questions:[3,12,15],
+   score:original.score,total:20};
+ }
+ if(archive)throw new ApiFault(409,'saturday-review-existing-archive');
+ if(!original||!publicRecord||
+   original.authorUid!==TIM_UID||publicRecord.authorUid!==TIM_UID||
+   publicRecord.correctionStatus!=='released')
+  throw new ApiFault(409,'saturday-review-record-mismatch');
+ let review;
+ try{review=examineSaturdayCopy(original,publicRecord);}
+ catch{throw new ApiFault(409,'saturday-review-precondition-failed');}
+ if(review.changes.length!==3||review.changes.map(x=>x.question).join(',')!=='3,12,15')
+  throw new ApiFault(409,'saturday-review-unexpected-changes');
+ if(mode==='preview')
+  return {status:'eligible',total:20,questions:[3,12,15],
+   oldScore:review.oldScore,newScore:review.newScore,xpUnchanged:true,
+   noWrite:true};
+ const storedRevision={version:SATURDAY_REVISION,approvedBy:'parent',
+  originalScore:review.oldScore,correctedScore:review.newScore,
+  changedQuestions:[3,12,15],originalXp:review.oldXp,
+  reason:'Révision pédagogique : traduction acceptée et demi-points aux résultats mathématiques justes'};
+ await db.commit([
+  createWrite(archivePath,{
+   version:SATURDAY_REVISION,originalPrivateAttempt:original,
+   originalPublicAttempt:publicRecord,originalScore:review.oldScore,
+   correctedScore:review.newScore,changes:review.changes,
+   privatePath,attemptPath
+  }),
+  updateWrite(privatePath,{score:review.newScore,answers:review.answers,gradeRevision:storedRevision})
+ ],tx);
+ const [after,history,afterPublic]=await Promise.all([
+  db.get(privatePath),db.get(archivePath),db.get(attemptPath)
+ ]);
+ if(!after||!history||after.gradeRevision?.version!==SATURDAY_REVISION||
+    after.score!==review.newScore||JSON.stringify(after.answers)!==JSON.stringify(review.answers)||
+    JSON.stringify(afterPublic)!==JSON.stringify(publicRecord))
+  throw new ApiFault(502,'saturday-review-postcheck-failed');
+ return {status:'corrected',questions:[3,12,15],total:20,
+  oldScore:review.oldScore,newScore:review.newScore,xpUnchanged:true,
+  originalArchived:true,attemptUntouched:true};
+}
+
 const ACTIONS={
   getFirestoreReadDiagnostics:getFirestoreReadDiagnostics,
   correctMathNov12Question10:correctMathNov12Question10,
+  reviseSaturday20261114:reviseSaturday20261114,
  previewSpanishEntTraining:previewSpanishEntTraining,
  getMathEntTask:getMathEntTask,
  submitMathEntTask:submitMathEntTask,
@@ -1184,4 +1249,4 @@ export async function handleRequest(request,env){
   return respond({error:code},status);
  }
 }
-export const TESTABLE={correctMathNov12Question10,getFirestoreReadDiagnostics,getEnglishTrainingTask,submitEnglishTraining,getEnglishTrainingProgress,previewEnglishTraining,getSvtTrainingTask,submitSvtTraining,getSvtTrainingProgress,previewSvtTraining,getHgTrainingTask,submitHgTraining,getHgTrainingProgress,previewHgTraining,getFrTrainingTask,submitFrTraining,getFrTrainingProgress,previewFrTraining,previewSpanishEntTraining,getMathEntTask,submitMathEntTask,previewMathEntTask,getMathEntProgress,getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,getMixedChallengePlan,previewMixedChallenge,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
+export const TESTABLE={reviseSaturday20261114,correctMathNov12Question10,getFirestoreReadDiagnostics,getEnglishTrainingTask,submitEnglishTraining,getEnglishTrainingProgress,previewEnglishTraining,getSvtTrainingTask,submitSvtTraining,getSvtTrainingProgress,previewSvtTraining,getHgTrainingTask,submitHgTraining,getHgTrainingProgress,previewHgTraining,getFrTrainingTask,submitFrTraining,getFrTrainingProgress,previewFrTraining,previewSpanishEntTraining,getMathEntTask,submitMathEntTask,previewMathEntTask,getMathEntProgress,getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,getMixedChallengePlan,previewMixedChallenge,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
