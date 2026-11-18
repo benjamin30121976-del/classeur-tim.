@@ -142,6 +142,19 @@ async function testDevice(browser,label,viewport){
  }finally{await context.close();}
 }
 
+
+async function showAuditedSubject(page){
+ await page.evaluate(()=>{
+  // Débloquer uniquement l'interface du navigateur de test si l'introduction
+  // réactive le panneau d'accueil après la connexion.
+  const screen=document.getElementById('intro-screen');
+  if(screen){screen.hidden=true;screen.style.display='none';}
+  document.body.classList.remove('intro-open');
+  document.querySelectorAll('.page').forEach(node=>
+   node.classList.toggle('active',node.id==='matieres'));
+ });
+}
+
 /* Contrôle ciblé ajouté sur branche d'audit : navigation réelle dans les leçons
    publiées, sans importer, valider ni modifier la moindre donnée de Tim. */
 async function inspectNov17Lessons(page,device){
@@ -202,6 +215,7 @@ async function inspectNov17Lessons(page,device){
    return rows;
   });
   console.log('GEOMETRIE '+device+' '+file.label+' '+JSON.stringify(layout));
+  await showAuditedSubject(page);
   await viewer.scrollIntoViewIfNeeded({timeout:12000});
   const ready=await page.waitForFunction(key=>{
    const rows=[...document.querySelectorAll('#matieres-content .tim-nov17-original')];
@@ -244,6 +258,7 @@ async function inspectNov17Lessons(page,device){
  await figure.waitFor({state:'attached',timeout:30000});
  if(await figure.locator('.tim-inline-image-button').count())
   throw Error('Leçon SVT : bouton d’ouverture du schéma encore nécessaire');
+ await showAuditedSubject(page);
  await figure.scrollIntoViewIfNeeded({timeout:12000});
  const image=figure.locator('img');
  await image.waitFor({state:'visible',timeout:35000});
