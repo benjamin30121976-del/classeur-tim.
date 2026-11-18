@@ -54,6 +54,10 @@ jobs:
         env:
           NODE_PATH: /tmp/tim-hg-bonus/node_modules
         run: node scripts/test-bonus-nazisme-cahier-browser.cjs
+      - name: Vérifier les onglets et nouveaux boutons du 16 et 17 novembre dans Chromium local
+        env:
+          NODE_PATH: /tmp/tim-hg-bonus/node_modules
+        run: node tools/test/ent-nov17-tabs.readonly.cjs
       - name: Résumé
         run: echo 'Aucune tentative réelle de Tim n’a été consommée.' >> "$GITHUB_STEP_SUMMARY"
   navigateur-parent:
