@@ -106,8 +106,9 @@
   places['A'+a]=[111,91];places['A'+b]=[285,91];places[a+b]=[200,164];
   for(const [key,point] of Object.entries(places))if(data[key])measure(svg,...point,span(data,key));
   // Les fractions sont affichées comme des RAPPORTS et non comme des mesures.
-  if(ratioLeft&&!data.AB)measure(svg,83,142,ratioLeft.label);
-  if(ratioRight&&!data.AC)measure(svg,317,142,ratioRight.label);
+  // Les rapports sont sous le triangle pour ne pas masquer les points M et N.
+  if(ratioLeft&&!data.AB)measure(svg,93,296,ratioLeft.label);
+  if(ratioRight&&!data.AC)measure(svg,307,296,ratioRight.label);
   if(givenParallel){
    caption.textContent='Les droites '+a+b+' et BC sont indiquées parallèles dans l’énoncé. Schéma non à l’échelle.';
   }else if(/AM\s*\/\s*AB\s*=\s*AN\s*\/\s*AC/i.test(prompt)&&Object.keys(data).length===0){
