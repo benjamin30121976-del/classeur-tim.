@@ -147,6 +147,11 @@ async function session(browser,device,viewport){
    if(!outcome.found||!outcome.verified||outcome.where!=='expected')report.errors.push(outcome.key+': non importée, incorrecte ou mal rattachée');
    if(outcome.key==='SVT_IMAGE_17'&&!outcome.inCatalog)report.errors.push('SVT_IMAGE_17: document non relié au module SVT de la leçon');
   }
+  if(process.env.TIM_AUDIT_INVENTORY_ONLY==='1'){
+   console.log('BILAN INVENTAIRE '+device+' '+JSON.stringify({references:inventory.items.length,five:report.five,issues:report.errors.length}));
+   if(report.errors.length)console.log('ANOMALIES INVENTAIRE '+device+' '+JSON.stringify(report.errors.slice(0,35)));
+   return report;
+  }
   // Contrôle du rendu avec les mêmes modules que les véritables leçons,
   // sans injection de code local et sans modifier Firestore.
   let seq=0;
