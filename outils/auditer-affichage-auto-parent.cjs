@@ -159,7 +159,13 @@ async function inspectNov17Lessons(page,device){
   null,{timeout:20000});
  const spanish=page.locator('#matieres-content details.tim-es-lesson')
   .filter({has:page.locator('summary').filter({hasText:/17 novembre|17\/11/i})}).first();
- await spanish.locator(':scope > summary').click();
+ await spanish.evaluate(node=>{
+  let current=node;
+  while(current){
+   if(current.tagName==='DETAILS')current.open=true;
+   current=current.parentElement;
+  }
+ });
  await page.waitForFunction(()=>[...document.querySelectorAll('#matieres-content .tim-nov17-original')]
   .filter(x=>x.closest('details.tim-es-lesson')?.open).length>=3,null,{timeout:30000});
  const spanishFiles=[
