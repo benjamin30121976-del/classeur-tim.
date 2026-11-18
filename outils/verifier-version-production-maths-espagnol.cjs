@@ -42,7 +42,7 @@ async function audit(){
  }
  const state=JSON.parse(await fetchWithTimeout('./api/status'));
  for(const [key,val] of [['mathEntInteractive',true],['mathEntOriginalTasks',2],['spanishParentPreview',true]]){
-  if(state[key]!==val)throw Error('API status : '+key+' incorrect');
+  if(state.features?.[key]!==val)throw Error('API status : '+key+' incorrect');
  }
  for(const path of ['./worker/math-ent-training.mjs','./worker/physics-ent-training.mjs']){
   const resp=await fetch(new URL(path,base),{redirect:'manual'});
