@@ -5,6 +5,8 @@ on:
     paths:
       - 'boot.js'
       - 'app.js'
+      - 'tim-ent-batch-import.js'
+      - 'tools/test/tim-ent-batch-validation.test.cjs'
       - 'prochaines-missions.js'
       - 'tools/test/prochaines-missions.readonly.test.cjs'
       - 'worker/**'
@@ -45,6 +47,8 @@ jobs:
           node --check worker/server.mjs
           node --check app.js
           node --check prochaines-missions.js
+          node --check tim-ent-batch-import.js
+          node --test tools/test/tim-ent-batch-validation.test.cjs
           node --test tools/test/prochaines-missions.readonly.test.cjs
       - name: Tester les corrections, sept matières, défis et barèmes sans copie réelle
         run: |
