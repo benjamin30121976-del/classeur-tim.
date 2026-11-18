@@ -10,6 +10,8 @@ on:
       - '.github/workflows/inspection-comptes-eleve-parent.yml'
       - 'outils/inspecter-comptes-lecture-seule.cjs'
       - 'outils/test/inspection-comptes-lecture-seule.test.cjs'
+      - 'prochaines-missions.js'
+      - 'tools/test/prochaines-missions-ui.cjs'
 permissions:
   contents: read
 concurrency:
@@ -24,6 +26,7 @@ jobs:
       - name: Verifier script et protections sans session privee
         run: |
           node --check outils/inspecter-comptes-lecture-seule.cjs
+          node --check tools/test/prochaines-missions-ui.cjs
           node --test outils/test/inspection-comptes-lecture-seule.test.cjs
   controle-comptes:
     needs: controle-code
@@ -52,6 +55,10 @@ jobs:
           mkdir -p /tmp/tim-inspection-playwright
           npm install --prefix /tmp/tim-inspection-playwright --no-audit --no-fund playwright
           /tmp/tim-inspection-playwright/node_modules/.bin/playwright install --with-deps chromium
+      - name: Voir les exercices à venir sur écrans PC/téléphone sans toucher aux comptes
+        env:
+          NODE_PATH: /tmp/tim-inspection-playwright/node_modules
+        run: node tools/test/prochaines-missions-ui.cjs
       - name: Inspecter comptes Tim et Parent (PC + telephone)
         env:
           NODE_PATH: /tmp/tim-inspection-playwright/node_modules
@@ -61,6 +68,8 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: controle-eleve-parent-lecture-seule
-          path: browser-comptes-lecture-seule/
+          path: |
+            browser-comptes-lecture-seule/
+            browser-fixture-avenir/
           retention-days: 1
           if-no-files-found: warn
