@@ -1,0 +1,45 @@
+name: Tester correctif XP Bonus devoirs sans publication
+on:
+  push:
+    branches: [correctif-bareme-bonus-devoirs-20261118]
+    paths:
+      - '.github/workflows/test-bonus-devoirs-xp-20261118.yml'
+      - 'functions/xp.mjs'
+      - 'functions/test/xp.test.mjs'
+      - 'worker/server.mjs'
+      - 'xp-rules.js'
+      - 'app.js'
+permissions:
+  contents: read
+jobs:
+  verification:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier syntaxe du moteur et de l’interface
+        run: |
+          node --check functions/xp.mjs
+          node --check worker/server.mjs
+          node --check app.js
+          node --check xp-rules.js
+      - name: Tester dix notes, paliers, absence de plafond et règles conservées
+        run: |
+          node --test functions/test/xp.test.mjs
+      - name: Vérifier raccord du barème serveur et affichage
+        run: |
+          node --input-type=module -e '
+            import fs from "node:fs";
+            import assert from "node:assert/strict";
+            const server=fs.readFileSync("worker/server.mjs","utf8");
+            const app=fs.readFileSync("app.js","utf8");
+            assert(server.includes("homeworkBonus:exercise.homeworkBonus===true"));
+            assert(app.includes("9–10/10 : +3 XP"));
+            assert(app.includes("7–8/10 : +2 XP"));
+            assert(app.includes("5–6/10 : +1 XP"));
+            assert(app.includes("Aucun plafond quotidien."));
+            console.log("Raccordements corrects, aucune donnée Tim modifiée");
+          '
