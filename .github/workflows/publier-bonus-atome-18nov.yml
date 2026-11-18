@@ -1,0 +1,53 @@
+name: Ajouter bonus devoirs atome et noyau
+on:
+  push:
+    branches:
+      - bonus-physique-atome-az-20261118
+    paths:
+      - .github/workflows/publier-bonus-atome-18nov.yml
+      - outils/publier-bonus-atome-18nov-via-parent.cjs
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bonus-atome-parent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
+      TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+      TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
+      TIM_PHYSIQUE_BONUS_PUBLISH: OUI
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Contrôler 10 questions, schémas et module Parent
+        run: |
+          node --check outils/publier-bonus-atome-18nov-via-parent.cjs
+          node --input-type=module -e '
+            import fs from "node:fs";
+            import assert from "node:assert/strict";
+            const ex=JSON.parse(fs.readFileSync("packs/bonus-physique-atome-az-18nov-2026.json","utf8")).exercises[0];
+            assert.equal(ex.id,"BD1811_PC02");
+            assert.equal(ex.subject,"Physique-chimie");
+            assert.equal(ex.lesson,"PC_BIS01");
+            assert.equal(ex.homeworkBonus,true);
+            assert.equal(ex.questions.length,10);
+            assert(ex.questions.every(q=>q.q?.trim() && q.why?.trim() && q.right!==undefined && (q.type==="text"||q.options.length===4&&new Set(q.options).size===4)));
+            assert(ex.questions.filter(q=>/dessin|schéma|symbole/i.test(q.q)).length>=5);
+            console.log("Atome/noyau, A/Z, schémas et 10 corrections : OK");
+          '
+      - name: Vérifier connexion Parent
+        run: |
+          test -n "$TIM_PARENT_EMAIL" || exit 1
+          test -n "$TIM_PARENT_PASSWORD" || exit 1
+      - name: Installer Chromium Playwright
+        run: |
+          npm install --prefix /tmp/tim-bonus-atom --no-audit --no-fund playwright
+          /tmp/tim-bonus-atom/node_modules/.bin/playwright install --with-deps chromium
+      - name: Publier l’exercice manquant et vérifier son ouverture Parent
+        env:
+          NODE_PATH: /tmp/tim-bonus-atom/node_modules
+        run: node outils/publier-bonus-atome-18nov-via-parent.cjs
