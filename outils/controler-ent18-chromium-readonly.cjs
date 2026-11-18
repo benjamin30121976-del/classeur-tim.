@@ -53,6 +53,16 @@ const {chromium}=require('playwright');
     educational:window.TIM_ENT_18NOV_LESSONS.exerciseIds.length
   }));
   assert.equal(checks.files.length,5);assert.equal(checks.educational,3);
+  // Après import du 17/11, même ordre et aucune double fiche 17 novembre.
+  await page.evaluate(async()=>{
+   const data=window.__TIM_DATA.metadata.spanishEnt;
+   data.dates={'10099~6400537':'2026-11-17'};
+   data.lessons=[{data:{id:'10099~6400537'},included:[{type:'lessonContent',attributes:{html:'<p>Martes 17/11: clase y verbos de la lista 2</p>'}}]}];
+   await window.TIM_SPANISH_ENT_EXACT.render(document.getElementById('root'),{});
+  });
+  const afterImport=await page.locator('.tim-es-chronological-lessons > [data-ent-date]').evaluateAll(nodes=>nodes.map(n=>({id:n.dataset.entId,date:n.dataset.entDate})));
+  assert.deepEqual(afterImport,[{id:'10099~6400537',date:'2026-11-17'},{id:'10099~6400507',date:'2026-11-18'}]);
+  assert.equal(await page.locator('.tim-es-chronological-lessons > [data-ent-id="10099~6400537"]').count(),1);
   await page.screenshot({path:'/tmp/tim-ent-18nov-lecture-seule.png',fullPage:true});
   console.log('CHROMIUM_OK : 17 puis 18, 2 PDF automatiques simulés, 5 onglets, 3 exercices de 10, import Parent discret, aucune écriture.');
  }finally{await browser.close();}
