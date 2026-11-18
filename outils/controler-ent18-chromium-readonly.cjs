@@ -12,17 +12,23 @@ const {chromium}=require('playwright');
   await page.evaluate(()=>{
    window.__TIM_PARENT=true;window.__TIM_GUEST=false;
    window.TIM_FR_PACK={lessons:[],bis:[{id:'FR_BIS12',examples:[],help:[]}]};
-   window.TIM_SPANISH_ENT_EXACT={render:async(root)=>{root.innerHTML='<div class="tim-es-chronological"></div>'; }};
-   window.TIM_SPANISH_SIMPLIFIED={renderQuestions:(slot,task)=>{slot.textContent='Questionnaire de '+task.questions.length+' questions, aucune soumission de test';},drawCorrection:()=>{throw Error('Correction réelle interdite au test');}};
-   window.__TIM_BRIDGE={attachments:{list:async()=>[],upload:()=>{throw Error('AUCUN IMPORT ATTENDU');},read:()=>{throw Error('AUCUNE LECTURE ATTENDUE')}},spanishEntTrainingTask:async()=>({completed:false,task:{questions:Array.from({length:10},(_,i)=>({prompt:'Question '+i}))}})};
+   window.__TIM_DATA={metadata:{spanishEnt:{lessons:[],dates:{},homework:[]}}};
+   window.TIM_SPANISH_SIMPLIFIED={lessons:Array.from({length:14},(_,i)=>({id:'L'+(i+1)})),render:async(root)=>{root.innerHTML='<section class="tim-es-results"></section>';},renderQuestions:(slot,task)=>{slot.textContent='Questionnaire de '+task.questions.length+' questions, aucune soumission de test';},drawCorrection:()=>{throw Error('Correction réelle interdite au test');}};
+   window.TIM_PHYSICS_INLINE_PDF={createFullInline:()=>{const el=document.createElement('section');el.className='pc-inline-full-document';return el;}};
+   window.__TIM_BRIDGE={attachments:{list:async(type,target)=>target==='ENTESP_2026'?[{fileName:'liste2.pdf',sha256:'1a7d9be5cb0bda99adb1a337795822f5295478bba7994ffcb0bb543bade816e3'},{fileName:'18nov.pdf',sha256:'1ca666f7b213054347c1eec08c8aad87983f25c8279af7202a387dd95071192f'}]:[],upload:()=>{throw Error('AUCUN IMPORT ATTENDU');},read:()=>{throw Error('AUCUNE LECTURE ATTENDUE')}},spanishEntTrainingTask:async()=>({completed:false,task:{questions:Array.from({length:10},(_,i)=>({prompt:'Question '+i}))}})};
   });
-  for(const p of ['tim-ent-18nov-private-import.js','tim-ent-18nov-lessons.js'])
+  for(const p of ['espagnol-ent-exact.js','tim-ent-18nov-private-import.js','tim-ent-18nov-lessons.js'])
    await page.addScriptTag({content:fs.readFileSync(p,'utf8')});
   await page.evaluate(async()=>window.TIM_SPANISH_ENT_EXACT.render(document.getElementById('root'),{}));
+  const order=await page.locator('.tim-es-chronological-lessons > [data-ent-date]').evaluateAll(nodes=>nodes.map(n=>n.dataset.entDate));
+  assert.deepEqual(order,['2026-11-17','2026-11-18'],'Les séances 17 et 18 doivent être dans cet ordre.');
+  assert.equal(await page.locator('.tim-ent18-import-tools').evaluate(n=>n.open),false,'Import Parent replié, sans masquer les cours');
   assert.equal(await page.locator('[data-ent-id="10099~6400507"]').count(),1);
   assert.equal(await page.locator('#tim-ent-18nov-private-import').count(),1);
   await page.locator('[data-ent-id="10099~6400507"] summary').first().click();
   await page.getByText('1 · Leçon ENT — Mme Gonzalez').waitFor({state:'visible'});
+  await page.locator('[data-ent-id="10099~6400507"] .pc-inline-full-document').first().waitFor({state:'attached'});
+  assert.equal(await page.locator('[data-ent-id="10099~6400507"] .pc-inline-full-document').count(),2,'Les deux PDF de la leçon doivent être intégrés sans bouton');
   await page.getByRole('button',{name:'Leçon BIS',exact:true}).click();
   assert.equal(await page.locator('[data-ent-id="10099~6400507"] table tr').count(),7);
   await page.getByRole('button',{name:"Je n’ai pas compris",exact:true}).click();
@@ -47,7 +53,17 @@ const {chromium}=require('playwright');
     educational:window.TIM_ENT_18NOV_LESSONS.exerciseIds.length
   }));
   assert.equal(checks.files.length,5);assert.equal(checks.educational,3);
+  // Après import du 17/11, même ordre et aucune double fiche 17 novembre.
+  await page.evaluate(async()=>{
+   const data=window.__TIM_DATA.metadata.spanishEnt;
+   data.dates={'10099~6400537':'2026-11-17'};
+   data.lessons=[{data:{id:'10099~6400537'},included:[{type:'lessonContent',attributes:{html:'<p>Martes 17/11: clase y verbos de la lista 2</p>'}}]}];
+   await window.TIM_SPANISH_ENT_EXACT.render(document.getElementById('root'),{});
+  });
+  const afterImport=await page.locator('.tim-es-chronological-lessons > [data-ent-date]').evaluateAll(nodes=>nodes.map(n=>({id:n.dataset.entId,date:n.dataset.entDate})));
+  assert.deepEqual(afterImport,[{id:'10099~6400537',date:'2026-11-17'},{id:'10099~6400507',date:'2026-11-18'}]);
+  assert.equal(await page.locator('.tim-es-chronological-lessons > [data-ent-id="10099~6400537"]').count(),1);
   await page.screenshot({path:'/tmp/tim-ent-18nov-lecture-seule.png',fullPage:true});
-  console.log('CHROMIUM_OK: 5 pièces, cours français unique, 5 onglets espagnols, 3 exercices x 10 questions, 0 écriture.');
+  console.log('CHROMIUM_OK : 17 puis 18, 2 PDF automatiques simulés, 5 onglets, 3 exercices de 10, import Parent discret, aucune écriture.');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});

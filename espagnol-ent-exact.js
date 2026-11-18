@@ -709,7 +709,15 @@ function spanishNov17Panel(includeDocuments=true){
   ent:()=>{
    t('h4','Cours et devoirs originaux du professeur');
    const s=t('p','Martes 17/11 : terminar CE « no empiezo en septiembre ». Debate sobre el uniforme (no…sino; nunca, nada; hemisferio sur).');
-   s.lang='es';t('p','Cours ENT 10099~6400537. La copie complète est conservée dans le ZIP familial.');
+   s.lang='es';t('p','Cours ENT 10099~6400537.');
+   const live=window.__TIM_DATA?.metadata?.spanishEnt?.lessons?.find(
+    d=>String(d?.data?.id||'')==='10099~6400537'
+   );
+   const full=live?asText(lessonHtml(live)):'';
+   if(full){
+    t('h4','Texte original complet de Mme Gonzalez récupéré dans l’ENT');
+    const original=t('p',full);original.lang='es';original.style.whiteSpace='pre-wrap';
+   }else t('p','La copie complète, si elle n’est pas synchronisée ici, reste dans le ZIP familial.');
    t('h4','Devoir pour le mercredi 18 novembre');
    const x=t('p','Terminar el ejercicio II b. Aprender CONOCER, PEDIR, SALIR (PONER, VER, VENIR); traer el Plickers.');
    x.lang='es';t('p','Devoir ENT 10099~215356. Les noms d’élèves de l’évaluation du 17/11 ne sont pas diffusés.');
@@ -799,37 +807,38 @@ function spanishNov17Panel(includeDocuments=true){
 function appendChronologicalSpanish(root){
  if(window.__TIM_GUEST)return;
  const pack=window.__TIM_DATA?.metadata?.spanishEnt;
- // La séance du 18/11 est affichée par son module pédagogique complet, une seule fois.
+ // Un seul classement par date, sans isoler artificiellement le dernier cours.
+ // Le cours du 18 novembre est inséré au bon endroit par le module associé.
  const incoming=lateSpanishLessons(pack).filter(x=>!(x.id==='10099~6400507'&&window.TIM_ENT_18NOV_LESSONS));
  const hasNov17=incoming.some(x=>x.id==='10099~6400537');
- // Une séance n'est annoncée comme nouvelle que si son contenu figure vraiment
- // dans la dernière collecte ENT ; aucune date ni cours ne sont inventés.
- const next=incoming.length&&incoming[incoming.length-1].date>'2026-11-12'?incoming.pop():null;
  const container=$('section','tim-es-chronological');
  const chronology=$('div','tim-es-chronological-lessons');
- if(!hasNov17)chronology.append(spanishNov17Panel());
  let seq=window.TIM_SPANISH_SIMPLIFIED?.lessons?.length||14;
- const records=incoming.map(x=>({type:'import',date:x.date,id:x.id,item:x})).sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
+ if(!hasNov17){
+  // Aucun doublon lorsqu'une séance du 17 novembre a déjà été importée.
+  const panel=spanishNov17Panel();
+  panel.dataset.entDate='2026-11-17';
+  panel.dataset.entId='10099~6400537';
+  chronology.append(panel);
+ }
+ const records=incoming.slice().sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
  for(const item of records){
   seq++;
-  chronology.append(createSpanishSession(item.item,'Leçon '+seq));
+  // Le 17 novembre garde ses cinq onglets pédagogiques, sans fiche imbriquée en double.
+  const card=item.id==='10099~6400537'?spanishNov17Panel():createSpanishSession(item,'Séance ENT '+frenchDate(item.date));
+  card.dataset.entDate=item.date;
+  card.dataset.entId=item.id;
+  chronology.append(card);
  }
  if(chronology.childElementCount){
-  const title=$('h3','','Suite des leçons ENT — par date');
+  const title=$('h3','','Suite des leçons ENT — dans l’ordre chronologique');
   title.style.cssText='margin:21px 0 10px;font-size:19px';
   container.append(title,chronology);
  }
  const notice=$('section','tim-es-upcoming');
  notice.style.cssText='margin:18px 0;padding:13px 14px;border:1px solid #8cabc7;border-radius:12px;background:#edf5ff;color:#243d5e';
- if(next){
-  const head=$('h3','','Nouveau cours ENT — '+frenchDate(next.date));
-  head.style.cssText='font-size:17px;color:#243d5e;margin:0 0 7px';
-  notice.append(head,$('p','','La dernière séance importée est présentée ici. À la prochaine actualisation de l’ENT, elle rejoindra automatiquement la liste chronologique.'));
-  notice.append(createSpanishSession(next,'Ouvrir le nouveau cours ENT'));
- }else{
-  notice.append($('h3','','Prochain cours ENT : en attente'));
-  notice.append($('p','','Le cours du 12 novembre est maintenant classé avec les leçons. Le prochain cours apparaîtra ici seulement après l’importation de nouveaux documents ENT.'));
- }
+ notice.append($('h3','','Prochain cours ENT : en attente de la prochaine collecte'));
+ notice.append($('p','','Les séances récupérées sont classées ci-dessus par date. Aucune nouvelle séance n’est annoncée avant d’être présente dans une collecte ENT vérifiée.'));
  container.append(notice);
  const results=root.querySelector('.tim-es-results');
  if(results)root.insertBefore(container,results);else root.append(container);
