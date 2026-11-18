@@ -1,8 +1,8 @@
 {
   "mode": "lecture-seule-parent",
   "site": "https://classeur-tim-v16.pages.dev/",
-  "scope": "Inspection des cours ENT des 16 et 17 novembre : disponibilité des sept matières, cohérence des leçons et PDF privés sur le compte Parent ; lecture seule.",
+  "scope": "Vérification authentifiée Parent des 11 nouveaux exercices du 16 et 17 novembre : existence, dix questions et absence de réponses dévoilées. Sans validation, copie ni XP.",
   "launch_on_update": true,
-  "note": "Aucun contrôle de recotation, aucune modification Firebase, aucune tentative, aucune note et aucun XP modifiés. Confirmer l'affichage Parent sur le site publié, sans exposer les documents privés.",
-  "checkVersion": "inspection-parent-lecons-ent-16-17-nov-2026"
+  "note": "Inspection en lecture seule après publication main ; aucun appel submit, aucune modification Firebase ni consultation de copie individuelle dans ce contrôle.",
+  "checkVersion": "controle-11-exercices-ENT-16-17-nov-2026"
 }

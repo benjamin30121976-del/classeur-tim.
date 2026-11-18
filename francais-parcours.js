@@ -110,7 +110,7 @@ function render(root,options={}){
  const pack=window.TIM_FR_PACK;
  root.replaceChildren(button('← Toutes les matières',()=>options.back?.()),E('h2','Français — Mes leçons'));
  if(!pack){add(root,'p','Le dossier français n’est pas chargé.');return;}
- add(root,'p',pack.lessons.length+' séances ENT archivées · '+pack.bis.length+' leçons BIS · 22 exercices interactifs.');
+ add(root,'p',pack.lessons.length+' séances ENT archivées · '+pack.bis.length+' leçons BIS · '+(pack.bis.length*2)+' exercices interactifs.');
  add(root,'p','Deux enseignants : M. Lunel (langue et littérature) et M. Simiez (argumentation). Les cours futurs sans publication restent indiqués comme prévus, pas comme terminés.','lesson-caution');
  if(window.__TIM_PARENT&&!window.__TIM_GUEST&&window.TIM_FR_DOCUMENTS?.parentImport)root.append(window.TIM_FR_DOCUMENTS.parentImport());
  const next=E('section',undefined,'panel');

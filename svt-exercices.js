@@ -4,7 +4,7 @@
    Même disposition et classes que l’Espagnol, une question à la fois. */
 (function(){
 'use strict';
-const RE=/^SVQ_L0[1-7]_0[1-2]$/;
+const RE=/^SVQ_L0[1-8]_0[1-2]$/;
 const E=(tag,cls,txt)=>{
  const a=document.createElement(tag);if(cls)a.className=cls;
  if(txt!==undefined)a.textContent=String(txt);return a;
@@ -39,6 +39,7 @@ function showCorrection(slot,report){
  heading.append(E('p','',count?count+' erreur(s) : pour chacune, compare ta réponse, la réponse attendue et le raisonnement expliqué ci-dessous.':'Toutes les réponses sont correctes.'));
  slot.append(heading);
  report.items.forEach((item,i)=>{
+  if(!window.__TIM_PARENT&&item.correct)return; // Tim ne voit que ses erreurs ; Parent voit la copie complète.
   const box=E('section','tim-es-training-result-item');
   box.style.cssText=st.group+';border-left:4px solid '+(item.correct?'#397b56':'#bb664e');
   box.append(E('h4','', 'Question '+(i+1)+' — '+(item.correct?'Réussie':'À revoir')));
@@ -49,9 +50,9 @@ function showCorrection(slot,report){
   slot.append(box);
  });
  slot.append(E('p','',parentPractice?'Vous pouvez recommencer cet essai sans toucher aux résultats de Tim.':'L’exercice n’est plus rejouable. Revois la méthode avant la prochaine activité.'));
- const lessonId=/^SVT_BIS0[1-7]$/.test(String(report.lessonId||''))?report.lessonId:
-  /^SVQ_L0[1-7]_0[1-2]$/.test(String(report.id||''))?'SVT_BIS'+String(report.id).slice(5,7):null;
- const reviewTitles={SVT_BIS01:'Micro-organismes et microbiote',SVT_BIS02:'Barrières naturelles et contamination',SVT_BIS03:'Infection et graphiques',SVT_BIS04:'Asepsie, antisepsie et antibiotiques',SVT_BIS05:'Cellules du sang',SVT_BIS06:'Système immunitaire et inflammation',SVT_BIS07:'Phagocytose et rédaction scientifique'};
+ const lessonId=/^SVT_BIS0[1-8]$/.test(String(report.lessonId||''))?report.lessonId:
+  /^SVQ_L0[1-8]_0[1-2]$/.test(String(report.id||''))?'SVT_BIS'+String(report.id).slice(5,7):null;
+ const reviewTitles={SVT_BIS01:'Micro-organismes et microbiote',SVT_BIS02:'Barrières naturelles et contamination',SVT_BIS03:'Infection et graphiques',SVT_BIS04:'Asepsie, antisepsie et antibiotiques',SVT_BIS05:'Cellules du sang',SVT_BIS06:'Système immunitaire et inflammation',SVT_BIS07:'Phagocytose et rédaction scientifique',SVT_BIS08:'Lymphocytes B et T, anticorps et cellules mémoire'};
  if(lessonId){
   if(count)slot.append(E('p','','Partie conseillée à revoir : '+(reviewTitles[lessonId]||'la règle et les exemples')+'.'));
   const reviser=button('Revoir la leçon BIS pour comprendre les erreurs',()=>{
@@ -190,7 +191,7 @@ async function renderProgress(where){
  try{
   const r=await bridge().svtTrainingProgress();
   const rows=r?.attempts||[];
-  where.replaceChildren(E('p','',rows.length+' / 14 exercices BIS validés. Une seule tentative par exercice.'));
+  where.replaceChildren(E('p','',rows.length+' / 16 exercices BIS validés. Une seule tentative par exercice.'));
   if(!rows.length){where.append(E('p','','Aucune note de svt enregistrée pour le moment.'));return;}
   for(const item of rows){
    const block=E('details','pc-progress-item');block.style.cssText=st.group;

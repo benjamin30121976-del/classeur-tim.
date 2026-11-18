@@ -18,6 +18,8 @@ on:
   pull_request:
     paths:
       - 'histoire-geographie-*.js'
+      - 'worker/hg-*.mjs'
+      - 'worker/test/hg-vocab16-training.test.mjs'
       - 'index.html'
       - 'app.js'
       - 'packs/bonus-nazisme-cahier-16nov-v2.json'
@@ -41,7 +43,7 @@ jobs:
           for f in histoire-geographie-pack.js histoire-geographie-documents.js histoire-geographie-parcours.js histoire-geographie-exercices.js app.js boot.js parent-unified-results.js worker/server.mjs worker/hg-questions.mjs worker/hg-training.mjs worker/mixed-challenges.mjs; do node --check "$f"; done
       - name: Vérifier HG, correction, sécurité et missions des six matières
         run: |
-          node --test worker/test/hg-training.test.mjs worker/test/mixed-challenges.test.mjs worker/test/mixed-parent-preview.test.mjs worker/test/corrections-pedagogiques.test.mjs worker/test/svt-training.test.mjs worker/test/physics-training.test.mjs worker/test/math-training.test.mjs
+          node --test worker/test/hg-training.test.mjs worker/test/hg-vocab16-training.test.mjs worker/test/mixed-challenges.test.mjs worker/test/mixed-parent-preview.test.mjs worker/test/corrections-pedagogiques.test.mjs worker/test/svt-training.test.mjs worker/test/physics-training.test.mjs worker/test/math-training.test.mjs
       - name: Vérifier les dix questions du bonus depuis le cahier
         run: node --test tools/test/nazism-bonus-cahier.test.mjs
       - name: Installer Chromium pour le test du bonus sans réseau
@@ -52,6 +54,10 @@ jobs:
         env:
           NODE_PATH: /tmp/tim-hg-bonus/node_modules
         run: node scripts/test-bonus-nazisme-cahier-browser.cjs
+      - name: Vérifier les onglets et nouveaux boutons du 16 et 17 novembre dans Chromium local
+        env:
+          NODE_PATH: /tmp/tim-hg-bonus/node_modules
+        run: node tools/test/ent-nov17-tabs.readonly.cjs
       - name: Résumé
         run: echo 'Aucune tentative réelle de Tim n’a été consommée.' >> "$GITHUB_STEP_SUMMARY"
   navigateur-parent:

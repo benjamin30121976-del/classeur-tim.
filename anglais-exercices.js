@@ -4,7 +4,7 @@
    Même disposition et classes que l’Espagnol, une question à la fois. */
 (function(){
 'use strict';
-const RE=/^ENQ_L0[1-7]_0[1-3]$/;
+const RE=/^ENQ_L0[1-8]_0[1-3]$/;
 const E=(tag,cls,txt)=>{
  const a=document.createElement(tag);if(cls)a.className=cls;
  if(txt!==undefined)a.textContent=String(txt);return a;
@@ -39,6 +39,7 @@ function showCorrection(slot,report){
  heading.append(E('p','',count?count+' erreur(s) : pour chacune, compare ta réponse, la réponse attendue et le raisonnement expliqué ci-dessous.':'Toutes les réponses sont correctes.'));
  slot.append(heading);
  report.items.forEach((item,i)=>{
+  if(!window.__TIM_PARENT&&item.correct)return; // Tim ne voit que ses erreurs ; Parent voit la copie complète.
   const box=E('section','tim-es-training-result-item');
   box.style.cssText=st.group+';border-left:4px solid '+(item.correct?'#397b56':'#bb664e');
   box.append(E('h4','', 'Question '+(i+1)+' — '+(item.correct?'Réussie':'À revoir')));
@@ -49,9 +50,9 @@ function showCorrection(slot,report){
   slot.append(box);
  });
  slot.append(E('p','',parentPractice?'Vous pouvez recommencer cet essai sans toucher aux résultats de Tim.':'L’exercice n’est plus rejouable. Revois la méthode avant la prochaine activité.'));
- const lessonId=/^EN_BIS0[1-7]$/.test(String(report.lessonId||''))?report.lessonId:
-  /^ENQ_L0[1-7]_0[1-3]$/.test(String(report.id||''))?'EN_BIS'+String(report.id).slice(5,7):null;
- const reviewTitles={EN_BIS01:'The Sounds of Music : genres et chronologie',EN_BIS02:'Le suffixe -ness',EN_BIS03:'Vacances et prétérit simple',EN_BIS04:'Personnalité et adverbes',EN_BIS05:'SO, NEITHER et BUT',EN_BIS06:'Se présenter en anglais',EN_BIS07:'Prétérit simple et prétérit BE-ING'};
+ const lessonId=/^EN_BIS0[1-8]$/.test(String(report.lessonId||''))?report.lessonId:
+  /^ENQ_L0[1-8]_0[1-3]$/.test(String(report.id||''))?'EN_BIS'+String(report.id).slice(5,7):null;
+ const reviewTitles={EN_BIS01:'The Sounds of Music : genres et chronologie',EN_BIS02:'Le suffixe -ness',EN_BIS03:'Vacances et prétérit simple',EN_BIS04:'Personnalité et adverbes',EN_BIS05:'SO, NEITHER et BUT',EN_BIS06:'Se présenter en anglais',EN_BIS07:'Prétérit simple et prétérit BE-ING',EN_BIS08:'Musique et rébellion : lecture et lexique'};
  if(lessonId){
   if(count)slot.append(E('p','','Partie conseillée à revoir : '+(reviewTitles[lessonId]||'la règle et les exemples')+'.'));
   const reviser=button('Revoir la leçon BIS pour comprendre les erreurs',()=>{
@@ -197,7 +198,7 @@ async function renderProgress(where){
  try{
   const r=await bridge().englishTrainingProgress();
   const rows=r?.attempts||[];
-  where.replaceChildren(E('p','',rows.length+' / 11 exercices BIS validés. Une seule tentative par exercice.'));
+  where.replaceChildren(E('p','',rows.length+' / 12 exercices BIS validés. Une seule tentative par exercice.'));
   if(!rows.length){where.append(E('p','','Aucune note de anglais enregistrée pour le moment.'));return;}
   for(const item of rows){
    const block=E('details','pc-progress-item');block.style.cssText=st.group;

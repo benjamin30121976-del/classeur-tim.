@@ -9,6 +9,10 @@ const PASSWORD=process.env.TIM_PARENT_PASSWORD||'';
 const URL=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
 const TARGET_IMPORT_ONLY=(()=>{try{return /controle-import-json-android/.test(JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion||'');}catch{return false;}})();
 const TARGET_BONUS_AUDIT=(()=>{try{return /controle-bonus-parent-20261114/.test(JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion||'');}catch{return false;}})();
+const TARGET_NOV17_EXERCISES=(()=>{
+ try{return JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion==='controle-11-exercices-ENT-16-17-nov-2026';}
+ catch{return false;}
+})();
 const TARGET_RECHECK=process.env.TIM_AUDIT_RECODING==='1';
 const TARGET_SUNDAY_AUDIT=process.env.TIM_SUNDAY_AUDIT==='1'&&
   new Intl.DateTimeFormat('fr-CA',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date())==='2026-11-15';
@@ -55,6 +59,43 @@ async function inspect(browser,label,viewport){
     if(await intro.isVisible()){
       await page.locator('#intro-silent').click({timeout:5000});
       await intro.waitFor({state:'hidden',timeout:13000});
+    }
+
+    if(TARGET_NOV17_EXERCISES){
+      // En PR, la production pointe encore sur l'ancienne banque : ne pas la déclarer incorrecte.
+      // En main, auditer exclusivement les nouvelles questions, pas les anciens scénarios historiques.
+      if(process.env.GITHUB_REF!=='refs/heads/main'){
+        check(label+' audit des nouveaux exercices après publication',true,'Contrôle en production différé ; aucune lecture des copies.');
+        return;
+      }
+      // Simple lecture des sujets publics accessibles au Parent ; PAS de soumission, correction ni XP.
+      const audit=await page.evaluate(async()=>{
+        const bridge=window.__TIM_BRIDGE||{};
+        const entries=[
+          ['FRQ_L12_01','frTrainingTask'],['FRQ_L12_02','frTrainingTask'],
+          ['FRQ_L13_01','frTrainingTask'],['FRQ_L13_02','frTrainingTask'],
+          ['SVQ_L08_01','svtTrainingTask'],['SVQ_L08_02','svtTrainingTask'],
+          ['ENQ_L08_01','englishTrainingTask'],
+          ['HGQ_L09_03','hgTrainingTask'],
+          ['ESE_L16_01','spanishEntTrainingTask'],['ESE_L16_02','spanishEntTrainingTask'],['ESE_L16_03','spanishEntTrainingTask']
+        ];
+        const checked=[];
+        for(const [id,method] of entries){
+          try{
+            if(typeof bridge[method]!=='function')throw Error('Le lecteur ne propose pas la méthode');
+            const answer=await bridge[method](id);
+            const q=answer?.task?.questions;
+            const valid=answer?.task?.id===id&&q?.length===10&&
+              q.every(x=>!('right'in x)&&!('expected'in x)&&!('explanation'in x));
+            checked.push({id,valid:!!valid,detail:valid?'10 questions sans réponses divulguées':'Banque absente ou incorrecte'});
+          }catch(e){
+            checked.push({id,valid:false,detail:String(e?.message||e).slice(0,95)});
+          }
+        }
+        return checked;
+      });
+      for(const item of audit)check('Parent : nouveau questionnaire '+item.id,item.valid,item.detail);
+      return; // Mode ciblé terminé ; n'exécuter aucun test historique hors périmètre.
     }
     if(TARGET_SUNDAY_AUDIT){
       // Audit ciblé, lecture seule : aucune copie ni note affichée, aucune soumission.

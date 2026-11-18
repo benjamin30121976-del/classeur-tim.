@@ -704,8 +704,51 @@ function spanishNov17Panel(){
    t('p','Les fichiers originaux ne sont pas publiés dans ce dépôt public. Ils doivent être ouverts ou importés dans le stockage privé Parent existant. Le devoir II b du 18 novembre fait référence à la fiche originale.');
   },
   train:()=>{
-   t('h4','Entraînement de dix questions en préparation');
-   t('p','La fiche de dix questions avec corrigé pédagogique est conservée dans le dossier de préparation. Aucun nouveau questionnaire interactif, aucune note ni XP ne sont activés par cette leçon.');
+   t('h4','Entraînement du 17 novembre — 3 séries de 10 questions');
+   t('p','Comprendre les mots, compléter les phrases et conjuguer les verbes. Une seule validation par série pour Tim ; essai Parent sans enregistrement. Les corrections expliquent les erreurs.');
+   const module=window.TIM_SPANISH_SIMPLIFIED,bridge=window.__TIM_BRIDGE;
+   if(!module?.renderQuestions||!module?.drawCorrection||!bridge?.spanishEntTrainingTask||window.__TIM_GUEST){
+    t('p','Le correcteur privé est indisponible : aucun questionnaire ne peut être validé.');return;
+   }
+   const actions=t('div');actions.style.cssText='display:grid;gap:8px;margin:12px 0';
+   const work=t('section');work.className='tim-es-new-training';
+   const ids=['ESE_L16_01','ESE_L16_02','ESE_L16_03'];
+   const titles=['Je comprends les mots','Je complète les phrases','Je conjugue et j’écris'];
+   for(let i=0;i<ids.length;i++){
+    const id=ids[i],button=$('button','', 'Exercice '+(i+1)+' — '+titles[i]);
+    button.type='button';button.dataset.esTrainingId=id;
+    button.style.cssText='min-height:45px;border-radius:10px;background:#28458e;color:#fff;border:1px solid #28458e;padding:10px 13px;font-weight:750;white-space:normal;text-align:left';
+    button.onclick=async()=>{
+     work.replaceChildren($('p','','Ouverture sécurisée de l’exercice…'));
+     const back=()=>open('bis'),refresh=async()=>{};
+     try{
+      const data=await bridge.spanishEntTrainingTask(id);
+      if(!data?.task||data.task.questions?.length!==10)throw Error('Banque de dix questions indisponible');
+      if(data.completed&&!window.__TIM_PARENT){
+       const saved=await bridge.spanishEntTrainingProgress(id);
+       if(!saved?.attempt)throw Error('Une copie existe mais le relevé n’a pas pu être chargé ; aucune seconde tentative autorisée');
+       module.drawCorrection(work,saved.attempt,16,back);return;
+      }
+      if(data.completed&&window.__TIM_PARENT){
+       const details=$('details');details.append($('summary','','Voir la copie déjà réalisée par Tim'));
+       const copy=$('div');details.append(copy);
+       details.addEventListener('toggle',async()=>{if(!details.open)return;
+        try{const saved=await bridge.spanishEntTrainingProgress(id);
+         if(saved?.attempt)module.drawCorrection(copy,saved.attempt,16,back);
+         else copy.textContent='Copie indisponible pour le moment.';
+        }catch{copy.textContent='Lecture de la copie indisponible.';}
+       });
+       work.replaceChildren(details);
+       const trial=$('section');work.append(trial);
+       module.renderQuestions(trial,data.task,16,refresh,back);return;
+      }
+      module.renderQuestions(work,data.task,16,refresh,back);
+     }catch(error){
+      work.replaceChildren($('p','','Ouverture impossible : '+String(error?.message||error)+'. Aucune tentative ne doit être consommée tant que le serveur n’est pas disponible.'));
+     }
+    };
+    actions.append(button);
+   }
   }
  };
  const open=(tab)=>{area.replaceChildren();for(const b of tabs.children){const yes=b.dataset.tab===tab;b.style.background=yes?'#d8fc67':'#34415e';b.style.color=yes?'#1a2942':'#fff';}panes[tab]();};

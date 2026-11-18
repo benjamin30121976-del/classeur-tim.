@@ -5,7 +5,7 @@ import {ENGLISH_BANK_TEST,ENGLISH_BANK_VERSION,englishTask,gradeEnglishTask,engl
 import {PHYSICS_BANK_TEST,PHYSICS_BANK_VERSION,physicsTask,gradePhysicsTask,physicsPublicTask} from '../physics-training.mjs';
 import {mixedMission,gradeMixedMission,publicMixedMission} from '../mixed-challenges.mjs';
 
-test('Anglais : 110 bonnes et 110 mauvaises réponses, correction spécifique et réponses cachées',()=>{
+test('Anglais : 120 bonnes et 120 mauvaises réponses, correction spécifique et réponses cachées',()=>{
  let count=0;
  for(const id of ENGLISH_BANK_TEST.allIds()){
   const task=englishTask(id),publicTask=englishPublicTask(id);
@@ -25,7 +25,7 @@ test('Anglais : 110 bonnes et 110 mauvaises réponses, correction spécifique et
   }
   count+=10;
  }
- assert.equal(count,110);
+ assert.equal(count,120);
 });
 
 test('Anglais : contraction, apostrophe, ponctuation, mais pas de négation inverse',()=>{

@@ -6,7 +6,7 @@ const add=(root,tag,text,cls='')=>{const n=E(tag,text,cls);root.append(n);return
 const button=(text,cb,cls='plain')=>{const n=E('button',text,cls);n.type='button';n.onclick=cb;n.style.cssText='min-height:44px;white-space:normal;margin:4px';return n;};
 const short=d=>d?String(d).slice(8,10)+'/'+String(d).slice(5,7)+'/'+String(d).slice(0,4):'';
 const ORDER=['Vacances et prétérit','Personnalité','Similitudes et présentation','Musique et vocabulaire','Actions passées et simultanéité'];
-const TRAINING={EN_BIS01:3,EN_BIS02:3,EN_BIS03:1,EN_BIS04:1,EN_BIS05:1,EN_BIS06:1,EN_BIS07:1};
+const TRAINING={EN_BIS01:3,EN_BIS02:3,EN_BIS03:1,EN_BIS04:1,EN_BIS05:1,EN_BIS06:1,EN_BIS07:1,EN_BIS08:1};
 const ENT_MUSIC_QUIZ=[
 '1. Classer les genres musicaux dans l’ordre chronologique.',
 '2. Lire les affirmations sur le chant des esclaves et l’usage des tambours.',
@@ -115,7 +115,7 @@ function render(root,opts={}){
  root.replaceChildren(button('← Toutes les matières',()=>opts.back?.()),E('h2','Anglais — Mes leçons'));
  if(!pack||!Array.isArray(pack.lessons)){add(root,'p','Les cours d’anglais ne sont pas chargés.');return;}
  const all=pack.lessons.filter(x=>x.id.startsWith('EN_ENT_')),bis=pack.bis||[];
- add(root,'p',all.length+' séances ENT classées chronologiquement · '+bis.length+' leçons BIS · '+pack.attachments.length+' pièces originales · 11 entraînements de dix questions.');
+ add(root,'p',all.length+' séances ENT classées chronologiquement · '+bis.length+' leçons BIS · '+pack.attachments.length+' pièces originales · '+Object.values(TRAINING).reduce((a,b)=>a+b,0)+' entraînements de dix questions.');
  add(root,'p','Collecte ENT des 12, 16 et 17 novembre 2026. Les textes du professeur restent distincts des leçons BIS.','lesson-caution');
  const nextEval=(pack.homework||[]).find(x=>x.due==='2026-11-16'&&/evaluation/i.test(x.title));
  if(nextEval){

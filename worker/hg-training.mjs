@@ -1,13 +1,13 @@
-/* HG — 18 exercices (9 chapitres × 2 questionnaires de 10 questions).
+/* HG — 18 exercices existants + 1 exercice de vocabulaire du 16 novembre (10 questions).
    Corrections et bonnes réponses exclusivement côté serveur. */
-import {HG_QCM,HG_WRITTEN} from './hg-questions.mjs';
+import {HG_QCM,HG_WRITTEN,HG_VOCAB16} from './hg-questions.mjs';
 import {sameShortAnswer} from './short-answer-equivalence.mjs';
 export const HG_BANK_VERSION='hg-20261113-v1';
-const RE=/^HGQ_L(0[1-9])_0([1-2])$/;
-const LABELS=['Je comprends les notions','Je rédige et j’applique'];
+const RE=/^HGQ_L(0[1-9])_0([1-3])$/;
+const LABELS=['Je comprends les notions','Je rédige et j’applique','Les cinq définitions du devoir ENT du 16 novembre'];
 function context(id){
  const match=RE.exec(String(id||''));
- if(!match)return null;
+ if(!match||(match[2]==='3'&&match[1]!=='09'))return null;
  return {id,lesson:Number(match[1]),series:Number(match[2]),lessonId:'HG_BIS'+match[1]};
 }
 export function hgTrainingId(id){return Boolean(context(id));}
@@ -23,17 +23,20 @@ function validate(){
    if(!q?.trim()||!right?.trim()||!why?.trim()||!Array.isArray(alternatives))throw Error('Question écrite HG incomplète');
   }
  }
+ if(HG_VOCAB16.qcm.length!==5||HG_VOCAB16.written.length!==5)throw Error('Dix questions de vocabulaire du 16 novembre exigées');
+ for(const [q,right,wrong,why] of HG_VOCAB16.qcm){if(!q?.trim()||!right?.trim()||!why?.trim()||wrong.length!==3||new Set([right,...wrong]).size!==4)throw Error('QCM de vocabulaire incomplet');}
+ for(const [q,right,why,alternatives] of HG_VOCAB16.written){if(!q?.trim()||!right?.trim()||!why?.trim()||!Array.isArray(alternatives))throw Error('Réponse de vocabulaire incomplète');}
  return true;
 }
 validate();
 export function hgTask(id){
  const c=context(id);if(!c)return null;
- const rows=c.series===1?HG_QCM[c.lesson-1]:HG_WRITTEN[c.lesson-1];
+ const rows=c.series===3?[...HG_VOCAB16.qcm,...HG_VOCAB16.written]:c.series===1?HG_QCM[c.lesson-1]:HG_WRITTEN[c.lesson-1];
  return {id,lessonId:c.lessonId,series:c.series,
   title:'Histoire-géographie · Exercice '+c.series+' — '+LABELS[c.series-1],
   bankVersion:HG_BANK_VERSION,
   questions:rows.map((row,i)=>{
-   if(c.series===2)return {kind:'text',prompt:row[0],expected:row[1],explanation:row[2],accepted:[row[1],...row[3]]};
+   if(c.series===2||(c.series===3&&i>=5))return {kind:'text',prompt:row[0],expected:row[1],explanation:row[2],accepted:[row[1],...row[3]]};
    const [prompt,expected,wrong,explanation]=row;
    const position=(c.lesson*3+i*7)%4;
    const choices=wrong.slice();choices.splice(position,0,expected);
@@ -70,4 +73,4 @@ export function gradeHgTask(id,answers,bankVersion){
   xp:0,items,errorCounts:wrong.length?{[task.lessonId]:wrong.length}:{},
   lessonToReview:wrong.length?task.lessonId:null,bankVersion:HG_BANK_VERSION};
 }
-export const HG_BANK_TEST={validate,allIds:()=>Array.from({length:9},(_,i)=>[1,2].map(s=>'HGQ_L0'+(i+1)+'_0'+s)).flat()};
+export const HG_BANK_TEST={validate,allIds:()=>[...Array.from({length:9},(_,i)=>[1,2].map(s=>'HGQ_L0'+(i+1)+'_0'+s)).flat(),'HGQ_L09_03']};

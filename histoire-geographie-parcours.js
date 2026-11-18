@@ -112,11 +112,11 @@ function session(course,bis,pack){
    if(/schéma|carte|tableau/i.test(course.title)&&!attached.length)add(pane,'p','La carte, le schéma ou le tableau exact n’est pas joint dans la collecte. Aucun exercice ENT inventé.');
   }else if(tab==='train'){
    add(pane,'h3','5 · Exercices BIS interactifs');
-   add(pane,'p','Deux exercices de dix questions : QCM pour comprendre, puis réponses écrites. Une seule tentative Tim, note et correction expliquée ; essai Parent non enregistré.');
+   add(pane,'p','Deux exercices de dix questions pour chaque leçon. Pour le chapitre Nazisme, un troisième exercice ciblé sur les cinq définitions du devoir ENT du 16 novembre est ajouté. Une seule tentative Tim ; essai Parent non enregistré.');
    const actions=E('div'),slot=E('div');pane.append(actions,slot);
-   for(const b of bis)for(let i=1;i<=2;i++){
+   for(const b of bis)for(let i=1;i<=(b.id==='HG_BIS09'?3:2);i++){
     const id='HGQ_L'+b.id.slice(-2)+'_0'+i;
-    actions.append(btn(b.title+' · '+(i===1?'QCM de compréhension':'Réponses écrites'),()=>{
+    actions.append(btn(b.title+' · '+(i===1?'QCM de compréhension':i===2?'Réponses écrites':'Cinq mots à définir (devoir ENT 16 novembre)'),()=>{
      slot.replaceChildren();
      if(!window.TIM_HG_TRAINING?.mount){add(slot,'p','Questionnaire indisponible.');return;}
      window.TIM_HG_TRAINING.mount(id,slot);
@@ -352,7 +352,7 @@ function render(root,opts={}){
  const visibleBis=(pack?.bis||[]).filter(x=>visibleChapters.includes(x.group));
  root.replaceChildren(btn('← Toutes les matières',()=>opts.back?.()),E('h2',emcOnly?'EMC — Mes leçons':'Histoire-géographie — Mes leçons'));
  if(!visibleLessons.length){add(root,'p',emcOnly?'Aucune séance EMC identifiée dans le classeur pour le moment.':'Le dossier Histoire-géographie est temporairement indisponible.');return;}
- add(root,'p',visibleLessons.length+' séances ENT classées par date · '+visibleBis.length+' leçons BIS · '+(visibleBis.length*2)+' exercices de 10 questions.');
+ add(root,'p',visibleLessons.length+' séances ENT classées par date · '+visibleBis.length+' leçons BIS · '+((visibleBis.length*2+(visibleBis.some(b=>b.id==='HG_BIS09')?1:0)))+' exercices de 10 questions.');
  add(root,'p',emcOnly?'Les cours EMC déjà archivés dans Histoire-géographie sont présentés ici sans duplication de copies, notes ou XP. Les documents ENT et les leçons BIS restent distincts.':'Archives ENT du 12 novembre et collecte ciblée du 13. Si le professeur ne donne qu’un titre, la leçon BIS est un ajout distinct : aucun texte officiel n’est inventé.','lesson-caution');
  if(!emcOnly&&window.__TIM_PARENT&&!window.__TIM_GUEST&&window.TIM_HG_DOCUMENTS?.parentImport)root.append(window.TIM_HG_DOCUMENTS.parentImport());
  const exam=pack.homework.find(h=>h.due==='2026-11-18'&&/évaluation/i.test(h.title));

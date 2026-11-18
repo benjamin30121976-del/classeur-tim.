@@ -15,7 +15,7 @@ const app=fs.readFileSync(path.join(dir,'app.js'),'utf8');
 assert.match(app,/name==='EMC'&&window\.TIM_HG_PATH/);
 assert.match(app,/emcOnly:true/);
 assert.match(training,/options\.emcOnly/);
-assert.match(training,/options\.emcOnly\?6:18/);
+assert.match(training,/options\.emcOnly\?6:19/);
 assert.match(parcours,/renderEmc\(root,opts\)/);
 const output=path.join(dir,'browser-results','emc-presentation');
 fs.mkdirSync(output,{recursive:true});

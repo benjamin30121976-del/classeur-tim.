@@ -503,7 +503,7 @@ function summaryOf(attempts,where){
  const complete=attempts.length;
  const result=css(el('div'),ST.panel);
  const title=css(el('h3','Mes résultats' ),ST.title);result.append(title);
- p(result,complete+' / 42 exercices réalisés. Chaque exercice a 10 questions et ne peut être validé qu’une fois.','font-size:15px;color:#34445f;line-height:1.55');
+ p(result,complete+' / 45 exercices réalisés. Chaque exercice a 10 questions et ne peut être validé qu’une fois.','font-size:15px;color:#34445f;line-height:1.55');
  const totalXp=attempts.reduce((n,a)=>n+Number(a.xp||0),0);
  p(result,'XP gagnés avec les leçons d’espagnol : '+totalXp.toLocaleString('fr-FR')+' XP.','font-size:15px;font-weight:850;color:#263d89;line-height:1.55');
  if(complete>=3){
@@ -709,5 +709,5 @@ async function render(root,opts={},helpers={}){
  root.append(results);
  refresh();
 }
-window.TIM_SPANISH_SIMPLIFIED={render,lessons:LESSONS.map((x,i)=>({id:x[0],num:i+1,name:x[2]}))};
+window.TIM_SPANISH_SIMPLIFIED={render,renderQuestions,drawCorrection,lessons:LESSONS.map((x,i)=>({id:x[0],num:i+1,name:x[2]}))};
 })();
