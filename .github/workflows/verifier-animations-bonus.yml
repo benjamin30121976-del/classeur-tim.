@@ -32,6 +32,7 @@ on:
       - 'scripts/test-animations-bonus.mjs'
       - 'scripts/test-animation-entree-xp.mjs'
       - 'scripts/test-animation-browser.cjs'
+      - 'outils/inspecter-animations-publiees.cjs'
       - 'scripts/test-bonus-perimetres-browser.cjs'
       - 'scripts/test-animations-dimanche.mjs'
       - 'scripts/corriger_animation_dimanche.py'
@@ -90,6 +91,10 @@ jobs:
           node scripts/test-geometry-all-exercises-browser.cjs
           node scripts/test-homework-bonus-presentation-browser.cjs
           node scripts/test-emc-presentation-browser.cjs
+      - name: Vérifier le lecteur d'animations réellement publié sans version figée
+        env:
+          NODE_PATH: /tmp/tim-animations-browser/node_modules
+        run: node outils/inspecter-animations-publiees.cjs
       - name: Archiver les captures des animations
         if: always()
         uses: actions/upload-artifact@v4

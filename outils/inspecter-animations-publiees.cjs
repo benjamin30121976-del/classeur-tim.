@@ -27,9 +27,9 @@ fs.mkdirSync(out,{recursive:true});
    const links=await page.evaluate(()=>({
     splash:window.TIM_ANIMATIONS.url('opening'),
     gif:window.TIM_ANIMATIONS.url('plus2half'),
-    script:[...document.scripts].some(s=>s.src.includes('tim-animations.js?v=revelation-xp-defis-20261113-v2'))
+    script:[...document.scripts].some(s=>{try{return new URL(s.src).pathname.endsWith('/tim-animations.js');}catch{return false;}})
    }));
-   assert.ok(links.script,'La version corrigée du lecteur n’est pas publiée');
+   assert.ok(links.script,'Le lecteur tim-animations.js est absent du site publié');
    const [appResponse,mixedResponse,cssResponse]=await Promise.all([
      page.request.get(new URL('./app.js?v=revelation-xp-defis-20261113-v2',base).href,{timeout:30000}),
      page.request.get(new URL('./mixed-challenges-ui.js?v=revelation-xp-defis-20261113-v2',base).href,{timeout:30000}),
