@@ -154,6 +154,16 @@ async function inspectNov17Lessons(page,device){
   root.replaceChildren();
   await window.TIM_SPANISH_ENT_EXACT.render(root,{});
  });
+ // L'introduction se déclenche parfois après la connexion : la fermer comme
+ // le Parent le ferait avant de contrôler le vrai rendu de la matière.
+ const lateIntro=page.locator('#intro-screen');
+ if(await lateIntro.isVisible()){
+  await page.evaluate(()=>document.getElementById('intro-silent')?.click());
+  await lateIntro.waitFor({state:'hidden',timeout:14000});
+ }
+ await page.evaluate(()=>{
+  document.querySelectorAll('.page').forEach(el=>el.classList.toggle('active',el.id==='matieres'));
+ });
  await page.waitForFunction(()=>[...document.querySelectorAll('#matieres-content details.tim-es-lesson')]
   .some(x=>/17 novembre|17\/11/i.test(x.querySelector(':scope > summary')?.textContent||'')),
   null,{timeout:20000});
