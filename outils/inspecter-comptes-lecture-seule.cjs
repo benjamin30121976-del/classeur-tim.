@@ -158,9 +158,14 @@ async function inspect(browser,role,device,report) {
     if(role.parent){
       // L'écran Parent est vérifié en dernier : sur téléphone, son panneau
       // peut recouvrir la barre de navigation lors d'un retour aux matières.
-      const parentNav=page.locator('[data-nav="parent"]:visible').first();
-      await parentNav.click({timeout:12000});
-      const parentVisible=await page.locator('#parent.page.active').isVisible().catch(()=>false);
+      // Sur mobile, revenir d'abord à l'accueil comme le ferait le Parent.
+      // Ne pas forcer un clic sur une commande masquée : l'échec doit être signalé.
+      await page.locator('[data-nav="home"]:visible').first().click({timeout:12000});
+      const parentNav=page.locator('[data-nav="parent"]').first();
+      const navVisible=await parentNav.isVisible().catch(()=>false);
+      check(report,prefix+' : acces au bouton Parent depuis accueil',navVisible);
+      if(navVisible)await parentNav.click({timeout:12000});
+      const parentVisible=navVisible&&await page.locator('#parent.page.active').isVisible().catch(()=>false);
       check(report,prefix+' : page parent affichee',parentVisible);
       if(parentVisible){
         try{await capture(page,role.id+'-'+device.id+'-espace-parent');}
