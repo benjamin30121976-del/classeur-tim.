@@ -28,6 +28,7 @@ function bisContent(slot,bis){
  else if(bis.id==='EN_BIS05')add(slot,'p','Phrase : I can swim. Réponse : So can I. Je repère can, le conserve et construis So + can + I.');
  else if(bis.id==='EN_BIS06')add(slot,'p','Question : Introduce yourself. Réponse : I am a student. I like playing football. Je donne une information par phrase.');
  else if(bis.id==='EN_BIS07')add(slot,'p','Phrase : The band was playing when the lights went out. Je distingue was playing (action en cours) et went out (événement court).');
+ else if(bis.id==='EN_BIS08')add(slot,'p','Question : What is the text about? Réponse modèle seulement si le document le justifie : This text is about a music movement linked to a rebellion. Il faut citer les mots ou phrases du vrai texte ; son contenu exact n’est pas fourni dans l’ENT.');
  else if(bis.id==='EN_BIS02')add(slot,'p','Question : Turn happy into a noun. Réponse : Happiness. Je remplace y par i puis j’ajoute -ness.');
  else add(slot,'p','Question : Where did the first jazz bands appear? Réponse : The first jazz bands appeared in New Orleans. Je reformule en phrase complète.');
 }
