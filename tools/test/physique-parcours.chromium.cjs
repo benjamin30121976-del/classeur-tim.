@@ -406,8 +406,15 @@ async function main(){
   const spanish=page.locator('#spanish-inline-pdf-test');
   await spanish.getByText('Traduction en français').waitFor({state:'visible',timeout:12000});
   assert.equal(await spanish.locator('.pc-inline-pdf').count(),1,'Le PDF espagnol doit être dans la leçon');
-  await spanish.getByRole('button',{name:/Afficher ici le document/}).click();
-  await spanish.locator('.pc-pdf-toolbar span').getByText('Page 1 / 1').waitFor({state:'visible',timeout:30000});
+  assert.equal(await spanish.getByRole('button',{name:/Afficher ici le document/}).count(),0,'Aucun bouton manuel pour le PDF espagnol');
+  await spanish.locator('.pc-inline-full-document').scrollIntoViewIfNeeded();
+  const spanishPage=spanish.locator('.pc-pdf-page').first();
+  await spanishPage.waitFor({state:'attached',timeout:30000});
+  await spanishPage.scrollIntoViewIfNeeded();
+  await page.waitForFunction(()=>{
+   const row=document.querySelector('#spanish-inline-pdf-test .pc-pdf-page');
+   return row?.dataset.rendered==='1'&&row.querySelector('canvas')?.width>0;
+  },undefined,{timeout:30000});
   report.checks.spanishPdfInlineWithTranslation=true;
   assert.equal(await page.evaluate(()=>window.__TEST_NEW_TABS),0,'Aucun onglet nouveau en espagnol');
 
@@ -423,14 +430,21 @@ async function main(){
    const host=document.createElement('div');host.id='math-inline-pdf-test';
    document.body.append(host);
    await window.TIM_INLINE_ENT_DOCUMENTS.mount(host,['MATH-COURSE-DEMO'],{
-    filenamePattern:/programme.*maths/i,limit:2
+    filenamePattern:/programme.*maths/i,limit:2,auto:true
    });
   },makeSyntheticPdf());
   const mathDoc=page.locator('#math-inline-pdf-test');
   await mathDoc.getByText('1 document(s) original(aux)').waitFor({state:'visible',timeout:15000});
   assert.equal(await mathDoc.locator('.pc-inline-pdf').count(),1);
-  await mathDoc.getByRole('button',{name:/Afficher ici le document/}).click();
-  await mathDoc.locator('.pc-pdf-toolbar span').getByText('Page 1 / 1').waitFor({state:'visible',timeout:30000});
+  assert.equal(await mathDoc.getByRole('button',{name:/Afficher ici le document/}).count(),0,'Aucun bouton manuel pour le PDF maths');
+  await mathDoc.locator('.pc-inline-full-document').scrollIntoViewIfNeeded();
+  const mathPage=mathDoc.locator('.pc-pdf-page').first();
+  await mathPage.waitFor({state:'attached',timeout:30000});
+  await mathPage.scrollIntoViewIfNeeded();
+  await page.waitForFunction(()=>{
+   const row=document.querySelector('#math-inline-pdf-test .pc-pdf-page');
+   return row?.dataset.rendered==='1'&&row.querySelector('canvas')?.width>0;
+  },undefined,{timeout:30000});
   report.checks.mathPdfInlineNoOtherPage=true;
   assert.equal(await page.evaluate(()=>window.__TEST_NEW_TABS),0,'Aucun onglet nouveau en maths');
 
