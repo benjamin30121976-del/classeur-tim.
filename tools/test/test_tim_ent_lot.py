@@ -30,7 +30,7 @@ class LotTest(unittest.TestCase):
                          'dates_seances.json':{'10099~6400507':'2026-11-18'},
                          'rapport_collecte_en_ligne.json':{'matiere':'ESPAGNOL LV2'}})
         self.make_zip(b,{'index_fiches_espagnol.json':[{'id':'10099~115430','nom_ENT':'3D.pdf'}],
-                         'pieces/10099~115430.pdf':b'%PDF-1.4\n%Test sans données privées\n'})
+                         'pieces/10099~115430.pdf':b'%PDF-1.4\n%Test non prive\n'})
         return a,b
     def test_first_run_no_false_novelty_and_plan(self):
         with tempfile.TemporaryDirectory() as d:
