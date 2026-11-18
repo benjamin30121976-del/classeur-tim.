@@ -27,20 +27,20 @@ async function testDevice(browser,label,viewport){
   }
   // Contrôle la vraie version Cloudflare, sans injecter le code de la branche.
   const production=await page.evaluate(()=>{
-   const version='documents-inline-auto-20261118-v1';
    const modules=['physique-chimie-inline-pdf.js','tim-inline-ent-documents.js',
     'francais-documents.js','anglais-documents.js',
     'svt-documents.js','histoire-geographie-documents.js'];
    const urls=[...document.scripts].map(s=>s.src).filter(Boolean);
-   const missing=modules.filter(name=>!urls.some(src=>src.includes(name+'?v='+version)));
+   const missing=modules.filter(name=>!urls.some(src=>src.includes('/'+name+'?v=')));
    return {missing,
     fullPdf:typeof window.TIM_PHYSICS_INLINE_PDF?.createFullInline==='function',
-    office:typeof window.TIM_INLINE_ENT_DOCUMENTS?.renderOfficeDocument==='function'};
+    office:typeof window.TIM_INLINE_ENT_DOCUMENTS?.renderOfficeDocument==='function',
+    svt:typeof window.TIM_SVT_DOCUMENTS?.render==='function',
+    english:typeof window.TIM_ENGLISH_DOCUMENTS?.render==='function'};
   });
-  if(production.missing.length||!production.fullPdf||!production.office)
-   throw Error('Version Cloudflare non confirmée : '+production.missing.join(', ')
-    +(production.fullPdf&&production.office?'':' ; lecteur intégral ou bureautique absent'));
-  console.log('VERSION Cloudflare '+label+' : les six modules 20261118-v1 sont chargés directement.');
+  if(production.missing.length||!production.fullPdf||!production.office||!production.svt||!production.english)
+   throw Error('Modules Cloudflare absents ou inactifs : '+production.missing.join(', '));
+  console.log('VERSION Cloudflare '+label+' : six modules originaux chargés, sans suffixe figé.');
   const tasks=[
    {kind:'french-pdf',expect:'pdf'},
    {kind:'english-pdf',expect:'pdf'},

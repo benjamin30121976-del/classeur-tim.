@@ -1,0 +1,44 @@
+name: Vérifier les trois originaux ENT du 17 novembre sans écriture privée
+on:
+  pull_request:
+    paths:
+      - 'tim-ent-17nov-private-import.js'
+      - 'tools/test/ent-three-originals-20261118.test.mjs'
+      - 'svt-pack.js'
+      - 'svt-documents.js'
+      - 'svt-parcours.js'
+      - 'espagnol-ent-exact.js'
+      - 'index.html'
+      - 'outils/auditer-affichage-auto-parent.cjs'
+      - '.github/workflows/verifier-trois-originaux-17nov.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tim-ent-17nov-private-import.js'
+      - 'svt-pack.js'
+      - 'svt-documents.js'
+      - 'svt-parcours.js'
+      - 'espagnol-ent-exact.js'
+      - 'index.html'
+      - '.github/workflows/verifier-trois-originaux-17nov.yml'
+permissions:
+  contents: read
+jobs:
+  verifier-import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier la syntaxe sans envoyer d'originaux sur GitHub
+        run: |
+          node --check tim-ent-17nov-private-import.js
+          node --check svt-pack.js
+          node --check svt-documents.js
+          node --check svt-parcours.js
+          node --check espagnol-ent-exact.js
+          node --check outils/auditer-affichage-auto-parent.cjs
+      - name: Tester les trois empreintes, l'import Parent simulé et la protection du 3D.pdf existant
+        run: node --test tools/test/ent-three-originals-20261118.test.mjs

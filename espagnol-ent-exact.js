@@ -645,7 +645,12 @@ function createSpanishSession(item,label){
   try{
    const lesson=$('section');body.replaceChildren(lesson);
    await renderLessonOriginal(lesson,item.id,'all');
-   if(item.id==='10099~6400537'){body.append(spanishNov17Panel());}
+   if(item.id==='10099~6400537'){
+    body.append($('h4','','Documents originaux du 17 novembre — dans cette leçon'));
+    const directFiles=$('section');body.append(directFiles);
+    await nov17OriginalsInline(directFiles);
+    body.append(spanishNov17Panel(false));
+   }
    else if(!window.TIM_SPANISH_ENT_BIS?.render(body,item.id)){
     const note=$('p','','Leçon BIS à préparer : le cours original et ses consignes restent disponibles ci-dessus.');
     note.style.cssText='font-size:14px;color:#425571;padding:10px 0';
@@ -662,33 +667,34 @@ function createSpanishSession(item,label){
 /* Documents exacts du 17/11 : lecture privée seulement si le Parent les a
    déjà importés ; aucun PDF inventé, aucun document rendu public. */
 async function nov17OriginalsInline(host){
- host.replaceChildren($('p','','Recherche des pièces originales dans le classeur privé…'));
+ host.replaceChildren($('p','','Recherche des trois documents ENT du 17 novembre…'));
  const api=window.__TIM_BRIDGE?.attachments;
  if(window.__TIM_GUEST||!api?.list){
   host.textContent='Les documents originaux sont réservés aux comptes Parent et Tim.';return;
  }
- const names=[
-  '4 EECEno empiezo las clases en septiembre.pdf',
-  '11 Presente de indicativo LISTA 2.pdf',
-  '3D.pdf'
+ const expected=[
+  {label:'4 EECEno empiezo las clases en septiembre.pdf',sha:'be48a6fa18032c127be5cdc1652ca9a585908953a67cedc562dbd7575b472837'},
+  {label:'11 Presente de indicativo LISTA 2.pdf',sha:'1a7d9be5cb0bda99adb1a337795822f5295478bba7994ffcb0bb543bade816e3'},
+  {label:'3D.pdf — version du 17 novembre',sha:'9e6658b16436577febe7ee0e597c033496a8d82057258fcad9a475559e4a0215'}
  ];
  try{
   const files=await api.list('lesson',TAG);
   host.replaceChildren();
-  for(const name of names){
-   const file=files.find(f=>{const value=String(f.fileName||'').toLowerCase();return value===name.toLowerCase()||value.endsWith('_'+name.toLowerCase());});
-   const row=$('section','tim-nov17-original');
-   row.append($('h4','',name));
+  for(const spec of expected){
+   // Le 3D.pdf préexistant est différent : ne jamais le confondre avec
+   // l'original du 17 novembre et ne jamais l'effacer.
+   const file=files.find(x=>String(x.sha256||'').toLowerCase()===spec.sha);
+   const row=$('section','tim-nov17-original');row.append($('h4','',spec.label));
    if(file&&window.TIM_PHYSICS_INLINE_PDF?.createFullInline){
     row.append(window.TIM_PHYSICS_INLINE_PDF.createFullInline(
-      {target:TAG,fileName:file.fileName},'Toutes les pages du document original'
+      {target:TAG,fileName:file.fileName},'Toutes les pages originales — '+spec.label
     ));
-   }else row.append($('p','','Fichier retrouvé dans le ZIP ENT du 17 novembre, mais non disponible dans le stockage privé de cette leçon.'));
+   }else row.append($('p','','Original du 17 novembre non encore importé dans le stockage privé Parent. L’ancienne pièce de même nom, si elle existe, est conservée.'));
    host.append(row);
   }
- }catch(err){host.textContent='Impossible de vérifier les fichiers privés : '+String(err?.message||err);}
+ }catch(err){host.textContent='Lecture des fichiers privés impossible : '+String(err?.message||err);}
 }
-function spanishNov17Panel(){
+function spanishNov17Panel(includeDocuments=true){
  const card=$('details','tim-es-lesson ent-es-followup');
  card.style.cssText='border:1px solid #aac5e2;border-radius:14px;margin:12px 0;background:#f7f9ff;color:#273448;overflow:hidden';
  const heading=$('summary','','Séance ENT · Mardi 17 novembre — No empiezo en septiembre et verbes');
@@ -707,8 +713,10 @@ function spanishNov17Panel(){
    t('h4','Devoir pour le mercredi 18 novembre');
    const x=t('p','Terminar el ejercicio II b. Aprender CONOCER, PEDIR, SALIR (PONER, VER, VENIR); traer el Plickers.');
    x.lang='es';t('p','Devoir ENT 10099~215356. Les noms d’élèves de l’évaluation du 17/11 ne sont pas diffusés.');
-   t('h4','Les documents originaux du professeur — visibles ici, sans ouvrir une autre page');
-   const fileHost=t('section');nov17OriginalsInline(fileHost);
+   if(includeDocuments){
+    t('h4','Les documents originaux du professeur — visibles ici, sans ouvrir une autre page');
+    const fileHost=t('section');nov17OriginalsInline(fileHost);
+   }
   },
   bis:()=>{
    t('h4','Leçon BIS — comprendre le calendrier et la négation');
@@ -729,7 +737,8 @@ function spanishNov17Panel(){
   entex:()=>{
    t('h4','Documents originaux à consulter (stockage privé)');
    for(const s of ['10099~115113 — No empiezo las clases en septiembre.pdf (compréhension écrite, groupe A/B)','10099~115426 — 11 Presente de indicativo LISTA 2.pdf (tableau de verbes)','10099~115427 — 3D.pdf (correction et consignes)'])t('p',s);
-   t('p','Les fichiers originaux ne sont pas publiés dans ce dépôt public. Ils doivent être ouverts ou importés dans le stockage privé Parent existant. Le devoir II b du 18 novembre fait référence à la fiche originale.');
+   t('p','Les trois documents ENT sont affichés directement ci-dessous lorsqu’ils sont disponibles dans le stockage privé. Le devoir II b du 18 novembre se rapporte à la fiche originale.');
+   const fileHost=t('section');nov17OriginalsInline(fileHost);
   },
   train:()=>{
    t('h4','Entraînement du 17 novembre — 3 séries de 10 questions');
@@ -833,6 +842,7 @@ async function render(root,opts={}){
  appendChronologicalSpanish(root);
 
  if(window.__TIM_PARENT&&!window.__TIM_GUEST){
+  if(window.TIM_ENT_17NOV_IMPORT?.panel)root.prepend(window.TIM_ENT_17NOV_IMPORT.panel());
   const archive=$('details','ent-es-archive-parent');
   archive.style.cssText='border:1px solid #7a8ca8;border-radius:13px;padding:13px 14px;margin:24px 0;background:#20324d;color:#f3f7ff';
   const summary=$('summary','','Archives Parent — cours, devoirs, PDF et séances d’origine');
