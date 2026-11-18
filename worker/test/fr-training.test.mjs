@@ -24,9 +24,9 @@ function sampleDb(){
  };
 }
 
-test('FR : 11 leçons, 22 exercices, 220 questions et réponses masquées',()=>{
+test('FR : 13 leçons, 26 exercices, 260 questions et réponses masquées',()=>{
  const ids=FR_BANK_TEST.allIds();
- assert.equal(ids.length,22);
+ assert.equal(ids.length,26);
  assert.equal(new Set(ids).size,22);
  for(const id of ids){
   assert.ok(frTrainingId(id));
@@ -44,11 +44,11 @@ test('FR : 11 leçons, 22 exercices, 220 questions et réponses masquées',()=>{
   }
  }
  assert.equal(frTrainingId('FRQ_L01_03'),false);
- assert.equal(frTrainingId('FRQ_L12_01'),false);
- assert.equal(frPublicTask('FRQ_L12_01'),null);
+ assert.equal(frTrainingId('FRQ_L14_01'),false);
+ assert.equal(frPublicTask('FRQ_L14_01'),null);
 });
 
-test('FR : les 220 bonnes réponses donnent 10/10 et les 220 fausses 0/10',()=>{
+test('FR : les 260 bonnes réponses donnent 10/10 et les 260 fausses 0/10',()=>{
  for(const id of FR_BANK_TEST.allIds()){
   const task=frTask(id);
   const correct=task.questions.map(q=>q.kind==='qcm'?q.right:q.expected);

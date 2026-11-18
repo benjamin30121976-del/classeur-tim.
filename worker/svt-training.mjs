@@ -1,9 +1,9 @@
-/* SVT — 14 exercices (7 chapitres × 2 questionnaires de 10 questions).
+/* SVT — 16 exercices (8 chapitres × 2 questionnaires de 10 questions).
    Corrections et bonnes réponses exclusivement côté serveur. */
 import {SVT_QCM,SVT_WRITTEN} from './svt-questions.mjs';
 import {sameShortAnswer} from './short-answer-equivalence.mjs';
-export const SVT_BANK_VERSION='svt-20261113-v1';
-const RE=/^SVQ_L(0[1-7])_0([1-2])$/;
+export const SVT_BANK_VERSION='svt-20261117-v2';
+const RE=/^SVQ_L(0[1-8])_0([1-2])$/;
 const LABELS=['Je comprends les notions','Je rédige et j’applique'];
 function context(id){
  const match=RE.exec(String(id||''));
@@ -12,8 +12,8 @@ function context(id){
 }
 export function svtTrainingId(id){return Boolean(context(id));}
 function validate(){
- if(SVT_QCM.length!==7||SVT_WRITTEN.length!==7)throw Error('7 chapitres SVT exigés');
- for(let c=0;c<7;c++){
+ if(SVT_QCM.length!==8||SVT_WRITTEN.length!==8)throw Error('8 chapitres SVT exigés');
+ for(let c=0;c<8;c++){
   if(SVT_QCM[c].length!==10||SVT_WRITTEN[c].length!==10)throw Error('10 questions par questionnaire SVT');
   for(const [q,right,wrong,why] of SVT_QCM[c]){
    if(!q?.trim()||!right?.trim()||!why?.trim()||wrong.length!==3||
@@ -70,4 +70,4 @@ export function gradeSvtTask(id,answers,bankVersion){
   xp:0,items,errorCounts:wrong.length?{[task.lessonId]:wrong.length}:{},
   lessonToReview:wrong.length?task.lessonId:null,bankVersion:SVT_BANK_VERSION};
 }
-export const SVT_BANK_TEST={validate,allIds:()=>Array.from({length:7},(_,i)=>[1,2].map(s=>'SVQ_L0'+(i+1)+'_0'+s)).flat()};
+export const SVT_BANK_TEST={validate,allIds:()=>Array.from({length:8},(_,i)=>[1,2].map(s=>'SVQ_L0'+(i+1)+'_0'+s)).flat()};

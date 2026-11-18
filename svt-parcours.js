@@ -126,7 +126,7 @@ function render(root,opts={}){
  const pack=window.TIM_SVT_PACK;
  root.replaceChildren(button('← Toutes les matières',()=>opts.back?.()),E('h2','SVT — Mes leçons'));
  if(!pack?.lessons?.length){add(root,'p','Les données SVT sont momentanément indisponibles.');return;}
- add(root,'p',pack.lessons.length+' séances ENT datées · '+pack.bis.length+' leçons BIS · 14 exercices de 10 questions.');
+ add(root,'p',pack.lessons.length+' séances ENT datées · '+pack.bis.length+' leçons BIS · '+(pack.bis.length*2)+' exercices de 10 questions.');
  add(root,'p','Archive du 12 novembre (avec consignes du 13). Les textes des séances affichés sont des synthèses, pas les documents intégraux.', 'lesson-caution');
  if(window.__TIM_PARENT&&!window.__TIM_GUEST&&window.TIM_SVT_DOCUMENTS?.parentImport)root.append(window.TIM_SVT_DOCUMENTS.parentImport());
  for(const chapter of pack.chapters){

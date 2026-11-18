@@ -4,7 +4,7 @@
    Même disposition et classes que l’Espagnol, une question à la fois. */
 (function(){
 'use strict';
-const RE=/^FRQ_L(?:0[1-9]|1[01])_0[1-2]$/;
+const RE=/^FRQ_L(?:0[1-9]|1[0-3])_0[1-2]$/;
 const E=(tag,cls,txt)=>{
  const a=document.createElement(tag);if(cls)a.className=cls;
  if(txt!==undefined)a.textContent=String(txt);return a;
@@ -39,6 +39,7 @@ function showCorrection(slot,report){
  heading.append(E('p','',count?count+' erreur(s) : pour chacune, compare ta réponse, la réponse attendue et le raisonnement expliqué ci-dessous.':'Toutes les réponses sont correctes.'));
  slot.append(heading);
  report.items.forEach((item,i)=>{
+  if(!window.__TIM_PARENT&&item.correct)return; // Tim ne voit que ses erreurs ; Parent voit la copie complète.
   const box=E('section','tim-es-training-result-item');
   box.style.cssText=st.group+';border-left:4px solid '+(item.correct?'#397b56':'#bb664e');
   box.append(E('h4','', 'Question '+(i+1)+' — '+(item.correct?'Réussie':'À revoir')));
@@ -49,9 +50,9 @@ function showCorrection(slot,report){
   slot.append(box);
  });
  slot.append(E('p','',parentPractice?'Vous pouvez recommencer cet essai sans toucher aux résultats de Tim.':'L’exercice n’est plus rejouable. Revois la méthode avant la prochaine activité.'));
- const lessonId=/^FR_BIS(?:0[1-9]|1[01])$/.test(String(report.lessonId||''))?report.lessonId:
-  /^FRQ_L(?:0[1-9]|1[01])_0[1-2]$/.test(String(report.id||''))?'FR_BIS'+String(report.id).slice(5,7):null;
- const reviewTitles={FR_BIS01:'Classes grammaticales',FR_BIS02:'Portrait autobiographique',FR_BIS03:'Accords sujet-verbe',FR_BIS04:'Méthode brevet',FR_BIS05:'Souvenir et rédaction',FR_BIS06:'Mode indicatif',FR_BIS07:'Accord du participe passé',FR_BIS08:'Thèse et arguments',FR_BIS09:'Image argumentative',FR_BIS10:'L’Étranger',FR_BIS11:'Apologue et fable'};
+ const lessonId=/^FR_BIS(?:0[1-9]|1[0-3])$/.test(String(report.lessonId||''))?report.lessonId:
+  /^FRQ_L(?:0[1-9]|1[0-3])_0[1-2]$/.test(String(report.id||''))?'FR_BIS'+String(report.id).slice(5,7):null;
+ const reviewTitles={FR_BIS01:'Classes grammaticales',FR_BIS02:'Portrait autobiographique',FR_BIS03:'Accords sujet-verbe',FR_BIS04:'Méthode brevet',FR_BIS05:'Souvenir et rédaction',FR_BIS06:'Mode indicatif',FR_BIS07:'Accord du participe passé',FR_BIS08:'Thèse et arguments',FR_BIS09:'Image argumentative',FR_BIS10:'L’Étranger',FR_BIS11:'Apologue et fable',FR_BIS12:'Le subjonctif présent et passé',FR_BIS13:'Le pronom nous pour convaincre'};
  if(lessonId){
   if(count)slot.append(E('p','','Partie conseillée à revoir : '+(reviewTitles[lessonId]||'la règle et les exemples')+'.'));
   const reviser=button('Revoir la leçon BIS pour comprendre les erreurs',()=>{
@@ -190,7 +191,7 @@ async function renderProgress(where){
  try{
   const r=await bridge().frTrainingProgress();
   const rows=r?.attempts||[];
-  where.replaceChildren(E('p','',rows.length+' / 22 exercices BIS validés. Une seule tentative par exercice.'));
+  where.replaceChildren(E('p','',rows.length+' / 26 exercices BIS validés. Une seule tentative par exercice.'));
   if(!rows.length){where.append(E('p','','Aucune note de fr enregistrée pour le moment.'));return;}
   for(const item of rows){
    const block=E('details','pc-progress-item');block.style.cssText=st.group;

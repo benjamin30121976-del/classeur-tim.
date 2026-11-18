@@ -24,9 +24,9 @@ function sampleDb(){
  };
 }
 
-test('SVT : 7 leçons, 14 exercices, 140 questions et réponses masquées',()=>{
+test('SVT : 8 leçons, 16 exercices, 160 questions et réponses masquées',()=>{
  const ids=SVT_BANK_TEST.allIds();
- assert.equal(ids.length,14);
+ assert.equal(ids.length,16);
  assert.equal(new Set(ids).size,14);
  for(const id of ids){
   assert.ok(svtTrainingId(id));
@@ -44,11 +44,11 @@ test('SVT : 7 leçons, 14 exercices, 140 questions et réponses masquées',()=>{
   }
  }
  assert.equal(svtTrainingId('SVQ_L01_03'),false);
- assert.equal(svtTrainingId('SVQ_L08_01'),false);
- assert.equal(svtPublicTask('SVQ_L08_01'),null);
+ assert.equal(svtTrainingId('SVQ_L09_01'),false);
+ assert.equal(svtPublicTask('SVQ_L09_01'),null);
 });
 
-test('SVT : les 140 bonnes réponses donnent 10/10 et les 140 fausses 0/10',()=>{
+test('SVT : les 160 bonnes réponses donnent 10/10 et les 160 fausses 0/10',()=>{
  for(const id of SVT_BANK_TEST.allIds()){
   const task=svtTask(id);
   const correct=task.questions.map(q=>q.kind==='qcm'?q.right:q.expected);

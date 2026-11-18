@@ -1046,7 +1046,7 @@ async function startSession(user){
    return {attempt:null,completed:Boolean(official)};
   },
   spanishEntTrainingTask:async(id)=>{
-   if(!/^ESE_L(?:0[1-9]|1[0-4])_0[1-3]$/.test(String(id||'')))throw Error('Exercice espagnol inconnu.');
+   if(!/^ESE_L(?:0[1-9]|1[0-4]|16)_0[1-3]$/.test(String(id||'')))throw Error('Exercice espagnol inconnu.');
    if(window.TIM_ES12_STUDY?.isId(id)){
     const exercise=window.__TIM_DATA?.exercises?.find(x=>x.id===id);
     const task=window.TIM_ES12_STUDY.task(id,exercise);
@@ -1059,7 +1059,7 @@ async function startSession(user){
   },
   spanishEntTrainingPreview:async(id,answers,translationsUsed)=>{
    if(activeUser?.uid!==PARENT_UID)throw Error('Essai espagnol réservé au compte Parent.');
-   if(!/^ESE_L(?:0[1-9]|1[0-4])_0[1-3]$/.test(String(id||''))||
+   if(!/^ESE_L(?:0[1-9]|1[0-4]|16)_0[1-3]$/.test(String(id||''))||
       !Array.isArray(answers)||answers.length!==10||
       !Array.isArray(translationsUsed)||translationsUsed.length!==10||
       translationsUsed.some(v=>typeof v!=='boolean')||
@@ -1081,7 +1081,7 @@ async function startSession(user){
   },
   spanishEntTrainingSubmit:async(id,answers,translationsUsed)=>{
    if(activeUser?.uid!==TIM_UID)throw Error('Seul Tim peut valider.');
-   if(!/^ESE_L(?:0[1-9]|1[0-4])_0[1-3]$/.test(String(id||''))||
+   if(!/^ESE_L(?:0[1-9]|1[0-4]|16)_0[1-3]$/.test(String(id||''))||
       !Array.isArray(answers)||answers.length!==10||
       !Array.isArray(translationsUsed)||translationsUsed.length!==10||
       translationsUsed.some(v=>typeof v!=='boolean')||

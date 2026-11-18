@@ -15,6 +15,23 @@ on:
       - 'parent-unified-results.js'
       - 'tools/test/fr-production.readonly.cjs'
       - '.github/workflows/verifier-francais.yml'
+  pull_request:
+    paths:
+      - 'francais-*.js'
+      - 'svt-*.js'
+      - 'anglais-*.js'
+      - 'espagnol-*.js'
+      - 'worker/fr-*.mjs'
+      - 'worker/svt-*.mjs'
+      - 'worker/english-*.mjs'
+      - 'worker/spanish-ent-training.mjs'
+      - 'worker/test/ent-nov17-training.test.mjs'
+      - 'worker/test/espagnol-nov17-training.test.mjs'
+      - 'worker/test/fr-training.test.mjs'
+      - 'worker/test/svt-training.test.mjs'
+      - 'boot.js'
+      - 'index.html'
+      - '.github/workflows/verifier-francais.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -32,7 +49,7 @@ jobs:
           for f in francais-pack.js francais-documents.js francais-parcours.js francais-exercices.js app.js boot.js parent-unified-results.js worker/server.mjs worker/fr-questions.mjs worker/fr-training.mjs worker/mixed-challenges.mjs; do node --check "$f"; done
       - name: Vérifier 220 corrections, comptes Parent et sept matières
         run: |
-          node --test worker/test/fr-training.test.mjs worker/test/mixed-challenges.test.mjs worker/test/mixed-parent-preview.test.mjs worker/test/corrections-pedagogiques.test.mjs worker/test/hg-training.test.mjs worker/test/svt-training.test.mjs worker/test/physics-training.test.mjs worker/test/math-training.test.mjs
+          node --test worker/test/ent-nov17-training.test.mjs worker/test/espagnol-nov17-training.test.mjs worker/test/fr-training.test.mjs worker/test/mixed-challenges.test.mjs worker/test/mixed-parent-preview.test.mjs worker/test/corrections-pedagogiques.test.mjs worker/test/hg-training.test.mjs worker/test/svt-training.test.mjs worker/test/physics-training.test.mjs worker/test/math-training.test.mjs
   navigateur-parent:
     # Les tests unitaires restent automatiques ; contrôle authentifié sur demande.
     if: github.event_name == 'workflow_dispatch' && github.ref == 'refs/heads/main'

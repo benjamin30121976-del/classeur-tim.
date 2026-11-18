@@ -709,5 +709,5 @@ async function render(root,opts={},helpers={}){
  root.append(results);
  refresh();
 }
-window.TIM_SPANISH_SIMPLIFIED={render,lessons:LESSONS.map((x,i)=>({id:x[0],num:i+1,name:x[2]}))};
+window.TIM_SPANISH_SIMPLIFIED={render,renderQuestions,drawCorrection,lessons:LESSONS.map((x,i)=>({id:x[0],num:i+1,name:x[2]}))};
 })();

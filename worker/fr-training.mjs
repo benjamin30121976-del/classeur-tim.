@@ -1,9 +1,9 @@
-/* FR — 22 exercices (11 chapitres × 2 questionnaires de 10 questions).
+/* FR — 26 exercices (13 chapitres × 2 questionnaires de 10 questions).
    Corrections et bonnes réponses exclusivement côté serveur. */
 import {FR_QCM,FR_WRITTEN} from './fr-questions.mjs';
 import {sameShortAnswer} from './short-answer-equivalence.mjs';
-export const FR_BANK_VERSION='fr-20261113-v1';
-const RE=/^FRQ_L((?:0[1-9]|1[01]))_0([1-2])$/;
+export const FR_BANK_VERSION='fr-20261117-v2';
+const RE=/^FRQ_L((?:0[1-9]|1[0-3]))_0([1-2])$/;
 const LABELS=['Je comprends les notions','Je rédige et j’applique'];
 function context(id){
  const match=RE.exec(String(id||''));
@@ -12,8 +12,8 @@ function context(id){
 }
 export function frTrainingId(id){return Boolean(context(id));}
 function validate(){
- if(FR_QCM.length!==11||FR_WRITTEN.length!==11)throw Error('11 chapitres FR exigés');
- for(let c=0;c<11;c++){
+ if(FR_QCM.length!==13||FR_WRITTEN.length!==13)throw Error('13 chapitres FR exigés');
+ for(let c=0;c<13;c++){
   if(FR_QCM[c].length!==10||FR_WRITTEN[c].length!==10)throw Error('10 questions par questionnaire FR');
   for(const [q,right,wrong,why] of FR_QCM[c]){
    if(!q?.trim()||!right?.trim()||!why?.trim()||wrong.length!==3||
@@ -70,4 +70,4 @@ export function gradeFrTask(id,answers,bankVersion){
   xp:0,items,errorCounts:wrong.length?{[task.lessonId]:wrong.length}:{},
   lessonToReview:wrong.length?task.lessonId:null,bankVersion:FR_BANK_VERSION};
 }
-export const FR_BANK_TEST={validate,allIds:()=>Array.from({length:11},(_,i)=>[1,2].map(s=>'FRQ_L'+String(i+1).padStart(2,'0')+'_0'+s)).flat()};
+export const FR_BANK_TEST={validate,allIds:()=>Array.from({length:13},(_,i)=>[1,2].map(s=>'FRQ_L'+String(i+1).padStart(2,'0')+'_0'+s)).flat()};

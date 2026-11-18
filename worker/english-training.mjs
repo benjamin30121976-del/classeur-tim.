@@ -1,14 +1,14 @@
-/* Anglais — 11 exercices, 110 questions pédagogiques.
+/* Anglais — 12 exercices, 120 questions pédagogiques.
    Ne jamais importer ce module dans le navigateur : les clés de réponse restent au serveur.
    Les leçons 1 et 2 ont chacune trois exercices ; les cinq autres ont un exercice de dix questions. */
 import {ENGLISH_QUESTIONS} from './english-questions.mjs';
 import {EXTRA_ENGLISH_QUESTIONS} from './english-extra.mjs';
 import {sameShortAnswer} from './short-answer-equivalence.mjs';
 
-export const ENGLISH_BANK_VERSION='en-20261113-v2';
+export const ENGLISH_BANK_VERSION='en-20261117-v3';
 const LESSONS=[...ENGLISH_QUESTIONS,...EXTRA_ENGLISH_QUESTIONS];
 const NAMES=['Je comprends les mots','Je lis et j’applique','Je réponds par écrit'];
-const RE=/^ENQ_L(0[1-7])_0([1-3])$/;
+const RE=/^ENQ_L(0[1-8])_0([1-3])$/;
 export function englishTrainingId(id){return typeof id==='string'&&Boolean(context(id));}
 function context(id){
  const m=RE.exec(String(id||''));if(!m)return null;
@@ -81,4 +81,4 @@ export function gradeEnglishTask(id,answers,bankVersion){
   xp:0,items,errorCounts:wrong.length?{[task.lessonId]:wrong.length}:{},
   lessonToReview:wrong.length?task.lessonId:null,bankVersion:ENGLISH_BANK_VERSION};
 }
-export const ENGLISH_BANK_TEST={validate:validQuestions,allIds:()=>Array.from({length:7},(_,i)=>Array.from({length:i<2?3:1},(_,j)=>'ENQ_L0'+(i+1)+'_0'+(j+1))).flat()};
+export const ENGLISH_BANK_TEST={validate:validQuestions,allIds:()=>Array.from({length:8},(_,i)=>Array.from({length:i<2?3:1},(_,j)=>'ENQ_L0'+(i+1)+'_0'+(j+1))).flat()};
