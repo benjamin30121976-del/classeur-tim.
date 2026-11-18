@@ -4,6 +4,7 @@ on:
     paths:
       - 'outils/auditer-pdf-reels-parent.cjs'
       - 'outils/auditer-affichage-auto-parent.cjs'
+      - 'outils/auditer-tous-documents-ent-parent.cjs'
       - 'tools/test/documents-inline-20261118.test.mjs'
       - 'physique-chimie-inline-pdf.js'
       - 'tim-inline-ent-documents.js'
@@ -70,3 +71,8 @@ jobs:
         env:
           NODE_PATH: /tmp/tim-pdf-audit/node_modules
         run: node outils/auditer-affichage-auto-parent.cjs
+
+      - name: Auditer chaque reference ENT et les cinq fichiers des 16-17 novembre
+        env:
+          NODE_PATH: /tmp/tim-pdf-audit/node_modules
+        run: node outils/auditer-tous-documents-ent-parent.cjs
