@@ -21,12 +21,13 @@ async function render(target,slot){
  for(const row of rows){
   const card=E('section');card.style.cssText='margin:9px 0;padding:12px;border:1px solid #a9bfd9;border-radius:11px;background:#f6f9fe;color:#243a56';
   const name=add(card,'strong',row.name),file=found.find(f=>f.fileName===row.name);
-  if(file&&row.kind==='pdf'&&window.TIM_PHYSICS_INLINE_PDF?.createInline){
-   card.append(window.TIM_PHYSICS_INLINE_PDF.createInline({target,fileName:row.name},1,'Lire le PDF original dans la leçon',{manual:true}));
+  if(file&&row.kind==='pdf'&&window.TIM_PHYSICS_INLINE_PDF?.createFullInline){
+   card.append(window.TIM_PHYSICS_INLINE_PDF.createFullInline({target,fileName:row.name},'Document original complet — '+row.name));
   }else if(file&&row.kind==='docx'){
-   const b=add(card,'button','Télécharger le DOCX original');b.type='button';b.className='plain';b.onclick=async()=>{
-    b.disabled=true;try{const blob=await api.read(file),url=URL.createObjectURL(blob),link=E('a');link.href=url;link.download=row.name;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}catch(e){add(card,'p','Lecture indisponible : '+(e.message||e));}finally{b.disabled=false;}
-   };
+   const content=E('div');card.append(content);
+   if(window.TIM_INLINE_ENT_DOCUMENTS?.renderOfficeDocument)
+    window.TIM_INLINE_ENT_DOCUMENTS.renderOfficeDocument(content,file,'docx');
+   else add(content,'p','Lecteur du document bureautique indisponible.');
   }else add(card,'p','Document ENT identifié dans l’archive du 12 novembre ; pas encore importé dans le lecteur privé de Tim.');
   slot.append(card);
  }
