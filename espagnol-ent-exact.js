@@ -649,7 +649,8 @@ function createSpanishSession(item,label){
   try{
    const lesson=$('section');body.replaceChildren(lesson);
    await renderLessonOriginal(lesson,item.id,'all');
-   if(!window.TIM_SPANISH_ENT_BIS?.render(body,item.id)){
+   if(item.id==='10099~6400537'){body.append(spanishNov17Panel());}
+   else if(!window.TIM_SPANISH_ENT_BIS?.render(body,item.id)){
     const note=$('p','','Leçon BIS à préparer : le cours original et ses consignes restent disponibles ci-dessus.');
     note.style.cssText='font-size:14px;color:#425571;padding:10px 0';
     body.append(note);
@@ -660,15 +661,72 @@ function createSpanishSession(item,label){
  });
  return card;
 }
+/* Complément exact du 17 novembre dans le parcours ENT espagnol existant, sans données privées. */
+function spanishNov17Panel(){
+ const card=$('details','tim-es-lesson ent-es-followup');
+ card.style.cssText='border:1px solid #aac5e2;border-radius:14px;margin:12px 0;background:#f7f9ff;color:#273448;overflow:hidden';
+ const heading=$('summary','','Séance ENT · Mardi 17 novembre — No empiezo en septiembre et verbes');
+ heading.style.cssText='padding:15px;font-weight:850;cursor:pointer;color:#263a83;font-size:17px;line-height:1.5';
+ card.append(heading);
+ const body=$('div');body.style.cssText='padding:6px 15px 16px;color:#263448';
+ card.append(body);
+ const tabs=$('div');tabs.style.cssText='display:flex;gap:5px;flex-wrap:wrap;margin:9px 0';
+ const area=$('section');body.append(tabs,area);
+ const t=(tag,content)=>{const el=$(tag,'',content);area.append(el);return el;};
+ const panes={
+  ent:()=>{
+   t('h4','Cours et devoirs originaux du professeur');
+   const s=t('p','Martes 17/11 : terminar CE « no empiezo en septiembre ». Debate sobre el uniforme (no…sino; nunca, nada; hemisferio sur).');
+   s.lang='es';t('p','Cours ENT 10099~6400537. La copie complète est conservée dans le ZIP familial.');
+   t('h4','Devoir pour le mercredi 18 novembre');
+   const x=t('p','Terminar el ejercicio II b. Aprender CONOCER, PEDIR, SALIR (PONER, VER, VENIR); traer el Plickers.');
+   x.lang='es';t('p','Devoir ENT 10099~215356. Les noms d’élèves de l’évaluation du 17/11 ne sont pas diffusés.');
+  },
+  bis:()=>{
+   t('h4','Leçon BIS — comprendre le calendrier et la négation');
+   t('p','Empiezo las clases en septiembre = Je commence les cours en septembre. El hemisferio sur = l’hémisphère sud : décembre y correspond à l’été.');
+   t('p','No… sino… = non pas… mais… : « No empiezo en marzo sino en septiembre ». Nunca = jamais. Nada = rien / pas du tout selon la phrase.');
+   t('h4','Conjugaison au présent : les formes à savoir');
+   const table=t('table');table.style.cssText='border-collapse:collapse;width:100%;font-size:14px;text-align:left'; const header=document.createElement('tr');
+   for(const h of ['Verbe','yo','tú','nosotros','ellos']){const x=document.createElement('th');x.textContent=h;x.style.padding='5px';header.append(x);}table.append(header);
+   for(const row of [['conocer','conozco','conoces','conocemos','conocen'],['pedir','pido','pides','pedimos','piden'],['salir','salgo','sales','salimos','salen'],['poner','pongo','pones','ponemos','ponen'],['ver','veo','ves','vemos','ven'],['venir','vengo','vienes','venimos','vienen']]){
+    const tr=document.createElement('tr');for(const v of row){const td=document.createElement('td');td.textContent=v;td.style.cssText='padding:5px;border-top:1px solid #d6e2ee';tr.append(td);}table.append(tr);}
+   t('h4','Comment rédiger son avis ?');
+   t('p','« No me gusta llevar uniforme porque quiero elegir mi ropa. » = Je n’aime pas porter l’uniforme parce que je veux choisir mes vêtements. Donner son avis puis ajouter porque + justification.');
+  },
+  help:()=>{
+   t('h4','Je n’ai pas compris');
+   for(const s of ['« no… sino… » exprime une opposition après une négation.', 'On écrit « pido », pas « piedo » : le e devient i.', 'Conocer : « conozco » avec yo, mais « conoces » avec tú.', 'Attention aux accents : conocéis, pedís, salís.', 'Pour un avis, écris une phrase complète avec « porque » et une raison.'])t('p','• '+s);
+  },
+  entex:()=>{
+   t('h4','Documents originaux à consulter (stockage privé)');
+   for(const s of ['10099~115113 — No empiezo las clases en septiembre.pdf (compréhension écrite, groupe A/B)','10099~115426 — 11 Presente de indicativo LISTA 2.pdf (tableau de verbes)','10099~115427 — 3D.pdf (correction et consignes)'])t('p',s);
+   t('p','Les fichiers originaux ne sont pas publiés dans ce dépôt public. Ils doivent être ouverts ou importés dans le stockage privé Parent existant. Le devoir II b du 18 novembre fait référence à la fiche originale.');
+  },
+  train:()=>{
+   t('h4','Entraînement de dix questions en préparation');
+   t('p','La fiche de dix questions avec corrigé pédagogique est conservée dans le dossier de préparation. Aucun nouveau questionnaire interactif, aucune note ni XP ne sont activés par cette leçon.');
+  }
+ };
+ const open=(tab)=>{area.replaceChildren();for(const b of tabs.children){const yes=b.dataset.tab===tab;b.style.background=yes?'#d8fc67':'#34415e';b.style.color=yes?'#1a2942':'#fff';}panes[tab]();};
+ for(const [id,label] of [['ent','Leçon ENT'],['bis','Leçon BIS'],['help','Je n’ai pas compris'],['entex','Exercices ENT'],['train','Entraînement']]){
+  const button=$('button','',label);button.type='button';button.dataset.tab=id;button.style.cssText='min-height:44px;border-radius:8px;padding:7px 9px;border:0;cursor:pointer';button.onclick=()=>open(id);tabs.append(button);
+ }
+ card.addEventListener('toggle',()=>{if(card.open&&!area.childElementCount)open('ent');});
+ return card;
+}
+
 function appendChronologicalSpanish(root){
  if(window.__TIM_GUEST)return;
  const pack=window.__TIM_DATA?.metadata?.spanishEnt;
  const incoming=lateSpanishLessons(pack);
+ const hasNov17=incoming.some(x=>x.id==='10099~6400537');
  // Une séance n'est annoncée comme nouvelle que si son contenu figure vraiment
  // dans la dernière collecte ENT ; aucune date ni cours ne sont inventés.
  const next=incoming.length&&incoming[incoming.length-1].date>'2026-11-12'?incoming.pop():null;
  const container=$('section','tim-es-chronological');
  const chronology=$('div','tim-es-chronological-lessons');
+ if(!hasNov17)chronology.append(spanishNov17Panel());
  let seq=window.TIM_SPANISH_SIMPLIFIED?.lessons?.length||14;
  const records=incoming.map(x=>({type:'import',date:x.date,id:x.id,item:x})).sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
  for(const item of records){
@@ -792,5 +850,5 @@ async function renderLessonOriginal(root,lessonId,section='course'){
  }
 }
 
-window.TIM_SPANISH_ENT_EXACT={render,renderLessonOriginal,parse:readTwoZips,validate,validateTranslations,TAG,lessonCount:()=>window.__TIM_GUEST?13:14+lateSpanishLessons(window.__TIM_DATA?.metadata?.spanishEnt).length};
+window.TIM_SPANISH_ENT_EXACT={render,renderLessonOriginal,parse:readTwoZips,validate,validateTranslations,TAG,lessonCount:()=>window.__TIM_GUEST?13:14+lateSpanishLessons(window.__TIM_DATA?.metadata?.spanishEnt).length+(lateSpanishLessons(window.__TIM_DATA?.metadata?.spanishEnt).some(x=>x.id==='10099~6400537')?0:1)};
 })();

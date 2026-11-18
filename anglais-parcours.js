@@ -91,6 +91,7 @@ function tabbedCourse(course,bis,pack){
    add(body,'p','Tous les questionnaires comportent dix questions. Tim valide une seule fois, reçoit sa note, ses corrections détaillées et les leçons à revoir. Le compte Parent peut tester sans enregistrer.');
    const actions=E('div'),slot=E('div');body.append(actions,slot);
    for(const item of bis){
+    if(item.trainingReady===false){add(actions,'p','Nouvelle leçon en cours de préparation : aucun exercice noté n’est encore activé et aucune tentative n’est consommée.');continue;}
     for(let i=1;i<=TRAINING[item.id];i++){
      const id='ENQ_L'+item.id.slice(-2)+'_0'+i;
      actions.append(button(item.title+' · exercice '+i,()=>{
@@ -114,7 +115,7 @@ function render(root,opts={}){
  if(!pack||!Array.isArray(pack.lessons)){add(root,'p','Les cours d’anglais ne sont pas chargés.');return;}
  const all=pack.lessons.filter(x=>x.id.startsWith('EN_ENT_')),bis=pack.bis||[];
  add(root,'p',all.length+' séances ENT classées chronologiquement · '+bis.length+' leçons BIS · '+pack.attachments.length+' pièces originales · 11 entraînements de dix questions.');
- add(root,'p','Dernière collecte de l’ENT : 12 novembre 2026. Les séances sont classées d’après les textes authentiques ; les explications BIS sont distinctes.','lesson-caution');
+ add(root,'p','Collecte ENT des 12, 16 et 17 novembre 2026. Les textes du professeur restent distincts des leçons BIS.','lesson-caution');
  const nextEval=(pack.homework||[]).find(x=>x.due==='2026-11-16'&&/evaluation/i.test(x.title));
  if(nextEval){
   const call=E('section',undefined,'panel');
@@ -146,8 +147,8 @@ function render(root,opts={}){
   root.append(container);
  }
  const future=E('section',undefined,'panel');
- add(future,'h3','Prochain cours ENT — en attente');
- add(future,'p','Lundi 16 novembre 2026 : séance inscrite à l’emploi du temps, sans nouveau cours publié dans cette collecte. Une évaluation écrite est annoncée dans l’agenda ENT : le contenu exact des révisions est rappelé ci-dessus.');
+ add(future,'h3','Dernier cours ENT ajouté — mardi 17 novembre');
+ add(future,'p','Songs rooted in rebellion : compréhension écrite et recherche lexicale en groupe. Le texte du document étudié en classe n’est pas joint à l’ENT.');
  root.append(future);
  const progress=E('details',undefined,'panel');progress.append(E('summary','Notes, copies et corrections d’anglais'));
  const slot=E('div');progress.append(slot);progress.addEventListener('toggle',()=>{if(progress.open)window.TIM_ENGLISH_TRAINING?.renderProgress?.(slot)});root.append(progress);
