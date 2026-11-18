@@ -709,7 +709,15 @@ function spanishNov17Panel(includeDocuments=true){
   ent:()=>{
    t('h4','Cours et devoirs originaux du professeur');
    const s=t('p','Martes 17/11 : terminar CE « no empiezo en septiembre ». Debate sobre el uniforme (no…sino; nunca, nada; hemisferio sur).');
-   s.lang='es';t('p','Cours ENT 10099~6400537. La copie complète est conservée dans le ZIP familial.');
+   s.lang='es';t('p','Cours ENT 10099~6400537.');
+   const live=window.__TIM_DATA?.metadata?.spanishEnt?.lessons?.find(
+    d=>String(d?.data?.id||'')==='10099~6400537'
+   );
+   const full=live?asText(lessonHtml(live)):'';
+   if(full){
+    t('h4','Texte original complet de Mme Gonzalez récupéré dans l’ENT');
+    const original=t('p',full);original.lang='es';original.style.whiteSpace='pre-wrap';
+   }else t('p','La copie complète, si elle n’est pas synchronisée ici, reste dans le ZIP familial.');
    t('h4','Devoir pour le mercredi 18 novembre');
    const x=t('p','Terminar el ejercicio II b. Aprender CONOCER, PEDIR, SALIR (PONER, VER, VENIR); traer el Plickers.');
    x.lang='es';t('p','Devoir ENT 10099~215356. Les noms d’élèves de l’évaluation du 17/11 ne sont pas diffusés.');
@@ -816,7 +824,8 @@ function appendChronologicalSpanish(root){
  const records=incoming.slice().sort((a,b)=>a.date.localeCompare(b.date)||a.id.localeCompare(b.id));
  for(const item of records){
   seq++;
-  const card=createSpanishSession(item,'Séance ENT '+frenchDate(item.date));
+  // Le 17 novembre garde ses cinq onglets pédagogiques, sans fiche imbriquée en double.
+  const card=item.id==='10099~6400537'?spanishNov17Panel():createSpanishSession(item,'Séance ENT '+frenchDate(item.date));
   card.dataset.entDate=item.date;
   card.dataset.entId=item.id;
   chronology.append(card);
