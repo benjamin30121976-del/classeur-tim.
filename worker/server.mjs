@@ -146,7 +146,7 @@ async function submitExercise(db,uid,payload){
  const category=exercise.kind==='bonus-day'?'challenge':exercise.category||'school';
  let raw,points;
  try{
-  raw=rawPoints({kind:exercise.kind,category,score:evaluated.score,total:evaluated.total,needsReview:evaluated.needsReview});
+  raw=rawPoints({kind:exercise.kind,category,homeworkBonus:exercise.homeworkBonus===true,score:evaluated.score,total:evaluated.total,needsReview:evaluated.needsReview});
   points=cappedPoints(raw,Number(current.earned||0),Number(current.lost||0),weekEarned,Number(current.bonus||0),category);
  }catch{throw new ApiFault(400,'invalid-category');}
  const stateAfter={
