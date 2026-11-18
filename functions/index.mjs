@@ -70,7 +70,7 @@ export const submitTimExercise=onCall({region:'europe-west1',enforceAppCheck:tru
   const weekEarned=state.week===week?Number(state.weekEarned||0):0;
   const weekXp=state.week===week?Number(state.weekXp??state.weekEarned??0):0;
   const category=ex.category||'school';
-  const raw=rawPoints({kind:ex.kind,category,score:result.score,total:result.total,needsReview:result.needsReview});
+  const raw=rawPoints({kind:ex.kind,category,homeworkBonus:ex.homeworkBonus===true,score:result.score,total:result.total,needsReview:result.needsReview});
   const xp=cappedPoints(raw,Number(today.earned||0),Number(today.lost||0),weekEarned,Number(today.bonus||0),category);
   tx.set(xpRef,{date,week,earned:Number(today.earned||0)+Math.max(0,xp),lost:Number(today.lost||0)+Math.max(0,-xp),bonus:Number(today.bonus||0)+(category==='bonus'?Math.max(0,xp):0),weekEarned:weekEarned+Math.max(0,xp),weekXp:Math.max(0,weekXp+xp),policyVersion:18,updatedAt:FieldValue.serverTimestamp()});
   const common={exerciseId:id,title:String(ex.title||id).slice(0,200),authorUid:request.auth.uid,submittedAt:FieldValue.serverTimestamp(),score:result.score,total:result.total,needsReview:result.needsReview,policyVersion:18};
