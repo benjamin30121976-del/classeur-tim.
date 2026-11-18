@@ -12,6 +12,8 @@ on:
       - 'outils/test/inspection-comptes-lecture-seule.test.cjs'
       - 'prochaines-missions.js'
       - 'tools/test/prochaines-missions-ui.cjs'
+      - 'tim-ent-batch-import.js'
+      - 'tools/test/tim-ent-batch-ui.cjs'
 permissions:
   contents: read
 concurrency:
@@ -27,6 +29,8 @@ jobs:
         run: |
           node --check outils/inspecter-comptes-lecture-seule.cjs
           node --check tools/test/prochaines-missions-ui.cjs
+          node --check tim-ent-batch-import.js
+          node --check app.js
           node --test outils/test/inspection-comptes-lecture-seule.test.cjs
   controle-comptes:
     needs: controle-code
@@ -59,6 +63,10 @@ jobs:
         env:
           NODE_PATH: /tmp/tim-inspection-playwright/node_modules
         run: node tools/test/prochaines-missions-ui.cjs
+      - name: Vérifier l'import ENT en lecture seule sur PC et téléphone
+        env:
+          NODE_PATH: /tmp/tim-inspection-playwright/node_modules
+        run: node tools/test/tim-ent-batch-ui.cjs
       - name: Inspecter comptes Tim et Parent (PC + telephone)
         env:
           NODE_PATH: /tmp/tim-inspection-playwright/node_modules
@@ -71,5 +79,6 @@ jobs:
           path: |
             browser-comptes-lecture-seule/
             browser-fixture-avenir/
+            browser-fixture-ent-batch/
           retention-days: 1
           if-no-files-found: warn
