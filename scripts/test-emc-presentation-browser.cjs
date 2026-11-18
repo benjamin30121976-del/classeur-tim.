@@ -77,14 +77,14 @@ fs.mkdirSync(output,{recursive:true});
    await panel.getByRole('button',{name:/Exercice 1.*QCM/}).click();
    const opened=await page.evaluate(()=>window.__EMC_TEST_IDS);
    assert.deepEqual(opened,['HGQ_L06_01'],'L’identifiant historique de l’exercice doit rester inchangé');
-   // Non-régression : Histoire-Géographie conserve ses 9 chapitres et 25 séances.
+   // Non-régression : Histoire-Géographie conserve ses 9 chapitres et 26 séances (nouvelle séance du 16 novembre).
    const normal=await page.evaluate(()=>{
     const root=document.getElementById('root');
     window.TIM_HG_PATH.render(root,{back:()=>{}});
     return {chapters:root.querySelectorAll('details.chapter-section').length,
       lessons:root.querySelectorAll('details.tim-es-lesson').length};
    });
-   assert.deepEqual(normal,{chapters:9,lessons:25});
+   assert.deepEqual(normal,{chapters:9,lessons:26});
    assert(await width(),'Le parcours Histoire-Géographie déborde après retour');
    // Retour au nouvel accueil pour capturer la présentation réellement testée.
    await page.evaluate(()=>window.TIM_HG_PATH.render(document.getElementById('root'),{emcOnly:true,back:()=>{}}));
