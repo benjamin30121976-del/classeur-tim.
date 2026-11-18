@@ -75,7 +75,8 @@ function courseTabs(course,chapterBis,pack){
    add(pane,'p','Lis l’explication, réécris un exemple et ouvre ensuite un exercice de 10 questions.');
   }else if(name==='entex'){
    add(pane,'h3','4 · Devoirs et exercices ENT');
-   const due=pack.homework.filter(h=>h.due===course.date);
+   // La fiche IV du 26/11 reste liée à l'argumentation par l'image, non au subjonctif.
+   const due=pack.homework.filter(h=>h.due===course.date||(course.id==='FR_ENT_20261112'&&h.id==='FR_HW_214980'));
    if(!due.length)add(pane,'p','Aucune consigne de devoir avec ce jour précis dans le relevé.');
    for(const h of due){
     add(pane,'p',date(h.due)+' — '+h.title+' : '+h.content);

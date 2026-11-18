@@ -3,6 +3,10 @@ on:
   pull_request:
     paths:
       - 'tim-ent-17nov-private-import.js'
+      - 'tim-ent-18nov-private-import.js'
+      - 'tim-ent-18nov-lessons.js'
+      - 'outils/controler-ent18-chromium-readonly.cjs'
+      - 'francais-parcours.js'
       - 'tools/test/ent-three-originals-20261118.test.mjs'
       - 'outils/inspecter-trois-originaux-parent-publies.cjs'
       - 'svt-pack.js'
@@ -27,7 +31,7 @@ permissions:
 jobs:
   verifier-import:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -36,6 +40,9 @@ jobs:
       - name: Vérifier la syntaxe sans envoyer d'originaux sur GitHub
         run: |
           node --check tim-ent-17nov-private-import.js
+          node --check tim-ent-18nov-private-import.js
+          node --check tim-ent-18nov-lessons.js
+          node --check outils/controler-ent18-chromium-readonly.cjs
           node --check svt-pack.js
           node --check svt-documents.js
           node --check svt-parcours.js
@@ -43,6 +50,16 @@ jobs:
           node --check outils/auditer-affichage-auto-parent.cjs
       - name: Tester les trois empreintes, l'import Parent simulé et la protection du 3D.pdf existant
         run: node --test tools/test/ent-three-originals-20261118.test.mjs
+      - name: Installer Chromium et Playwright pour vérifier les nouvelles leçons (sans accès aux comptes)
+        if: github.event_name == 'pull_request'
+        run: |
+          npm install --prefix /tmp/tim-ent18 --no-audit --no-fund playwright
+          /tmp/tim-ent18/node_modules/.bin/playwright install --with-deps chromium
+      - name: Exécuter le contrôle Chromium ENT du 18 en lecture seule
+        if: github.event_name == 'pull_request'
+        env:
+          NODE_PATH: /tmp/tim-ent18/node_modules
+        run: node outils/controler-ent18-chromium-readonly.cjs
       - name: Vérifier la syntaxe du contrôle Chromium Parent
         run: node --check outils/inspecter-trois-originaux-parent-publies.cjs
       - name: Installer Chromium pour contrôler la publication réelle
