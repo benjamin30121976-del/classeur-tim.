@@ -745,6 +745,70 @@ body.intro-open{overflow:hidden}
  #exercise-detail button.math-homework-ent-link{font-size:17px!important;padding:14px 13px;min-height:58px}
 }
 
+
+/* Récompenses : résumé lisible sur téléphone, règles facultatives à déplier. */
+#rewards-dialog{
+ width:min(94vw,520px);max-height:84dvh;padding:17px 16px 12px;
+ border-radius:20px;overscroll-behavior:contain;
+}
+#rewards-dialog h2{font-size:21px;line-height:1.2;margin:0 0 12px}
+#rewards-dialog .rewards-status{
+ background:#203957;border:1px solid #5783a9;border-radius:14px;
+ padding:13px;margin:0 0 11px;
+}
+#rewards-dialog .rewards-status-main{
+ display:flex;justify-content:space-between;align-items:flex-start;gap:12px;
+}
+#rewards-dialog .rewards-status-main>div{min-width:0}
+#rewards-dialog .rewards-status-main small{display:block;font-size:12px;color:#c4d8eb}
+#rewards-dialog .rewards-status-main strong{
+ display:block;font-size:25px;line-height:1.2;color:#fff;
+}
+#rewards-dialog .rewards-status-cash{text-align:right}
+#rewards-dialog p.rewards-next{font-size:13px;line-height:1.35;margin:8px 0 0;color:#e1f4ff}
+#rewards-dialog .rewards-tier-list{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;margin:10px 0;
+}
+#rewards-dialog .rewards-tier{
+ text-align:center;border:1px solid #486785;border-radius:12px;
+ padding:10px 3px;background:#1c304a;min-width:0;
+}
+#rewards-dialog .rewards-tier strong{display:block;font-size:15px}
+#rewards-dialog .rewards-tier span{display:block;font-size:19px;font-weight:850;color:#b8ffda}
+#rewards-dialog .rewards-tier.reached{border-color:#b8ffda;background:#224a4e}
+#rewards-dialog p.rewards-footnote{font-size:12px;line-height:1.4;margin:3px 0 12px;color:#c8d5e4}
+#rewards-dialog p.rewards-exception{
+ padding:10px 12px;font-size:13px;line-height:1.45;
+ background:#273e57;border-left:3px solid #a8dafa;border-radius:8px;
+}
+#rewards-dialog .rewards-details{
+ border-top:1px solid #39516f;padding:1px 0;
+}
+#rewards-dialog .rewards-details:last-of-type{border-bottom:1px solid #39516f}
+#rewards-dialog .rewards-details>summary{
+ cursor:pointer;list-style-position:outside;padding:11px 2px;
+ font-weight:750;font-size:14px;line-height:1.4;color:#eff8ff;
+}
+#rewards-dialog .rewards-details[open]>summary{color:#b9f5e0}
+#rewards-dialog .rewards-details table{
+ width:100%;margin:0 0 10px;border-collapse:collapse;font-size:13px;
+}
+#rewards-dialog .rewards-details td{
+ padding:6px 4px;border-bottom:1px solid #314c6b;line-height:1.4;
+}
+#rewards-dialog .rewards-details td:last-child{text-align:right;white-space:nowrap;font-weight:800}
+#rewards-dialog .rewards-details p{font-size:13px;line-height:1.5;margin:8px 3px 12px}
+#rewards-dialog .reward-close{
+ position:sticky;bottom:-12px;width:100%;margin:12px 0 0;
+ min-height:46px;padding:10px;border-radius:11px;font-size:16px;
+}
+@media(max-width:390px){
+ #rewards-dialog{padding:14px 12px 10px}
+ #rewards-dialog .rewards-status-main strong{font-size:22px}
+ #rewards-dialog .rewards-tier strong{font-size:13px}
+ #rewards-dialog .rewards-tier span{font-size:17px}
+}
+
 </style><meta name="app-build-version" content="ESP-DEFIS-ECRITS-2026-11-10"><link rel="manifest" href="manifest.webmanifest"><link rel="stylesheet" href="./espagnol-parcours.css?v=menu-commun-20261111"><link rel="stylesheet" href="./assets/emc-parcours.css?v=harmoniser-20261115-v1"><link rel="stylesheet" href="./maths-parcours.css?v=questions-lisibles-20261111"><link rel="stylesheet" href="./assets/mixed-challenges.css?v=20261113-v1"><link rel="stylesheet" href="./assets/design-defis-xp.css?v=dimanche-grand-gif-20261112"><link rel="stylesheet" href="./assets/homework-bonus-detail.css?v=conseils-sans-cours-20261115-v2"><script src="./school-pack.js" defer></script><script src="./anglais-pack.js?v=exercices-ent-nov-2026-revue" defer></script><script src="./svt-pack.js?v=originaux-17nov-20261118-v1" defer></script><script src="./histoire-geographie-pack.js?v=ent-16-17-novembre-2026-v1" defer></script><script src="./francais-pack.js?v=exercices-ent-nov-2026-revue" defer></script><script src="./francais-documents.js?v=documents-inline-auto-20261118-v1" defer></script><script src="./francais-exercices.js?v=exercices-ent-nov-2026-revue" defer></script><script src="./francais-parcours.js?v=exercices-ent-nov-2026-revue" defer></script><script src="./histoire-geographie-documents.js?v=documents-inline-auto-20261118-v1" defer></script><script src="./histoire-geographie-exercices.js?v=quiz-hg-vocab-16novembre-2026-pr1" defer></script><script src="./histoire-geographie-parcours.js?v=quiz-hg-vocab-16novembre-2026-pr2" defer></script><script src="./tim-ent-17nov-private-import.js?v=originaux-17nov-20261118-v1" defer></script><script src="./svt-documents.js?v=originaux-17nov-20261118-v1" defer></script><script src="./svt-exercices.js?v=exercices-ent-nov-2026-revue" defer></script><script src="./svt-parcours.js?v=originaux-17nov-20261118-v1" defer></script><script src="./anglais-documents.js?v=documents-inline-auto-20261118-v1" defer></script><script src="./anglais-exercices.js?v=exercices-ent-nov-2026-revue" defer></script><script src="./anglais-parcours.js?v=exercices-ent-nov-2026-revue" defer></script><script src="./physique-chimie-pack.js?v=20261112-pedagogie-7-lecons-v3" defer></script><script src="./physique-chimie-exercices.js?v=20261112-correction-pedago-v4" defer></script><script src="./assets/vendor/pdfjs-3.2.146.min.js?v=physique-pdf-local-v1" defer></script><script src="./physique-chimie-inline-pdf.js?v=documents-inline-auto-20261118-v1" defer></script><script src="./tim-inline-ent-documents.js?v=documents-inline-auto-20261118-v1" defer></script><script src="./physique-chimie-documents.js?v=documents-inline-auto-20261118-v1" defer></script><script src="./physique-chimie-ent-exercices.js?v=20261112-correction-pedago-v2" defer></script><script src="./physique-chimie-parcours.js?v=20261112-ent-interactif-v7" defer></script><script src="./challenges.js" defer></script><script src="./exercise-policy.js?v=bonus-xp-70-20261112" defer></script><script src="./bonus-missions.js?v=bonus-xp-70-20261112" defer></script><script src="./xp-rules.js?v=xp-barre-exception-16nov-20261115-v1" defer></script><script src="./lesson-editor.js" defer></script><script src="./sound.js" defer></script><link rel="stylesheet" href="./tim-animations.css?v=revelation-xp-defis-20261113-v2"/><link rel="stylesheet" href="./prochaines-missions.css?v=20261115-v1"/></head><body>
 <section id="intro-screen" role="dialog" aria-modal="true" aria-label="Animation d’ouverture" hidden>
   <button id="intro-skip" class="intro-skip" type="button" aria-label="Passer l’animation et ouvrir l’accueil">Passer l’animation <span aria-hidden="true">→</span></button>
