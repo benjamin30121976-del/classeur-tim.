@@ -12,6 +12,7 @@ const xpCarryActive=s=>monday(s)==='2026-11-16';
 const isChallenge=ex=>['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex?.kind);
 function exercisePoints(a){if(a.needsReview||!a.total)return 0;const p=Math.max(0,Math.min(1,(a.score||0)/a.total));return p===1?3:p>=.8?2:p>=.6?1:p>=.4?-1:-2;}
 function bonusPoints(a){if(a.needsReview||!a.total)return 0;const p=Math.max(0,Math.min(1,(a.score||0)/a.total));return p===1?2:p>=.6?1:0;}
+function homeworkBonusPoints(a){if(a.needsReview||!a.total)return 0;const p=Math.max(0,Math.min(1,(a.score||0)/a.total));return p>=.9?1:0;}
 function canSubmit(ex,time){if(!ex)return false;const d=day(time);const dow=new Date(d+'T12:00:00Z').getUTCDay();
  if(ex.kind==='daily')return window.__TIM_CHALLENGES?.dailyIds?.includes(ex.id)===true&&dow>=1&&dow<=5&&ex.id.startsWith('DAY_'+d.replace(/-/g,'')+'_');
  if(ex.kind==='sunday')return dow===0&&ex.id==='SUNDAY_'+d.replace(/-/g,'')&&window.__TIM_CHALLENGES?.sunday===ex.id;
@@ -57,8 +58,10 @@ function contribution(a,ex){if(!ex)return 0;
   return Number.isFinite(a.xp)?Math.max(0,Math.min(1,a.xp)):0;
  if(window.TIM_EXERCISE?.school(ex))return 0;
  if(window.TIM_EXERCISE?.mode(ex,a.date)==='upcoming')return 0;
+ // Conserver les points effectivement attribués, sans recalcul des copies existantes.
+ if(ex.homeworkBonus===true)return Number.isFinite(a.xp)?a.xp:bonusPoints(a);
  return bonusPoints(a);
 }
 function reward(xp){return xp>=75?10:xp>=38?5:xp>=19?2:0;}
-window.TIM_XP={day,monday,xpPeriodStart,xpCarryActive,exercisePoints,bonusPoints,isBonus,contribution,contributionV9,contributionV10,reward,canSubmit};
+window.TIM_XP={day,monday,xpPeriodStart,xpCarryActive,exercisePoints,bonusPoints,homeworkBonusPoints,isBonus,contribution,contributionV9,contributionV10,reward,canSubmit};
 })();
