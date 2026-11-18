@@ -1272,8 +1272,8 @@ async function correctThalesNov16Question9(db,uid,payload={}){
  const id='BD1611_MA01',privatePath='privateAttempts/'+id,attemptPath='attempts/'+id;
  const archivePath='gradingReviewHistory/BD1611_MA01_Q9_20261118';
  const tx=mode==='apply'?await db.transaction():null;
- const [copy,pub,archive]=await Promise.all([
-  db.get(privatePath,tx),db.get(attemptPath,tx),db.get(archivePath,tx)
+ const [copy,pub,archive,source]=await Promise.all([
+  db.get(privatePath,tx),db.get(attemptPath,tx),db.get(archivePath,tx),db.get('exercises/'+id,tx)
  ]);
  if(archive){
   if(copy?.gradeRevision?.version==='BD1611_MA01_Q9_20261118'&&
@@ -1287,11 +1287,16 @@ async function correctThalesNov16Question9(db,uid,payload={}){
     copy.total!==10||copy.score!==9||copy.needsReview===true||
     pub.xp!==1)
   throw new ApiFault(409,'thales-q9-not-eligible');
- const q=copy.answers[8],originalText=String(q?.question||'');
- const matchesQuestion=/AM\s*\/\s*AB\s*=\s*2\s*\/\s*5/i.test(originalText)&&
-  /AN\s*\/\s*AC\s*=\s*4\s*\/\s*10/i.test(originalText);
- const badAnswer=/rapports?\s+sont\s+diff[eé]rents?/i.test(String(q?.response||''));
- if(!matchesQuestion||!badAnswer||q.correct!==false||Number(q.points)!==0||
+ const q=copy.answers[8],question=source?.questions?.[8];
+ const correctSource=source?.id===id&&Array.isArray(source.questions)&&source.questions.length===10&&
+  question?.type==='mc'&&Array.isArray(question.options)&&question.options.length===4;
+ const selected=correctSource?String(question.options[Number(q.response)]||''):'';
+ const expected=String(q?.expected||'');
+ const badAnswer=/rapports?\\s+sont\\s+diff[eé]rents?/i.test(selected);
+ const expectedParallels=/\\(MN\\).*?\\(BC\\).*?parall[eè]les?/i.test(expected)||
+  /droites.*?parall[eè]les?/i.test(expected);
+ if(!correctSource||!badAnswer||!expectedParallels||
+    !/^\\d$/.test(String(q.response))||q.correct!==false||Number(q.points)!==0||
     copy.answers.some((a,i)=>i!==8&&(a.correct!==true||Number(a.points)!==1)))
   throw new ApiFault(409,'thales-q9-copy-mismatch');
  if(mode==='preview')return {status:'eligible',question:9,oldScore:9,newScore:10,
