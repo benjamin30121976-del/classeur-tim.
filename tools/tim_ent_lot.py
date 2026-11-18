@@ -289,7 +289,7 @@ def collect(args):
                            'xp':'7-10:1 / 5-6:0.5 / 0-4:0, sans plafond'})
     plan={'date':asof.isoformat(),'tomorrow':tomorrow,'lessonsToPrepare':lesson_tasks,
           'dueTomorrow':due_tomorrow,'dueLater':later,'bonusSuggestions':bonus_plan,
-          'sourceIssues':source_issues,'sourceReady':len(source_issues)==0,
+          'sourceIssues':source_issues,'sourceReady':len(source_issues)==0 and not requires_pdf_reading,
           'sourceReadingRequired':requires_pdf_reading,
           'dueToday':due_today,'overdueHomework':overdue,'homeworkWithoutDue':unplanned,
           'homeworkExercisePreparations':future_tasks,
