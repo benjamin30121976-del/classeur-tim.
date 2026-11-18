@@ -1272,9 +1272,15 @@ async function correctThalesNov16Question9(db,uid,payload={}){
  const id='BD1611_MA01',privatePath='privateAttempts/'+id,attemptPath='attempts/'+id;
  const archivePath='gradingReviewHistory/BD1611_MA01_Q9_20261118';
  const tx=mode==='apply'?await db.transaction():null;
- const [copy,pub,archive,source]=await Promise.all([
-  db.get(privatePath,tx),db.get(attemptPath,tx),db.get(archivePath,tx),db.get('exercises/'+id,tx)
+ const [copy,pub,archive,stored,contents,published]=await Promise.all([
+  db.get(privatePath,tx),db.get(attemptPath,tx),db.get(archivePath,tx),
+  db.get('exercises/'+id,tx),db.get('content/main',tx),db.get('publicExercises/'+id,tx)
  ]);
+ let source=stored;
+ if(typeof source?.payloadJson==='string'){
+  try{source=JSON.parse(source.payloadJson)}catch{throw new ApiFault(409,'thales-q9-source-invalid')}
+ }
+ if(!source)source=contents?.exercises?.find(x=>x.id===id)||published;
  if(archive){
   if(copy?.gradeRevision?.version==='BD1611_MA01_Q9_20261118'&&
      copy?.score===10&&copy.answers?.[8]?.neutralized===true)
