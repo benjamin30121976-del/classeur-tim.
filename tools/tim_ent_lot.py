@@ -119,7 +119,7 @@ def inspect_source_gaps(items, attachment_files):
             rid=str(ref.get('id') or '')
             source_name=str(ref.get('name') or '')
             matches=[f for f in attachment_files
-                     if (rid and rid in f['name']) or
+                     if (rid and (rid in f['name'] or rid.replace('~','_') in f['name'])) or
                      (source_name and f['name'].split('/')[-1]==source_name)]
             if len(matches)!=1:
                 issues.append({'type':'piece_jointe_non_verifiee','entId':ent_id,
@@ -522,7 +522,7 @@ def assemble(args):
     represented={str(l.get('entId')) for l in lessons if l.get('entId')}
     work={str(x['entId']):x for x in
           plan.get('dueToday',[])+plan.get('dueTomorrow',[])+plan.get('dueLater',[])}
-    selected={*represented,*work}
+    selected={*represented,*work,*targets}
     rows=[x for x in inventory.get('items',[]) if str(x.get('entId')) in selected]
     if not rows:raise ValueError('Aucun cours ou devoir ENT lié au lot')
     for l in lessons:
@@ -560,6 +560,28 @@ def assemble(args):
                 binary.append((src,info.filename.replace('\\','/'),info.file_size))
     # Les documents sont retrouvés par ID ENT exact, jamais par titre tel que 3D.pdf.
     attachments={str(a['id']):x['entId'] for x in rows for a in x.get('attachments',[]) if a.get('id')}
+    # Index Skolengo : une fiche peut être référencée dans l'index des pièces
+    # sans apparaître dans le tableau included de la séance.
+    labels={str(a['id']):str(a.get('name') or '') for x in rows
+            for a in x.get('attachments',[]) if a.get('id')}
+    for entry in inventory.get('attachmentIndex') or []:
+        if not isinstance(entry,dict):continue
+        rid=str(entry.get('id') or '')
+        if not rid:continue
+        labels[rid]=str(entry.get('nom_ENT') or entry.get('name') or labels.get(rid) or '')
+        relations=entry.get('rattache_a') or entry.get('relatedTo') or []
+        if isinstance(relations,dict):relations=[relations]
+        parent_ids=[]
+        for rel in relations if isinstance(relations,list) else []:
+            if not isinstance(rel,dict):continue
+            parent_ids += [str(rel.get(k)) for k in ('id','entId','targetId') if rel.get(k)]
+        linked=list(dict.fromkeys(x for x in parent_ids if x in selected))
+        if len(linked)==1:
+            if rid in attachments and attachments[rid]!=linked[0]:
+                raise ValueError('Index de pièces contradictoire pour '+rid)
+            attachments[rid]=linked[0]
+        elif len(linked)>1:
+            raise ValueError('Pièce ENT rattachée à plusieurs cours/devoirs : '+rid)
     for rid,srcid in attachment_sources.items():
         if str(srcid) not in source_targets:raise ValueError('Pièce rattachée à un cours non sélectionné : '+str(rid))
         if rid in attachments and attachments[rid]!=srcid:raise ValueError('Conflit de rattachement de pièce : '+rid)
@@ -594,7 +616,7 @@ def assemble(args):
         payload.append((newpath,data))
         docs.append({'entId':source_id,'attachmentId':ref,'path':newpath,
                      'targetId':target,'fileName':Path(name).name,
-                     'title':Path(name).name,'mime':mime,'size':len(data),
+                     'title':labels.get(ref) or Path(name).name,'mime':mime,'size':len(data),
                      'sha256':hashlib.sha256(data).hexdigest()})
     sources=[]
     for x in rows:
