@@ -27,7 +27,7 @@ function sampleDb(){
 test('SVT : 8 leçons, 16 exercices, 160 questions et réponses masquées',()=>{
  const ids=SVT_BANK_TEST.allIds();
  assert.equal(ids.length,16);
- assert.equal(new Set(ids).size,14);
+ assert.equal(new Set(ids).size,16);
  for(const id of ids){
   assert.ok(svtTrainingId(id));
   const t=svtTask(id),pub=svtPublicTask(id);

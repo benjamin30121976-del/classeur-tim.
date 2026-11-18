@@ -27,7 +27,7 @@ function sampleDb(){
 test('FR : 13 leçons, 26 exercices, 260 questions et réponses masquées',()=>{
  const ids=FR_BANK_TEST.allIds();
  assert.equal(ids.length,26);
- assert.equal(new Set(ids).size,22);
+ assert.equal(new Set(ids).size,26);
  for(const id of ids){
   assert.ok(frTrainingId(id));
   const t=frTask(id),pub=frPublicTask(id);
