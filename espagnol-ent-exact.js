@@ -799,7 +799,8 @@ function spanishNov17Panel(includeDocuments=true){
 function appendChronologicalSpanish(root){
  if(window.__TIM_GUEST)return;
  const pack=window.__TIM_DATA?.metadata?.spanishEnt;
- const incoming=lateSpanishLessons(pack);
+ // La séance du 18/11 est affichée par son module pédagogique complet, une seule fois.
+ const incoming=lateSpanishLessons(pack).filter(x=>!(x.id==='10099~6400507'&&window.TIM_ENT_18NOV_LESSONS));
  const hasNov17=incoming.some(x=>x.id==='10099~6400537');
  // Une séance n'est annoncée comme nouvelle que si son contenu figure vraiment
  // dans la dernière collecte ENT ; aucune date ni cours ne sont inventés.
