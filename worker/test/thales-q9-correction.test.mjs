@@ -8,7 +8,7 @@ const HISTORY='gradingReviewHistory/BD1611_MA01_Q9_20261118';
 const approval={mode:'apply',approval:'BD1611_MA01_Q9_PARENT_APPROVED_20261118'};
 function fixture(){
  const answers=Array.from({length:10},(_,i)=>({
-  question:i===8?'A,M,B et A,N,C sont alignés. AM/AB=2/5 et AN/AC=4/10. Quelle conclusion ?':'Question '+(i+1),
+  question:i===8?'AM/AB=2/5 et AN/AC=4/10':'Question '+(i+1),
   response:i===8?'2':'Réponse bonne '+(i+1),
   correct:i!==8,points:i===8?0:1,expected:i===8?'Les droites (MN) et (BC) sont parallèles':'Réponse attendue',explanation:'Explication'
  }));
