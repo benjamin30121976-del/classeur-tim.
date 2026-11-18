@@ -42,7 +42,8 @@ function checkPack(pack,manifest,existing={lessons:[],exercises:[]}){
   return clean(a)===clean(b);
  }
  for(const lesson of lessons){
-  if(!str(lesson.title)||!str(lesson.subject)||!Array.isArray(lesson.blocks)||!lesson.blocks.length||
+  if(lesson.timEntBatch!==true||!['ent','bis'].includes(lesson.kind)||!str(lesson.entId)||
+     !str(lesson.chapter)||!str(lesson.title)||!str(lesson.subject)||!Array.isArray(lesson.blocks)||!lesson.blocks.length||
      !lesson.help||!str(lesson.help.simple)||!Array.isArray(lesson.help.steps))
    fail('Leçon ENT/BIS incomplète : '+lesson.id);
   if(existingLessons.has(lesson.id)){
@@ -51,7 +52,7 @@ function checkPack(pack,manifest,existing={lessons:[],exercises:[]}){
   }
  }
  for(const ex of exercises){
-  if(!str(ex.title)||!validQuestions(ex))fail('Exercice sans dix corrections pédagogiques : '+ex.id);
+  if(ex.timEntBatch!==true||!str(ex.title)||!validQuestions(ex))fail('Exercice sans dix corrections pédagogiques : '+ex.id);
   if(!['training','homework-bonus'].includes(ex.kind))fail('Catégorie d’exercice non prise en charge dans ce lot : '+ex.id);
   if(ex.kind==='training'&&(ex.category!=='training'||ex.homeworkBonus===true))
    fail('Catégorie entraînement invalide : '+ex.id);
