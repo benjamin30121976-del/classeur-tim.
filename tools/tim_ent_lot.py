@@ -554,8 +554,9 @@ def assemble(args):
     for ref,source_id in sorted(attachments.items()):
         if source_id not in source_targets:continue
         token=ref.replace('~','_')
+        tokens=(token,ref)  # Les deux exports historiques utilisent _ ou ~ dans l'ID.
         found=[(src,name,size) for src,name,size in binary
-               if re.search(r'(?<!\d)'+re.escape(token)+r'(?!\d)',name)]
+               if any(re.search(r'(?<!\d)'+re.escape(t)+r'(?!\d)',name) for t in tokens)]
         if len(found)!=1:
             raise ValueError('Pièce ENT absente/ambiguë : '+ref+
                              ' ; aucun rattachement par simple nom autorisé')
