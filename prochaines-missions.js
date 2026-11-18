@@ -128,7 +128,7 @@ function collect(data,now=new Date()){
 function render(root,opts={}){
  if(!root)return;
  root.replaceChildren();
- const data=opts.data||window.__TIM_DATA||{},state=collect(data),allBonuses=bonuses(data);
+ const data=opts.data||window.__TIM_DATA||{},state=collect(data,opts.now||new Date()),allBonuses=bonuses(data);
  const done=new Set((opts.attempts||[]).map(a=>String(a.id)));
  const hero=E('div','future-hero');
  const copy=E('div','future-hero-copy');
