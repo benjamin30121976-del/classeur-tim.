@@ -37,8 +37,8 @@ jobs:
             const app=fs.readFileSync("app.js","utf8");
             const server=fs.readFileSync("worker/server.mjs","utf8");
             const rules=fs.readFileSync("xp-rules.js","utf8");
-            assert(app.includes("9–10/10 : +1 XP"));
-            assert(app.includes("Autres paliers non confirmés"));
+            assert(app.includes("7–10/10 : +1 XP"));
+            assert(app.includes("5–6/10 : +0,5 XP"));
             assert(app.includes("Aucun plafond quotidien"));
             assert(server.includes("homeworkBonus:exercise.homeworkBonus===true"));
             assert(rules.includes("Number.isFinite(a.xp)?a.xp:bonusPoints(a)"));
