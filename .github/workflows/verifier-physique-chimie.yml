@@ -1,5 +1,9 @@
 name: Vérifier Physique-chimie, notation et parcours Chromium
 on:
+  pull_request:
+    paths:
+      - 'tools/test/physique-parcours.chromium.cjs'
+      - '.github/workflows/verifier-physique-chimie.yml'
   push:
     branches: [main]
     paths:
