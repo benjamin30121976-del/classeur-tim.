@@ -681,6 +681,13 @@ async function startSession(user){
   }
  }
  window.__TIM_BRIDGE={
+  // Rectification d'une seule question mal dessinée, réservée au Parent.
+  thalesQ9Correction:async(mode='preview',approval='')=>{
+   if(activeUser?.uid!==PARENT_UID)throw Error('Compte Parent requis.');
+   if(!['preview','apply'].includes(mode))throw Error('Mode non autorisé.');
+   const result=await cloudCallable('correctThalesNov16Question9')({mode,approval});
+   return result.data;
+  },
   /* Physique-chimie : deux véritables fiches ENT avec correction privée. */
   physicsEntTask:async(id)=>{
    if(!['PC_ENT_CTRL1','PC_ENT_MOLECULES'].includes(id))throw Error('Fiche ENT inconnue.');
@@ -1717,7 +1724,7 @@ async function startSession(user){
  document.getElementById('account-name').textContent=isParent?'Espace parent — compte connecté':'Espace Tim — compte connecté';
  document.querySelectorAll('[data-nav="parent"]').forEach(el=>el.hidden=!isParent);
  document.getElementById('logout-button').onclick=()=>signOut(auth);
- const sc=document.createElement('script');sc.src='./app.js?v=xp-barre-exception-16nov-hg-vocab-16novembre-pr2';sc.onerror=()=>{stopApp();message('Le module pédagogique du classeur n’a pas chargé.');};
+ const sc=document.createElement('script');sc.src='./app.js?v=xp-barre-exception-16nov-hg-vocab-thales-18nov-v3';sc.onerror=()=>{stopApp();message('Le module pédagogique du classeur n’a pas chargé.');};
  sc.addEventListener('load',()=>{try{if(document.querySelector('.mission-hero'))window.TIM_INTRO_SHOW?.();}catch(e){console.warn('Animation d’ouverture indisponible :',e);}});
  document.body.append(sc);appLoaded=true;
 }

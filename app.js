@@ -1022,10 +1022,11 @@ function renderFeedback(ex,t,root){
  const isChallenge=['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind);
  const isBonusDay=ex.kind==='bonus-day';
  const box=E('section','result'+(t.needsReview?' waiting':''));
- const perfect=!t.needsReview&&Number(t.score)===Number(t.total)&&Number(t.total)>0&&
+ const annulled=Array.isArray(t.answers)?t.answers.filter(a=>a.neutralized===true).length:0;
+ const perfect=!annulled&&!t.needsReview&&Number(t.score)===Number(t.total)&&Number(t.total)>0&&
   Array.isArray(t.answers)&&t.answers.length===Number(t.total)&&t.answers.every(a=>a.correct===true);
  if(isChallenge)box.id='challenge-detailed-correction';
- box.append(E('h3','',isBonusDay?(perfect?'Aucune erreur à corriger.':'Voir mes erreurs corrigées'):
+ box.append(E('h3','',annulled?'Note rectifiée : '+Number(t.score).toLocaleString('fr-FR')+'/'+Number(t.total).toLocaleString('fr-FR')+' — question 9 annulée':isBonusDay?(perfect?'Aucune erreur à corriger.':'Voir mes erreurs corrigées'):
   perfect?'Toutes les réponses sont correctes — aucune correction nécessaire.':
   t.needsReview?'Rédaction enregistrée — à revoir':'Correction détaillée : '+Number(t.score).toLocaleString('fr-FR')+'/'+Number(t.total).toLocaleString('fr-FR')));
  box.append(E('p','subtle','Validé le '+new Date(t.date).toLocaleString('fr-FR')+'. Les réponses sont verrouillées sur tous les appareils.'));
@@ -1041,11 +1042,19 @@ function renderFeedback(ex,t,root){
  }
  if(!isBonusDay)box.append(review);
  for(const [i,a] of (perfect?[]:t.answers).entries()){
-  if(a.correct===true||(isBonusDay&&a.correct!==false))continue;
+  if(!a.neutralized&&(a.correct===true||(isBonusDay&&a.correct!==false)))continue;
   const q=ex.questions[i]||{},p=E('div','feedback');
   const given=q.type==='mc'?(q.options?.[Number(a.response)]??a.response):a.response;
   p.append(E('strong','',(i+1)+'. '+safe(correctedPrompt(i,a.question||q.q||'Question'))));correctedFigure(p,i);p.append(E('p','','Ta réponse : '+safe(given)));
   showWrittenMethod(p,a);
+  if(a.neutralized===true){
+   p.classList.add('neutralized-correction');
+   p.style.cssText='border-left:4px solid #24628d;background:#edf5ff;color:#173754;padding:13px;border-radius:8px;line-height:1.6';
+   p.append(E('p','correct','Question annulée — 1 point rétabli. Le dessin publié était incohérent.'));
+   p.append(E('p','','La réponse originale de Tim est conservée. Le point est accordé à cause de l’erreur du classeur, pas parce que les rapports étaient différents.'));
+   p.append(E('p','','Rappel : 2/5 = 4/10 = 0,4. Dans cet énoncé, la réciproque de Thalès donne (MN) parallèle à (BC).'));
+   box.append(p);continue;
+  }
   const partial=Number.isFinite(Number(a.points))&&Number(a.points)>0&&Number(a.points)<1;
   if(a.correct!==null)p.append(E('p',a.correct?'correct':partial?'subtle':'wrong',
    a.correct?'Bonne réponse.':partial?
@@ -1054,7 +1063,31 @@ function renderFeedback(ex,t,root){
   if(a.correct===false){
    p.append(E('p','correct','Réponse attendue : '+safe(a.expected)));
    const explanation=safe(a.explanation).trim()||'Compare les mots, leur ordre et les terminaisons avec la réponse attendue. Relis la leçon pour comprendre la règle.';
-   p.append(E('p','subtle','Explication : '+explanation));
+   const explanationNode=E('p',ex.subject==='Mathématiques'?'math-feedback-explanation':'subtle','Explication : '+explanation);
+   if(ex.subject==='Mathématiques'){
+    explanationNode.style.setProperty('color','#203754','important');
+    explanationNode.style.fontSize='16px';
+    explanationNode.style.lineHeight='1.6';
+    explanationNode.style.fontWeight='650';
+   }
+   p.append(explanationNode);
+   // Complément pédagogique d'affichage uniquement : aucune modification du corrigé,
+   // de la réponse enregistrée, du score, de la tentative ou des XP.
+   const currentQuestion=String(a.question||q.q||'');
+   if(ex.subject==='Mathématiques'&&/AM\s*\/\s*AB\s*=\s*2\s*\/\s*5/i.test(currentQuestion)&&
+      /AN\s*\/\s*AC\s*=\s*4\s*\/\s*10/i.test(currentQuestion)){
+    const guide=E('section','math-thales-correction-steps');
+    guide.style.cssText='margin:12px 0;padding:13px 14px;border-left:4px solid #24628d;border-radius:10px;background:#edf5ff;color:#1d354d;line-height:1.6';
+    guide.append(E('strong','','Comment rédiger le raisonnement'));
+    for(const line of [
+     '1. Je vérifie les alignements : A, M, B et A, N, C sont dans le même ordre.',
+     '2. Je calcule : AM/AB = 2 ÷ 5 = 0,4 et AN/AC = 4 ÷ 10 = 0,4.',
+     '3. Les deux rapports sont égaux : AM/AB = AN/AC.',
+     '4. Donc, d’après la réciproque du théorème de Thalès, (MN) est parallèle à (BC).',
+     'Phrase à écrire : « Les points sont alignés dans le même ordre et les rapports sont égaux ; par la réciproque de Thalès, (MN) // (BC). »'
+    ])guide.append(E('p','',line));
+    p.append(guide);
+   }
    const spanishSource=ex.questionBank==='spanish-ent-v1'?
     /^ESE_L(0[1-9]|1[0-3])_0[1-3]:\d+$/.exec(String(q.sourceId||'')):null;
    if(spanishSource){

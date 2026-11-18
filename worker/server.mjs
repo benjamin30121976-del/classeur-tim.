@@ -1259,11 +1259,89 @@ async function correctSaturdayFullCredit(db,uid,payload={}){
   questions:[12,15],historySaved:true,attemptStillUnique:true};
 }
 
+
+/* Rectification ciblée du dessin erroné de Thalès, question 9 du bonus 16/11.
+   La réponse de Tim et l'unique tentative sont conservées. L'original complet
+   est archivé avant toute correction ; aucun autre devoir ne peut être modifié. */
+async function correctThalesNov16Question9(db,uid,payload={}){
+ permitted(uid,'parent');
+ const mode=payload.mode;
+ if(mode!=='preview'&&mode!=='apply')throw new ApiFault(400,'thales-q9-invalid-mode');
+ if(mode==='apply'&&payload.approval!=='BD1611_MA01_Q9_PARENT_APPROVED_20261118')
+  throw new ApiFault(403,'thales-q9-parent-approval-required');
+ const id='BD1611_MA01',privatePath='privateAttempts/'+id,attemptPath='attempts/'+id;
+ const archivePath='gradingReviewHistory/BD1611_MA01_Q9_20261118';
+ const tx=mode==='apply'?await db.transaction():null;
+ const [copy,pub,archive,stored,contents,published]=await Promise.all([
+  db.get(privatePath,tx),db.get(attemptPath,tx),db.get(archivePath,tx),
+  db.get('exercises/'+id,tx),db.get('content/main',tx),db.get('publicExercises/'+id,tx)
+ ]);
+ let source=stored;
+ if(typeof source?.payloadJson==='string'){
+  try{source=JSON.parse(source.payloadJson)}catch{throw new ApiFault(409,'thales-q9-source-invalid')}
+ }
+ if(!source)source=contents?.exercises?.find(x=>x.id===id)||published;
+ if(archive){
+  if(copy?.gradeRevision?.version==='BD1611_MA01_Q9_20261118'&&
+     copy?.score===10&&copy.answers?.[8]?.neutralized===true)
+   return {status:'already-corrected',score:10,total:10,xpUnchanged:true,noWrite:true};
+  throw new ApiFault(409,'thales-q9-archive-conflict');
+ }
+ if(!copy||!pub||copy.authorUid!==TIM_UID||pub.authorUid!==TIM_UID||
+    copy.exerciseId!==id||pub.exerciseId!==id||pub.correctionStatus!=='released'||
+    !Array.isArray(copy.answers)||copy.answers.length!==10||
+    copy.total!==10||copy.score!==9||copy.needsReview===true||
+    pub.xp!==1)
+  throw new ApiFault(409,'thales-q9-not-eligible');
+ const q=copy.answers[8],question=source?.questions?.[8];
+ const correctSource=source?.id===id&&Array.isArray(source.questions)&&source.questions.length===10&&
+  question?.type==='mc'&&Array.isArray(question.options)&&question.options.length===4;
+ const selected=correctSource?String(question.options[Number(q.response)]||''):'';
+ const expected=String(q?.expected||'');
+ const badAnswer=/rapports?\s+sont\s+diff[eé]rents?/i.test(selected);
+ const expectedParallels=/\(MN\).*?\(BC\).*?parall[eè]les?/i.test(expected)||
+  /droites.*?parall[eè]les?/i.test(expected);
+ if(!correctSource||String(q.question||'')!==String(question.q||'')||!badAnswer||!expectedParallels||
+    !/^\d$/.test(String(q.response))||q.correct!==false||Number(q.points)!==0||
+    copy.answers.some((a,i)=>i!==8&&(a.correct!==true||Number(a.points)!==1)))
+  throw new ApiFault(409,'thales-q9-copy-mismatch');
+ if(mode==='preview')return {status:'eligible',question:9,oldScore:9,newScore:10,
+   total:10,xpBefore:1,xpAfter:1,noWrite:true};
+ const nextAnswers=copy.answers.map((item,i)=>i!==8?item:{
+  ...item,correct:true,points:1,neutralized:true,
+  explanation:'Question 9 neutralisée : un schéma incohérent a été affiché. Le point est accordé pour une erreur du classeur, et non parce que la réponse écrite serait mathématiquement exacte. L’original reste archivé.'
+ });
+ const revision={version:'BD1611_MA01_Q9_20261118',oldScore:9,newScore:10,
+  question:9,approvedBy:'parent',xpUnchanged:true,
+  reason:'Question annulée : figure de Thalès incorrecte malgré rapports 2/5 et 4/10 égaux'};
+ await db.commit([
+  createWrite(archivePath,{version:revision.version,
+   originalPrivateAttempt:copy,originalPublicAttempt:pub,
+   oldScore:9,newScore:10,question:9,reason:revision.reason
+  }),
+  updateWrite(privatePath,{score:10,answers:nextAnswers,gradeRevision:revision})
+ ],tx);
+ const [after,afterPub,storedHistory]=await Promise.all([
+  db.get(privatePath),db.get(attemptPath),db.get(archivePath)
+ ]);
+ const preserved=after?.answers?.length===10&&copy.answers.every((a,i)=>
+  after.answers[i]?.question===a.question&&after.answers[i]?.response===a.response&&
+  (i===8||JSON.stringify(after.answers[i])===JSON.stringify(a)));
+ if(!storedHistory||!after||!afterPub||!preserved||after.score!==10||
+    after.answers[8].neutralized!==true||after.answers[8].points!==1||
+    afterPub.xp!==pub.xp||afterPub.correctionStatus!==pub.correctionStatus||
+    afterPub.authorUid!==pub.authorUid||afterPub.exerciseId!==pub.exerciseId)
+  throw new ApiFault(502,'thales-q9-postcheck-failed');
+ return {status:'corrected',question:9,oldScore:9,newScore:10,total:10,
+  xpBefore:1,xpAfter:1,historySaved:true,otherAnswersPreserved:true};
+}
+
 const ACTIONS={
   getFirestoreReadDiagnostics:getFirestoreReadDiagnostics,
   correctMathNov12Question10:correctMathNov12Question10,
   reviseSaturday20261114:reviseSaturday20261114,
   correctSaturdayFullCredit:correctSaturdayFullCredit,
+  correctThalesNov16Question9:correctThalesNov16Question9,
  previewSpanishEntTraining:previewSpanishEntTraining,
  getMathEntTask:getMathEntTask,
  submitMathEntTask:submitMathEntTask,
@@ -1334,4 +1412,4 @@ export async function handleRequest(request,env){
   return respond({error:code},status);
  }
 }
-export const TESTABLE={correctSaturdayFullCredit,reviseSaturday20261114,correctMathNov12Question10,getFirestoreReadDiagnostics,getEnglishTrainingTask,submitEnglishTraining,getEnglishTrainingProgress,previewEnglishTraining,getSvtTrainingTask,submitSvtTraining,getSvtTrainingProgress,previewSvtTraining,getHgTrainingTask,submitHgTraining,getHgTrainingProgress,previewHgTraining,getFrTrainingTask,submitFrTraining,getFrTrainingProgress,previewFrTraining,previewSpanishEntTraining,getMathEntTask,submitMathEntTask,previewMathEntTask,getMathEntProgress,getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,getMixedChallengePlan,previewMixedChallenge,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
+export const TESTABLE={correctThalesNov16Question9,correctSaturdayFullCredit,reviseSaturday20261114,correctMathNov12Question10,getFirestoreReadDiagnostics,getEnglishTrainingTask,submitEnglishTraining,getEnglishTrainingProgress,previewEnglishTraining,getSvtTrainingTask,submitSvtTraining,getSvtTrainingProgress,previewSvtTraining,getHgTrainingTask,submitHgTraining,getHgTrainingProgress,previewHgTraining,getFrTrainingTask,submitFrTraining,getFrTrainingProgress,previewFrTraining,previewSpanishEntTraining,getMathEntTask,submitMathEntTask,previewMathEntTask,getMathEntProgress,getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,getMixedChallengePlan,previewMixedChallenge,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};

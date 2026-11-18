@@ -41,13 +41,24 @@
   return {fig,svg,caption};
  }
  function lengths(prompt){
-  const found={};
-  const unit=/\b(cm|m)\b/i.exec(prompt)?.[1]||'';
+  const found={},source=String(prompt||'');
   const re=/\b(AM|AB|AN|AC|MN|BC|AD|AE|DE|DF|EF|CG|CD|DG|GH|HI|GI|IJ|IK|JK|JL|KL|MP|NP)\s*=\s*([0-9]+(?:[,.][0-9]+)?)\s*(cm|m)?/gi;
-  for(const m of String(prompt||'').matchAll(re)){
-   found[m[1].toUpperCase()]={value:m[2],number:Number(m[2].replace(',','.')),unit:m[3]||unit};
+  for(const m of source.matchAll(re)){
+   // AM/AB=2/5 exprime un rapport, jamais une longueur AB=2.
+   if(/^\s*\/\s*\d/.test(source.slice(m.index+m[0].length)))continue;
+   // La lettre « M » d'un point ne doit jamais devenir l'unité « mètre ».
+   found[m[1].toUpperCase()]={value:m[2],number:Number(m[2].replace(',','.')),unit:m[3]||''};
   }
   return found;
+ }
+ function givenFraction(prompt,num,den){
+  const re=new RegExp('\\b'+num+'\\s*\\/\\s*'+den+
+   '\\s*=\\s*([0-9]+(?:[,.][0-9]+)?)\\s*\\/\\s*([0-9]+(?:[,.][0-9]+)?)','i');
+  const m=re.exec(String(prompt||''));
+  if(!m)return null;
+  const numerator=Number(m[1].replace(',','.')),denominator=Number(m[2].replace(',','.'));
+  if(!Number.isFinite(numerator)||!Number.isFinite(denominator)||denominator<=0)return null;
+  return {ratio:numerator/denominator,label:num+'/'+den+' = '+m[1]+'/'+m[2]};
  }
  const interpolate=(a,b,t)=>[a[0]+(b[0]-a[0])*t,a[1]+(b[1]-a[1])*t];
  const span=(data,key)=>data[key]?key+' : '+data[key].value+(data[key].unit?' '+data[key].unit:''):null;
@@ -72,7 +83,11 @@
   // données : dessiner le segment parallèle, mais sans codage ni marque
   // de parallélisme (le raisonnement reste demandé à Tim).
   const equalRatiosGiven=/(?:AM\s*\/\s*AB\s*=\s*AN\s*\/\s*AC|AD\s*\/\s*AB\s*=\s*AE\s*\/\s*AC)/i.test(prompt);
+  const ratioLeft=givenFraction(prompt,'A'+a,'AB');
+  const ratioRight=givenFraction(prompt,'A'+b,'AC');
   let ratio1=nums(data,'A'+a,'AB'),ratio2=nums(data,'A'+b,'AC');
+  if(!Number.isFinite(ratio1))ratio1=ratioLeft?.ratio;
+  if(!Number.isFinite(ratio2))ratio2=ratioRight?.ratio;
   if(!Number.isFinite(ratio1)||ratio1<=0||ratio1>=1)ratio1=.44;
   if(!Number.isFinite(ratio2)||ratio2<=0||ratio2>=1)
    ratio2=(givenParallel||equalRatiosGiven)?ratio1:(knownDifferent?.57:.54);
@@ -90,10 +105,16 @@
   const places={AB:[58,142],AC:[342,142],BC:[198,277]};
   places['A'+a]=[111,91];places['A'+b]=[285,91];places[a+b]=[200,164];
   for(const [key,point] of Object.entries(places))if(data[key])measure(svg,...point,span(data,key));
+  // Les fractions sont affichées comme des RAPPORTS et non comme des mesures.
+  // Les rapports sont sous le triangle pour ne pas masquer les points M et N.
+  if(ratioLeft&&!data.AB)measure(svg,93,296,ratioLeft.label);
+  if(ratioRight&&!data.AC)measure(svg,307,296,ratioRight.label);
   if(givenParallel){
    caption.textContent='Les droites '+a+b+' et BC sont indiquées parallèles dans l’énoncé. Schéma non à l’échelle.';
   }else if(/AM\s*\/\s*AB\s*=\s*AN\s*\/\s*AC/i.test(prompt)&&Object.keys(data).length===0){
    caption.textContent='L’égalité des rapports est donnée dans l’énoncé : aucun calcul numérique n’est demandé. Utilise les conditions de la réciproque de Thalès. Schéma non à l’échelle.';
+  }else if(ratioLeft||ratioRight){
+   caption.textContent='Les fractions écrites sont des rapports, pas des longueurs. Compare-les et vérifie l’alignement avant de conclure. Schéma non à l’échelle.';
   }else if(Object.keys(data).length>0){
    caption.textContent='Repère les longueurs indiquées et vérifie les rapports. La forme du dessin ne suffit pas pour conclure. Schéma non à l’échelle.';
   }else{
