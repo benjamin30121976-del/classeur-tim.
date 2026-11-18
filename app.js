@@ -1432,10 +1432,7 @@ function makeRewardsTile(){
    ['Bonus devoirs : 0–4/10','0 XP'],
    ['Entraînement de leçon : 7–10/10','+1 XP'],
    ['Entraînement de leçon : 5–6/10','+0,5 XP'],
-   ['Entraînement de leçon : 0–4/10','0 XP'],
-   ['Bonus devoirs : 7–10/10','+1 XP'],
-   ['Bonus devoirs : 5–6/10','+0,5 XP'],
-   ['Bonus devoirs : 0–4/10','0 XP']
+   ['Entraînement de leçon : 0–4/10','0 XP']
   ],'Bonus devoirs : même barème XP que les entraînements dans les leçons, sans plafond quotidien. Les autres bonus et les défis ont des barèmes distincts.');
   addDetails('Validation et conservation des résultats',null,
    'Une seule validation par défi. Les notes, les copies, les trophées et les XP cumulés restent enregistrés. En principe, seul le compteur de récompense repart à zéro le lundi ; une exception est indiquée ci-dessus lorsqu’elle s’applique.');

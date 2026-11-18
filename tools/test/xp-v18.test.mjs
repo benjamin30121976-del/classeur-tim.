@@ -1,5 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
 import {rawPoints,cappedPoints,weeklyReward} from '../../functions/xp.mjs';
 import {setupMissions,buildMission,isMissionOpen,weekId} from '../../functions/missions-v18.mjs';
 import {SPANISH_COURSE} from '../../functions/spanish-training-curriculum.mjs';
@@ -27,7 +28,18 @@ test('Grand défi du dimanche sur 20 questions, montants et anciens devoirs',()=
  assert.equal(rawPoints({kind:'training',category:'training',score:4,total:10}),0);
  assert.equal(rawPoints({kind:'daily',category:'school',score:10,total:10}),0);
  assert.equal(cappedPoints(20,10,0,50,3,'challenge'),20);
- assert.equal(cappedPoints(2,10,0,50,2,'bonus'),1);
+ assert.equal(cappedPoints(2,10,0,50,2,'bonus'),2); // sans plafond quotidien
+ assert.equal(cappedPoints(0.5,50,0,75,12,'bonus'),0.5); // demi-point conservé
+});
+test('Fenêtre des récompenses : Bonus devoirs affichés une fois par tranche',()=>{
+ const app=readFileSync(new URL('../../app.js',import.meta.url),'utf8');
+ const start=app.indexOf("addDetails('Devoirs, entraînements et bonus'");
+ const end=app.indexOf("addDetails('Validation et conservation des résultats'",start);
+ assert.ok(start>=0&&end>start,'Fenêtre de récompenses absente');
+ const rows=app.slice(start,end);
+ for(const p of ['Bonus devoirs : 7–10/10','Bonus devoirs : 5–6/10','Bonus devoirs : 0–4/10']){
+  assert.equal(rows.split(p).length-1,1,p+' dupliqué');
+ }
 });
 test('Le défi d’essai du dimanche 8 novembre est définitivement annulé',()=>{
  const course={lessons:[{id:'L01',title:'Se présenter',subject:'Espagnol',publishedAt:'2026-11-01'}],exercises:[]};

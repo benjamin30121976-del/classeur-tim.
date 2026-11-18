@@ -18,7 +18,7 @@ on:
       - 'tools/diagnostic-cloudflare-kv.cjs'
       - '.github/workflows/verifier-mathematiques.yml'
   push:
-    branches: [main]
+    branches: [main, audit-qualite-classeur-tim-20261118]
     paths:
       - 'maths-parcours.js'
       - 'worker/maths-training-curriculum.mjs'

@@ -1,7 +1,7 @@
 name: Tester la note et le corrigé immédiats des défis
 on:
   push:
-    branches: [main]
+    branches: [main, audit-qualite-classeur-tim-20261118]
     paths:
       - 'app.js'
       - 'tools/test/challenge-feedback.test.mjs'
