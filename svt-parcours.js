@@ -12,7 +12,8 @@ const diagrams={
  petri:{desc:'Boîte de Petri, halos autour de pastilles',words:['Pastille','Halo','Bactérie'],nodes:[[75,72,25,'#f3dca1'],[180,72,33,'#a8e0ce'],[285,72,25,'#e2c59b']]},
  blood:{desc:'Globules rouges et globules blancs représentés par des cellules',words:['Hématie','Leucocyte','Sang'],nodes:[[75,72,27,'#e67c7c'],[180,72,33,'#a7bde7'],[285,72,21,'#e67c7c']]},
  inflammation:{desc:'Blessure : alerte et arrivée de leucocytes',words:['Épine','Alerte','Défense'],nodes:[[75,72,25,'#e5a09a'],[180,72,28,'#e8d28e'],[285,72,28,'#b5cbe6']]},
- phago:{desc:'Les quatre étapes simplifiées de la phagocytose',words:['1. Repérer','2. Englober','3. Digérer','4. Rejeter'],nodes:[[49,67,23,'#b6d2e1'],[139,67,27,'#b6d2e1'],[229,67,31,'#b6d2e1'],[319,67,23,'#b6d2e1']]}
+ phago:{desc:'Les quatre étapes simplifiées de la phagocytose',words:['1. Repérer','2. Englober','3. Digérer','4. Rejeter'],nodes:[[49,67,23,'#b6d2e1'],[139,67,27,'#b6d2e1'],[229,67,31,'#b6d2e1'],[319,67,23,'#b6d2e1']]},
+ lymphocytes:{desc:'Reconnaissance de l’antigène puis réponse ciblée des lymphocytes B ou T',words:['Antigène','B / T','Défense'],nodes:[[75,72,25,'#9fc8dd'],[180,72,27,'#b9dcae'],[285,72,26,'#e9c28e']]}
 };
 function draw(kind){
  const spec=diagrams[kind];if(!spec)return null;
@@ -105,6 +106,7 @@ function courseTabs(course,bis,pack){
    add(content,'p','Deux exercices de 10 questions par leçon : reconnaître les notions, puis écrire des réponses. Note sur 10 et corrigé immédiat. Une seule tentative pour Tim ; essai Parent sans enregistrer.');
    const actions=E('div'),slot=E('div');content.append(actions,slot);
    for(const b of bis)for(let x=1;x<=2;x++){
+    if(b.trainingReady===false){if(x===1)add(actions,'p','Entraînement en préparation pour cette nouvelle leçon : aucune tentative ne peut être lancée.');continue;}
     const id='SVQ_L'+b.id.slice(-2)+'_0'+x;
     actions.append(button(b.title+' · '+(x===1?'QCM de compréhension':'Réponses écrites'),()=>{
      slot.replaceChildren();

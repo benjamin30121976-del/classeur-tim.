@@ -9,7 +9,7 @@ const DIAGRAMS={
 syntax:['Phrase','Nature','Fonction'],portrait:['Auteur','Narrateur','Personnage'],agreement:['Sujet','Noyau','Verbe'],
 dnb:['Répondre','Citer','Expliquer'],memory:['Situation','Émotion','Souvenir'],times:['Avant','Pendant','Après'],
 participle:['Participe','Auxiliaire','Accord'],argument:['Thèse','Argument','Exemple'],image:['Je vois','J’interprète','Je déduis'],
-reading:['Faits','Indices','Interprétation'],fable:['Récit','Choix','Morale']
+reading:['Faits','Indices','Interprétation'],fable:['Récit','Choix','Morale'],subj:['Je repère','Sujet','Je conjugue']
 };
 function draw(type){
  const names=DIAGRAMS[type];if(!names)return E('p','Aucune illustration.');
@@ -90,6 +90,7 @@ function courseTabs(course,chapterBis,pack){
    add(pane,'p','Deux exercices de dix questions : compréhension/QCM puis réponse écrite. Une seule tentative pour Tim ; essai Parent non enregistré.');
    const actions=E('div'),slot=E('div');pane.append(actions,slot);
    for(const b of chapterBis)for(let s=1;s<=2;s++){
+    if(b.trainingReady===false){if(s===1)add(actions,'p','Entraînement en préparation pour cette nouvelle leçon : aucune tentative ne peut être lancée.');continue;}
     const id='FRQ_L'+b.id.slice(-2)+'_0'+s;
     actions.append(button(b.title+' · '+(s===1?'QCM de compréhension':'Réponses écrites'),()=>{
      slot.replaceChildren();
