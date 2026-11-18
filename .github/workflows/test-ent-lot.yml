@@ -1,0 +1,23 @@
+name: Valider le pipeline ENT hors ligne
+on:
+  push:
+    branches-ignore: [main]
+    paths:
+      - 'tools/tim_ent_lot.py'
+      - 'tools/test/test_tim_ent_lot.py'
+      - '.github/workflows/test-ent-lot.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verification:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Compilation et cinq tests hors ligne
+        run: |
+          python -m py_compile tools/tim_ent_lot.py
+          python -m unittest discover -s tools/test -p 'test_tim_ent_lot.py' -v
