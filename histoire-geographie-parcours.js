@@ -352,7 +352,7 @@ function render(root,opts={}){
  const visibleBis=(pack?.bis||[]).filter(x=>visibleChapters.includes(x.group));
  root.replaceChildren(btn('← Toutes les matières',()=>opts.back?.()),E('h2',emcOnly?'EMC — Mes leçons':'Histoire-géographie — Mes leçons'));
  if(!visibleLessons.length){add(root,'p',emcOnly?'Aucune séance EMC identifiée dans le classeur pour le moment.':'Le dossier Histoire-géographie est temporairement indisponible.');return;}
- add(root,'p',visibleLessons.length+' séances ENT classées par date · '+visibleBis.length+' leçons BIS · '+(visibleBis.length*2)+' exercices de 10 questions.');
+ add(root,'p',visibleLessons.length+' séances ENT classées par date · '+visibleBis.length+' leçons BIS · '+((visibleBis.length*2+(visibleBis.some(b=>b.id==='HG_BIS09')?1:0)))+' exercices de 10 questions.');
  add(root,'p',emcOnly?'Les cours EMC déjà archivés dans Histoire-géographie sont présentés ici sans duplication de copies, notes ou XP. Les documents ENT et les leçons BIS restent distincts.':'Archives ENT du 12 novembre et collecte ciblée du 13. Si le professeur ne donne qu’un titre, la leçon BIS est un ajout distinct : aucun texte officiel n’est inventé.','lesson-caution');
  if(!emcOnly&&window.__TIM_PARENT&&!window.__TIM_GUEST&&window.TIM_HG_DOCUMENTS?.parentImport)root.append(window.TIM_HG_DOCUMENTS.parentImport());
  const exam=pack.homework.find(h=>h.due==='2026-11-18'&&/évaluation/i.test(h.title));
