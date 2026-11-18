@@ -90,6 +90,44 @@ def unpack(zips):
     return files
 
 
+
+def scan_attachment_files(zips):
+    """Indexe les pièces non-JSON sans exporter d'octets privés."""
+    files=[]
+    for src in zips:
+        with zipfile.ZipFile(src) as z:
+            for info in z.infolist():
+                if not info.is_dir() and not info.filename.lower().endswith('.json'):
+                    files.append({'name':info.filename.replace('\\\\','/'),'size':info.file_size})
+    return files
+
+
+def inspect_source_gaps(items, attachment_files):
+    """Signale les trous bloquants au lieu de les considérer comme intégrés."""
+    issues=[]
+    for item in items:
+        ent_id=item['entId']
+        if item['subject'] not in SUPPORTED:
+            issues.append({'type':'matiere_inconnue','entId':ent_id,'message':'Matière ENT non reconnue'})
+        if item['kind']=='homework' and not item['due']:
+            issues.append({'type':'echeance_absente','entId':ent_id,
+                           'message':'Devoir sans échéance : ne pas l’omettre du bilan'})
+        if not item['sourceIsComplete'] and not item['attachments']:
+            issues.append({'type':'source_incomplete','entId':ent_id,
+                           'message':'Aucun texte ENT ni pièce jointe liée : ne rien inventer'})
+        for ref in item['attachments']:
+            rid=str(ref.get('id') or '')
+            source_name=str(ref.get('name') or '')
+            matches=[f for f in attachment_files
+                     if (rid and rid in f['name']) or
+                     (source_name and f['name'].split('/')[-1]==source_name)]
+            if len(matches)!=1:
+                issues.append({'type':'piece_jointe_non_verifiee','entId':ent_id,
+                               'attachmentId':rid,'message':
+                               'Pièce originale absente ou correspondance ambiguë ; vérifier le ZIP'})
+    return issues
+
+
 def raw_doc(item):
     if not isinstance(item,dict): return None
     data=item.get('data')
@@ -208,9 +246,11 @@ def homework_preparation_tasks(homework, asof):
 
 
 def collect(args):
-    files=unpack([Path(x) for x in args.zips]); lessons,hw,dates,reports,attachment_index=find_docs(files)
+    zip_paths=[Path(x) for x in args.zips]
+    files=unpack(zip_paths); lessons,hw,dates,reports,attachment_index=find_docs(files)
     if not lessons and not hw: raise ValueError('Aucun cours ni devoir ENT reconnu dans les ZIP. Ne rien inventer.')
     items=uniq(resources(lessons,'lesson',dates,args.subject)+resources(hw,'homework',dates,args.subject))
+    source_issues=inspect_source_gaps(items,scan_attachment_files(zip_paths))
     previous={}
     if args.previous:
         state=json.loads(Path(args.previous).read_text(encoding='utf-8'))
@@ -244,6 +284,7 @@ def collect(args):
                            'xp':'7-10:1 / 5-6:0.5 / 0-4:0, sans plafond'})
     plan={'date':asof.isoformat(),'tomorrow':tomorrow,'lessonsToPrepare':lesson_tasks,
           'dueTomorrow':due_tomorrow,'dueLater':later,'bonusSuggestions':bonus_plan,
+          'sourceIssues':source_issues,'sourceReady':len(source_issues)==0,
           'homeworkExercisePreparations':future_tasks,
           'upcomingHomeworkExercisePreparations':upcoming,
           'futureHomeworkSeriesRequired':sum(x['requiredSeries'] for x in upcoming),
@@ -265,12 +306,14 @@ def collect(args):
            'États : '+', '.join(f'{k} {v}' for k,v in status.items()),
            f'Devoirs pour demain ({tomorrow}) : {len(due_tomorrow)}',
            f'Devoirs à venir : {len(later)}',
+           f'Éléments ENT manquants/à vérifier : {len(source_issues)}',
            f'Exercices dédiés aux devoirs à venir à construire/vérifier : {sum(x["requiredSeries"] for x in upcoming)}',
            f'Bonus proposés : {sum(x["proposedSeries"] for x in bonus_plan)}',
            f'Entraînements quotidiens proposés : {plan["dailyTrainingSuggested"]}',
            'Défis du jour : générateur existant à vérifier, non publiés par ce script.',
            'Défis du samedi et dimanche : 20 questions chacun à contrôler sur le système existant.',
-           '', '**Aucun contenu pédagogique n’a été inventé.** Les fiches à produire figurent dans le plan.']
+           '', '**Aucun contenu pédagogique n’a été inventé.** Les fiches à produire figurent dans le plan.',
+           'IMPORTANT : toute source manquante ou pièce non vérifiée bloque le feu vert final.']
     (output/'bilan_preparation.md').write_text('\n'.join(lines)+'\n',encoding='utf-8')
     print('\n'.join(lines))
 
@@ -366,6 +409,20 @@ def validate(args):
             else:issues.append(prefix+': format non reconnu')
     if getattr(args,'plan',None):
         plan=json.loads(Path(args.plan).read_text(encoding='utf-8'))
+        for issue in plan.get('sourceIssues',[]):
+            issues.append('Source ENT non résolue '+str(issue.get('entId'))+': '+str(issue.get('message')))
+        required_lessons=[t for t in plan.get('lessonsToPrepare',[]) if t.get('originalAvailable')]
+        for task in required_lessons:
+            candidates=[l for l in lessons if str(l.get('entId'))==str(task.get('entId')) and
+                        l.get('subject')==task.get('subject')]
+            if not candidates:
+                issues.append('Leçon BIS absente pour cours ENT '+str(task.get('entId')))
+                continue
+            for l in candidates:
+                if not any(ex.get('kind')=='training' and ex.get('lesson')==l.get('id') and
+                           ex.get('subject')==l.get('subject') and
+                           len(ex.get('questions') or [])==10 for ex in exercises):
+                    issues.append('Entraînement de leçon absent pour '+str(l.get('id')))
         existing=[]
         if getattr(args,'existing',None):
             prev=json.loads(Path(args.existing).read_text(encoding='utf-8'))
