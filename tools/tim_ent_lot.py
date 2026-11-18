@@ -175,6 +175,38 @@ def uniq(items):
     return sorted(result.values(),key=lambda r:(r['date'],r['due'],r['subject'],r['entId']))
 
 
+def exercise_id_for_homework(ent_id, due, series=1):
+    """Identifiant stable : un devoir revient dans les collectes sans recréer son bonus."""
+    digest=hashlib.sha256((str(ent_id)+'|'+str(due)+'|'+str(series)).encode()).hexdigest()[:18]
+    return 'BDENT_'+digest
+
+
+def homework_preparation_tasks(homework, asof):
+    """Une préparation de 10 questions minimum par devoir futur, sans inventer de contenu."""
+    tomorrow=(asof+dt.timedelta(days=1)).isoformat()
+    tasks=[]
+    for x in homework:
+        if x.get('kind')!='homework' or not x.get('due') or x['due']<tomorrow:
+            continue
+        delta=(dt.date.fromisoformat(x['due'])-asof).days
+        is_exam=bool(re.search(r'contr[oô]le|[eé]valu|interro|brevet|dict[eé]e',x['title']+' '+x['original'],re.I))
+        # Le lendemain utilise 1 à 3 séries selon les devoirs du jour ;
+        # pour les échéances à J+2 et au-delà, une série obligatoire par devoir,
+        # une deuxième conseillée si contrôle (sans la déclarer créée).
+        target=1 if delta>=2 else 1
+        recommended=2 if (delta>=2 and is_exam) else target
+        tasks.append({'entId':x['entId'],'subject':x['subject'],'due':x['due'],
+                      'daysUntil':delta,'area':'devoirs-a-venir' if delta>=2 else 'devoirs-demain',
+                      'title':x['title'],'originalAvailable':x['sourceIsComplete'],
+                      'requiredSeries':target,'suggestedSeries':recommended,
+                      'exerciseIds':[exercise_id_for_homework(x['entId'],x['due'],i+1)
+                                     for i in range(recommended)],
+                      'questionCountPerSeries':10,'linkedHomework':[x['entId']],
+                      'homeworkDue':x['due'],'homeworkBonus':True,'xp':'training',
+                      'status':'à rédiger et vérifier — jamais à annoncer prêt avant contrôle'})
+    return tasks
+
+
 def collect(args):
     files=unpack([Path(x) for x in args.zips]); lessons,hw,dates,reports,attachment_index=find_docs(files)
     if not lessons and not hw: raise ValueError('Aucun cours ni devoir ENT reconnu dans les ZIP. Ne rien inventer.')
@@ -195,6 +227,8 @@ def collect(args):
     tomorrow=(asof+dt.timedelta(days=1)).isoformat()
     due_tomorrow=[x for x in items if x['kind']=='homework' and x['due']==tomorrow]
     later=[x for x in items if x['kind']=='homework' and x['due']>tomorrow]
+    future_tasks=homework_preparation_tasks(items,asof)
+    upcoming=[x for x in future_tasks if x['area']=='devoirs-a-venir']
     lesson_tasks=[{'entId':x['entId'],'subject':x['subject'],'date':x['date'],
                    'originalAvailable':x['sourceIsComplete'],
                    'actions':['conserver ENT original','BIS avec exemple','Je n’ai pas compris','exercice de 10 questions avec correction']
@@ -210,6 +244,9 @@ def collect(args):
                            'xp':'7-10:1 / 5-6:0.5 / 0-4:0, sans plafond'})
     plan={'date':asof.isoformat(),'tomorrow':tomorrow,'lessonsToPrepare':lesson_tasks,
           'dueTomorrow':due_tomorrow,'dueLater':later,'bonusSuggestions':bonus_plan,
+          'homeworkExercisePreparations':future_tasks,
+          'upcomingHomeworkExercisePreparations':upcoming,
+          'futureHomeworkSeriesRequired':sum(x['requiredSeries'] for x in upcoming),
           'dailyTrainingSuggested':min(5,max(2,len(grouped)+len(lesson_tasks))) if (grouped or lesson_tasks) else 0,
           'dailyChallenges':{'weekday':3,'questionsEach':10,'engine':'missions-v18 + getMixedChallengePlan (existant)',
                              'action':'contrôler le mélange ; préserver missions déjà attribuées'},
@@ -228,6 +265,7 @@ def collect(args):
            'États : '+', '.join(f'{k} {v}' for k,v in status.items()),
            f'Devoirs pour demain ({tomorrow}) : {len(due_tomorrow)}',
            f'Devoirs à venir : {len(later)}',
+           f'Exercices dédiés aux devoirs à venir à construire/vérifier : {sum(x["requiredSeries"] for x in upcoming)}',
            f'Bonus proposés : {sum(x["proposedSeries"] for x in bonus_plan)}',
            f'Entraînements quotidiens proposés : {plan["dailyTrainingSuggested"]}',
            'Défis du jour : générateur existant à vérifier, non publiés par ce script.',
@@ -235,6 +273,26 @@ def collect(args):
            '', '**Aucun contenu pédagogique n’a été inventé.** Les fiches à produire figurent dans le plan.']
     (output/'bilan_preparation.md').write_text('\n'.join(lines)+'\n',encoding='utf-8')
     print('\n'.join(lines))
+
+
+def validate_homework_coverage(plan, exercises, existing=()):
+    """Bloque le feu vert lorsque des devoirs futurs restent sans exercices corrigés."""
+    requirements=plan.get('homeworkExercisePreparations',[])
+    available=list(exercises)+list(existing)
+    issues=[]
+    for task in requirements:
+        ident=str(task.get('entId') or '')
+        due=str(task.get('due') or '')
+        subject=task.get('subject')
+        matched=[x for x in available if x.get('homeworkBonus') is True and
+                 ident in [str(i) for i in (x.get('linkedHomework') or [])] and
+                 x.get('homeworkDue')==due and x.get('subject')==subject and
+                 len(x.get('questions') or [])==10]
+        required=int(task.get('requiredSeries') or 1)
+        if len({x.get('id') for x in matched}) < required:
+            issues.append(f'{ident} pour le {due} ({subject}) : seulement {len(matched)}/{required} '
+                          'série(s) validable(s), devoir non prêt')
+    return issues
 
 
 def validate(args):
@@ -264,8 +322,8 @@ def validate(args):
         questions=ex.get('questions')
         if not isinstance(questions,list) or len(questions)!=10:
             issues.append(f'{ident}: dix questions obligatoires');continue
-        if kind=='homework-bonus' and (ex.get('homeworkBonus') is not True or not ex.get('linkedHomework')):
-            issues.append(f'{ident}: bonus devoirs sans liaison ENT et marqueur XP correct')
+        if kind=='homework-bonus' and (ex.get('homeworkBonus') is not True or not ex.get('linkedHomework') or not norm_date(ex.get('homeworkDue'))):
+            issues.append(f'{ident}: bonus devoirs sans liaison ENT, échéance ou marqueur XP correct')
         for i,q in enumerate(questions,1):
             prefix=f'{ident} Q{i}'
             if not str(q.get('q','')).strip():issues.append(prefix+': énoncé absent')
@@ -279,6 +337,13 @@ def validate(args):
             elif q.get('type')=='text':
                 if not q.get('right'):issues.append(prefix+': réponse écrite attendue dans right absente')
             else:issues.append(prefix+': format non reconnu')
+    if getattr(args,'plan',None):
+        plan=json.loads(Path(args.plan).read_text(encoding='utf-8'))
+        existing=[]
+        if getattr(args,'existing',None):
+            prev=json.loads(Path(args.existing).read_text(encoding='utf-8'))
+            existing=prev.get('exercises') or []
+        issues.extend(validate_homework_coverage(plan,exercises,existing))
     if issues:
         print('VALIDATION REFUSÉE : '+str(len(issues))+' problème(s):\n'+'\n'.join('- '+x for x in issues[:80]))
         return 1
@@ -322,6 +387,8 @@ def main(argv=None):
     v=sub.add_parser('validate',help='Vérifier les contenus rédigés avant import dans le classeur')
     v.add_argument('pack')
     v.add_argument('--out',help='Produire un JSON compatible avec import Parent existant, sans publier')
+    v.add_argument('--plan',help='Exiger la couverture de tous les devoirs demain et à venir figurant dans ce plan ENT')
+    v.add_argument('--existing',help='Lot des bonus déjà publiés : lecture seule pour éviter doublons')
     args=p.parse_args(argv)
     try:return collect(args) or 0 if args.mode=='collect' else validate(args)
     except (ValueError, OSError, json.JSONDecodeError,zipfile.BadZipFile) as exc:
