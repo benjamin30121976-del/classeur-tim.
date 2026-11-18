@@ -30,7 +30,7 @@ async function render(target,slot){
  // ENT 10099~215689 (pour le 23/11), pas à l'ancien ODT du 3 novembre.
  // L'afficher automatiquement si elle est disponible dans l'un des deux
  // emplacements privés ; ne jamais la fabriquer ou publier ici.
- if(!docs.length&&target==='SVT_ENT_20261117'){
+ if(target==='SVT_ENT_20261117'){
   if(window.TIM_INLINE_ENT_DOCUMENTS?.mount){
    await window.TIM_INLINE_ENT_DOCUMENTS.mount(slot,[target,'SVT_HW_215689'],{
     title:'Capture du professeur liée aux défenses immunitaires',

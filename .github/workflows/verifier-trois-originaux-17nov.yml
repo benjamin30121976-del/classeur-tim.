@@ -1,0 +1,62 @@
+name: Vérifier les trois originaux ENT du 17 novembre sans écriture privée
+on:
+  pull_request:
+    paths:
+      - 'tim-ent-17nov-private-import.js'
+      - 'tools/test/ent-three-originals-20261118.test.mjs'
+      - 'outils/inspecter-trois-originaux-parent-publies.cjs'
+      - 'svt-pack.js'
+      - 'svt-documents.js'
+      - 'svt-parcours.js'
+      - 'espagnol-ent-exact.js'
+      - 'index.html'
+      - 'outils/auditer-affichage-auto-parent.cjs'
+      - '.github/workflows/verifier-trois-originaux-17nov.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'tim-ent-17nov-private-import.js'
+      - 'svt-pack.js'
+      - 'svt-documents.js'
+      - 'svt-parcours.js'
+      - 'espagnol-ent-exact.js'
+      - 'index.html'
+      - '.github/workflows/verifier-trois-originaux-17nov.yml'
+permissions:
+  contents: read
+jobs:
+  verifier-import:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier la syntaxe sans envoyer d'originaux sur GitHub
+        run: |
+          node --check tim-ent-17nov-private-import.js
+          node --check svt-pack.js
+          node --check svt-documents.js
+          node --check svt-parcours.js
+          node --check espagnol-ent-exact.js
+          node --check outils/auditer-affichage-auto-parent.cjs
+      - name: Tester les trois empreintes, l'import Parent simulé et la protection du 3D.pdf existant
+        run: node --test tools/test/ent-three-originals-20261118.test.mjs
+      - name: Vérifier la syntaxe du contrôle Chromium Parent
+        run: node --check outils/inspecter-trois-originaux-parent-publies.cjs
+      - name: Installer Chromium pour contrôler la publication réelle
+        if: github.event_name == 'push'
+        run: |
+          npm install --prefix /tmp/tim-three-originals --no-audit --no-fund playwright
+          if ! command -v google-chrome >/dev/null 2>&1 && ! command -v chromium >/dev/null 2>&1; then
+            /tmp/tim-three-originals/node_modules/.bin/playwright install --with-deps chromium
+          fi
+      - name: Vérifier la présence de l'importeur sur Cloudflare (Parent lecture seule)
+        if: github.event_name == 'push'
+        env:
+          NODE_PATH: /tmp/tim-three-originals/node_modules
+          TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
+          TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+          TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
+        run: node outils/inspecter-trois-originaux-parent-publies.cjs
