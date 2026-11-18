@@ -4,6 +4,7 @@ on:
     paths:
       - 'outils/auditer-pdf-reels-parent.cjs'
       - 'outils/auditer-affichage-auto-parent.cjs'
+      - 'outils/auditer-tous-documents-ent-parent.cjs'
       - 'tools/test/documents-inline-20261118.test.mjs'
       - 'physique-chimie-inline-pdf.js'
       - 'tim-inline-ent-documents.js'
@@ -70,3 +71,33 @@ jobs:
         env:
           NODE_PATH: /tmp/tim-pdf-audit/node_modules
         run: node outils/auditer-affichage-auto-parent.cjs
+
+      - name: Auditer chaque reference ENT et les cinq fichiers des 16-17 novembre
+        if: github.event_name == 'push'
+        env:
+          NODE_PATH: /tmp/tim-pdf-audit/node_modules
+        run: node outils/auditer-tous-documents-ent-parent.cjs
+
+  inventaire-cinq-pieces:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+      TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
+      TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
+      TIM_AUDIT_INVENTORY_ONLY: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Installer Chromium du workflow existant
+        run: |
+          npm install --prefix /tmp/tim-audit-cinq --no-audit --no-fund playwright
+          if ! command -v google-chrome >/dev/null 2>&1 && ! command -v chromium >/dev/null 2>&1; then
+            /tmp/tim-audit-cinq/node_modules/.bin/playwright install --with-deps chromium
+          fi
+      - name: Comparer les cinq originaux au ZIP et inventorier toutes les references
+        env:
+          NODE_PATH: /tmp/tim-audit-cinq/node_modules
+        run: node outils/auditer-tous-documents-ent-parent.cjs
