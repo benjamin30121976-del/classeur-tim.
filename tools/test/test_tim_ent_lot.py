@@ -334,4 +334,23 @@ class LotTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 p.assemble(cmd)  # texte du professeur non remplacé par résumé
 
+    def test_empty_ent_session_is_reported_without_blocking_other_subjects(self):
+        with tempfile.TemporaryDirectory() as d:
+            d=Path(d);a,b=self.inputs(d)
+            with zipfile.ZipFile(a) as z:
+                lessons=json.loads(z.read('cours_espagnol_ENT_originaux.json'))
+                hw=json.loads(z.read('travaux_associes_ENT_originaux.json'))
+            lessons[0]['included']=[{'type':'subject','attributes':{'label':'ESPAGNOL LV2'}}]
+            self.make_zip(a,{'cours_espagnol_ENT_originaux.json':lessons,
+                             'travaux_associes_ENT_originaux.json':hw})
+            args=type('A',(),{'zips':[str(a),str(b)],'previous':None,
+                              'out':str(d/'out'),'date':'2026-11-18','subject':''})()
+            p.collect(args)
+            plan=json.loads((d/'out'/'plan_pedagogique.json').read_text())
+            self.assertEqual(plan['sourceIssues'],[])
+            self.assertEqual(len(plan['sourceWarnings']),1)
+            self.assertEqual(plan['sourceWarnings'][0]['type'],'seance_sans_contenu')
+            self.assertEqual(plan['dueTomorrow'][0]['entId'],'10099~215356')
+            self.assertEqual(plan['lessonsToPrepare'][0]['originalAvailable'],False)
+
 if __name__=='__main__':unittest.main()
