@@ -8,7 +8,7 @@ export function lessonTrainingPoints(score,total=10){
  const p=score/total;
  return p>=0.7?1:p>=0.5?0.5:0;
 }
-export function rawPoints({kind,category,score,total,needsReview}) {
+export function rawPoints({kind,category,score,total,needsReview,homeworkBonus=false}) {
  if(!category||needsReview||!total)return 0;
  // Les relevés privés, les devoirs ENT et les défis sont exclus de ce barème.
  if(kind==='training'&&(category==='school'||category==='training'))
@@ -21,6 +21,8 @@ export function rawPoints({kind,category,score,total,needsReview}) {
  if(kind==='daily')return p>=.9?3:p>=.7?2:p>=.5?1:p>=.2?0:-1;
  if(kind==='weekly')return p>=.85?10:p>=.75?7:p>=.6?4:p>=.5?1:p>=.4?0:-1;
  if(kind==='sunday')return p>=.85?20:p>=.75?14:p>=.6?8:p>=.5?2:p>=.4?0:-2;
+ // Bonus devoirs : seul le palier 9–10/10 = +1 XP est confirmé. Sous 9/10, ne pas inventer de points.
+ if(category==='bonus'&&homeworkBonus===true)return p>=.9?1:0;
  if(category==='bonus')return p===1?2:p>=.6?1:0;
  throw Error('Unknown exercise category');
 }
@@ -29,7 +31,8 @@ export function cappedPoints(raw,dayEarned=0,dayLost=0,weekEarned=0,dayBonus=0,c
  // Les défis n'ont ni le plafond ancien de +10/jour ni celui de +50/semaine.
  if(category==='challenge')return raw;
  if(raw<=0)return raw;
- if(category==='bonus')return Math.max(0,Math.min(raw,3-dayBonus));
+ // Aucun plafond quotidien pour les bonus (décision Parent du 14/11/2026).
+ if(category==='bonus')return raw;
  return raw;
 }
 export function weeklyReward(points){
