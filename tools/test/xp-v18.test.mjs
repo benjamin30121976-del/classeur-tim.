@@ -1,10 +1,14 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {runInNewContext} from 'node:vm';
 import {rawPoints,cappedPoints,weeklyReward} from '../../functions/xp.mjs';
 import {setupMissions,buildMission,isMissionOpen,weekId} from '../../functions/missions-v18.mjs';
 import {SPANISH_COURSE} from '../../functions/spanish-training-curriculum.mjs';
 const xp=(kind,score,total=kind==='daily'?10:20)=>rawPoints({kind,category:'challenge',score,total});
+const uiState={window:{TIM_EXERCISE:{school:ex=>ex?.category==='school',mode:()=> 'bonus'}}};
+runInNewContext(readFileSync(new URL('../../xp-rules.js',import.meta.url),'utf8'),uiState);
+const uiXP=uiState.window.TIM_XP;
 test('Le barème des 10 questions du petit défi',()=>{
  for(const [n,expected] of [[10,3],[9,3],[8,2],[7,2],[6,1],[5,1],[4,0],[3,0],[2,0],[1,-1],[0,-1]])
   assert.equal(xp('daily',n),expected,n+'/10');
@@ -30,6 +34,22 @@ test('Grand défi du dimanche sur 20 questions, montants et anciens devoirs',()=
  assert.equal(cappedPoints(20,10,0,50,3,'challenge'),20);
  assert.equal(cappedPoints(2,10,0,50,2,'bonus'),2); // sans plafond quotidien
  assert.equal(cappedPoints(0.5,50,0,75,12,'bonus'),0.5); // demi-point conservé
+});
+test('La jauge prend les XP du serveur meme apres correction de la note',()=>{
+ const ex={kind:'weekly',category:'challenge'};
+ for(const a of [
+  {policyVersion:18,xp:7,score:20,total:20},
+  {policyVersion:18,xp:10,score:null,total:null},
+  {policyVersion:18,xp:-1,score:10,total:20}
+ ])assert.equal(uiXP.contribution(a,ex),a.xp);
+ assert.equal(uiXP.contribution({policyVersion:18,score:20,total:20},ex),10);
+});
+test('La jauge conserve les points historiques des devoirs et bonus',()=>{
+ const bonus={kind:'bonus',category:'school',homeworkBonus:true};
+ assert.equal(uiXP.contribution({policyVersion:18,xp:0.5,score:10,total:10},bonus),0.5);
+ assert.equal(uiXP.contribution({policyVersion:18,score:10,total:10},bonus),0);
+ assert.equal(uiXP.contribution({policyVersion:18,xp:0,score:10,total:10},{category:'school'}),0);
+ assert.equal(uiXP.contribution({policyVersion:18,xp:0.5,score:10,total:10},{category:'bonus'}),0.5);
 });
 test('Fenêtre des récompenses : Bonus devoirs affichés une fois par tranche',()=>{
  const app=readFileSync(new URL('../../app.js',import.meta.url),'utf8');

@@ -1,7 +1,7 @@
 name: Tester correction XP Bonus devoirs
 on:
   push:
-    branches: [xp-bonus-devoirs-lecons-reference-20261118, corriger-xp-bonus-classeur-live-20261118]
+    branches: [xp-bonus-devoirs-lecons-reference-20261118, corriger-xp-bonus-classeur-live-20261118, audit-qualite-classeur-tim-20261118]
     paths:
       - '.github/workflows/test-xp-bonus-devoirs-20261118.yml'
       - 'functions/xp.mjs'
@@ -9,6 +9,7 @@ on:
       - 'xp-rules.js'
       - 'worker/server.mjs'
       - 'app.js'
+      - 'tools/test/xp-v18.test.mjs'
 permissions:
   contents: read
 jobs:
@@ -28,7 +29,7 @@ jobs:
           node --check worker/server.mjs
           node --check app.js
       - name: Barèmes vérifiés sur les notes de 0 à 10
-        run: node --test functions/test/xp.test.mjs
+        run: node --test functions/test/xp.test.mjs tools/test/xp-v18.test.mjs
       - name: Vérifier l'interface et le raccordement au serveur
         run: |
           node --input-type=module -e '
@@ -47,6 +48,6 @@ jobs:
             assert(rewardModal.includes("Bonus devoirs : 5–6/10"));
             assert(rewardModal.includes("Bonus devoirs : 0–4/10"));
             assert(server.includes("homeworkBonus:exercise.homeworkBonus===true"));
-            assert(rules.includes("Number.isFinite(a.xp)?a.xp:bonusPoints(a)"));
+            assert(rules.includes("if(ex.homeworkBonus===true)return Number.isFinite(a.xp)?a.xp:0;"));
             console.log("Barème et conservation des XP précédents : présence vérifiée");
           '

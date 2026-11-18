@@ -45,7 +45,10 @@ function contributionV10(a,ex){if(!ex)return 0;if(isChallenge(ex))return contrib
 }
 function isBonus(ex,attemptDate){return !!ex&&!isChallenge(ex)&&window.TIM_EXERCISE?.mode(ex,attemptDate)==='bonus';}
 function contribution(a,ex){if(!ex)return 0;
- if(isChallenge(ex)&&a.policyVersion>=18){const p=a.total>0?a.score/a.total:0;if(a.needsReview||!a.total)return 0;
+ // Priorite aux XP enregistres par le serveur : une note revisee ne les recalcule pas.
+ if(isChallenge(ex)&&a.policyVersion>=18){
+  if(Number.isFinite(a.xp))return a.xp;
+  const p=a.total>0?a.score/a.total:0;if(a.needsReview||!a.total)return 0;
   if(ex.kind==='bonus-day')return p>=.7?5:p>=.5?2.5:0;
    if(ex.kind==='bonus-parent')return p>=.85?5:0;
   return ex.kind==='daily'?(p>=.9?3:p>=.7?2:p>=.5?1:p>=.2?0:-1):ex.kind==='weekly'?(p>=.85?10:p>=.75?7:p>=.6?4:p>=.5?1:p>=.4?0:-1):(p>=.85?20:p>=.75?14:p>=.6?8:p>=.5?2:p>=.4?0:-2);
@@ -56,10 +59,12 @@ function contribution(a,ex){if(!ex)return 0;
  // lors de sa validation, sans recalculer ni augmenter les anciennes copies.
  if(ex.kind==='training'&&(ex.category==='school'||ex.category==='training'))
   return Number.isFinite(a.xp)?Math.max(0,Math.min(1,a.xp)):0;
- if(window.TIM_EXERCISE?.school(ex))return 0;
  if(window.TIM_EXERCISE?.mode(ex,a.date)==='upcoming')return 0;
- // Conserver les points effectivement attribués, sans recalcul des copies existantes.
- if(ex.homeworkBonus===true)return Number.isFinite(a.xp)?a.xp:bonusPoints(a);
+ // Le serveur attribue le barème Bonus devoirs d'après le marqueur explicite.
+ if(ex.homeworkBonus===true)return Number.isFinite(a.xp)?a.xp:0;
+ if(window.TIM_EXERCISE?.school(ex))return 0;
+ // Les autres copies V18 utilisent aussi les XP stockes, jamais la note reinterpretee.
+ if(a.policyVersion>=18&&Number.isFinite(a.xp))return a.xp;
  return bonusPoints(a);
 }
 function reward(xp){return xp>=75?10:xp>=38?5:xp>=19?2:0;}
