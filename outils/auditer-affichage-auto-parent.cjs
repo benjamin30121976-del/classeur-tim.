@@ -134,8 +134,89 @@ async function testDevice(browser,label,viewport){
    console.log('OK '+label+' '+task.kind+' : document visible sans clic'+(pages?' ; pages dans le défilement='+pages:''));
    await holder.evaluate(node=>node.remove());
   }
+  await inspectNov17Lessons(page,label);
  }finally{await context.close();}
 }
+
+/* Contrôle ciblé ajouté sur branche d'audit : navigation réelle dans les leçons
+   publiées, sans importer, valider ni modifier la moindre donnée de Tim. */
+async function inspectNov17Lessons(page,device){
+ const nav=page.locator('[data-nav="matieres"]');
+ await nav.click();
+ await page.locator('#matieres-content .matter-card').filter({hasText:'Espagnol'}).first().click();
+ await page.waitForFunction(()=>[...document.querySelectorAll('#matieres-content details.tim-es-lesson')]
+  .some(x=>/17 novembre|17\/11/i.test(x.querySelector(':scope > summary')?.textContent||'')),
+  null,{timeout:20000});
+ const spanish=page.locator('#matieres-content details.tim-es-lesson')
+  .filter({has:page.locator('summary').filter({hasText:/17 novembre|17\/11/i})}).first();
+ await spanish.locator(':scope > summary').click();
+ await page.waitForFunction(()=>[...document.querySelectorAll('#matieres-content .tim-nov17-original')]
+  .filter(x=>x.closest('details.tim-es-lesson')?.open).length>=3,null,{timeout:30000});
+ const spanishFiles=[
+  {key:'11 Presente de indicativo LISTA 2.pdf',label:'espagnol liste 2'},
+  {key:'3D.pdf — version du 17 novembre',label:'espagnol 3D du 17 novembre'}
+ ];
+ for(const file of spanishFiles){
+  const row=spanish.locator('.tim-nov17-original').filter({hasText:file.key}).first();
+  if(await row.count()!==1)throw Error('Leçon espagnole : référence '+file.label+' absente');
+  const viewer=row.locator('.pc-inline-full-document');
+  if(await viewer.count()!==1)throw Error('Leçon espagnole : PDF '+file.label+' pas intégré automatiquement');
+  const opening=await row.locator('button').allTextContents();
+  if(opening.some(s=>/ouvrir|afficher ici|lire.*document/i.test(s)))
+    throw Error('Leçon espagnole : bouton de lecture encore requis pour '+file.label);
+  await viewer.scrollIntoViewIfNeeded({timeout:12000});
+  const ready=await page.waitForFunction(key=>{
+   const rows=[...document.querySelectorAll('#matieres-content .tim-nov17-original')];
+   const row=rows.find(x=>x.querySelector('h4')?.textContent.includes(key));
+   return (row?.querySelectorAll('.pc-pdf-page').length||0)>0;
+  },file.key,{timeout:40000}).then(()=>true).catch(()=>false);
+  if(!ready)throw Error('Leçon espagnole : pages du PDF non chargées '+file.label);
+  const total=await row.locator('.pc-pdf-page').count();
+  if(!total)throw Error('Leçon espagnole : PDF vide '+file.label);
+  for(let i=0;i<total;i++){
+   await row.locator('.pc-pdf-page').nth(i).scrollIntoViewIfNeeded({timeout:15000});
+   const painted=await page.waitForFunction(({key,index})=>{
+    const rows=[...document.querySelectorAll('#matieres-content .tim-nov17-original')];
+    const row=rows.find(x=>x.querySelector('h4')?.textContent.includes(key));
+    const frame=row?.querySelectorAll('.pc-pdf-page')[index];
+    const canvas=frame?.querySelector('canvas');
+    return frame?.dataset.rendered==='1'&&canvas?.width>100&&canvas?.height>100;
+   },{key:file.key,index:i},{timeout:40000}).then(()=>true).catch(()=>false);
+   if(!painted)throw Error('Leçon espagnole : page '+(i+1)+'/'+total+' illisible '+file.label);
+  }
+  console.log('VISUEL '+device+' '+file.label+' : '+total+'/'+total+
+   ' pages rendues dans la leçon sans bouton d’ouverture');
+ }
+ await nav.click();
+ await page.locator('#matieres-content .matter-card').filter({hasText:'SVT'}).first().click();
+ const chapter=page.locator('#matieres-content details.chapter-section')
+  .filter({has:page.locator('summary').filter({hasText:'Lymphocytes B et T'})}).first();
+ if(await chapter.count()!==1)throw Error('Chapitre SVT Lymphocytes B et T introuvable');
+ await chapter.locator(':scope > summary').click();
+ const lesson=chapter.locator('details.tim-es-lesson')
+  .filter({has:page.locator('summary').filter({hasText:'17/11/2026'})}).first();
+ if(await lesson.count()!==1)throw Error('Leçon SVT du 17 novembre absente');
+ await lesson.locator(':scope > summary').click();
+ const figure=lesson.locator('.tim-inline-ent-file')
+  .filter({hasText:'Capture d\'écran 2026-11-17 102650.png'}).first();
+ await figure.waitFor({state:'attached',timeout:30000});
+ if(await figure.locator('.tim-inline-image-button').count())
+  throw Error('Leçon SVT : bouton d’ouverture du schéma encore nécessaire');
+ await figure.scrollIntoViewIfNeeded({timeout:12000});
+ const image=figure.locator('img');
+ await image.waitFor({state:'visible',timeout:35000});
+ const loaded=await page.waitForFunction(()=>{
+  const lesson=[...document.querySelectorAll('#matieres-content details.tim-es-lesson')]
+   .find(x=>(x.querySelector(':scope > summary')?.textContent||'').includes('17/11/2026'));
+  const img=lesson?.querySelector('.tim-inline-ent-file img');
+  return !!img?.complete&&img.naturalWidth>0&&img.naturalHeight>0;
+ },null,{timeout:35000}).then(()=>true).catch(()=>false);
+ if(!loaded)throw Error('Leçon SVT : schéma non visible ou image illisible');
+ const dims=await image.evaluate(img=>({w:img.naturalWidth,h:img.naturalHeight}));
+ console.log('VISUEL '+device+' SVT lymphocytes T : image '+dims.w+'x'+dims.h+
+  ' visible dans la leçon sans bouton d’ouverture');
+}
+
 (async()=>{
  const candidates=['/usr/bin/google-chrome','/usr/bin/google-chrome-stable','/usr/bin/chromium'];
  const bin=candidates.find(p=>fs.existsSync(p));
