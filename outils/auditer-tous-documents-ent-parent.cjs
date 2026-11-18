@@ -10,11 +10,11 @@ if(!email||!password)throw Error('Secrets Parent non configurés.');
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 const safeErr=e=>String(e?.message||e).slice(0,140);
 const five=[
- {key:'EN_CORRECTION_16',target:'EN_ENT_20261112',file:'CORRECTION What were they doing.pdf',size:2362641,kind:'pdf',pages:6},
- {key:'ES_CALENDRIER_17',target:'ENTESP_2026',file:'4 EECEno empiezo las clases en septiembre.pdf',size:743171,kind:'pdf',pages:3},
- {key:'ES_VERBES_17',target:'ENTESP_2026',file:'11 Presente de indicativo LISTA 2.pdf',size:511949,kind:'pdf',pages:1},
- {key:'ES_FICHE_3D_17',target:'ENTESP_2026',file:'3D.pdf',size:54288,kind:'pdf',pages:2},
- {key:'SVT_IMAGE_17',target:'SVT_ENT_20261117',file:"Capture d'écran 2026-11-17 102650.png",size:164054,kind:'png',pages:1}
+ {key:'EN_CORRECTION_16',target:'EN_ENT_20261112',file:'CORRECTION What were they doing.pdf',size:2362641,kind:'pdf',pages:6,sha256:'84dda7694ac027c6165cf5850d911d74e05a961e73915b4b6dc40867f8dfc687'},
+ {key:'ES_CALENDRIER_17',target:'ENTESP_2026',file:'4 EECEno empiezo las clases en septiembre.pdf',size:743171,kind:'pdf',pages:3,sha256:'be48a6fa18032c127be5cdc1652ca9a585908953a67cedc562dbd7575b472837'},
+ {key:'ES_VERBES_17',target:'ENTESP_2026',file:'11 Presente de indicativo LISTA 2.pdf',size:511949,kind:'pdf',pages:1,sha256:'1a7d9be5cb0bda99adb1a337795822f5295478bba7994ffcb0bb543bade816e3'},
+ {key:'ES_FICHE_3D_17',target:'ENTESP_2026',file:'3D.pdf',size:54288,kind:'pdf',pages:2,sha256:'9e6658b16436577febe7ee0e597c033496a8d82057258fcad9a475559e4a0215'},
+ {key:'SVT_IMAGE_17',target:'SVT_ENT_20261117',file:"Capture d'écran 2026-11-17 102650.png",size:164054,kind:'png',pages:1,sha256:'d4d46ee96c3f22fedb0e1f6b42eabd2b837f6af0a1d4cd3b2f031524d11ecaf5'}
 ];
 const normalize=x=>String(x||'').normalize('NFC').toLocaleLowerCase('fr-FR').trim();
 const same=(actual,expected)=>{
@@ -99,7 +99,7 @@ async function session(browser,device,viewport){
      });
      if(file){exact=file;location=target;break;}
     }
-    let verified=false,observedSize=null,signature=false,openPages=null;
+    let verified=false,observedSize=null,signature=false,hashMatch=false;
     if(exact){
      try{
       const blob=await api.read(exact);
@@ -108,11 +108,10 @@ async function session(browser,device,viewport){
       signature=spec.kind==='pdf'
        ?head.slice(0,5).every((v,i)=>v===[37,80,68,70,45][i])
        :head.every((v,i)=>v===[137,80,78,71,13,10,26,10][i]);
-      if(signature&&spec.kind==='pdf'&&window.pdfjsLib){
-       const task=window.pdfjsLib.getDocument({data:new Uint8Array(await blob.arrayBuffer()),isEvalSupported:false});
-       const pdf=await task.promise;openPages=pdf.numPages;await task.destroy();
-      }
-      verified=signature&&observedSize===spec.size&&(spec.kind==='png'||openPages===spec.pages);
+      const fingerprint=await crypto.subtle.digest('SHA-256',await blob.arrayBuffer());
+      const hex=[...new Uint8Array(fingerprint)].map(x=>x.toString(16).padStart(2,'0')).join('');
+      hashMatch=hex===spec.sha256;
+      verified=signature&&observedSize===spec.size&&hashMatch;
      }catch{verified=false;}
     }
     const inCatalog=spec.key==='EN_CORRECTION_16'
@@ -121,7 +120,7 @@ async function session(browser,device,viewport){
       ?window.TIM_SVT_PACK?.attachments?.some(x=>x.target===location&&x.name===exact?.fileName)
       :false;
     return {key:spec.key,found:!!exact,where:location===spec.target?'expected':location?'other':'none',
-      verified,bytesMatch:observedSize===spec.size,signature,pagesMatch:spec.kind==='png'||openPages===spec.pages,
+      verified,bytesMatch:observedSize===spec.size,signature,hashMatch,
       inCatalog:!!inCatalog};
    };
    const checked=[];
