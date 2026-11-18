@@ -196,6 +196,31 @@ const pyth={id:'M26PYT1001',kind:'school',subject:'Mathématiques',title:'Archiv
    assert.deepEqual(direct.bis.map(x=>x.present.filter(Boolean).length),[10,10,10],'Les 30 questions BIS de Thalès doivent désormais avoir un schéma');
    assert.deepEqual(direct.pyth,[true,true,true],'Les trois questions de l’archive Pythagore sont sans figure');
    assert(direct.pythLabels[1].includes('4,2 cm'),'Les dimensions du triangle doivent rester visibles pour la question suivante.');
+   // Afficher la correction existante sans soumettre de copie et vérifier le contraste.
+   const correctionView=await page.evaluate(({source,ex})=>{
+    const E=(tag,cls,txt)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(txt!==undefined)n.textContent=String(txt);return n;};
+    const button=(txt)=>E('button','',txt);
+    const DATA={lessons:[],exercises:[ex]};
+    const f={E,button,DATA,document,window,
+     safe:v=>String(v??''),lessonBy:()=>null,page:()=>{},
+     renderMatiere:()=>{},openLesson:()=>{},v7Feedback:()=>E('div','feedback-summary')};
+    const render=Function(...Object.keys(f),source+';return renderFeedback;')(...Object.values(f));
+    const answers=ex.questions.map((q,i)=>({
+     correct:i!==8,response:i===8?'2':'0',
+     question:q.q,expected:i===8?'Les droites (MN) et (BC) sont parallèles':'Réponse correcte',
+     explanation:i===8?'2/5 = 4/10 = 0,4 ; on utilise la réciproque de Thalès.':'Bonne réponse.'
+    }));
+    const holder=E('section');document.body.append(holder);
+    render(ex,{answers,score:9,total:10,needsReview:false,date:'2026-11-18T15:40:00Z'},holder);
+    const explain=holder.querySelector('.math-feedback-explanation');
+    const guide=holder.querySelector('.math-thales-correction-steps');
+    return {color:explain?getComputedStyle(explain).color:null,
+      guide:guide?.innerText||'',
+      steps:guide?.querySelectorAll('p').length||0};
+   },{source:exerciseCode,ex:bd});
+   assert.equal(correctionView.color,'rgb(32, 55, 84)','Texte de correction trop pâle sur fond clair');
+   assert.equal(correctionView.steps,5,'Rédaction Thalès en cinq étapes absente');
+   assert.match(correctionView.guide,/réciproque du théorème de Thalès/);
    await page.evaluate(({source,ex})=>{
     const E=(tag,cls,text)=>{const n=document.createElement(tag);if(cls)n.className=cls;if(text!==undefined)n.textContent=String(text??'');return n;};
     const button=(text,fn,cls)=>{const n=E('button',cls,text);n.onclick=fn;return n;};
