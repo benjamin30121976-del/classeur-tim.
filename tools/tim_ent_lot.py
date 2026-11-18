@@ -193,8 +193,8 @@ def homework_preparation_tasks(homework, asof):
         # Le lendemain utilise 1 à 3 séries selon les devoirs du jour ;
         # pour les échéances à J+2 et au-delà, une série obligatoire par devoir,
         # une deuxième conseillée si contrôle (sans la déclarer créée).
-        target=1 if delta>=2 else 1
-        recommended=2 if (delta>=2 and is_exam) else target
+        target=1  # minimum une série pour chaque devoir, y compris à J+2/J+7
+        recommended=2 if is_exam else target
         tasks.append({'entId':x['entId'],'subject':x['subject'],'due':x['due'],
                       'daysUntil':delta,'area':'devoirs-a-venir' if delta>=2 else 'devoirs-demain',
                       'title':x['title'],'originalAvailable':x['sourceIsComplete'],
@@ -275,23 +275,50 @@ def collect(args):
     print('\n'.join(lines))
 
 
+def corrected_ten_question_bonus(ex):
+    if not isinstance(ex,dict) or ex.get('homeworkBonus') is not True:
+        return False
+    questions=ex.get('questions') or []
+    if len(questions)!=10: return False
+    for q in questions:
+        if not isinstance(q,dict) or not str(q.get('q') or '').strip() or len(str(q.get('why') or '').strip())<30:
+            return False
+        if q.get('type')=='text' and not str(q.get('right') or '').strip(): return False
+        if q.get('type')=='mc':
+            opts=q.get('options') or []
+            if len(opts)!=4 or len({str(z).strip().casefold() for z in opts})!=4 or not isinstance(q.get('right'),int) or not 0<=q['right']<=3:
+                return False
+        elif q.get('type')!='text': return False
+    return True
+
+
 def validate_homework_coverage(plan, exercises, existing=()):
-    """Bloque le feu vert lorsque des devoirs futurs restent sans exercices corrigés."""
+    """Refuse un cycle incomplet : échéance, liaison, questions et explications."""
     requirements=plan.get('homeworkExercisePreparations',[])
-    available=list(exercises)+list(existing)
+    available=[ex for ex in list(exercises)+list(existing) if corrected_ten_question_bonus(ex)]
     issues=[]
     for task in requirements:
         ident=str(task.get('entId') or '')
         due=str(task.get('due') or '')
         subject=task.get('subject')
-        matched=[x for x in available if x.get('homeworkBonus') is True and
-                 ident in [str(i) for i in (x.get('linkedHomework') or [])] and
-                 x.get('homeworkDue')==due and x.get('subject')==subject and
-                 len(x.get('questions') or [])==10]
+        matched=[x for x in available if ident in [str(i) for i in (x.get('linkedHomework') or [])]
+                 and x.get('homeworkDue')==due and x.get('subject')==subject]
         required=int(task.get('requiredSeries') or 1)
         if len({x.get('id') for x in matched}) < required:
             issues.append(f'{ident} pour le {due} ({subject}) : seulement {len(matched)}/{required} '
-                          'série(s) validable(s), devoir non prêt')
+                          'série(s) corrigée(s), devoir non prêt')
+    # Demain : respecter aussi la charge validée de 1 à 3 bonus par matière.
+    tomorrow=plan.get('tomorrow')
+    for target in plan.get('bonusSuggestions',[]):
+        subject=target.get('subject')
+        ids={str(i) for i in target.get('homeworkIds',[])}
+        total={ex.get('id') for ex in available
+               if ex.get('subject')==subject and ex.get('homeworkDue')==tomorrow and
+               ids.intersection(str(i) for i in (ex.get('linkedHomework') or []))}
+        expected=int(target.get('proposedSeries') or 0)
+        if len(total)<expected:
+            issues.append(f'Bonus pour demain ({subject}) : seulement {len(total)}/{expected} '
+                          'série(s) corrigée(s), lot non prêt')
     return issues
 
 
