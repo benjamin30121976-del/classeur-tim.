@@ -24,10 +24,10 @@ function sampleDb(){
  };
 }
 
-test('HG : 9 leçons, 18 exercices, 180 questions et réponses masquées',()=>{
+test('HG : 9 leçons, 19 exercices, 190 questions et réponses masquées',()=>{
  const ids=HG_BANK_TEST.allIds();
- assert.equal(ids.length,18);
- assert.equal(new Set(ids).size,18);
+ assert.equal(ids.length,19);
+ assert.equal(new Set(ids).size,19);
  for(const id of ids){
   assert.ok(hgTrainingId(id));
   const t=hgTask(id),pub=hgPublicTask(id);
@@ -45,12 +45,14 @@ test('HG : 9 leçons, 18 exercices, 180 questions et réponses masquées',()=>{
  }
  assert.equal(hgTrainingId('HGQ_L01_03'),false);
  assert.equal(hgTrainingId('HGQ_L09_01'),true);
+ assert.equal(hgTrainingId('HGQ_L09_03'),true);
+ assert.equal(hgTrainingId('HGQ_L08_03'),false);
  assert.ok(hgPublicTask('HGQ_L09_01'));
  assert.equal(hgTrainingId('HGQ_L10_01'),false);
  assert.equal(hgPublicTask('HGQ_L10_01'),null);
 });
 
-test('HG : les 180 bonnes réponses donnent 10/10 et les 180 fausses 0/10',()=>{
+test('HG : les 190 bonnes réponses donnent 10/10 et les 190 fausses 0/10',()=>{
  for(const id of HG_BANK_TEST.allIds()){
   const task=hgTask(id);
   const correct=task.questions.map(q=>q.kind==='qcm'?q.right:q.expected);

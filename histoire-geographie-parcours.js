@@ -112,11 +112,11 @@ function session(course,bis,pack){
    if(/schéma|carte|tableau/i.test(course.title)&&!attached.length)add(pane,'p','La carte, le schéma ou le tableau exact n’est pas joint dans la collecte. Aucun exercice ENT inventé.');
   }else if(tab==='train'){
    add(pane,'h3','5 · Exercices BIS interactifs');
-   add(pane,'p','Deux exercices de dix questions : QCM pour comprendre, puis réponses écrites. Une seule tentative Tim, note et correction expliquée ; essai Parent non enregistré.');
+   add(pane,'p','Deux exercices de dix questions pour chaque leçon. Pour le chapitre Nazisme, un troisième exercice ciblé sur les cinq définitions du devoir ENT du 16 novembre est ajouté. Une seule tentative Tim ; essai Parent non enregistré.');
    const actions=E('div'),slot=E('div');pane.append(actions,slot);
-   for(const b of bis)for(let i=1;i<=2;i++){
+   for(const b of bis)for(let i=1;i<=(b.id==='HG_BIS09'?3:2);i++){
     const id='HGQ_L'+b.id.slice(-2)+'_0'+i;
-    actions.append(btn(b.title+' · '+(i===1?'QCM de compréhension':'Réponses écrites'),()=>{
+    actions.append(btn(b.title+' · '+(i===1?'QCM de compréhension':i===2?'Réponses écrites':'Cinq mots à définir (devoir ENT 16 novembre)'),()=>{
      slot.replaceChildren();
      if(!window.TIM_HG_TRAINING?.mount){add(slot,'p','Questionnaire indisponible.');return;}
      window.TIM_HG_TRAINING.mount(id,slot);
