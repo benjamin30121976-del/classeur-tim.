@@ -25,7 +25,7 @@ const here=path.resolve(__dirname,'../..');
     {api:'TIM_FR_PATH',lesson:'FR_BIS12',course:'Chapitre 6 : le subjonctif',want:'FRQ_L12_01',button:'QCM de compréhension'},
     {api:'TIM_FR_PATH',lesson:'FR_BIS13',course:'Orwell',want:'FRQ_L13_02',button:'Réponses écrites'},
     {api:'TIM_SVT_PATH',lesson:'SVT_BIS08',course:'Réaction lente',want:'SVQ_L08_01',button:'QCM de compréhension'},
-    {api:'TIM_ENGLISH_PATH',lesson:'EN_BIS08',course:'Songs rooted in rebellion',want:'ENQ_L08_01',button:'exercice 1'},
+    {api:'TIM_ENGLISH_PATH',lesson:'EN_BIS08',course:'Songs rooted in rebellion',want:'ENQ_L08_01',button:'Music and rebellion : lire et comprendre'},
     {api:'TIM_HG_PATH',lesson:'HG_BIS09',course:'bilan EMC et B le nazisme',want:'HGQ_L09_03',button:'Cinq mots à définir'}
    ]){
     const result=await page.evaluate(async s=>{
