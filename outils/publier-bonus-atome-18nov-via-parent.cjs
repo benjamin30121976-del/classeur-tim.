@@ -57,6 +57,86 @@ const EMAIL=process.env.TIM_PARENT_EMAIL,PASSWORD=process.env.TIM_PARENT_PASSWOR
    return {id:data.id,homeworkBonus:data.homeworkBonus,subject:data.subject,questions:data.questions?.length,category:data.category};
   },ex.id);
   assert.deepEqual(verified,{id:'BD1811_PC02',homeworkBonus:true,subject:'Physique-chimie',questions:10,category:'bonus'});
+  // Deux véritables dessins PNG, liés uniquement à ce bonus.
+  // Les fichiers déjà présents ne sont jamais supprimés ni remplacés.
+  const images=await page.evaluate(async exerciseId=>{
+   const api=window.__TIM_BRIDGE?.attachments;
+   if(!api?.upload||!api?.list||!api?.read)throw Error('Gestion privée des dessins indisponible');
+   const definitions=[
+    {name:'tim-atome-noyau-schema.png',title:'Schéma 1 — Atome et noyau : protons, neutrons, électrons',type:'atom'},
+    {name:'tim-ecriture-A-Z-schema.png',title:'Schéma 2 — Écriture symbolique : A, Z et symbole X',type:'notation'}
+   ];
+   const makePng=async type=>{
+    const canvas=document.createElement('canvas');canvas.width=960;canvas.height=640;
+    const c=canvas.getContext('2d');
+    const txt=(s,x,y,size=30,color='#203047',weight=500,align='left')=>{
+     c.font=weight+' '+size+'px sans-serif';c.textAlign=align;c.fillStyle=color;c.fillText(s,x,y);
+    };
+    const disk=(x,y,r,fill,stroke='#fff',lineWidth=3)=>{
+     c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fillStyle=fill;c.fill();c.strokeStyle=stroke;c.lineWidth=lineWidth;c.stroke();
+    };
+    const line=(x,y,X,Y,color='#566d82',width=3)=>{
+     c.beginPath();c.moveTo(x,y);c.lineTo(X,Y);c.strokeStyle=color;c.lineWidth=width;c.stroke();
+    };
+    c.fillStyle='#f8fbff';c.fillRect(0,0,960,640);
+    c.strokeStyle='#a8bed4';c.lineWidth=4;c.strokeRect(12,12,936,616);
+    if(type==='atom'){
+     txt('STRUCTURE SIMPLIFIÉE D’UN ATOME',480,67,38,'#173b5b',750,'center');
+     // Représentation pédagogique, sans prétendre décrire une orbite réelle.
+     c.beginPath();c.ellipse(460,329,302,204,0,0,Math.PI*2);c.strokeStyle='#9bbbd1';c.lineWidth=5;c.stroke();
+     disk(460,329,127,'#f2f6fb','#577ba0',5);
+     const particles=[[399,283,'p+','#c55353'],[460,277,'n0','#427db3'],[523,289,'p+','#c55353'],
+                      [398,354,'n0','#427db3'],[462,346,'p+','#c55353'],[525,351,'n0','#427db3'],[459,412,'n0','#427db3']];
+     particles.forEach(([x,y,label,color])=>{disk(x,y,36,color);txt(label,x,y+10,24,'#fff',750,'center');});
+     [[160,329],[610,185],[755,329]].forEach(([x,y])=>{disk(x,y,29,'#dc983d');txt('e−',x,y+9,24,'#fff',750,'center');});
+     txt('Électrons (−)',75,484,28,'#9d601b',750);
+     line(225,463,163,359,'#b78035',3);
+     txt('Noyau',690,460,30,'#203c58',750);
+     line(693,443,572,390,'#547c99',3);
+     txt('p+ : proton (+)',60,543,25,'#b43d3d',700);
+     txt('n0 : neutron (neutre)',335,543,25,'#346e9e',700);
+     txt('e− : électron (−)',680,543,25,'#9d601b',700);
+    }else{
+     txt('LIRE LES DEUX NOMBRES D’UN ATOME',480,67,38,'#173b5b',750,'center');
+     txt('A',260,235,85,'#be5050',750,'center');
+     txt('Z',260,392,85,'#366f9c',750,'center');
+     txt('X',385,332,168,'#203d5e',750,'center');
+     line(324,199,540,199,'#be5050',5);
+     line(324,360,540,360,'#366f9c',5);
+     txt('A = nombre de nucléons',550,206,30,'#b33f3f',750);
+     txt('protons + neutrons',550,244,26,'#394b60',550);
+     txt('Z = nombre de protons',550,367,30,'#2b678f',750);
+     txt('X = symbole chimique',480,445,27,'#3b526d',650,'center');
+     txt('Nombre de neutrons : N = A − Z',480,515,32,'#1a527b',750,'center');
+    }
+    txt('Schéma pédagogique non à l’échelle · Physique-chimie 3e',480,603,20,'#61758a',500,'center');
+    const blob=await new Promise(resolve=>canvas.toBlob(resolve,'image/png'));
+    if(!blob||blob.size<1000)throw Error('Dessin PNG non généré');
+    return blob;
+   };
+   const before=await api.list('exercise',exerciseId);
+   const result=[];
+   for(const spec of definitions){
+    const prior=before.filter(x=>x.fileName===spec.name);
+    if(prior.length>1)throw Error('Schéma dupliqué : '+spec.name);
+    if(prior.length===0){
+     const blob=await makePng(spec.type);
+     const file=new File([blob],spec.name,{type:'image/png'});
+     await api.upload('exercise',exerciseId,file,spec.title);
+     result.push({name:spec.name,action:'ajouté',size:file.size});
+    } else result.push({name:spec.name,action:'existant',size:prior[0].size});
+   }
+   const after=await api.list('exercise',exerciseId);
+   for(const spec of definitions){
+    const meta=after.find(x=>x.fileName===spec.name);
+    if(!meta||meta.mime!=='image/png')throw Error('Schéma non visible dans la liste privée : '+spec.name);
+    const imageBlob=await api.read(meta);
+    if(imageBlob.type!=='image/png'||imageBlob.size<1000)throw Error('Schéma illisible : '+spec.name);
+   }
+   return result;
+  },ex.id);
+  assert.equal(images.length,2);
+  console.log('DESSINS PUBLIÉS ET RELUS DANS LE CLASSEUR : '+JSON.stringify(images));
   await page.reload({waitUntil:'domcontentloaded'});
   // Le classeur exige de choisir à nouveau Parent après chaque rechargement,
   // même si Firebase conserve la session. Ne pas saisir de mot de passe Tim.
