@@ -182,9 +182,9 @@ async function inspectNov17Lessons(page,device){
     throw Error('Leçon espagnole : bouton de lecture encore requis pour '+file.label);
   const layout=await viewer.evaluate(node=>{
    const rows=[];let target=node;
-   while(target&&rows.length<9){
+   while(target&&rows.length<24){
     const st=getComputedStyle(target),rect=target.getBoundingClientRect();
-    rows.push({tag:target.tagName,cls:String(target.className||'').slice(0,70),
+    rows.push({tag:target.tagName,id:String(target.id||''),cls:String(target.className||'').slice(0,70),
      display:st.display,visibility:st.visibility,width:Math.round(rect.width),
      height:Math.round(rect.height),open:target.tagName==='DETAILS'?target.open:null});
     target=target.parentElement;
