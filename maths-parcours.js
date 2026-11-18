@@ -317,7 +317,7 @@ function viewBis(id){
  home);
  wire();
  // Les PDF originaux disponibles restent sur cette page, avant la leçon BIS.
- // L'archive privée est interrogée seulement à l'ouverture du volet.
+ // Le lecteur reçoit les références du chapitre dès l'ouverture de la leçon ; les pages se dessinent au défilement.
  const article=root.querySelector('.math-reading-lesson');
  if(article){
   const guide=document.createElement('p');

@@ -110,6 +110,16 @@ async function testDevice(browser,label,viewport){
     throw Error(task.kind+': un clic reste requis');
    const pages=task.expect==='pdf'?await holder.locator('.pc-pdf-page').count():0;
    if(task.expect==='pdf'&&pages<1)throw Error(task.kind+': aucune page reconnue');
+   if(task.expect==='pdf'&&pages>1){
+    await holder.locator('.pc-pdf-page').last().scrollIntoViewIfNeeded({timeout:13000});
+    const tail=await page.waitForFunction(id=>{
+     const parts=[...(document.getElementById(id)?.querySelectorAll('.pc-pdf-page')||[])];
+     const last=parts.at(-1);
+     const canvas=last?.querySelector('canvas');
+     return canvas?.width>0&&canvas.height>0;
+    },id,{timeout:35000}).then(()=>true).catch(()=>false);
+    if(!tail)throw Error(task.kind+': dernière page non rendue au défilement');
+   }
    console.log('OK '+label+' '+task.kind+' : document visible sans clic'+(pages?' ; pages dans le défilement='+pages:''));
    await holder.evaluate(node=>node.remove());
   }
