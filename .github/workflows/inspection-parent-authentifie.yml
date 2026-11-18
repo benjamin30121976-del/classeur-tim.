@@ -5,11 +5,13 @@ on:
     paths:
       - 'browser-requests/parent.json'
       - 'outils/inspecter-parent-securise.cjs'
+      - 'worker/server.mjs'
   pull_request:
     paths:
       - 'browser-requests/parent.json'
       - 'outils/inspecter-parent-securise.cjs'
       - 'outils/auditer-thales-q9-parent.cjs'
+      - 'outils/rectifier-thales-q9-parent.cjs'
       - 'outils/auditer-bonus-hg-parent.cjs'
       - 'functions/xp-week-exception.mjs'
       - 'functions/test/xp-week-exception.test.mjs'
@@ -39,6 +41,7 @@ jobs:
       TIM_SUNDAY_AUDIT: ${{ github.event_name == 'push' && github.ref_name == 'main' && '1' || '0' }}
       TIM_SATURDAY_REVISE: 'off'
       TIM_SATURDAY_FULL_CREDIT: 'off'
+      TIM_TH_Q9_APPLY: ${{ github.event_name == 'push' && github.ref_name == 'main' && '1' || '0' }}
       TIM_XP_CARRY_INSPECT: ${{ github.head_ref == 'exception-barre-xp-du-16-au-22-novembre-2026' && '1' || '0' }}
     steps:
       - uses: actions/checkout@v4
@@ -52,6 +55,8 @@ jobs:
           node --check worker/maths-training-extra.mjs
           node --check worker/test/math-training.test.mjs
           node --check outils/inspecter-parent-securise.cjs
+          node --check outils/auditer-thales-q9-parent.cjs
+          node --check outils/rectifier-thales-q9-parent.cjs
           node --check functions/xp-week-exception.mjs
           node --check outils/auditer-recotation-samedi-20261115.cjs
           node --check outils/reviser-copie-samedi-parent.cjs
@@ -81,6 +86,11 @@ jobs:
         env:
           NODE_PATH: /tmp/tim-parent-browser/node_modules
         run: node outils/auditer-thales-q9-parent.cjs
+      - name: Rectifier en production le point Q9 de Thalès, après publication et accord du Parent
+        if: steps.verify.outputs.configured == 'true' && github.event_name == 'push' && env.TIM_TH_Q9_APPLY == '1'
+        env:
+          NODE_PATH: /tmp/tim-parent-browser/node_modules
+        run: node outils/rectifier-thales-q9-parent.cjs
       - name: Tester la vraie connexion Parent en lecture seule
         if: steps.verify.outputs.configured == 'true'
         env:
