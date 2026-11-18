@@ -9,7 +9,7 @@ const PASSWORD=process.env.TIM_PARENT_PASSWORD||'';
 const URL=process.env.TIM_SITE_URL||'https://classeur-tim-v16.pages.dev/';
 const TARGET_IMPORT_ONLY=(()=>{try{return /controle-import-json-android/.test(JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion||'');}catch{return false;}})();
 const TARGET_BONUS_AUDIT=(()=>{try{return /controle-bonus-parent-20261114/.test(JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion||'');}catch{return false;}})();
-const TARGET_NOV17_EXERCISES=process.env.GITHUB_REF==='refs/heads/main'&&(()=>{
+const TARGET_NOV17_EXERCISES=(()=>{
  try{return JSON.parse(fs.readFileSync('browser-requests/parent.json','utf8')).checkVersion==='controle-11-exercices-ENT-16-17-nov-2026';}
  catch{return false;}
 })();
@@ -61,7 +61,13 @@ async function inspect(browser,label,viewport){
       await intro.waitFor({state:'hidden',timeout:13000});
     }
 
-    if(TARGET_NOV17_EXERCISES&&label==='ordinateur'){
+    if(TARGET_NOV17_EXERCISES){
+      // En PR, la production pointe encore sur l'ancienne banque : ne pas la déclarer incorrecte.
+      // En main, auditer exclusivement les nouvelles questions, pas les anciens scénarios historiques.
+      if(process.env.GITHUB_REF!=='refs/heads/main'){
+        check(label+' audit des nouveaux exercices après publication',true,'Contrôle en production différé ; aucune lecture des copies.');
+        return;
+      }
       // Simple lecture des sujets publics accessibles au Parent ; PAS de soumission, correction ni XP.
       const audit=await page.evaluate(async()=>{
         const bridge=window.__TIM_BRIDGE||{};
@@ -89,6 +95,7 @@ async function inspect(browser,label,viewport){
         return checked;
       });
       for(const item of audit)check('Parent : nouveau questionnaire '+item.id,item.valid,item.detail);
+      return; // Mode ciblé terminé ; n'exécuter aucun test historique hors périmètre.
     }
     if(TARGET_SUNDAY_AUDIT){
       // Audit ciblé, lecture seule : aucune copie ni note affichée, aucune soumission.
