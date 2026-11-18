@@ -1,0 +1,66 @@
+name: Inspection authentifiee Eleve + Parent (lecture seule)
+on:
+  push:
+    branches:
+      - main
+      - controle-comptes-eleve-parent-lecture-seule-20261118
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/inspection-comptes-eleve-parent.yml'
+      - 'outils/inspecter-comptes-lecture-seule.cjs'
+      - 'outils/test/inspection-comptes-lecture-seule.test.cjs'
+permissions:
+  contents: read
+concurrency:
+  group: inspection-comptes-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  controle-code:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verifier script et protections sans session privee
+        run: |
+          node --check outils/inspecter-comptes-lecture-seule.cjs
+          node --test outils/test/inspection-comptes-lecture-seule.test.cjs
+  controle-comptes:
+    needs: controle-code
+    # Les secrets ne sont utilises que lors de push internes ou d'un lancement manuel.
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+      TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
+      TIM_STUDENT_EMAIL: ${{ secrets.TIM_STUDENT_EMAIL }}
+      TIM_STUDENT_PASSWORD: ${{ secrets.TIM_STUDENT_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Laisser le temps au deploiement Cloudflare apres un push main
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: sleep 90
+      - name: Verifier les secrets sans afficher leur valeur
+        run: |
+          test -n "$TIM_PARENT_EMAIL" || { echo 'Secret Parent EMAIL absent'; exit 1; }
+          test -n "$TIM_PARENT_PASSWORD" || { echo 'Secret Parent PASSWORD absent'; exit 1; }
+          test -n "$TIM_STUDENT_EMAIL" || { echo 'Secret Student EMAIL absent'; exit 1; }
+          test -n "$TIM_STUDENT_PASSWORD" || { echo 'Secret Student PASSWORD absent'; exit 1; }
+      - name: Installer Chromium/Playwright
+        run: |
+          mkdir -p /tmp/tim-inspection-playwright
+          npm install --prefix /tmp/tim-inspection-playwright --no-audit --no-fund playwright
+          /tmp/tim-inspection-playwright/node_modules/.bin/playwright install --with-deps chromium
+      - name: Inspecter comptes Tim et Parent (PC + telephone)
+        env:
+          NODE_PATH: /tmp/tim-inspection-playwright/node_modules
+        run: node outils/inspecter-comptes-lecture-seule.cjs
+      - name: Archiver rapports et captures anonymisees
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: controle-eleve-parent-lecture-seule
+          path: browser-comptes-lecture-seule/
+          retention-days: 1
+          if-no-files-found: warn

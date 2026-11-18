@@ -1,0 +1,171 @@
+'use strict';
+/*
+ * Inspection des comptes élève et Parent, sur le site publié.
+ * Lecture seule : aucune soumission, aucune note, copie, tentative ou XP modifié.
+ */
+const fs = require('node:fs');
+const path = require('node:path');
+const SITE = 'https://classeur-tim-v16.pages.dev/';
+const OUTPUT = path.join(process.cwd(), 'browser-comptes-lecture-seule');
+const ROLES = [
+  {id:'eleve', entry:'#tim-enter', parent:false, email:process.env.TIM_STUDENT_EMAIL || '', password:process.env.TIM_STUDENT_PASSWORD || ''},
+  {id:'parent', entry:'#parent-enter', parent:true, email:process.env.TIM_PARENT_EMAIL || '', password:process.env.TIM_PARENT_PASSWORD || ''}
+];
+const DEVICES = [
+  {id:'ordinateur', viewport:{width:1365,height:900}, isMobile:false},
+  {id:'telephone', viewport:{width:390,height:844}, isMobile:true, hasTouch:true}
+];
+const MASKS = [
+  '#account-name', '#parent-content .results-list', '#parent-content .result-details',
+  '#parent-content .copy-detail', '#parent-corrections .results-list',
+  '#parent-corrections .result-details', '#difficulties-content'
+];
+
+function actionIsReadOnly(action) {
+  return typeof action === 'string' && /^get[A-Z][a-zA-Z0-9]*$/.test(action);
+}
+function isFirestoreWriteEndpoint(url) {
+  return /firestore\.googleapis\.com/i.test(url) &&
+    (/\/Write\/channel/i.test(url) || /(?:documents:commit|documents:batchWrite|\/documents\/[^?]+$)/i.test(url));
+}
+function isTimWriteRequest(method,url,body) {
+  if (method==='GET'||method==='HEAD') return false;
+  if (isFirestoreWriteEndpoint(url)) return true;
+  if (!/\/api\/tim(?:\?|$)/.test(url)) return false;
+  try { return !actionIsReadOnly(JSON.parse(body||'{}').action); }
+  catch { return true; }
+}
+function check(report,label,ok,detail='') {
+  report.checks.push({label,ok:Boolean(ok),detail});
+  console.log((ok?'OK':'ECHEC')+' '+label+(detail?' : '+detail:''));
+}
+async function capture(page,name) {
+  await page.addStyleTag({content:MASKS.join(', ')+' { visibility:hidden !important; }'});
+  await page.screenshot({path:path.join(OUTPUT,name+'.jpg'),type:'jpeg',quality:65,
+    fullPage:false,animations:'disabled',timeout:15000});
+}
+async function inspect(browser,role,device,report) {
+  const prefix=role.id+'/'+device.id;
+  const context=await browser.newContext({
+    viewport:device.viewport,locale:'fr-FR',isMobile:device.isMobile,
+    hasTouch:Boolean(device.hasTouch)
+  });
+  const blocked=[];
+  await context.route('**/*',async route=>{
+    const req=route.request(),url=req.url();
+    if (isTimWriteRequest(req.method(),url,req.postData())) {
+      blocked.push(/\/api\/tim/.test(url)?'api/tim':'Firestore');
+      await route.abort('blockedbyclient');
+      return;
+    }
+    await route.continue();
+  });
+  const page=await context.newPage();
+  const jsErrors=[];
+  page.on('pageerror',()=>jsErrors.push('Erreur JS'));
+  try {
+    const res=await page.goto(SITE,{waitUntil:'domcontentloaded',timeout:45000});
+    check(report,prefix+' : site disponible',Boolean(res?.ok()));
+    await page.locator(role.entry).click({timeout:15000});
+    await page.locator('#login-email').fill(role.email);
+    await page.locator('#login-password').fill(role.password);
+    await page.locator('#login-button').click();
+    await page.locator('body.ready').waitFor({timeout:60000});
+    const authenticated=await page.evaluate(expected=>{
+      const label=document.querySelector('#account-name')?.textContent||'';
+      return window.__TIM_GUEST!==true && window.__TIM_PARENT===expected &&
+        label.includes(expected?'Espace parent':'Espace Tim') &&
+        Boolean(window.__TIM_DATA?.lessons?.length) &&
+        Boolean(window.__TIM_DATA?.exercises?.length);
+    },role.parent);
+    check(report,prefix+' : authentification reelle (non invite)',authenticated);
+    if(!authenticated)return;
+    await page.waitForFunction(()=>typeof window.openLesson==='function',null,{timeout:20000});
+    const intro=page.locator('#intro-screen');
+    if(await intro.isVisible().catch(()=>false)){
+      if(await page.locator('#intro-skip').isVisible().catch(()=>false))
+        await page.locator('#intro-skip').click({timeout:10000});
+      else if(await page.locator('#intro-silent').isVisible().catch(()=>false))
+        await page.locator('#intro-silent').click({timeout:10000});
+    }
+    const stats=await page.evaluate(()=>({
+      lessons:window.__TIM_DATA?.lessons?.length||0,
+      exercises:window.__TIM_DATA?.exercises?.length||0,
+      subjects:new Set((window.__TIM_DATA?.lessons||[]).map(x=>x.subject||'Espagnol')).size,
+      guestFallback:window.__TIM_READONLY_FALLBACK===true,
+      parentMenu:[...document.querySelectorAll('[data-nav="parent"]')].some(el=>!el.hidden),
+      xp:!!document.querySelector('#xp-header')
+    }));
+    report.devices.push({role:role.id,device:device.id,authenticated,...stats});
+    check(report,prefix+' : cours et exercices',stats.lessons>0&&stats.exercises>0,
+      stats.lessons+' lecons, '+stats.exercises+' exercices');
+    check(report,prefix+' : sept matieres',stats.subjects>=7,stats.subjects+' matieres');
+    check(report,prefix+' : menu du bon compte',stats.parentMenu===role.parent);
+    check(report,prefix+' : jauge XP visible',stats.xp);
+    if(!role.parent) check(report,prefix+' : donnees privees, pas secours Invite',!stats.guestFallback);
+    const pages=[
+      {id:'home',file:'accueil'}, {id:'matieres',file:'matieres'},
+      {id:'cours',file:'cours'}, {id:'exercices',file:'exercices'}
+    ];
+    if(role.parent)pages.push({id:'parent',file:'espace-parent'});
+    for(const dest of pages){
+      if(dest.id!=='home'){
+        const nav=page.locator('[data-nav="'+dest.id+'"]:visible').first();
+        if(!(await nav.count())){
+          check(report,prefix+' : lien '+dest.id,false,'non visible');
+          continue;
+        }
+        await nav.click({timeout:12000});
+      }
+      const visible=await page.locator('#'+dest.id+'.page.active').isVisible().catch(()=>false);
+      check(report,prefix+' : page '+dest.id+' affichee',visible);
+      if(visible) {
+        try{await capture(page,role.id+'-'+device.id+'-'+dest.file);}
+        catch{check(report,prefix+' : capture '+dest.id,false,'capture indisponible');}
+      }
+    }
+    // Ne jamais cliquer sur un bouton Commencer, Valider, Corriger ou Publier.
+    check(report,prefix+' : aucune ecriture',blocked.length===0,
+      blocked.length?blocked.length+' appel(s) bloques':'aucun appel d ecriture');
+    check(report,prefix+' : erreurs JavaScript',jsErrors.length===0,
+      jsErrors.length?jsErrors.length+' erreur(s)':'aucune');
+  }catch{
+    check(report,prefix+' : inspection complete',false,
+      'connexion ou navigation impossible ; aucun secret publie');
+  }finally{await context.close();}
+}
+async function main(){
+  fs.mkdirSync(OUTPUT,{recursive:true});
+  const report={site:SITE,timestamp:new Date().toISOString(),
+    mode:'deux comptes separes, production, lecture seule',checks:[],devices:[]};
+  for(const r of ROLES)if(!r.email||!r.password)
+    check(report,r.id+' : secrets presents',false,
+      'secrets TIM_'+(r.id==='eleve'?'STUDENT':'PARENT')+'_EMAIL/PASSWORD absents');
+  if(report.checks.some(c=>!c.ok)){
+    fs.writeFileSync(path.join(OUTPUT,'rapport.json'),JSON.stringify(report,null,2));
+    process.exitCode=1;return;
+  }
+  const {chromium}=require('playwright');
+  const browser=await chromium.launch({headless:true});
+  try{for(const role of ROLES)for(const device of DEVICES)
+    await inspect(browser,role,device,report);
+  }finally{await browser.close();}
+  const failed=report.checks.filter(c=>!c.ok);
+  const lines=['# Inspection Tim et Parent (lecture seule)', '',
+    'Date : '+report.timestamp,'Anomalies : '+failed.length,'',
+    ...report.checks.map(c=>'- '+(c.ok?'OK':'ECHEC')+' — '+c.label+
+      (c.detail?' : '+c.detail:'')),'',
+    'Aucune soumission, note, copie, tentative ou XP modifie.',
+    'Captures anonymisees. Aucun secret ou cookie archive.',
+    'Site de production inspecte ; la correspondance a un commit non publie n est pas attestee.'
+  ];
+  fs.writeFileSync(path.join(OUTPUT,'rapport.md'),lines.join('\n'));
+  fs.writeFileSync(path.join(OUTPUT,'rapport.json'),JSON.stringify(report,null,2));
+  console.log('Inspection terminee : '+failed.length+' anomalie(s).');
+  if(failed.length)process.exitCode=1;
+}
+if(require.main===module)main().catch(()=>{
+  console.error('Inspection interrompue. Aucun secret publie.');
+  process.exitCode=1;
+});
+module.exports={actionIsReadOnly,isFirestoreWriteEndpoint,isTimWriteRequest};
