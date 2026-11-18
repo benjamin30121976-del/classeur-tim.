@@ -1,5 +1,5 @@
 'use strict';
-/* Contrôle du code préparé sur vrais fichiers privés, par Chromium connecté
+/* Contrôle du code réellement publié sur vrais fichiers privés, par Chromium connecté
    au compte Parent. Aucune API de validation, aucune écriture Firebase,
    aucune capture ni texte original dans les logs. */
 const {chromium}=require('playwright');
@@ -25,11 +25,22 @@ async function testDevice(browser,label,viewport){
    await page.locator('#intro-silent').click({timeout:8000});
    await intro.waitFor({state:'hidden',timeout:14000});
   }
-  for(const source of [
-   'physique-chimie-inline-pdf.js','tim-inline-ent-documents.js',
-   'francais-documents.js','anglais-documents.js',
-   'svt-documents.js','histoire-geographie-documents.js'
-  ])await page.addScriptTag({content:fs.readFileSync(source,'utf8')});
+  // Contrôle la vraie version Cloudflare, sans injecter le code de la branche.
+  const production=await page.evaluate(()=>{
+   const version='documents-inline-auto-20261118-v1';
+   const modules=['physique-chimie-inline-pdf.js','tim-inline-ent-documents.js',
+    'francais-documents.js','anglais-documents.js',
+    'svt-documents.js','histoire-geographie-documents.js'];
+   const urls=[...document.scripts].map(s=>s.src).filter(Boolean);
+   const missing=modules.filter(name=>!urls.some(src=>src.includes(name+'?v='+version)));
+   return {missing,
+    fullPdf:typeof window.TIM_PHYSICS_INLINE_PDF?.createFullInline==='function',
+    office:typeof window.TIM_INLINE_ENT_DOCUMENTS?.renderOfficeDocument==='function'};
+  });
+  if(production.missing.length||!production.fullPdf||!production.office)
+   throw Error('Version Cloudflare non confirmée : '+production.missing.join(', ')
+    +(production.fullPdf&&production.office?'':' ; lecteur intégral ou bureautique absent'));
+  console.log('VERSION Cloudflare '+label+' : les six modules 20261118-v1 sont chargés directement.');
   const tasks=[
    {kind:'french-pdf',expect:'pdf'},
    {kind:'english-pdf',expect:'pdf'},
