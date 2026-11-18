@@ -5,6 +5,8 @@ on:
     paths:
       - 'boot.js'
       - 'app.js'
+      - 'prochaines-missions.js'
+      - 'tools/test/prochaines-missions.readonly.test.cjs'
       - 'worker/**'
       - 'functions/**'
       - 'tools/tim_ent_lot.py'
@@ -42,6 +44,8 @@ jobs:
           node --check functions/xp.mjs
           node --check worker/server.mjs
           node --check app.js
+          node --check prochaines-missions.js
+          node --test tools/test/prochaines-missions.readonly.test.cjs
       - name: Tester les corrections, sept matières, défis et barèmes sans copie réelle
         run: |
           node --test \
