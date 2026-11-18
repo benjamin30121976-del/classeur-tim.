@@ -5,6 +5,7 @@ on:
       - bonus-physique-controle2-20261118
     paths:
       - .github/workflows/publier-bonus-physique-19nov.yml
+      - outils/publier-bonus-physique-19nov-via-parent.cjs
   workflow_dispatch:
 permissions:
   contents: read
