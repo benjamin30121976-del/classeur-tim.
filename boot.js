@@ -644,8 +644,9 @@ async function startSession(user){
    // Conserver les trois exercices de la séance du 12 novembre, importés
    // via le compte Parent. Le reste de l'espagnol garde son parcours ENT V16.
    const nov12=x=>/^ESE_L14_0[1-3]$/.test(String(x?.id||''));
-   content={...content,lessons:content.lessons.filter(x=>notSpanish(x)||x.id==='L14'),
-     exercises:content.exercises.filter(x=>notSpanish(x)||nov12(x))};
+   content={...content,
+     lessons:content.lessons.filter(x=>notSpanish(x)||x.id==='L14'||x.timEntBatch===true),
+     exercises:content.exercises.filter(x=>notSpanish(x)||nov12(x)||x.timEntBatch===true)};
  }
  // Défi bonus personnalisé : indépendant des trois anciens bonus automatiques.
  window.__TIM_BONUS_PARENT=null;
