@@ -12,24 +12,64 @@
   "actions": [
     {
       "type": "nav",
-      "page": "exercices",
-      "name": "exercices-baremes-publies"
+      "page": "matieres",
+      "name": "matières-nouvelles-lecons-16-17"
     },
     {
       "type": "click",
-      "selector": "#exercise-list .exercise-v12-overview-button.school",
-      "name": "ouvrir-devoirs-sans-mention-zero-xp"
+      "selector": "#matieres-content .matter-card:has-text('Français')",
+      "name": "francais-lecons"
+    },
+    {
+      "type": "click",
+      "selector": "#matieres-content details.chapter-section:has-text('Le subjonctif') > summary",
+      "name": "chapitre-subjonctif"
+    },
+    {
+      "type": "click",
+      "selector": "#matieres-content details.tim-es-lesson:has-text('Chapitre 6 : le subjonctif') > summary",
+      "name": "cours-subjonctif"
     },
     {
       "type": "nav",
-      "page": "home",
-      "name": "accueil-nouveaux-xp"
+      "page": "matieres",
+      "name": "retour-matieres"
     },
     {
       "type": "click",
-      "selector": ".mission-hero .lobo-go",
-      "name": "bonus-devoirs-nouveau-design-20261115"
+      "selector": "#matieres-content .matter-card:has-text('SVT')",
+      "name": "svt-lecons"
+    },
+    {
+      "type": "click",
+      "selector": "#matieres-content details.chapter-section:has-text('Lymphocytes B et T') > summary",
+      "name": "chapitre-lymphocytes"
+    },
+    {
+      "type": "click",
+      "selector": "#matieres-content details.tim-es-lesson:has-text('Réaction lente') > summary",
+      "name": "cours-lymphocytes"
+    },
+    {
+      "type": "nav",
+      "page": "matieres",
+      "name": "retour-matieres-2"
+    },
+    {
+      "type": "click",
+      "selector": "#matieres-content .matter-card:has-text('Anglais')",
+      "name": "anglais-lecons"
+    },
+    {
+      "type": "click",
+      "selector": "#matieres-content details.chapter-section:has-text('Musique et vocabulaire') > summary",
+      "name": "chapitre-musique"
+    },
+    {
+      "type": "click",
+      "selector": "#matieres-content details.tim-es-lesson:has-text('Songs rooted in rebellion') > summary",
+      "name": "cours-musique-rebellion"
     }
   ],
-  "note": "Contrôle Chromium/Playwright après fusion PR #94 (matière affichée d’abord, couleurs par matière et sujet ensuite). Navigation publique lecture seule sur mobile et bureau ; aucune réponse validée, aucune écriture Firebase. En mode Invité, les exercices privés peuvent être absents, ne pas conclure que les cartes sont vérifiées."
+  "note": "Contrôle Chromium/Playwright des leçons ENT 16 et 17 novembre, après fusion GitHub #121. Navigation seule en mode Invité sur mobile et bureau ; aucune note, copie, XP ni tentative modifiés. Les leçons privées espagnoles et PDF ne sont pas vérifiés dans ce contrôle invité."
 }
