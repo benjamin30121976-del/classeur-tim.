@@ -38,3 +38,32 @@ for(const id of IDs){
   await assert.rejects(()=>TESTABLE.previewSpanishEntTraining(NO_DB,TIM_UID,{id,answers,translationsUsed}),e=>e.status===403);
  });
 }
+
+
+const NOV18=['ESE_L17_01','ESE_L17_02','ESE_L17_03'];
+test('Espagnol 18 novembre : trente questions, correction, aucune réponse transmise dans les énoncés',()=>{
+ for(const id of NOV18){
+  assert.equal(spanishEntTrainingId(id),true);
+  const task=spanishEntTask(id),publicTask=spanishEntPublicTask(id);
+  assert.equal(task.lessonId,'L17');
+  assert.equal(task.questions.length,10);
+  assert.equal(publicTask.questions.length,10);
+  assert.equal(publicTask.questions.some(q=>'right'in q||'expected'in q||'explanation'in q),false);
+  const correct=task.questions.map(q=>q.right),aides=Array(10).fill(false);
+  const wrong=task.questions.map(q=>q.kind==='qcm'?(q.right+1)%4:'réponse volontairement erronée 123');
+  assert.equal(gradeSpanishEntTask(id,correct,aides).score,10,id);
+  assert.equal(gradeSpanishEntTask(id,wrong,aides).score,0,id);
+  assert.ok(task.questions.every(q=>q.explanation?.length>=20));
+ }
+ assert.equal(spanishEntTrainingId('ESE_L17_04'),false);
+ assert.equal(spanishEntTrainingId('ESE_L18_01'),false);
+});
+for(const id of NOV18){
+ test('18 novembre — essai Parent sans lecture ni écriture de notes, copies ou XP '+id,async()=>{
+  const task=spanishEntTask(id),answers=task.questions.map(q=>q.right);
+  const report=await TESTABLE.previewSpanishEntTraining(NO_DB,PARENT_UID,{id,answers,translationsUsed:Array(10).fill(false)});
+  assert.equal(report.score,10);assert.equal(report.xp,0);assert.equal(report.saved,false);
+  assert.equal(report.practice,true);assert.equal(report.items.length,10);
+  await assert.rejects(()=>TESTABLE.previewSpanishEntTraining(NO_DB,TIM_UID,{id,answers,translationsUsed:Array(10).fill(false)}),e=>e.status===403);
+ });
+}
