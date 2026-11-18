@@ -774,7 +774,7 @@ async function startSession(user){
    return r.data;
   },
   englishTrainingTask:async(id)=>{
-   if(!/^ENQ_L0[1-7]_0[1-3]$/.test(String(id||'')))throw Error('Exercice de anglais inconnu.');
+   if(!/^ENQ_L0[1-8]_0[1-3]$/.test(String(id||'')))throw Error('Exercice de anglais inconnu.');
    const r=await cloudCallable('getEnglishTrainingTask')({id});
    if(!r.data?.task||r.data.task.questions?.length!==10||
       r.data.task.questions.some(q=>!['qcm','text'].includes(q.kind)))
@@ -783,7 +783,7 @@ async function startSession(user){
   },
   englishTrainingSubmit:async(id,answers,bankVersion)=>{
    if(activeUser?.uid!==TIM_UID)throw Error('Seul Tim peut valider un exercice.');
-   if(!/^ENQ_L0[1-7]_0[1-3]$/.test(String(id||''))||
+   if(!/^ENQ_L0[1-8]_0[1-3]$/.test(String(id||''))||
       !Array.isArray(answers)||answers.length!==10||
       answers.some(x=>!((Number.isInteger(x)&&x>=0&&x<=3)||
         (typeof x==='string'&&x.trim()&&x.length<=80))))
@@ -800,7 +800,7 @@ async function startSession(user){
   /* Un essai sur le compte Parent ne crée aucun résultat dans le dossier de Tim. */
   englishTrainingPreviewSubmit:async(id,answers,bankVersion)=>{
    if(activeUser?.uid!==PARENT_UID)throw Error('Mode essai réservé au compte Parent.');
-   if(!/^ENQ_L0[1-7]_0[1-3]$/.test(String(id||''))||
+   if(!/^ENQ_L0[1-8]_0[1-3]$/.test(String(id||''))||
       !Array.isArray(answers)||answers.length!==10||
       answers.some(x=>!((Number.isInteger(x)&&x>=0&&x<=3)||
         (typeof x==='string'&&x.trim()&&x.length<=80))))
@@ -824,7 +824,7 @@ async function startSession(user){
   },
   /* SVT — correction côté serveur, copies et essais privés. */
   svtTrainingTask:async(id)=>{
-   if(!/^SVQ_L0[1-7]_0[1-2]$/.test(String(id||'')))throw Error('Exercice de SVT inconnu.');
+   if(!/^SVQ_L0[1-8]_0[1-2]$/.test(String(id||'')))throw Error('Exercice de SVT inconnu.');
    const r=await cloudCallable('getSvtTrainingTask')({id});
    if(!r.data?.task||r.data.task.questions?.length!==10||
       r.data.task.questions.some(q=>!['qcm','text'].includes(q.kind)))
@@ -833,7 +833,7 @@ async function startSession(user){
   },
   svtTrainingSubmit:async(id,answers,bankVersion)=>{
    if(activeUser?.uid!==TIM_UID)throw Error('Seul Tim peut valider un exercice.');
-   if(!/^SVQ_L0[1-7]_0[1-2]$/.test(String(id||''))||
+   if(!/^SVQ_L0[1-8]_0[1-2]$/.test(String(id||''))||
       !Array.isArray(answers)||answers.length!==10||
       answers.some(x=>!((Number.isInteger(x)&&x>=0&&x<=3)||
         (typeof x==='string'&&x.trim()&&x.length<=120))))
@@ -850,7 +850,7 @@ async function startSession(user){
   /* Un essai sur le compte Parent ne crée aucun résultat dans le dossier de Tim. */
   svtTrainingPreviewSubmit:async(id,answers,bankVersion)=>{
    if(activeUser?.uid!==PARENT_UID)throw Error('Mode essai réservé au compte Parent.');
-   if(!/^SVQ_L0[1-7]_0[1-2]$/.test(String(id||''))||
+   if(!/^SVQ_L0[1-8]_0[1-2]$/.test(String(id||''))||
       !Array.isArray(answers)||answers.length!==10||
       answers.some(x=>!((Number.isInteger(x)&&x>=0&&x<=3)||
         (typeof x==='string'&&x.trim()&&x.length<=120))))
@@ -874,7 +874,7 @@ async function startSession(user){
   },
   /* Histoire-géographie : copies et essais sans XP pour Parent. */
   hgTrainingTask:async(id)=>{
-   if(!/^HGQ_L0[1-9]_0[1-2]$/.test(String(id||'')))throw Error('Exercice de histoire-géographie inconnu.');
+   if(!/^(?:HGQ_L0[1-9]_0[1-2]|HGQ_L09_03)$/.test(String(id||'')))throw Error('Exercice de histoire-géographie inconnu.');
    const r=await cloudCallable('getHgTrainingTask')({id});
    if(!r.data?.task||r.data.task.questions?.length!==10||
       r.data.task.questions.some(q=>!['qcm','text'].includes(q.kind)))
@@ -883,7 +883,7 @@ async function startSession(user){
   },
   hgTrainingSubmit:async(id,answers,bankVersion)=>{
    if(activeUser?.uid!==TIM_UID)throw Error('Seul Tim peut valider un exercice.');
-   if(!/^HGQ_L0[1-9]_0[1-2]$/.test(String(id||''))||
+   if(!/^(?:HGQ_L0[1-9]_0[1-2]|HGQ_L09_03)$/.test(String(id||''))||
       !Array.isArray(answers)||answers.length!==10||
       answers.some(x=>!((Number.isInteger(x)&&x>=0&&x<=3)||
         (typeof x==='string'&&x.trim()&&x.length<=120))))
@@ -900,7 +900,7 @@ async function startSession(user){
   /* Un essai sur le compte Parent ne crée aucun résultat dans le dossier de Tim. */
   hgTrainingPreviewSubmit:async(id,answers,bankVersion)=>{
    if(activeUser?.uid!==PARENT_UID)throw Error('Mode essai réservé au compte Parent.');
-   if(!/^HGQ_L0[1-9]_0[1-2]$/.test(String(id||''))||
+   if(!/^(?:HGQ_L0[1-9]_0[1-2]|HGQ_L09_03)$/.test(String(id||''))||
       !Array.isArray(answers)||answers.length!==10||
       answers.some(x=>!((Number.isInteger(x)&&x>=0&&x<=3)||
         (typeof x==='string'&&x.trim()&&x.length<=120))))
@@ -924,7 +924,7 @@ async function startSession(user){
   },
   /* Français : même validation protégée que les autres matières. */
   frTrainingTask:async(id)=>{
-   if(!/^FRQ_L(?:0[1-9]|1[01])_0[1-2]$/.test(String(id||'')))throw Error('Exercice de histoire-géographie inconnu.');
+   if(!/^FRQ_L(?:0[1-9]|1[0-3])_0[1-2]$/.test(String(id||'')))throw Error('Exercice de histoire-géographie inconnu.');
    const r=await cloudCallable('getFrTrainingTask')({id});
    if(!r.data?.task||r.data.task.questions?.length!==10||
       r.data.task.questions.some(q=>!['qcm','text'].includes(q.kind)))
@@ -933,7 +933,7 @@ async function startSession(user){
   },
   frTrainingSubmit:async(id,answers,bankVersion)=>{
    if(activeUser?.uid!==TIM_UID)throw Error('Seul Tim peut valider un exercice.');
-   if(!/^FRQ_L(?:0[1-9]|1[01])_0[1-2]$/.test(String(id||''))||
+   if(!/^FRQ_L(?:0[1-9]|1[0-3])_0[1-2]$/.test(String(id||''))||
       !Array.isArray(answers)||answers.length!==10||
       answers.some(x=>!((Number.isInteger(x)&&x>=0&&x<=3)||
         (typeof x==='string'&&x.trim()&&x.length<=120))))
@@ -950,7 +950,7 @@ async function startSession(user){
   /* Un essai sur le compte Parent ne crée aucun résultat dans le dossier de Tim. */
   frTrainingPreviewSubmit:async(id,answers,bankVersion)=>{
    if(activeUser?.uid!==PARENT_UID)throw Error('Mode essai réservé au compte Parent.');
-   if(!/^FRQ_L(?:0[1-9]|1[01])_0[1-2]$/.test(String(id||''))||
+   if(!/^FRQ_L(?:0[1-9]|1[0-3])_0[1-2]$/.test(String(id||''))||
       !Array.isArray(answers)||answers.length!==10||
       answers.some(x=>!((Number.isInteger(x)&&x>=0&&x<=3)||
         (typeof x==='string'&&x.trim()&&x.length<=120))))
