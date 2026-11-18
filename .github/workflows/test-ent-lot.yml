@@ -59,4 +59,5 @@ jobs:
             worker/test/saturday-20261114-review.test.mjs \
             worker/test/sunday-bilan-20261115.test.mjs
       - name: Bilan
-        run: echo 'Tests hors ligne : jamais de validation sur Tim, aucune modification de ses XP.' >> "$GITHUB_STEP_SUMMARY"
+        run: |
+          echo 'Tests hors ligne : jamais de validation sur Tim, aucune modification de ses XP.' >> "$GITHUB_STEP_SUMMARY"
