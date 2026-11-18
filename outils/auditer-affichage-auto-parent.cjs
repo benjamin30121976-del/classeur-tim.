@@ -145,9 +145,15 @@ async function testDevice(browser,label,viewport){
 /* Contrôle ciblé ajouté sur branche d'audit : navigation réelle dans les leçons
    publiées, sans importer, valider ni modifier la moindre donnée de Tim. */
 async function inspectNov17Lessons(page,device){
- const nav=page.locator('[data-nav="matieres"]');
- await page.evaluate(()=>document.querySelector('[data-nav="matieres"]')?.click());
- await page.locator('#matieres-content .matter-card').filter({hasText:'Espagnol'}).first().click();
+ // Appeler le rendu de la matière réellement publiée dans son conteneur normal.
+ // Le menu Matières est masqué sur certains formats du compte Parent.
+ await page.evaluate(async()=>{
+  const root=document.getElementById('matieres-content');
+  if(!root||!window.TIM_SPANISH_ENT_EXACT?.render)throw Error('Parcours espagnol indisponible');
+  document.querySelectorAll('.page').forEach(el=>el.classList.toggle('active',el.id==='matieres'));
+  root.replaceChildren();
+  await window.TIM_SPANISH_ENT_EXACT.render(root,{});
+ });
  await page.waitForFunction(()=>[...document.querySelectorAll('#matieres-content details.tim-es-lesson')]
   .some(x=>/17 novembre|17\/11/i.test(x.querySelector(':scope > summary')?.textContent||'')),
   null,{timeout:20000});
@@ -191,16 +197,20 @@ async function inspectNov17Lessons(page,device){
   console.log('VISUEL '+device+' '+file.label+' : '+total+'/'+total+
    ' pages rendues dans la leçon sans bouton d’ouverture');
  }
- await page.evaluate(()=>document.querySelector('[data-nav="matieres"]')?.click());
- await page.locator('#matieres-content .matter-card').filter({hasText:'SVT'}).first().click();
+ await page.evaluate(()=>{
+  const root=document.getElementById('matieres-content');
+  if(!root||!window.TIM_SVT_PATH?.render)throw Error('Parcours SVT indisponible');
+  root.replaceChildren();
+  window.TIM_SVT_PATH.render(root,{openLessonId:'SVT_ENT_20261117'});
+ });
  const chapter=page.locator('#matieres-content details.chapter-section')
   .filter({has:page.locator('summary').filter({hasText:'Lymphocytes B et T'})}).first();
  if(await chapter.count()!==1)throw Error('Chapitre SVT Lymphocytes B et T introuvable');
- await chapter.locator(':scope > summary').click();
+ if(await chapter.getAttribute('open')===null)await chapter.locator(':scope > summary').click();
  const lesson=chapter.locator('details.tim-es-lesson')
   .filter({has:page.locator('summary').filter({hasText:'17/11/2026'})}).first();
  if(await lesson.count()!==1)throw Error('Leçon SVT du 17 novembre absente');
- await lesson.locator(':scope > summary').click();
+ if(await lesson.getAttribute('open')===null)await lesson.locator(':scope > summary').click();
  const figure=lesson.locator('.tim-inline-ent-file')
   .filter({hasText:'Capture d\'écran 2026-11-17 102650.png'}).first();
  await figure.waitFor({state:'attached',timeout:30000});
