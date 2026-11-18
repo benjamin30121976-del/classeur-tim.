@@ -65,6 +65,18 @@ async function inspect(browser,role,device,report) {
   page.on('pageerror',()=>jsErrors.push('Erreur JS'));
   try {
     const res=await page.goto(SITE,{waitUntil:'domcontentloaded',timeout:45000});
+    // Diagnostic public d'accès au backend ; aucun jeton ou document privé.
+    const backend=await page.evaluate(async()=>{
+      try{
+        const response=await fetch('/api/status',{cache:'no-store'});
+        const publicStatus=await response.json();
+        return {http:response.status,available:publicStatus.available===true,
+          platform:publicStatus.platform||''};
+      }catch{return {http:0,available:false,platform:'unavailable'};}
+    });
+    report.devices.push({role:role.id,device:device.id,backend});
+    check(report,prefix+' : backend Cloudflare disponible',backend.http===200&&backend.available,
+      'HTTP '+backend.http+', active '+backend.available);
     check(report,prefix+' : site disponible',Boolean(res?.ok()));
     await page.locator(role.entry).click({timeout:15000});
     await page.locator('#login-email').fill(role.email);
