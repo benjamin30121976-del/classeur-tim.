@@ -36,12 +36,9 @@ async function render(target,slot){
   const saved=found.find(f=>f.fileName===d.name);
   if(!saved){add(panel,'p','Document original retrouvé dans l’archive ; import privé encore nécessaire depuis le compte Parent.');slot.append(panel);continue;}
   const area=E('div');panel.append(area);
-  const read=E('button','Lire le texte du document dans la leçon');read.type='button';read.className='plain';
-  read.onclick=async()=>{
-   read.disabled=true;area.replaceChildren(E('p','Chargement…'));
-   try{await previewOdt(await bridge().read(saved),area);}catch(e){area.replaceChildren(E('p','Aperçu indisponible : '+e.message));}
-   finally{read.disabled=false;}
-  };
+  if(window.TIM_INLINE_ENT_DOCUMENTS?.renderOfficeDocument)
+   window.TIM_INLINE_ENT_DOCUMENTS.renderOfficeDocument(area,saved,'odt');
+  else area.append(E('p','Lecteur du document ODT indisponible.'));
   const download=E('button','Télécharger l’original ODT');download.type='button';download.className='plain';
   download.onclick=async()=>{
    download.disabled=true;
@@ -49,7 +46,7 @@ async function render(target,slot){
    catch(e){add(panel,'p','Téléchargement indisponible : '+e.message);}
    finally{download.disabled=false;}
   };
-  panel.append(read,download);slot.append(panel);
+  panel.append(download);slot.append(panel);
  }
 }
 function parentImport(){

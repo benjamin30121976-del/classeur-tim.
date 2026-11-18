@@ -186,14 +186,10 @@ function appendFileLinks(root,refs,metas,translations){
   if(meta){
    /* Le PDF original est dessiné ici, à côté de la consigne et de la traduction.
       Aucun onglet extérieur, aucune URL du fichier privé divulguée. */
-   const viewer=window.TIM_PHYSICS_INLINE_PDF?.createInline?.(
-    {target:TAG,fileName:name},1,
-    'Fiche originale du professeur — '+originalName,{manual:true}
+   const viewer=window.TIM_PHYSICS_INLINE_PDF?.createFullInline?.(
+    {target:TAG,fileName:name},'Document intégral du professeur — '+originalName
    );
    if(viewer){
-    const guide=$('p','ent-es-inline-guide','La fiche reste sur cette page. Utilise « Afficher ici le document » puis Page avant / Page après et A+ pour l’agrandir.');
-    guide.style.cssText='margin:8px 0;color:inherit;font-size:14px;line-height:1.5';
-    row.append(guide);
     root.append(row,viewer);
    }else{
     row.append($('small','','Lecteur PDF intégré indisponible : actualiser le classeur.'));
@@ -662,6 +658,36 @@ function createSpanishSession(item,label){
  return card;
 }
 /* Complément exact du 17 novembre dans le parcours ENT espagnol existant, sans données privées. */
+
+/* Documents exacts du 17/11 : lecture privée seulement si le Parent les a
+   déjà importés ; aucun PDF inventé, aucun document rendu public. */
+async function nov17OriginalsInline(host){
+ host.replaceChildren($('p','','Recherche des pièces originales dans le classeur privé…'));
+ const api=window.__TIM_BRIDGE?.attachments;
+ if(window.__TIM_GUEST||!api?.list){
+  host.textContent='Les documents originaux sont réservés aux comptes Parent et Tim.';return;
+ }
+ const names=[
+  '4 EECEno empiezo las clases en septiembre.pdf',
+  '11 Presente de indicativo LISTA 2.pdf',
+  '3D.pdf'
+ ];
+ try{
+  const files=await api.list('lesson',TAG);
+  host.replaceChildren();
+  for(const name of names){
+   const file=files.find(f=>{const value=String(f.fileName||'').toLowerCase();return value===name.toLowerCase()||value.endsWith('_'+name.toLowerCase());});
+   const row=$('section','tim-nov17-original');
+   row.append($('h4','',name));
+   if(file&&window.TIM_PHYSICS_INLINE_PDF?.createFullInline){
+    row.append(window.TIM_PHYSICS_INLINE_PDF.createFullInline(
+      {target:TAG,fileName:file.fileName},'Toutes les pages du document original'
+    ));
+   }else row.append($('p','','Fichier retrouvé dans le ZIP ENT du 17 novembre, mais non disponible dans le stockage privé de cette leçon.'));
+   host.append(row);
+  }
+ }catch(err){host.textContent='Impossible de vérifier les fichiers privés : '+String(err?.message||err);}
+}
 function spanishNov17Panel(){
  const card=$('details','tim-es-lesson ent-es-followup');
  card.style.cssText='border:1px solid #aac5e2;border-radius:14px;margin:12px 0;background:#f7f9ff;color:#273448;overflow:hidden';
@@ -681,6 +707,8 @@ function spanishNov17Panel(){
    t('h4','Devoir pour le mercredi 18 novembre');
    const x=t('p','Terminar el ejercicio II b. Aprender CONOCER, PEDIR, SALIR (PONER, VER, VENIR); traer el Plickers.');
    x.lang='es';t('p','Devoir ENT 10099~215356. Les noms d’élèves de l’évaluation du 17/11 ne sont pas diffusés.');
+   t('h4','Les documents originaux du professeur — visibles ici, sans ouvrir une autre page');
+   const fileHost=t('section');nov17OriginalsInline(fileHost);
   },
   bis:()=>{
    t('h4','Leçon BIS — comprendre le calendrier et la négation');
@@ -866,7 +894,7 @@ async function renderLessonOriginal(root,lessonId,section='course'){
  ));
  if(section!=='exercises'&&refs.length){
   root.append($('h4','','Fiches originales du professeur — dans cette leçon'));
-  root.append($('p','','Lis le cours et la traduction, puis affiche ici les PDF associés sans changer de page.'));
+  root.append($('p','','Les PDF originaux sont affichés ci-dessous, page par page, sans bouton de lecture.'));
   appendFileLinks(root,refs,metas,translations);
  }
  if((section==='exercises'||section==='all')&&homework.length){

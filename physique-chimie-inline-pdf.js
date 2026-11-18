@@ -162,9 +162,90 @@ function originalFiles(id,container,metadata){
  for(const file of metadata||[]){
   const found=Object.values(docs).find(x=>x.fileName===file.fileName);
   if(!found||!/\.pdf$/i.test(file.fileName))continue;
-  container.append(createInline(found,1, 'Document du professeur — '+(file.title||file.fileName),{manual:true}));
+  container.append(createFullInline(found,'Document du professeur — '+(file.title||file.fileName)));
  }
  return true;
 }
-window.TIM_PHYSICS_INLINE_PDF={insertLesson,createInline,originalFiles,available};
+
+/* Toutes les pages originales se lisent directement par défilement.
+   Chargement paresseux des canvases : pas de bouton, pas de copie publique,
+   pas d'extraction de texte, aucun changement des données privées. */
+function createFullInline(ref,title){
+ const card=E('section','pc-inline-pdf pc-inline-full-document');
+ card.style.cssText=css.card;
+ const heading=E('h4','',title||'Document original intégral du professeur');
+ heading.style.cssText=css.heading;card.append(heading);
+ const status=E('p','','Préparation des pages originales…');
+ status.style.cssText=css.message;card.append(status);
+ const pages=E('div','pc-pdf-all-pages');card.append(pages);
+ if(!available()){
+  status.textContent='Document privé : connecte-toi en tant que Tim ou Parent.';
+  return card;
+ }
+ let started=false;
+ async function showPage(pdf,n,host){
+  if(host.dataset.rendered||!host.isConnected)return;
+  host.dataset.rendered='loading';
+  try{
+   const page=await pdf.getPage(n);
+   if(!host.isConnected)return;
+   const area=host.querySelector('.pc-pdf-canvas-frame');
+   const canvas=host.querySelector('canvas');
+   const vp=page.getViewport({scale:1});
+   const width=Math.min(760,Math.max(250,(card.getBoundingClientRect().width||370)-38));
+   const viewport=page.getViewport({scale:width/vp.width});
+   const dpr=Math.min(2,Math.max(1,window.devicePixelRatio||1));
+   canvas.width=Math.ceil(viewport.width*dpr);
+   canvas.height=Math.ceil(viewport.height*dpr);
+   canvas.style.cssText='display:block;max-width:100%;width:'+viewport.width+'px;height:auto;margin:auto;background:#fff';
+   const ctx=canvas.getContext('2d',{alpha:false});
+   if(!ctx)throw Error('Canvas indisponible');
+   ctx.fillStyle='#fff';ctx.fillRect(0,0,canvas.width,canvas.height);
+   await page.render({canvasContext:ctx,viewport,transform:[dpr,0,0,dpr,0,0]}).promise;
+   area.style.minHeight='0';
+   host.dataset.rendered='1';
+   const msg=host.querySelector('.pc-pdf-page-status');if(msg)msg.remove();
+  }catch(err){
+   host.dataset.rendered='';
+   const msg=host.querySelector('.pc-pdf-page-status');
+   if(msg)msg.textContent='Page indisponible : '+String(err?.message||err);
+  }
+ }
+ async function begin(){
+  if(started||!card.isConnected)return;
+  started=true;
+  try{
+   const {pdf}=await load(ref);
+   status.textContent=pdf.numPages+' page(s) originales, ci-dessous dans l’ordre, sans bouton.';
+   const obs=('IntersectionObserver' in window)?new IntersectionObserver(entries=>{
+    entries.forEach(x=>{
+     if(!x.isIntersecting)return;
+     obs.unobserve(x.target);
+     showPage(pdf,Number(x.target.dataset.page),x.target);
+    });
+   },{rootMargin:'850px 0px',threshold:0}):null;
+   for(let n=1;n<=pdf.numPages;n++){
+    const block=E('section','pc-pdf-page');
+    block.dataset.page=String(n);
+    block.style.cssText='margin:12px 0 24px;border:1px solid #d0dce9;background:white;padding:8px;border-radius:6px;color:#25415f';
+    const label=E('p','', 'Page '+n+' / '+pdf.numPages);
+    label.style.cssText='font-size:13px;font-weight:800;color:#25415f';
+    const frame=E('div','pc-pdf-canvas-frame');frame.style.cssText='min-height:240px;width:100%';
+    frame.append(E('canvas','pc-inline-canvas'));block.append(label,frame,E('p','pc-pdf-page-status','Affichage automatique au défilement…'));
+    pages.append(block);
+    if(obs)obs.observe(block);
+    else await showPage(pdf,n,block);
+   }
+  }catch(err){status.textContent='Impossible de charger le document original : '+String(err?.message||err);}
+ }
+ if('IntersectionObserver' in window){
+  const observer=new IntersectionObserver(entries=>{
+   if(entries.some(x=>x.isIntersecting)){observer.disconnect();begin();}
+  },{rootMargin:'850px 0px',threshold:0});
+  observer.observe(card);
+ }else Promise.resolve().then(begin);
+ return card;
+}
+
+window.TIM_PHYSICS_INLINE_PDF={insertLesson,createInline,createFullInline,originalFiles,available};
 })();

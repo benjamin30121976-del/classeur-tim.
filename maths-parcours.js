@@ -245,7 +245,7 @@ function viewEnt(id){
   const host=root.querySelector('.spx.math-path');
   if(host)host.insertBefore(panel,host.children[2]||null);
   window.TIM_INLINE_ENT_DOCUMENTS.mount(panel,entFor(g).map(e=>e.id),{
-   title:'PDF et schémas originaux — visibles sur cette page',limit:15
+   title:'PDF et schémas originaux — toutes les pages dans le cours',limit:30,auto:true
   }).catch(e=>{panel.textContent='Document privé indisponible : '+String(e.message||e);});
  }
 }
@@ -317,7 +317,7 @@ function viewBis(id){
  home);
  wire();
  // Les PDF originaux disponibles restent sur cette page, avant la leçon BIS.
- // L'archive privée est interrogée seulement à l'ouverture du volet.
+ // Le lecteur reçoit les références du chapitre dès l'ouverture de la leçon ; les pages se dessinent au défilement.
  const article=root.querySelector('.math-reading-lesson');
  if(article){
   const guide=document.createElement('p');
@@ -329,21 +329,14 @@ function viewBis(id){
  if(article&&window.TIM_INLINE_ENT_DOCUMENTS?.mount){
   const ids=entFor(g).map(e=>String(e.id||'')).filter(Boolean);
   if(ids.length){
-   const details=document.createElement('details');details.className='math-inline-ent-sources';
-   details.style.cssText='padding:12px;margin:16px 0;border:1px solid #bdd0e2;border-radius:12px;background:#edf5fd;color:#223c59';
-   const summary=document.createElement('summary');
-   summary.textContent='Étape 1 · Consulter ici les documents ENT du chapitre (PDF et schémas)';
-   summary.style.cssText='cursor:pointer;font-weight:800;line-height:1.5;min-height:40px';
-   const slot=document.createElement('div');details.append(summary,slot);
-   let mounted=false;
-   details.addEventListener('toggle',()=>{
-    if(!details.open||mounted)return;
-    mounted=true;
-    window.TIM_INLINE_ENT_DOCUMENTS.mount(slot,ids,{
-     title:'Documents originaux du chapitre '+g.name,limit:10
-    }).catch(err=>{slot.textContent='Lecture des PDF indisponible : '+String(err.message||err);});
-   });
-   article.prepend(details);
+   const slot=document.createElement('section');
+   slot.className='math-inline-ent-sources';
+   slot.style.cssText='padding:12px;margin:16px 0;border:1px solid #bdd0e2;border-radius:12px;background:#edf5fd;color:#223c59';
+   article.prepend(slot);
+   window.TIM_INLINE_ENT_DOCUMENTS.mount(slot,ids,{
+    title:'Étape 1 · Documents originaux du chapitre '+g.name+' — affichés sans clic',
+    limit:30,auto:true
+   }).catch(err=>{slot.textContent='Lecture des PDF indisponible : '+String(err.message||err);});
   }
  }
 }

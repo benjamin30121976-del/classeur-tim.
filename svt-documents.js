@@ -26,6 +26,19 @@ async function previewOdt(blob,slot){
 async function render(target,slot){
  slot.replaceChildren();
  const docs=plan().filter(d=>d.target===target);
+ // La capture originale du 17 novembre est rattachée dans le ZIP au devoir
+ // ENT 10099~215689 (pour le 23/11), pas à l'ancien ODT du 3 novembre.
+ // L'afficher automatiquement si elle est disponible dans l'un des deux
+ // emplacements privés ; ne jamais la fabriquer ou publier ici.
+ if(!docs.length&&target==='SVT_ENT_20261117'){
+  if(window.TIM_INLINE_ENT_DOCUMENTS?.mount){
+   await window.TIM_INLINE_ENT_DOCUMENTS.mount(slot,[target,'SVT_HW_215689'],{
+    title:'Capture du professeur liée aux défenses immunitaires',
+    filenamePattern:/Capture d.[ée]cran 2026-11-17 102650\.png/i,limit:1,auto:true
+   });
+  }else add(slot,'p','Lecteur de la capture originale indisponible.');
+  return;
+ }
  if(!docs.length){add(slot,'p','Aucune pièce jointe téléchargée pour cette séance dans la collecte ENT.');return;}
  if(window.__TIM_GUEST||!bridge()){add(slot,'p','Les originaux sont réservés aux comptes Tim et Parent.');return;}
  let found=[];
@@ -36,12 +49,9 @@ async function render(target,slot){
   const saved=found.find(f=>f.fileName===d.name);
   if(!saved){add(panel,'p','Document original retrouvé dans l’archive ; import privé encore nécessaire depuis le compte Parent.');slot.append(panel);continue;}
   const area=E('div');panel.append(area);
-  const read=E('button','Lire le texte du document dans la leçon');read.type='button';read.className='plain';
-  read.onclick=async()=>{
-   read.disabled=true;area.replaceChildren(E('p','Chargement…'));
-   try{await previewOdt(await bridge().read(saved),area);}catch(e){area.replaceChildren(E('p','Aperçu indisponible : '+e.message));}
-   finally{read.disabled=false;}
-  };
+  if(window.TIM_INLINE_ENT_DOCUMENTS?.renderOfficeDocument)
+   window.TIM_INLINE_ENT_DOCUMENTS.renderOfficeDocument(area,saved,'odt');
+  else area.append(E('p','Lecteur du document ODT indisponible.'));
   const download=E('button','Télécharger l’original ODT');download.type='button';download.className='plain';
   download.onclick=async()=>{
    download.disabled=true;
@@ -49,7 +59,7 @@ async function render(target,slot){
    catch(e){add(panel,'p','Téléchargement indisponible : '+e.message);}
    finally{download.disabled=false;}
   };
-  panel.append(read,download);slot.append(panel);
+  panel.append(download);slot.append(panel);
  }
 }
 function parentImport(){
