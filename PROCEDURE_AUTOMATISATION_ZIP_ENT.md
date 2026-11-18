@@ -39,3 +39,16 @@ Le validateur exige notamment : matière reconnue, identifiant unique, leçon BI
 | Défis samedi/dimanche | moteurs existants `weekly` et `sunday` | Barèmes distincts dans `functions/xp.mjs` |
 
 **Limites à ne jamais masquer :** cette première livraison automatise le classement différentiel, les échéances et le contrôle des lots. Le collecteur réseau quotidien Android n'est pas encore certifié. La rédaction des BIS/questions exige l'analyse de ChatGPT après réception des vrais ZIP. Le résultat du site n'est pas prêt tant que le Parent n'a pas autorisé la publication et que le navigateur réel n'a pas vérifié les leçons et exercices. Ne pas modifier `main` ni les copies, XP, notes ou tentatives existants.
+
+## Devoirs à venir — nouvelle exigence obligatoire (18/11/2026)
+
+- Le traitement porte sur **tous les devoirs futurs connus**, et pas seulement sur ceux de demain : J+2, J+3, J+4, J+7 ou plus, selon les dates réellement présentes dans le ZIP ENT.
+- Une préparation d'au moins **dix questions avec solutions et explications** doit être associée à **chaque devoir à venir**. Pour une évaluation importante, proposer une seconde série lorsque la matière et les sources le justifient.
+- La clé stable de chaque préparation associe l'identifiant ENT, l'échéance et le numéro de série. Une seconde collecte ne doit pas créer un doublon et une préparation de J+7 doit rester accessible lorsqu'elle passe à J+1.
+- Le format publié pour ces séries est le **Bonus devoirs existant** : `category:'bonus'`, `homeworkBonus:true`, `linkedHomework:[identifiant_ENT]`, `homeworkDue:YYYY-MM-DD` ; **barème +1 / +0,5 / 0 XP, sans plafond**, une seule tentative.
+- L'onglet « À venir » doit montrer tous les bonus effectivement reliés au devoir, le nombre disponible et les devoirs sans bonus ; **ne jamais dire « exercice prêt » s'il n'existe pas**.
+- Le mode `collect` produit `upcomingHomeworkExercisePreparations` et `homeworkExercisePreparations` ; les séries n'y sont que **prévues**, jamais inventées à partir d'un intitulé incomplet.
+- Après rédaction des questions, utiliser `validate --plan plan_pedagogique.json`. La vérification bloque si un devoir n'a pas sa série corrigée, si la date ou la matière ne correspond pas, si une correction est absente, ou si les 1–3 bonus prévus pour demain ne sont pas couverts. Avec `--existing`, les séries déjà publiées peuvent compter sans être recréées ; elles sont vérifiées structurellement.
+- Vérifier le vrai parcours sur les deux comptes Parent/Tim avec GitHub Actions et Chromium/Playwright en lecture seule. Tester les nouveaux écrans dans un environnement isolé avant publication, puis revérifier le site après accord du Parent. **Jamais de copie, de réponse ou de XP de Tim modifié par les tests.**
+
+**État des vérifications** : ZIP et devoirs simulés jusqu'à J+7, tests automatiques et rendu sur échantillons synthétiques. La chaîne avec les ZIP réels du Parent, la rédaction des nouvelles questions et la publication après accord ne peut pas être déclarée vérifiée avant sa première exécution complète.
