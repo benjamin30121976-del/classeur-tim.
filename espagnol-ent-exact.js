@@ -676,7 +676,7 @@ async function nov17OriginalsInline(host){
   const files=await api.list('lesson',TAG);
   host.replaceChildren();
   for(const name of names){
-   const file=files.find(f=>String(f.fileName||'').toLowerCase()===name.toLowerCase());
+   const file=files.find(f=>{const value=String(f.fileName||'').toLowerCase();return value===name.toLowerCase()||value.endsWith('_'+name.toLowerCase());});
    const row=$('section','tim-nov17-original');
    row.append($('h4','',name));
    if(file&&window.TIM_PHYSICS_INLINE_PDF?.createFullInline){
