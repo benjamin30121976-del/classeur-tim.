@@ -48,7 +48,7 @@ function homeworkBonusCard(ex){
  const [theme,mark]=subjects[subject]||['autre','3e'];
  const done=Boolean(attemptFor(ex.id));
  const mode=window.TIM_EXERCISE.mode(ex);
- const xpLabel=ex.kind==='bonus-day'?'XP du défi':ex.kind==='training'?'Jusqu’à +1 XP':mode==='bonus'?'Jusqu’à +2 XP':mode==='school'?'0 XP':'XP selon la note';
+ const xpLabel=ex.kind==='bonus-day'?'XP du défi':ex.kind==='training'?'Jusqu’à +1 XP':ex.homeworkBonus===true?'Jusqu’à +3 XP':mode==='bonus'?'Jusqu’à +2 XP':mode==='school'?'0 XP':'XP selon la note';
  const total=Array.isArray(ex.questions)?ex.questions.length:0;
  const card=E('button','tile homework-bonus-card homework-subject-'+theme);card.type='button';
  const top=E('span','homework-bonus-band');
@@ -885,7 +885,7 @@ function openExercise(id,options={}){const ex=exerciseBy(id);if(!ex)return;
  if(!completedChallenge)root.append(makeAttachmentPanel('exercise',ex.id,{hideIfEmpty:isHomeworkDetail}));
 if(!window.__TIM_GUEST&&!ex.kind&&!attemptFor(ex.id)){
  const mode=window.TIM_EXERCISE.mode(ex);
- const modeInfo=notice(mode==='school'?'Devoir scolaire · 0 XP · Correction après accord du parent.':mode==='bonus'?'Bonus · 10/10 : +2 XP · Dès 6/10 : +1 XP · Sinon 0 XP · Plafond quotidien +3 XP.':'Cet exercice n’est pas encore disponible.');modeInfo.id='tim-exercise-mode-info';if(isHomeworkDetail)modeInfo.classList.add('homework-detail-mode-info');root.append(modeInfo);
+ const modeInfo=notice(mode==='school'?'Devoir scolaire · 0 XP · Correction après accord du parent.':mode==='bonus'?(isHomeworkDetail?'Bonus devoirs · 9–10/10 : +3 XP · 7–8/10 : +2 XP · 5–6/10 : +1 XP · Moins de 5/10 : 0 XP · Aucun plafond quotidien.':'Bonus · 10/10 : +2 XP · Dès 6/10 : +1 XP · Sinon 0 XP · Aucun plafond quotidien.'):'Cet exercice n’est pas encore disponible.');modeInfo.id='tim-exercise-mode-info';if(isHomeworkDetail)modeInfo.classList.add('homework-detail-mode-info');root.append(modeInfo);
 }
 showTaskGuide(root); // Un seul rappel court au début du bonus, pas dix répétitions.
 if(window.__TIM_GUEST){root.append(notice('Visite en lecture seule : tu peux voir les questions, mais tu ne peux ni répondre ni valider.','guest-preview'));
