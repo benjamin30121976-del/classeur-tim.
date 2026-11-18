@@ -29,7 +29,7 @@ document.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()
 function lessonBy(id){return DATA.lessons.find(l=>l.id===id);}
 function exerciseBy(id){return DATA.exercises.find(e=>e.id===id);}
 function quizLabel(q){return q.level==='Rédaction'?'Rédaction : 7 critères vérifiés':q.level+' · '+q.questions.length+' questions';}
-function exerciseDescription(ex){const description=safe(ex?.description);if(ex?.homeworkBonus===true){return description.replace(/(?:\s*(?:Barème(?: des)? Bonus devoirs|XP des Bonus devoirs|Maximum de 3 XP bonus par jour|plafond quotidien)[^.]*\.)/gi,'').replace(/10\/10\s*=\s*\+?2 XP[^.]*\./gi,'').trim()+' · Bonus devoirs : 9–10/10 = +1 XP ; autres paliers non confirmés, aucun XP supplémentaire attribué sans règle validée ; aucun plafond quotidien.';}return ex?.kind==='training'?description.replace(/0 XP/g,'+1 / +0,5 / 0 XP selon la note'):ex?.kind?description:description.replace(/correction immédiate/gi,'correction après autorisation du parent');}
+function exerciseDescription(ex){const description=safe(ex?.description);if(ex?.homeworkBonus===true){return description.replace(/(?:\s*(?:Barème(?: des)? Bonus devoirs|XP des Bonus devoirs|Maximum de 3 XP bonus par jour|plafond quotidien)[^.]*\.)/gi,'').replace(/10\/10\s*=\s*\+?2 XP[^.]*\./gi,'').trim()+' · Bonus devoirs : 7–10/10 = +1 XP ; 5–6/10 = +0,5 XP ; 0–4/10 = 0 XP ; aucun plafond quotidien.';}return ex?.kind==='training'?description.replace(/0 XP/g,'+1 / +0,5 / 0 XP selon la note'):ex?.kind?description:description.replace(/correction immédiate/gi,'correction après autorisation du parent');}
 function topicSelect(id,arr,sel,handler){const root=clear(document.getElementById(id));root.append(new Option('Tous les thèmes','all'));for(const x of arr)root.append(new Option(x,x));root.value=sel;root.addEventListener('change',()=>handler(root.value));}
 function cardAction(heading,meta,description,onClick,status){const b=E('button','tile');b.type='button';if(status)b.append(badge(status,status==='Terminé'?'green':''));b.append(E('strong','',heading),E('small','',meta));if(description)b.append(E('small','',description));b.append(E('span','end','Ouvrir →'));b.addEventListener('click',onClick);return b;}
 /* Liste compacte des bonus de devoirs : présentation seule, aucun changement de tentative ou de XP. */
@@ -48,7 +48,7 @@ function homeworkBonusCard(ex){
  const [theme,mark]=subjects[subject]||['autre','3e'];
  const done=Boolean(attemptFor(ex.id));
  const mode=window.TIM_EXERCISE.mode(ex);
- const xpLabel=ex.kind==='bonus-day'?'XP du défi':ex.kind==='training'?'Jusqu’à +1 XP':ex.homeworkBonus===true?'9–10/10 : +1 XP':mode==='bonus'?'Jusqu’à +2 XP':mode==='school'?'0 XP':'XP selon la note';
+ const xpLabel=ex.kind==='bonus-day'?'XP du défi':ex.kind==='training'?'Jusqu’à +1 XP':ex.homeworkBonus===true?'7–10/10 : +1 XP ; 5–6/10 : +0,5 XP':mode==='bonus'?'Jusqu’à +2 XP':mode==='school'?'0 XP':'XP selon la note';
  const total=Array.isArray(ex.questions)?ex.questions.length:0;
  const card=E('button','tile homework-bonus-card homework-subject-'+theme);card.type='button';
  const top=E('span','homework-bonus-band');
@@ -1429,8 +1429,11 @@ function makeRewardsTile(){
    ['Devoirs scolaires ENT','0 XP'],
    ['Entraînement de leçon : 7–10/10','+1 XP'],
    ['Entraînement de leçon : 5–6/10','+0,5 XP'],
-   ['Entraînement de leçon : 0–4/10','0 XP']
-  ],'Les bonus disposent de leur propre barème, indiqué sur la fiche de chaque exercice. Aucun plafond quotidien général de 3 XP n’est annoncé.');
+   ['Entraînement de leçon : 0–4/10','0 XP'],
+   ['Bonus devoirs : 7–10/10','+1 XP'],
+   ['Bonus devoirs : 5–6/10','+0,5 XP'],
+   ['Bonus devoirs : 0–4/10','0 XP']
+  ],'Bonus devoirs : même barème XP que les entraînements dans les leçons, sans plafond quotidien. Les autres bonus et les défis ont des barèmes distincts.');
   addDetails('Validation et conservation des résultats',null,
    'Une seule validation par défi. Les notes, les copies, les trophées et les XP cumulés restent enregistrés. En principe, seul le compteur de récompense repart à zéro le lundi ; une exception est indiquée ci-dessus lorsqu’elle s’applique.');
   dialog.setAttribute('tabindex','-1');
