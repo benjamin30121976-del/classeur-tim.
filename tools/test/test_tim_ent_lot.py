@@ -268,4 +268,65 @@ class LotTest(unittest.TestCase):
             self.assertEqual(len(plan['overdueHomework']),1)
             self.assertEqual(len(plan['dueTomorrow']),1)
 
+    def test_assemble_unified_private_zip_with_pdf_and_homework(self):
+        with tempfile.TemporaryDirectory() as d:
+            d=Path(d);a,b=self.inputs(d)
+            args=type('A',(),{'zips':[str(a),str(b)],'previous':None,
+                              'out':str(d/'out'),'date':'2026-11-18','subject':''})()
+            p.collect(args)
+            inventory=json.loads((d/'out'/'ent_prive_lot.json').read_text())
+            original=next(x['original'] for x in inventory['items'] if x['kind']=='lesson')
+            base_help={'simple':'Le présent de conocer correspond à connaître.',
+                       'steps':['Conocer est un infinitif','Le radical change avec yo'],
+                       'example':'Yo conozco','check':None}
+            ent={'id':'ES_ENT_BATCH18','entId':'10099~6400507','timEntBatch':True,
+                 'title':'Cours original du 18 novembre','subject':'Espagnol',
+                 'kind':'ent','category':'school','chapter':'Conjugaison',
+                 'date':'2026-11-18','blocks':[{'kind':'note','body':original}],
+                 'help':base_help,'examples':['Yo conozco']}
+            bis={'id':'ES_BIS_BATCH18','entId':'10099~6400507','timEntBatch':True,
+                 'title':'Conjugaison expliquée','subject':'Espagnol',
+                 'kind':'bis','category':'bis','chapter':'Conjugaison',
+                 'date':'2026-11-18','blocks':[{'kind':'note','body':'Conocer signifie connaître.'}],
+                 'help':base_help,'examples':['Yo conozco']}
+            q={'type':'mc','q':'Que veut dire conocer en français ?',
+               'options':['connaître','venir','pouvoir','faire'],'right':0,
+               'why':'Le mot espagnol conocer signifie connaître ; les trois autres traductions correspondent à des verbes différents.'}
+            training={'id':'ES_TR_BATCH18','kind':'training','category':'training',
+                      'timEntBatch':True,'subject':'Espagnol','title':'Réviser conocer',
+                      'lesson':bis['id'],'questions':[dict(q) for _ in range(10)]}
+            extras=[]
+            for i in range(2):
+                extras.append({'id':'ES_BD_BATCH'+str(i+1),'kind':'homework-bonus',
+                   'category':'bonus','timEntBatch':True,'subject':'Espagnol',
+                   'homeworkBonus':True,'homeworkDue':'2026-11-19',
+                   'linkedHomework':['10099~215356'],'lesson':bis['id'],
+                   'title':'Préparation du devoir n°'+str(i+1),
+                   'questions':[dict(q) for _ in range(10)]})
+            pack=d/'pack.json';pack.write_text(json.dumps({'lessons':[ent,bis],
+                                    'exercises':[training]+extras},ensure_ascii=False))
+            result=d/'valid-import.zip'
+            cmd=type('A',(),{'pack':str(pack),'plan':str(d/'out'/'plan_pedagogique.json'),
+                 'inventory':str(d/'out'/'ent_prive_lot.json'),'existing':None,
+                 'reviewed_sources':None,'mapping':None,'zips':[str(a),str(b)],
+                 'out':str(result),'overwrite':False})()
+            self.assertIsNone(p.assemble(cmd))
+            with zipfile.ZipFile(result) as z:
+                self.assertIn('PACK_PEDAGOGIQUE.json',z.namelist())
+                manifest=json.loads(z.read('MANIFESTE_LOT_TIM.json'))
+                self.assertEqual(len(manifest['homework']),1)
+                self.assertEqual(len(manifest['documents']),1)
+                item=manifest['documents'][0]
+                self.assertEqual(item['entId'],'10099~6400507')
+                self.assertEqual(item['targetId'],'ES_ENT_BATCH18')
+                self.assertTrue(z.read(item['path']).startswith(b'%PDF-'))
+                self.assertEqual(item['size'],len(z.read(item['path'])))
+            with self.assertRaises(ValueError):
+                p.assemble(cmd)  # pas d'écrasement
+            ent['blocks']=[{'kind':'note','body':'Résumé seulement'}]
+            pack.write_text(json.dumps({'lessons':[ent,bis],'exercises':[training]+extras}))
+            cmd.out=str(d/'bad.zip')
+            with self.assertRaises(ValueError):
+                p.assemble(cmd)  # texte du professeur non remplacé par résumé
+
 if __name__=='__main__':unittest.main()
