@@ -151,13 +151,13 @@ class LotTest(unittest.TestCase):
             self.assertEqual(len(bonus_only),len(exs)-1)
             self.assertTrue(all(x['homeworkDue'] and len(x['questions'])==10 for x in bonus_only))
             self.assertEqual(sum(x.get('kind')=='training' for x in imported['exercises']),1)
-            data['exercises']=[x for x in exs if '10099~215364' not in x['linkedHomework']]
+            data['exercises']=[x for x in exs if '10099~215364' not in (x.get('linkedHomework') or [])]
             pack.write_text(json.dumps(data),encoding='utf-8')
             self.assertEqual(p.validate(validate),1)
             # Rattrapage par un bonus déjà publié, sans le republier.
             previous=d/'existing.json'
             previous.write_text(json.dumps({'exercises':[x for x in exs
-                if '10099~215364' in x['linkedHomework']]}),encoding='utf-8')
+                if '10099~215364' in (x.get('linkedHomework') or [])]}),encoding='utf-8')
             validate.existing=str(previous)
             self.assertEqual(p.validate(validate),0)
 
