@@ -1,0 +1,49 @@
+name: Publier bonus physique contrôle 2 dans Bonus devoirs
+on:
+  push:
+    branches:
+      - bonus-physique-controle2-20261118
+    paths:
+      - .github/workflows/publier-bonus-physique-19nov.yml
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  bonus-physique-parent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    env:
+      TIM_SITE_URL: https://classeur-tim-v16.pages.dev/
+      TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+      TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
+      TIM_PHYSIQUE_BONUS_PUBLISH: OUI
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier le fichier et les 10 questions
+        run: |
+          node --check outils/publier-bonus-physique-19nov-via-parent.cjs
+          node --input-type=module -e '
+            import fs from "node:fs";
+            import assert from "node:assert/strict";
+            const e=JSON.parse(fs.readFileSync("packs/bonus-physique-controle2-19nov-2026.json","utf8")).exercises;
+            assert.equal(e.length,1);
+            assert.equal(e[0].id,"BD1811_PC01");
+            assert.equal(e[0].questions.length,10);
+            assert(e[0].questions.every(q=>q.why?.trim()&&q.q?.trim()&&q.right!==undefined));
+            console.log("10 questions et explications vérifiées");
+          '
+      - name: Vérifier les accès Parent
+        run: |
+          test -n "$TIM_PARENT_EMAIL" || { echo "::error::Compte Parent indisponible"; exit 1; }
+          test -n "$TIM_PARENT_PASSWORD" || { echo "::error::Mot de passe Parent indisponible"; exit 1; }
+      - name: Installer Chromium Playwright existant
+        run: |
+          npm install --prefix /tmp/tim-bonus-physique --no-audit --no-fund playwright
+          /tmp/tim-bonus-physique/node_modules/.bin/playwright install --with-deps chromium
+      - name: Ajouter seulement le bonus physique absent et contrôler la présence côté Parent
+        env:
+          NODE_PATH: /tmp/tim-bonus-physique/node_modules
+        run: node outils/publier-bonus-physique-19nov-via-parent.cjs
