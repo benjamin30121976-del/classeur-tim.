@@ -1295,7 +1295,7 @@ async function correctThalesNov16Question9(db,uid,payload={}){
  const badAnswer=/rapports?\s+sont\s+diff[eé]rents?/i.test(selected);
  const expectedParallels=/\(MN\).*?\(BC\).*?parall[eè]les?/i.test(expected)||
   /droites.*?parall[eè]les?/i.test(expected);
- if(!correctSource||!badAnswer||!expectedParallels||
+ if(!correctSource||String(q.question||'')!==String(question.q||'')||!badAnswer||!expectedParallels||
     !/^\d$/.test(String(q.response))||q.correct!==false||Number(q.points)!==0||
     copy.answers.some((a,i)=>i!==8&&(a.correct!==true||Number(a.points)!==1)))
   throw new ApiFault(409,'thales-q9-copy-mismatch');
