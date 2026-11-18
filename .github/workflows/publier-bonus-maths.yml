@@ -22,7 +22,7 @@ on:
       - 'tools/test/nazism-bonus-cahier.test.mjs'
       - '.github/workflows/publier-bonus-maths.yml'
   push:
-    branches: [main]
+    branches: [main, audit-qualite-classeur-tim-20261118]
     paths:
       - 'functions/bonus-maths-2026.mjs'
       - 'functions/bonus-perimetres-tim-20261114.mjs'

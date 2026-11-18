@@ -1,7 +1,7 @@
 name: Contrôle production Physique-chimie sans connexion
 on:
   push:
-    branches: [main]
+    branches: [main, audit-qualite-classeur-tim-20261118]
     paths:
       - '.github/workflows/controle-production-physique.yml'
       - 'app.js'
@@ -31,14 +31,14 @@ jobs:
             curl -fsSL --max-time 20 "$BASE/physique-chimie-parcours.js?v=20261112-ent-interactif-v7" -o /tmp/pc-parcours.js || true
             curl -fsSL --max-time 20 "$BASE/boot.js?v=essai-espagnol-parent-20261112-v5" -o /tmp/pc-boot.js || true
             curl -fsSL --max-time 20 "$BASE/app.js?v=trois-matieres-pedago-20261112-v8" -o /tmp/pc-app.js || true
-            curl -fsSL --max-time 20 "$BASE/physique-chimie-documents.js?v=20261112-inline-pdf-ent-v3" -o /tmp/pc-documents.js || true
-            curl -fsSL --max-time 20 "$BASE/physique-chimie-inline-pdf.js?v=20261112-inline-pdf-securise-v2" -o /tmp/pc-inline.js || true
+            curl -fsSL --max-time 20 "$BASE/physique-chimie-documents.js?v=documents-inline-auto-20261118-v1" -o /tmp/pc-documents.js || true
+            curl -fsSL --max-time 20 "$BASE/physique-chimie-inline-pdf.js?v=documents-inline-auto-20261118-v1" -o /tmp/pc-inline.js || true
             curl -fsSL --max-time 20 "$BASE/assets/vendor/pdfjs-3.2.146.min.js?v=physique-pdf-local-v1" -o /tmp/pc-pdfjs.js || true
             curl -fsSL --max-time 20 "$BASE/physique-chimie-ent-exercices.js?v=20261112-correction-pedago-v2" -o /tmp/pc-ent-exercises.js || true
             curl -fsSL --max-time 20 "$BASE/parent-unified-results.js?v=maths-ent-parents-20261112-v3" -o /tmp/pc-parent.js || true
             if grep -q 'physique-chimie-ent-exercices.js?v=20261112-correction-pedago-v2' /tmp/pc-index.html 2>/dev/null &&
-               grep -q 'physique-chimie-documents.js?v=20261112-inline-pdf-ent-v3' /tmp/pc-index.html 2>/dev/null &&
-               grep -q 'physique-chimie-inline-pdf.js?v=20261112-inline-pdf-securise-v2' /tmp/pc-index.html 2>/dev/null &&
+               grep -q 'physique-chimie-documents.js?v=documents-inline-auto-20261118-v1' /tmp/pc-index.html 2>/dev/null &&
+               grep -q 'physique-chimie-inline-pdf.js?v=documents-inline-auto-20261118-v1' /tmp/pc-index.html 2>/dev/null &&
                grep -q 'isEvalSupported:false' /tmp/pc-inline.js 2>/dev/null &&
                test $(wc -c </tmp/pc-pdfjs.js) -gt 200000 &&
                grep -q 'physicsTrainingPreviewSubmit' /tmp/pc-exercises.js 2>/dev/null &&

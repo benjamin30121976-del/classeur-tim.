@@ -114,8 +114,9 @@ test('Le suivi Parent affiche les XP réels des mathématiques et le règlement 
  assert.match(boot,/const mathXp=Number\(record\.xp\?\?0\)/);
  assert.match(boot,/mathXp\.toLocaleString\('fr-FR'\)/);
  assert.doesNotMatch(boot,/record\.total\+' · 0 XP'/);
- assert.ok(app.includes('Entraînements des leçons de mathématiques et d’espagnol'));
- assert.ok(app.includes('5 à 6/10 = +0,5 XP'));
+ assert.ok(app.includes("['Entraînement de leçon : 7–10/10','+1 XP']"));
+ assert.ok(app.includes("['Entraînement de leçon : 5–6/10','+0,5 XP']"));
+ assert.ok(app.includes("['Bonus devoirs : 5–6/10','+0,5 XP']"));
 });
 
 test('Import privé des maths : interface Parent et refus du mode Visiteur',()=>{

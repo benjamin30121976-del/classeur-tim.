@@ -23,6 +23,17 @@ test('Bonus : résultat au milieu d’un calcul faux refusé',()=>{
   assert.equal(gradeOne(q,'24 cm',actual).correct,false,actual);
  }
 });
+test('Aire demandée en cm² ou m² : accepter la bonne unité au carré',()=>{
+ for(const unit of ['cm²','m²']){
+  const q='Calcule la surface d’un rectangle de 3 par 4. Donne l’aire en '+unit+'.';
+  for(const actual of ['12 '+unit,'3 × 4 = 12 '+unit]){
+   assert.equal(gradeOne(q,'12',actual).correct,true,actual);
+  }
+  assert.equal(gradeOne(q,'12',unit==='cm²'?'12 cm':'12 m').correct,false,'unité linéaire');
+  assert.equal(gradeOne(q,'12',unit==='cm²'?'12 m²':'12 cm²').correct,false,'unité de surface erronée');
+  assert.equal(gradeOne(q,'12','3 + 4 = 12 '+unit).correct,false,'calcul faux');
+ }
+});
 test('Bonus fraction : une fraction réductible ne devient pas correcte par équivalence',()=>{
  const q='Calcule 2/3 + 1/6. Donne une fraction irréductible.';
  assert.equal(gradeOne(q,'5/6','5/6').correct,true);
