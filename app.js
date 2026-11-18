@@ -1362,20 +1362,89 @@ function makeXPPanel(){
 }
 function refreshXPHeader(){const el=document.getElementById('xp-header');if(!el||window.__TIM_GUEST)return;const s=xpInfo();el.innerHTML='<span>⭐ '+s.total.toLocaleString('fr-FR')+' XP</span><small>Niveau '+s.level+'</small>';}
 document.addEventListener('tim-spanish-ent-xp-progress',()=>refreshXPHeader());
-function makeRewardsTile(){const b=E('button','reward-open');b.type='button';
- const text=E('span');text.append(E('strong','','🎁 MES RÉCOMPENSES'),E('small','','Comment fonctionnent les XP, les défis et les gains ?'));
- b.append(text,E('span','','›'));b.addEventListener('click',()=>{
-  const dialog=document.getElementById('rewards-dialog'),body=clear(document.getElementById('rewards-explanation'));
-  body.append(E('p','',xpBarExceptionNotice()?
-   'Les XP des défis sont habituellement comptés du lundi au dimanche. Cette semaine seulement, la barre conserve la progression précédente. La récompense est à valider par le parent ; les montants ne se cumulent pas.':
-   'Les XP des défis sont comptés du lundi au dimanche. Le compteur revient à zéro chaque lundi. La récompense est à valider et à verser par le parent ; les montants ne se cumulent pas.'));
-  if(xpBarExceptionNotice())body.append(E('p','',xpBarExceptionNotice()));
-  const table=E('table'),heads=E('tr');for(const t of ['XP de la semaine','Récompense'])heads.append(E('th','',t));table.append(heads);
-  for(const [score,amount] of [[19,'2 €'],[38,'5 €'],[75,'10 €']]){const row=E('tr');row.append(E('td','',score+' XP'),E('td','',amount));table.append(row);}body.append(table);
-  const p=E('ul');for(const t of ['Défi du samedi (20 questions) : 17–20 = +10 XP ; 15–16 = +7 XP ; 12–14 = +4 XP ; 10–11 = +1 XP ; 8–9 = 0 XP ; 0–7 = −1 XP.','Défi du dimanche (20 questions sur la rentrée) : mêmes paliers que samedi, doublés pour atteindre 20 XP maximum.','Devoirs scolaires ENT : 0 XP. Entraînements des leçons de mathématiques et d’espagnol : 7 à 10/10 = +1 XP ; 5 à 6/10 = +0,5 XP ; 0 à 4/10 = 0 XP. Exercice bonus libre : maximum +3 XP par jour.','Une seule validation par défi du week-end. Les résultats et les XP déjà acquis restent enregistrés.','À chaque lundi, seul le compteur hebdomadaire repart à zéro : les notes, copies, trophées et XP de niveau restent enregistrés.','Les récompenses ne sont pas versées automatiquement ; le parent valide le montant.'])p.append(E('li','',t));body.append(p);
-  if(!window.__TIM_GUEST){const st=xpInfo();body.append(E('p','','Cette semaine : '+st.week.toLocaleString('fr-FR')+' XP. Récompense actuelle : '+st.reward+' €.'));}
-  dialog.setAttribute('tabindex','-1');if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');dialog.scrollTop=0;dialog.focus({preventScroll:true});
- });return b;}
+function makeRewardsTile(){
+ const b=E('button','reward-open');b.type='button';
+ const label=E('span');
+ label.append(E('strong','','MES RÉCOMPENSES'),E('small','','Mes XP, les paliers et les règles'));
+ b.append(label,E('span','','›'));
+ b.addEventListener('click',()=>{
+  const dialog=document.getElementById('rewards-dialog');
+  const body=clear(document.getElementById('rewards-explanation'));
+  const guest=!!window.__TIM_GUEST;
+  const st=guest?null:xpInfo();
+  const week=Math.max(0,Number(st?.week)||0);
+  const reward=Number(st?.reward)||0;
+  const next=week<19?19:week<38?38:week<75?75:null;
+  if(!guest){
+   const status=E('section','rewards-status');
+   const main=E('div','rewards-status-main');
+   const xp=E('div');
+   xp.append(E('small','','XP de la période'),E('strong','',week.toLocaleString('fr-FR')+' XP'));
+   const cash=E('div','rewards-status-cash');
+   cash.append(E('small','','Récompense à valider'),E('strong','',reward+' €'));
+   main.append(xp,cash);status.append(main);
+   status.append(E('p','rewards-next',next===null?'Objectif de 75 XP atteint.':'Encore '+(next-week).toLocaleString('fr-FR')+' XP pour le prochain palier.'));
+   body.append(status);
+  }
+  const tiers=E('div','rewards-tier-list');
+  tiers.setAttribute('aria-label','Paliers des récompenses');
+  for(const [threshold,amount] of [[19,2],[38,5],[75,10]]){
+   const tier=E('div','rewards-tier'+(!guest&&week>=threshold?' reached':''));
+   tier.append(E('strong','',threshold+' XP'),E('span','',amount+' €'));
+   tiers.append(tier);
+  }
+  body.append(tiers);
+  body.append(E('p','rewards-footnote','Les montants ne se cumulent pas. Le parent valide la récompense.'));
+  const notice=xpBarExceptionNotice();
+  if(notice)body.append(E('p','rewards-exception',notice));
+  const addDetails=(title,rows,extra)=>{
+   const details=E('details','rewards-details');
+   details.append(E('summary','',title));
+   if(rows&&rows.length){
+    const table=E('table'),tbody=E('tbody');
+    for(const [score,points] of rows){
+     const tr=E('tr');tr.append(E('td','',score),E('td','',points));tbody.append(tr);
+    }
+    table.append(tbody);details.append(table);
+   }
+   if(extra)details.append(E('p','',extra));
+   body.append(details);
+  };
+  addDetails('Missions du lundi au vendredi · 10 questions',[
+   ['9–10 bonnes réponses','+3 XP'],['7–8 bonnes réponses','+2 XP'],
+   ['5–6 bonnes réponses','+1 XP'],['2–4 bonnes réponses','0 XP'],
+   ['0–1 bonne réponse','−1 XP']
+  ],'Ces paliers concernent les missions quotidiennes lorsqu’elles sont proposées.');
+  addDetails('Grand défi du samedi · 20 questions',[
+   ['17–20 bonnes réponses','+10 XP'],['15–16 bonnes réponses','+7 XP'],
+   ['12–14 bonnes réponses','+4 XP'],['10–11 bonnes réponses','+1 XP'],
+   ['8–9 bonnes réponses','0 XP'],['0–7 bonnes réponses','−1 XP']
+  ]);
+  addDetails('Grand défi du dimanche · 20 questions',[
+   ['17–20 bonnes réponses','+20 XP'],['15–16 bonnes réponses','+14 XP'],
+   ['12–14 bonnes réponses','+8 XP'],['10–11 bonnes réponses','+2 XP'],
+   ['8–9 bonnes réponses','0 XP'],['0–7 bonnes réponses','−2 XP']
+  ]);
+  addDetails('Devoirs, entraînements et bonus',[
+   ['Devoirs scolaires ENT','0 XP'],
+   ['Bonus devoirs : 7–10/10','+1 XP'],
+   ['Bonus devoirs : 5–6/10','+0,5 XP'],
+   ['Bonus devoirs : 0–4/10','0 XP'],
+   ['Entraînement de leçon : 7–10/10','+1 XP'],
+   ['Entraînement de leçon : 5–6/10','+0,5 XP'],
+   ['Entraînement de leçon : 0–4/10','0 XP'],
+   ['Bonus devoirs : 7–10/10','+1 XP'],
+   ['Bonus devoirs : 5–6/10','+0,5 XP'],
+   ['Bonus devoirs : 0–4/10','0 XP']
+  ],'Bonus devoirs : même barème XP que les entraînements dans les leçons, sans plafond quotidien. Les autres bonus et les défis ont des barèmes distincts.');
+  addDetails('Validation et conservation des résultats',null,
+   'Une seule validation par défi. Les notes, les copies, les trophées et les XP cumulés restent enregistrés. En principe, seul le compteur de récompense repart à zéro le lundi ; une exception est indiquée ci-dessus lorsqu’elle s’applique.');
+  dialog.setAttribute('tabindex','-1');
+  if(typeof dialog.showModal==='function')dialog.showModal();else dialog.setAttribute('open','');
+  dialog.scrollTop=0;dialog.focus({preventScroll:true});
+ });
+ return b;
+}
 document.getElementById('rewards-close')?.addEventListener('click',()=>{const d=document.getElementById('rewards-dialog');if(d.close)d.close();else d.removeAttribute('open');});
 // Le défi quotidien et son panneau ont été supprimés.
 function dailyMissionPanel(){

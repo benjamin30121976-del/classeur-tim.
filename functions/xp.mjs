@@ -10,6 +10,8 @@ export function lessonTrainingPoints(score,total=10){
 }
 export function rawPoints({kind,category,score,total,needsReview,homeworkBonus=false}) {
  if(!category||needsReview||!total)return 0;
+ // Un Bonus devoirs suit toujours le barème des leçons, même si une ancienne fiche porte une autre catégorie.
+ if(homeworkBonus===true)return lessonTrainingPoints(score,total);
  // Les relevés privés, les devoirs ENT et les défis sont exclus de ce barème.
  if(kind==='training'&&(category==='school'||category==='training'))
   return lessonTrainingPoints(score,total);
@@ -21,8 +23,6 @@ export function rawPoints({kind,category,score,total,needsReview,homeworkBonus=f
  if(kind==='daily')return p>=.9?3:p>=.7?2:p>=.5?1:p>=.2?0:-1;
  if(kind==='weekly')return p>=.85?10:p>=.75?7:p>=.6?4:p>=.5?1:p>=.4?0:-1;
  if(kind==='sunday')return p>=.85?20:p>=.75?14:p>=.6?8:p>=.5?2:p>=.4?0:-2;
- // Bonus devoirs : même barème que les entraînements de leçon, sans plafond quotidien.
- if(category==='bonus'&&homeworkBonus===true)return lessonTrainingPoints(score,total);
  if(category==='bonus')return p===1?2:p>=.6?1:0;
  throw Error('Unknown exercise category');
 }

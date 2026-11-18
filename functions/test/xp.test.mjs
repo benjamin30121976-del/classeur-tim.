@@ -45,6 +45,8 @@ test('Bonus devoirs = entraînements de leçon : 0 à 10 /10 et zéro pénalité
   assert.equal(rawPoints({category:'bonus',homeworkBonus:true,score,total:10}),expected,score+'/10');
   assert.equal(rawPoints({kind:'training',category:'school',score,total:10}),expected,score+'/10 leçon');
  }
+ assert.equal(rawPoints({category:'school',homeworkBonus:true,score:7,total:10}),1);
+ assert.equal(rawPoints({category:'school',homeworkBonus:true,score:5,total:10}),0.5);
  assert.equal(rawPoints({category:'bonus',homeworkBonus:true,score:10,total:10,needsReview:true}),0);
 });
 test('Les bonus devoirs ne subissent aucun plafonnement journalier',()=>{
