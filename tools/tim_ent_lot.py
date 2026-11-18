@@ -483,6 +483,126 @@ def validate(args):
     return 0
 
 
+
+def assemble(args):
+    """Prépare un seul ZIP privé importable par le pont Parent existant.
+
+    Ne publie rien. Les leçons BIS et réponses doivent avoir été rédigées,
+    vérifiées et validées à partir des originaux avant cette étape.
+    """
+    from types import SimpleNamespace
+    plan=json.loads(Path(args.plan).read_text(encoding='utf-8'))
+    inventory=json.loads(Path(args.inventory).read_text(encoding='utf-8'))
+    pack=json.loads(Path(args.pack).read_text(encoding='utf-8'))
+    evidence=json.loads(Path(args.reviewed_sources).read_text(encoding='utf-8')) if args.reviewed_sources else {}
+    problems=list(plan.get('sourceIssues') or [])
+    for source in plan.get('sourceReadingRequired') or []:
+        proof=evidence.get(str(source['entId'])) if isinstance(evidence,dict) else None
+        if not isinstance(proof,dict) or not proof.get('attachmentIds') or not str(proof.get('description') or '').strip():
+            problems.append({'entId':source['entId'],'message':'PDF officiel non lu/confirmé'})
+    if problems:
+        raise ValueError('Impossible de créer un lot : '+str(len(problems))+' source(s) ENT non résolue(s)')
+    result=validate(SimpleNamespace(pack=args.pack,plan=args.plan,existing=args.existing,
+                                    reviewed_sources=args.reviewed_sources,out=None))
+    if result!=0:raise ValueError('Lot pédagogique non validé. Aucun ZIP d’import produit.')
+    maps=json.loads(Path(args.mapping).read_text(encoding='utf-8')) if args.mapping else {}
+    targets=maps.get('sourceTargets') or {}
+    attachment_sources=maps.get('attachmentSources') or {}
+    if not isinstance(targets,dict) or not isinstance(attachment_sources,dict):
+        raise ValueError('Table des rattachements ENT invalide')
+    lessons=pack.get('lessons') or []
+    exercises=pack.get('exercises') or []
+    represented={str(l.get('entId')) for l in lessons if l.get('entId')}
+    work={str(x['entId']):x for x in
+          plan.get('dueToday',[])+plan.get('dueTomorrow',[])+plan.get('dueLater',[])}
+    selected={*represented,*work}
+    rows=[x for x in inventory.get('items',[]) if str(x.get('entId')) in selected]
+    if not rows:raise ValueError('Aucun cours ou devoir ENT lié au lot')
+    for l in lessons:
+        if l.get('timEntBatch') is not True or l.get('kind') not in ('ent','bis'):
+            raise ValueError('Leçon sans marqueur ENT ou sans type ENT/BIS : '+str(l.get('id')))
+        if l.get('kind')=='ent':
+            original=next((x for x in rows if x['kind']=='lesson' and x['entId']==l.get('entId')),None)
+            if original and original.get('original'):
+                body='\n'.join(str(b.get('body') or '') for b in (l.get('blocks') or []))
+                if original['original'].strip() not in body:
+                    raise ValueError('Texte original ENT non recopié intégralement : '+original['entId'])
+    for e in exercises:
+        if e.get('timEntBatch') is not True:raise ValueError('Exercice sans marqueur de lot ENT : '+str(e.get('id')))
+    source_targets={}
+    for x in rows:
+        key=str(x['entId'])
+        new=[l['id'] for l in lessons if str(l.get('entId'))==key]
+        explicit=targets.get(key)
+        if explicit is not None and not re.fullmatch(r'[A-Za-z][A-Za-z0-9_-]{1,35}',str(explicit)):
+            raise ValueError('Cible du cours ENT invalide : '+key)
+        source_targets[key]=list(dict.fromkeys(new+([str(explicit)] if explicit else [])))
+    docs=[]
+    binary=[]
+    for src in map(Path,args.zips):
+        with zipfile.ZipFile(src) as z:
+            for info in z.infolist():
+                if info.is_dir() or info.filename.lower().endswith('.json'):continue
+                binary.append((src,info.filename.replace('\\','/'),info.file_size))
+    # Les documents sont retrouvés par ID ENT exact, jamais par titre tel que 3D.pdf.
+    attachments={str(a['id']):x['entId'] for x in rows for a in x.get('attachments',[]) if a.get('id')}
+    for rid,srcid in attachment_sources.items():
+        if str(srcid) not in source_targets:raise ValueError('Pièce rattachée à un cours non sélectionné : '+str(rid))
+        if rid in attachments and attachments[rid]!=srcid:raise ValueError('Conflit de rattachement de pièce : '+rid)
+        attachments[str(rid)]=str(srcid)
+    seen=set();payload=[]
+    for ref,source_id in sorted(attachments.items()):
+        if source_id not in source_targets:continue
+        token=ref.replace('~','_')
+        found=[(src,name,size) for src,name,size in binary
+               if re.search(r'(?<!\d)'+re.escape(token)+r'(?!\d)',name)]
+        if len(found)!=1:
+            raise ValueError('Pièce ENT absente/ambiguë : '+ref+
+                             ' ; aucun rattachement par simple nom autorisé')
+        src,name,size=found[0]
+        if size>4*1024*1024 or size<=0:raise ValueError('Pièce >4 Mo non supportée par Firestore : '+ref)
+        ext=Path(name).suffix.lower()
+        mime={'.pdf':'application/pdf','.png':'image/png','.jpg':'image/jpeg',
+              '.jpeg':'image/jpeg','.gif':'image/gif','.webp':'image/webp',
+              '.odt':'application/vnd.oasis.opendocument.text',
+              '.docx':'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+              '.txt':'text/plain'}.get(ext)
+        if not mime:raise ValueError('Extension de document non supportée : '+name)
+        target=targets.get(source_id) or next((l['id'] for l in lessons
+                   if l.get('kind')=='ent' and str(l.get('entId'))==source_id),None)
+        if not target:raise ValueError('Pas de leçon cible pour le document ENT '+ref)
+        with zipfile.ZipFile(src) as z:data=z.read(name)
+        if ext=='.pdf' and not data.startswith(b'%PDF-'):raise ValueError('Signature PDF incorrecte : '+ref)
+        newpath='pieces_ENT/'+token+'_'+Path(name).name
+        if newpath in seen:raise ValueError('Même nom de pièce originale dans le lot : '+newpath)
+        seen.add(newpath)
+        payload.append((newpath,data))
+        docs.append({'entId':source_id,'attachmentId':ref,'path':newpath,
+                     'targetId':target,'fileName':Path(name).name,
+                     'title':Path(name).name,'mime':mime,'size':len(data),
+                     'sha256':hashlib.sha256(data).hexdigest()})
+    sources=[]
+    for x in rows:
+        is_new=x['kind']=='lesson' and str(x['entId']) in represented
+        sources.append({'entId':str(x['entId']),'kind':x['kind'],
+                        'targets':source_targets[str(x['entId'])],
+                        'needsBis':is_new})
+    homework=[{'entId':str(x['entId']),'subject':x['subject'],'due':x['due'],
+               'title':x['title'],'content':x['original'],
+               'attachments':[a['id'] for a in x['attachments']]}
+              for x in work.values()]
+    manifest={'schema':'tim-ent-batch-v1','sources':sources,
+              'homework':homework,'documents':docs,'date':plan.get('date','')}
+    target=Path(args.out)
+    if target.exists() and not args.overwrite:raise ValueError('ZIP de sortie déjà présent : refuser écrasement')
+    target.parent.mkdir(parents=True,exist_ok=True)
+    with zipfile.ZipFile(target,'w',compression=zipfile.ZIP_DEFLATED) as z:
+        z.writestr('PACK_PEDAGOGIQUE.json',json.dumps(pack,ensure_ascii=False,indent=2))
+        z.writestr('MANIFESTE_LOT_TIM.json',json.dumps(manifest,ensure_ascii=False,indent=2))
+        for name,data in payload:z.writestr(name,data)
+    print('Lot ENT privé produit : '+str(len(lessons))+' leçons, '+str(len(exercises))+
+          ' exercices, '+str(len(homework))+' devoirs, '+str(len(docs))+' documents originaux. Aucune publication.')
+
 def main(argv=None):
     p=argparse.ArgumentParser(description=__doc__);sub=p.add_subparsers(dest='mode',required=True)
     c=sub.add_parser('collect',help='Préparer le lot à partir de ZIP Termux sans aucune écriture en ligne')
@@ -494,8 +614,18 @@ def main(argv=None):
     v.add_argument('--plan',help='Exiger la couverture de tous les devoirs demain et à venir figurant dans ce plan ENT')
     v.add_argument('--existing',help='Lot des bonus déjà publiés : lecture seule pour éviter doublons')
     v.add_argument('--reviewed-sources',dest='reviewed_sources',help='Compte rendu des PDF originaux réellement lus, par identifiant ENT')
+    a=sub.add_parser('assemble',help='Après rédaction/correction, créer un lot ZIP privé pour le compte Parent, sans publication')
+    a.add_argument('--pack',required=True);a.add_argument('--plan',required=True)
+    a.add_argument('--inventory',required=True);a.add_argument('--existing')
+    a.add_argument('--reviewed-sources',dest='reviewed_sources')
+    a.add_argument('--mapping',help='Cibles ENT existantes et correspondances explicites des pièces')
+    a.add_argument('--out',required=True);a.add_argument('--overwrite',action='store_true')
+    a.add_argument('zips',nargs='+',help='ZIP originaux Termux')
     args=p.parse_args(argv)
-    try:return collect(args) or 0 if args.mode=='collect' else validate(args)
+    try:
+        if args.mode=='collect': return collect(args) or 0
+        if args.mode=='validate': return validate(args)
+        return assemble(args) or 0
     except (ValueError, OSError, json.JSONDecodeError,zipfile.BadZipFile) as exc:
         print('BLOCAGE SÉCURISÉ : '+str(exc),file=sys.stderr)
         return 2
