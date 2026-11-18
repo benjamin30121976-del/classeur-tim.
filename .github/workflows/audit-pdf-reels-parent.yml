@@ -17,6 +17,15 @@ on:
   push:
     branches: [main]
     paths:
+      - 'app.js'
+      - 'index.html'
+      - 'boot.js'
+      - 'physique-chimie-inline-pdf.js'
+      - 'tim-inline-ent-documents.js'
+      - 'francais-documents.js'
+      - 'anglais-documents.js'
+      - 'svt-documents.js'
+      - 'histoire-geographie-documents.js'
       - 'outils/auditer-pdf-reels-parent.cjs'
       - '.github/workflows/audit-pdf-reels-parent.yml'
   workflow_dispatch:
