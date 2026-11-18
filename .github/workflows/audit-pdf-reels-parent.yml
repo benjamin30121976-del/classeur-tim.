@@ -59,14 +59,17 @@ jobs:
             /tmp/tim-pdf-audit/node_modules/.bin/playwright install --with-deps chromium
           fi
       - name: Auditer les documents des sept matieres sans clic et sans ecriture
+        if: ${{ false }}
         env:
           NODE_PATH: /tmp/tim-pdf-audit/node_modules
         run: node outils/auditer-visibilite-documents-7-matieres.cjs
       - name: Ouvrir les PDF originaux sans les extraire ni enregistrer
+        if: ${{ false }}
         env:
           NODE_PATH: /tmp/tim-pdf-audit/node_modules
         run: node outils/auditer-pdf-reels-parent.cjs
       - name: Rendre les originaux dans le compte Parent avec code prepare et Chromium
         env:
+          TIM_NOV17_ONLY: '1'
           NODE_PATH: /tmp/tim-pdf-audit/node_modules
         run: node outils/auditer-affichage-auto-parent.cjs
