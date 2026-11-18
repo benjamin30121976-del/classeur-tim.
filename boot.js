@@ -159,7 +159,7 @@ async function publishCoursePack(pack){
   // Autoriser le barème déjà validé des entraînements de leçon, sans le confondre avec les bonus historiques.
   if(type==='exercises'&&v.category==='training'&&(v.kind!=='training'||v.questions.length!==10||v.homeworkBonus===true))throw Error('Entraînement de leçon : 10 questions, type training et aucun marqueur bonus requis : '+v.id);
   // Bonus devoirs : éligibles au barème training uniquement avec le marqueur explicite et le lien ENT.
-  if(type==='exercises'&&v.homeworkBonus===true&&(v.category!=='bonus'||v.questions.length!==10||!Array.isArray(v.linkedHomework)||!v.linkedHomework.length||!/^(?:20\\d{2})-\\d{2}-\\d{2}$/.test(String(v.homeworkDue||''))))throw Error('Bonus devoirs : catégorie bonus, dix questions et devoir ENT daté obligatoires : '+v.id);
+  if(type==='exercises'&&v.homeworkBonus===true&&(v.category!=='bonus'||v.questions.length!==10||!Array.isArray(v.linkedHomework)||!v.linkedHomework.length||!/^(?:20\d{2})-\d{2}-\d{2}$/.test(String(v.homeworkDue||''))))throw Error('Bonus devoirs : catégorie bonus, dix questions et devoir ENT daté obligatoires : '+v.id);
   if(type==='exercises'&&v.kind==='bonus-day'&&(
    v.category!=='bonus'||v.questions.length<10||
    v.questions.some(q=>!['mc','text'].includes(q.type)||typeof q.why!=='string'||!q.why.trim()||
