@@ -35,6 +35,10 @@ jobs:
           if ! command -v google-chrome >/dev/null 2>&1 && ! command -v chromium >/dev/null 2>&1; then
             /tmp/tim-pdf-audit/node_modules/.bin/playwright install --with-deps chromium
           fi
+      - name: Auditer les documents des sept matieres sans clic et sans ecriture
+        env:
+          NODE_PATH: /tmp/tim-pdf-audit/node_modules
+        run: node outils/auditer-visibilite-documents-7-matieres.cjs
       - name: Ouvrir les PDF originaux sans les extraire ni enregistrer
         env:
           NODE_PATH: /tmp/tim-pdf-audit/node_modules
