@@ -112,7 +112,6 @@ async function inspect(browser,role,device,report) {
       {id:'home',file:'accueil'}, {id:'matieres',file:'matieres'},
       {id:'prochaines',file:'missions-a-venir'}, {id:'exercices',file:'exercices'}
     ];
-    if(role.parent)pages.push({id:'parent',file:'espace-parent'});
     for(const dest of pages){
       if(dest.id!=='home'){
         const nav=page.locator('[data-nav="'+dest.id+'"]:visible').first();
@@ -155,6 +154,18 @@ async function inspect(browser,role,device,report) {
         'contenu et navigation visibles');
       // Retour uniquement par navigation : aucune réponse ou correction soumise.
       await page.locator('[data-nav="matieres"]:visible').first().click({timeout:12000});
+    }
+    if(role.parent){
+      // L'écran Parent est vérifié en dernier : sur téléphone, son panneau
+      // peut recouvrir la barre de navigation lors d'un retour aux matières.
+      const parentNav=page.locator('[data-nav="parent"]:visible').first();
+      await parentNav.click({timeout:12000});
+      const parentVisible=await page.locator('#parent.page.active').isVisible().catch(()=>false);
+      check(report,prefix+' : page parent affichee',parentVisible);
+      if(parentVisible){
+        try{await capture(page,role.id+'-'+device.id+'-espace-parent');}
+        catch{check(report,prefix+' : capture parent',false,'capture indisponible');}
+      }
     }
     // Ne jamais cliquer sur un bouton Commencer, Valider, Corriger ou Publier.
     check(report,prefix+' : aucune ecriture',blocked.length===0,
