@@ -6,7 +6,7 @@ import tempfile
 import unittest
 import zipfile
 
-SCRIPT=Path(__file__).resolve().parents[1]/'tools'/'tim_ent_lot.py'
+SCRIPT=Path(__file__).resolve().parent.parent/'tim_ent_lot.py'
 spec=importlib.util.spec_from_file_location('tim_ent_lot',SCRIPT)
 p=importlib.util.module_from_spec(spec)
 spec.loader.exec_module(p)
