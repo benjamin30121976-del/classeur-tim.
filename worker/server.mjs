@@ -1292,11 +1292,11 @@ async function correctThalesNov16Question9(db,uid,payload={}){
   question?.type==='mc'&&Array.isArray(question.options)&&question.options.length===4;
  const selected=correctSource?String(question.options[Number(q.response)]||''):'';
  const expected=String(q?.expected||'');
- const badAnswer=/rapports?\\s+sont\\s+diff[eé]rents?/i.test(selected);
- const expectedParallels=/\\(MN\\).*?\\(BC\\).*?parall[eè]les?/i.test(expected)||
+ const badAnswer=/rapports?\s+sont\s+diff[eé]rents?/i.test(selected);
+ const expectedParallels=/\(MN\).*?\(BC\).*?parall[eè]les?/i.test(expected)||
   /droites.*?parall[eè]les?/i.test(expected);
  if(!correctSource||!badAnswer||!expectedParallels||
-    !/^\\d$/.test(String(q.response))||q.correct!==false||Number(q.points)!==0||
+    !/^\d$/.test(String(q.response))||q.correct!==false||Number(q.points)!==0||
     copy.answers.some((a,i)=>i!==8&&(a.correct!==true||Number(a.points)!==1)))
   throw new ApiFault(409,'thales-q9-copy-mismatch');
  if(mode==='preview')return {status:'eligible',question:9,oldScore:9,newScore:10,
