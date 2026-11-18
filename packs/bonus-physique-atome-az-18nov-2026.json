@@ -1,0 +1,136 @@
+{
+  "lessons": [],
+  "exercises": [
+    {
+      "id": "BD1811_PC02",
+      "subject": "Physique-chimie",
+      "title": "18/11 — L’atome, son noyau et les nombres A et Z",
+      "lesson": "PC_BIS01",
+      "category": "bonus",
+      "homeworkBonus": true,
+      "homeworkDue": "2026-11-19",
+      "linkedLessons": [
+        "PC_BIS01"
+      ],
+      "linkedHomework": [],
+      "originalSourceStatus": "Exercice de révision créé à partir de la leçon BIS sur les atomes et de la séance ENT du 15/09 ; ce n’est pas le sujet officiel du contrôle n°2. Le programme exact du contrôle du 19/11 n'est pas détaillé.",
+      "level": "3e D · Bonus devoirs · Structure de l’atome",
+      "description": "10 questions illustrées par des schémas typographiques de noyaux et des écritures nucléaires. Une tentative, note sur 10, correction expliquée. XP des Bonus devoirs : 10/10 = +2 XP, 6–9/10 = +1 XP, sinon 0 XP ; plafond des bonus de 3 XP par jour.",
+      "instructions": "Lis les schémas simplifiés des noyaux et les nombres écrits en haut et en bas à gauche du symbole. Les schémas ne sont pas à l’échelle. Au brouillon, écris : protons = Z, nucléons = A et neutrons = A − Z. Réponds à chaque question et relis la justification avant de valider ta tentative unique.",
+      "questions": [
+        {
+          "type": "mc",
+          "q": "Dans un atome, le NOYAU contient quelles particules ?",
+          "options": [
+            "Des électrons et des neutrons",
+            "Des protons et des neutrons",
+            "Uniquement des électrons",
+            "Des électrons et des photons"
+          ],
+          "right": 1,
+          "why": "Le noyau contient les protons p⁺ (charge positive) et les neutrons n⁰ (sans charge). Les électrons e⁻ se trouvent autour du noyau.",
+          "skill": "Composition du noyau · PC_BIS01"
+        },
+        {
+          "type": "mc",
+          "q": "Dans le dessin simplifié « 🔴 p⁺  ⚪ n⁰  🔴 p⁺  ⚪ n⁰ », les quatre petites boules représentent des particules du noyau. Combien de PROTONS compte-t-on ?",
+          "options": [
+            "Un proton",
+            "Deux protons",
+            "Trois protons",
+            "Quatre protons"
+          ],
+          "right": 1,
+          "why": "Il y a deux boules marquées p⁺ et deux boules marquées n⁰. Il faut compter seulement les p⁺ : le noyau contient deux protons.",
+          "skill": "Lire un dessin de noyau · PC_BIS01"
+        },
+        {
+          "type": "mc",
+          "q": "Schéma très simplifié : e⁻  ◯  [ 🔴 p⁺ | ⚪ n⁰ | 🔴 p⁺ | ⚪ n⁰ ]  ◯  e⁻. Que représentent les signes e⁻ dessinés à l’extérieur du noyau ?",
+          "options": [
+            "Des protons",
+            "Des neutrons",
+            "Des électrons",
+            "Des nucléons du noyau"
+          ],
+          "right": 2,
+          "why": "Les e⁻ sont des électrons de charge négative situés autour du noyau. Les quatre particules p⁺ et n⁰ dessinées au centre constituent le noyau.",
+          "skill": "Position des électrons · PC_BIS01"
+        },
+        {
+          "type": "mc",
+          "q": "Un atome est électriquement neutre. S’il possède 3 protons dans le noyau, combien possède-t-il d’électrons autour ?",
+          "options": [
+            "0",
+            "2",
+            "3",
+            "6"
+          ],
+          "right": 2,
+          "why": "Un atome neutre possède autant de protons chargés positivement que d’électrons chargés négativement : 3 protons = 3 électrons.",
+          "skill": "Neutralité de l’atome · PC_BIS01"
+        },
+        {
+          "type": "mc",
+          "q": "Regarde le symbole de l’atome : ¹²₆C. Le PETIT NOMBRE EN BAS À GAUCHE, 6, s’appelle Z. Que donne-t-il ?",
+          "options": [
+            "Le nombre de neutrons",
+            "Le nombre de nucléons",
+            "Le nombre de protons",
+            "Le nombre total de particules de l’atome"
+          ],
+          "right": 2,
+          "why": "Le numéro atomique Z est égal au nombre de protons du noyau. Ici Z = 6, donc le noyau possède 6 protons.",
+          "skill": "Écriture nucléaire Z · PC_BIS01"
+        },
+        {
+          "type": "mc",
+          "q": "Regarde le symbole : ¹²₆C. Le PETIT NOMBRE EN HAUT À GAUCHE, 12, s’appelle A. Que représente-t-il ?",
+          "options": [
+            "Le nombre d’électrons",
+            "Le nombre de neutrons uniquement",
+            "Le nombre de nucléons : protons + neutrons",
+            "Le nombre de molécules"
+          ],
+          "right": 2,
+          "why": "A est le nombre total de nucléons, c’est-à-dire tous les protons et tous les neutrons du noyau. Ici A = 12.",
+          "skill": "Écriture nucléaire A · PC_BIS01"
+        },
+        {
+          "type": "text",
+          "q": "Avec le symbole ¹²₆C, combien y a-t-il de NEUTRONS dans le noyau ? Écris seulement le nombre (A − Z).",
+          "right": "6",
+          "why": "La formule est N = A − Z. Ici A = 12 et Z = 6, donc N = 12 − 6 = 6 neutrons. Les 6 autres nucléons sont les protons.",
+          "skill": "Calculer les neutrons · PC_BIS01"
+        },
+        {
+          "type": "text",
+          "q": "Avec le symbole ²³₁₁Na, combien le noyau contient-il de PROTONS ? Écris seulement le nombre.",
+          "right": "11",
+          "why": "Le nombre du bas Z vaut 11 : il indique directement 11 protons. Le nombre A = 23 n’est pas le nombre de protons, mais le total de nucléons.",
+          "skill": "Lire Z · PC_BIS01"
+        },
+        {
+          "type": "text",
+          "q": "Avec le symbole ²³₁₁Na, combien y a-t-il de NEUTRONS ? Écris seulement le nombre.",
+          "right": "12",
+          "why": "Il faut soustraire le nombre de protons Z du nombre total de nucléons A : 23 − 11 = 12 neutrons.",
+          "skill": "Soustraire A − Z · PC_BIS01"
+        },
+        {
+          "type": "mc",
+          "q": "Dessin d’un noyau : [ 🔴 p⁺  🔴 p⁺  ⚪ n⁰  ⚪ n⁰ ]. Cet atome est neutre. Quelle écriture et quel nombre d’électrons correspondent ?",
+          "options": [
+            "⁴₂He et 2 électrons",
+            "²₄He et 4 électrons",
+            "⁴₂He et 4 électrons",
+            "²₂He et 2 électrons"
+          ],
+          "right": 0,
+          "why": "Le noyau compte 2 protons (Z = 2) et 4 nucléons (A = 4). L’écriture est donc ⁴₂He. Un atome neutre possède 2 électrons, autant que de protons.",
+          "skill": "Relier dessin, A, Z et électrons · PC_BIS01"
+        }
+      ]
+    }
+  ]
+}
