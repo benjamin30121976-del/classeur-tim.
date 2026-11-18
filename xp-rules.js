@@ -1,4 +1,4 @@
-/* V18 · Devoir scolaire 0 XP, bonus libre (+2/+1/0), missions quotidiennes et grands défis.
+/* V18 · Devoir scolaire 0 XP, Bonus devoirs (+1/+0,5/0), autres bonus historiques (+2/+1/0), missions et défis.
    La V10 et les validations antérieures sont conservées par leur barème d'origine. */
 (()=>{'use strict';
 const f=new Intl.DateTimeFormat('fr-CA',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'});
