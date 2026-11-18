@@ -113,7 +113,8 @@ def inspect_source_gaps(items, attachment_files):
             issues.append({'type':'echeance_absente','entId':ent_id,
                            'message':'Devoir sans échéance : ne pas l’omettre du bilan'})
         if not item['sourceIsComplete'] and not item['attachments']:
-            issues.append({'type':'source_incomplete','entId':ent_id,
+            issues.append({'type':'seance_sans_contenu' if item['kind']=='lesson' else 'source_incomplete',
+                           'entId':ent_id,
                            'message':'Aucun texte ENT ni pièce jointe liée : ne rien inventer'})
         for ref in item['attachments']:
             rid=str(ref.get('id') or '')
@@ -251,6 +252,7 @@ def collect(args):
     if not lessons and not hw: raise ValueError('Aucun cours ni devoir ENT reconnu dans les ZIP. Ne rien inventer.')
     items=uniq(resources(lessons,'lesson',dates,args.subject)+resources(hw,'homework',dates,args.subject))
     source_issues=inspect_source_gaps(items,scan_attachment_files(zip_paths))
+    source_blockers=[i for i in source_issues if i['type']!='seance_sans_contenu']
     previous={}
     if args.previous:
         state=json.loads(Path(args.previous).read_text(encoding='utf-8'))
@@ -289,7 +291,8 @@ def collect(args):
                            'xp':'7-10:1 / 5-6:0.5 / 0-4:0, sans plafond'})
     plan={'date':asof.isoformat(),'tomorrow':tomorrow,'lessonsToPrepare':lesson_tasks,
           'dueTomorrow':due_tomorrow,'dueLater':later,'bonusSuggestions':bonus_plan,
-          'sourceIssues':source_issues,'sourceReady':len(source_issues)==0 and not requires_pdf_reading,
+          'sourceIssues':source_blockers,'sourceWarnings':[i for i in source_issues if i['type']=='seance_sans_contenu'],
+          'sourceReady':len(source_blockers)==0 and not requires_pdf_reading,
           'sourceReadingRequired':requires_pdf_reading,
           'dueToday':due_today,'overdueHomework':overdue,'homeworkWithoutDue':unplanned,
           'homeworkExercisePreparations':future_tasks,
@@ -317,7 +320,7 @@ def collect(args):
            f'Devoirs à échéance passée (ne pas cocher comme faits) : {len(overdue)}',
            f'Devoirs sans échéance : {len(unplanned)}',
            f'Leçons avec cours uniquement en pièces à lire : {len(requires_pdf_reading)}',
-           f'Éléments ENT manquants/à vérifier : {len(source_issues)}',
+           f'Éléments ENT bloquants : {len(source_blockers)} ; séances sans texte signalées : {len(source_issues)-len(source_blockers)}',
            f'Exercices dédiés aux devoirs à venir à construire/vérifier : {sum(x["requiredSeries"] for x in upcoming)}',
            f'Bonus proposés : {sum(x["proposedSeries"] for x in bonus_plan)}',
            f'Entraînements quotidiens proposés : {plan["dailyTrainingSuggested"]}',
