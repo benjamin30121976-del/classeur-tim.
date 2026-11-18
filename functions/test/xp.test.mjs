@@ -39,10 +39,14 @@ test('Les devoirs ENT, défis et relevés privés conservent leur barème initia
  assert.equal(cappedPoints(0.5,0,0,0,0,'school'),0.5);
 });
 
-test('Bonus devoirs distincts : 9 et 10 sur 10 donnent 1 XP, autres tranches non confirmées',()=>{
- for(const score of [9,10])assert.equal(rawPoints({category:'bonus',homeworkBonus:true,score,total:10}),1);
- // En dessous de 9, aucune récompense positive n'est créée sans barème validé.
- for(let score=0;score<=8;score++)assert.equal(rawPoints({category:'bonus',homeworkBonus:true,score,total:10}),0);
+test('Bonus devoirs = entraînements de leçon : 0 à 10 /10 et zéro pénalité',()=>{
+ for(let score=0;score<=10;score++){
+  const expected=score>=7?1:score>=5?0.5:0;
+  assert.equal(rawPoints({category:'bonus',homeworkBonus:true,score,total:10}),expected,score+'/10');
+  assert.equal(rawPoints({kind:'training',category:'school',score,total:10}),expected,score+'/10 leçon');
+ }
+ assert.equal(rawPoints({category:'school',homeworkBonus:true,score:7,total:10}),1);
+ assert.equal(rawPoints({category:'school',homeworkBonus:true,score:5,total:10}),0.5);
  assert.equal(rawPoints({category:'bonus',homeworkBonus:true,score:10,total:10,needsReview:true}),0);
 });
 test('Les bonus devoirs ne subissent aucun plafonnement journalier',()=>{
