@@ -69,7 +69,7 @@ const finalUnit=value=>{
 export function numericMathAnswerMatches(actual,expected,prompt=''){
  const actualUnit=finalUnit(actual);
  const expectedUnit=finalUnit(expected)||
-  (/\ben\s+(?:cm²|cm2|cm\^2|cm|m²|m2|m\^2|m)\b/.exec(symbols(prompt))||[])[0]?.replace(/^en\s+/,'').replace(/\^2|2/g,'²')||null;
+  (/\ben\s+(?:cm(?:²|\^2|2)?|m(?:²|\^2|2)?)(?=$|[\s.,;:!?])/.exec(symbols(prompt))||[])[0]?.replace(/^en\s+/,'').replace(/\^2|2/g,'²')||null;
  if(actualUnit&&actualUnit!==expectedUnit)return false;
  const wanted=arithmetic(stripUnit(expected,prompt));
  if(wanted===null)return false;
