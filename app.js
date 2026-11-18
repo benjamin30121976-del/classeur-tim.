@@ -237,7 +237,7 @@ function renderLessonIndex(){
  if(!found.length)root.append(notice('Aucune fiche trouvée pour cette recherche.'));
 }
 function openLesson(id){const l=lessonBy(id);if(!l)return;
- if(subjectOf(l)==='SVT'&&window.TIM_SVT_PATH){page('matieres');renderMatiere('SVT',id);return;}if(subjectOf(l)==='Histoire-géographie'&&window.TIM_HG_PATH){page('matieres');renderMatiere('Histoire-géographie',id==='BD16_HG_CAHIER'?'HG_BIS09':id);return;}if(subjectOf(l)==='Français'&&window.TIM_FR_PATH){page('matieres');renderMatiere('Français',id);return;}if(subjectOf(l)==='Anglais'&&window.TIM_ENGLISH_PATH){page('matieres');renderMatiere('Anglais',id);return;}if(subjectOf(l)==='Physique-chimie'&&window.TIM_PHYSIQUE_PATH){page('matieres');renderMatiere('Physique-chimie',id);return;}lessonSubject=subjectOf(l);lessonGroup='';page('cours');document.getElementById('lesson-index').classList.add('hide');const dest=clear(document.getElementById('lesson-detail'));dest.classList.add('active');
+ if(!l.timEntBatch&&subjectOf(l)==='SVT'&&window.TIM_SVT_PATH){page('matieres');renderMatiere('SVT',id);return;}if(!l.timEntBatch&&subjectOf(l)==='Histoire-géographie'&&window.TIM_HG_PATH){page('matieres');renderMatiere('Histoire-géographie',id==='BD16_HG_CAHIER'?'HG_BIS09':id);return;}if(!l.timEntBatch&&subjectOf(l)==='Français'&&window.TIM_FR_PATH){page('matieres');renderMatiere('Français',id);return;}if(!l.timEntBatch&&subjectOf(l)==='Anglais'&&window.TIM_ENGLISH_PATH){page('matieres');renderMatiere('Anglais',id);return;}if(!l.timEntBatch&&subjectOf(l)==='Physique-chimie'&&window.TIM_PHYSIQUE_PATH){page('matieres');renderMatiere('Physique-chimie',id);return;}lessonSubject=subjectOf(l);lessonGroup='';page('cours');document.getElementById('lesson-index').classList.add('hide');const dest=clear(document.getElementById('lesson-detail'));dest.classList.add('active');
  const bis=isBisLesson(l),allSame=DATA.lessons.filter(x=>x.id!==l.id&&subjectOf(x)===subjectOf(l)&&chapterOf(x)===chapterOf(l)),others=allSame.filter(x=>bis?!isBisLesson(x):isBisLesson(x));
  dest.append(button('← Retour au sommaire',()=>{dest.classList.remove('active');document.getElementById('lesson-index').classList.remove('hide');scrollTop();},'plain back'));
  dest.append(E('p','lesson-type-label '+(bis?'bis':'ent'),bis?'LEÇON BIS · POUR MIEUX COMPRENDRE':'COURS ENT · DOCUMENT DU PROFESSEUR'),E('h2','',l.title),E('p','meta',bis?'Version pédagogique complémentaire':'Cours abordé : '+(l.date||'date non précisée')),E('p','',l.summary));
@@ -252,6 +252,10 @@ function openLesson(id){const l=lessonBy(id);if(!l)return;
  // Les PDF d'origine sont prioritaires et consultables en lecteur mobile privé.
  if(!bis)dest.append(makeAttachmentPanel('lesson',l.id));
  for(const b of l.blocks)dest.append(buildBlock(b));loadInlineLessonFigures(dest,l.id);
+ if(bis&&l.timEntBatch){
+  const original=DATA.lessons.find(x=>x.timEntBatch&&x.kind==='ent'&&x.entId===l.entId);
+  if(original)dest.append(makeAttachmentPanel('lesson',original.id));
+ }
  if(bis)dest.append(makeAttachmentPanel('lesson',l.id));
 let related=DATA.exercises.filter(e=>e.lesson===l.id&&!e.id.startsWith('R'));let controls=E('div','panel separated');controls.append(E('h3','','S’entraîner sur cette leçon'));if(related.length){let list=E('div','clicklist');for(const ex of related)list.append(cardAction(ex.title,(ex.kind==='training'?'Entraînement · +1 / +0,5 / 0 XP':window.TIM_EXERCISE.school(ex)?'Devoir ENT · 0 XP':'Bonus · jusqu’à +2 XP')+' · '+quizLabel(ex),null,()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));controls.append(list);}else controls.append(E('p','','Un exercice pourra être ajouté ultérieurement.'));dest.append(controls);
 let help=E('div','helpbox');help.append(E('h3','','Je n’ai pas compris'));help.append(E('p','','Voici une autre manière de comprendre. Les explications suivantes ont été écrites spécialement pour le classeur.'));const stage=E('div');let index=0;function step(){clear(stage);if(index===0){stage.append(badge('Niveau 1 · Explication simple'),E('p','',l.help.simple));}if(index===1){stage.append(badge('Niveau 2 · Étapes guidées'));let ol=E('ol');for(const x of l.help.steps)ol.append(E('li','',x));stage.append(ol,E('p','note info',l.help.example));}if(index>=2){stage.append(badge('Niveau 3 · Vérifier avec un exemple'));const ck=l.help.check;if(ck){stage.append(E('p','',ck.q));let opts=E('div','check-answers');ck.options.forEach((o,j)=>opts.append(button(o,()=>{msg.textContent=(j===ck.right?'Bonne réponse. ':'Ce n’est pas la bonne réponse. ')+ck.why;msg.style.color=j===ck.right?'var(--green)':'var(--red)';},'plain')));stage.append(opts);const msg=E('p','subtle','Cette mini-question est une aide, pas un exercice noté.');stage.append(msg);}else stage.append(E('p','',l.help.example));}next.textContent=index===0?'Explication pas à pas →':index===1?'Vérifier avec un exemple →':'Recommencer l’aide';}
@@ -1282,6 +1286,7 @@ function renderParent(){
  /* Le Parent ne choisit plus et n'envoie plus de défi bonus. */
  // L'import privé des évaluations est la première action de l'espace Parent.
  if(window.TIM_MATH_PRIVATE_IMPORT?.render)root.prepend(window.TIM_MATH_PRIVATE_IMPORT.render());
+ if(window.TIM_ENT_BATCH?.render)root.prepend(window.TIM_ENT_BATCH.render());
  root.append(notice('Les devoirs officiels restent ceux de l’ENT ; le classeur permet de consulter le suivi des exercices de Tim.','note info'));
 }
 
@@ -1669,26 +1674,55 @@ function renderMatieres(){
  }root.append(wrap);
  if(SCHOOL_SUBJECTS.some(s=>!DATA.lessons.some(l=>(l.subject||'Espagnol')===s)))root.append(E('div','note','Les autres matières ne seront remplies qu’à partir des documents réels de Tim (ENT, cahiers et devoirs). Aucun cours ne sera inventé.'));
 }
+// Contenus fraîchement importés depuis les lots ENT : visibles dans chacune
+// des sept matières, sans écraser les parcours pédagogiques déjà validés.
+function renderTimEntBatchLessons(root,subject){
+ const lessons=DATA.lessons.filter(l=>l.timEntBatch===true&&l.subject===subject&&!l.replacesId);
+ const exercises=DATA.exercises.filter(e=>e.timEntBatch===true&&e.subject===subject&&!e.homeworkBonus);
+ if(!lessons.length&&!exercises.length)return;
+ if(root.querySelector('#tim-ent-batch-lessons'))return;
+ const panel=E('section','panel tim-ent-new-lessons');
+ panel.id='tim-ent-batch-lessons';
+ panel.append(E('h3','','Nouveaux cours ENT et entraînements'));
+ panel.append(E('p','small','Cours originaux, leçons BIS et exercices corrigés : les documents du professeur sont intégrés directement aux leçons.'));
+ const ordered=lessons.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'')||a.id.localeCompare(b.id));
+ for(const lesson of ordered){
+  const sub=isBisLesson(lesson)?'Leçon BIS':'Cours original du professeur';
+  panel.append(cardAction(lesson.title,sub+' · '+(lesson.date||'Date non précisée'),
+   lesson.summary||'',()=>openLesson(lesson.id)));
+ }
+ const bonuses=exercises.filter(e=>e.kind==='training');
+ if(bonuses.length){
+  panel.append(E('h4','','S’entraîner'));
+  for(const ex of bonuses)panel.append(cardAction(ex.title,'Exercice · 10 questions',
+   ex.description||'',()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));
+ }
+ root.append(panel);
+}
 function renderMatiere(name,openLessonId=null,openEntId=null){
  setMatieresSelectionHeader(false);
  const root=clear(document.getElementById('matieres-content'));
  if(name==='Espagnol'&&window.TIM_SPANISH_ENT_EXACT){
-  window.TIM_SPANISH_ENT_EXACT.render(root,{back:renderMatieres,openLessonId}).catch(e=>root.append(E('p','notice','Espagnol indisponible : '+e.message)));
+  Promise.resolve(window.TIM_SPANISH_ENT_EXACT.render(root,{back:renderMatieres,openLessonId}))
+   .then(()=>renderTimEntBatchLessons(root,name))
+   .catch(e=>root.append(E('p','notice','Espagnol indisponible : '+e.message)));
   return;
  }
  if(name==='Espagnol'&&window.TIM_SPANISH_PATH&&window.TIM_SPANISH_EDU){
   window.TIM_SPANISH_PATH.render(root,{lessons:DATA.lessons,back:renderMatieres,original:openLesson});
+  renderTimEntBatchLessons(root,name);
   return;
  }
  if(name==='Physique-chimie'&&window.TIM_PHYSIQUE_PATH){
   window.TIM_PHYSIQUE_PATH.render(root,{lessons:DATA.lessons,back:renderMatieres,openLessonId});
+  renderTimEntBatchLessons(root,name);
   return;
  }
- if(name==='Anglais'&&window.TIM_ENGLISH_PATH){window.TIM_ENGLISH_PATH.render(root,{lessons:DATA.lessons,back:renderMatieres,openLessonId});return;}
-  if(name==='SVT'&&window.TIM_SVT_PATH){window.TIM_SVT_PATH.render(root,{back:renderMatieres,openLessonId});return;}
-  if(name==='Histoire-géographie'&&window.TIM_HG_PATH){window.TIM_HG_PATH.render(root,{back:renderMatieres,openLessonId});return;}
+ if(name==='Anglais'&&window.TIM_ENGLISH_PATH){window.TIM_ENGLISH_PATH.render(root,{lessons:DATA.lessons,back:renderMatieres,openLessonId});renderTimEntBatchLessons(root,name);return;}
+  if(name==='SVT'&&window.TIM_SVT_PATH){window.TIM_SVT_PATH.render(root,{back:renderMatieres,openLessonId});renderTimEntBatchLessons(root,name);return;}
+  if(name==='Histoire-géographie'&&window.TIM_HG_PATH){window.TIM_HG_PATH.render(root,{back:renderMatieres,openLessonId});renderTimEntBatchLessons(root,name);return;}
    if(name==='EMC'&&window.TIM_HG_PATH){window.TIM_HG_PATH.render(root,{back:renderMatieres,openLessonId,emcOnly:true});return;}
- if(name==='Français'&&window.TIM_FR_PATH){window.TIM_FR_PATH.render(root,{back:renderMatieres,openLessonId});return;}
+ if(name==='Français'&&window.TIM_FR_PATH){window.TIM_FR_PATH.render(root,{back:renderMatieres,openLessonId});renderTimEntBatchLessons(root,name);return;}
   if(name==='Mathématiques'&&window.TIM_MATH_PATH){
   window.TIM_MATH_PATH.render(root,{
    lessons:DATA.lessons,exercises:DATA.exercises,openLessonId,openEntId,
@@ -1697,6 +1731,7 @@ function renderMatiere(name,openLessonId=null,openEntId=null){
    submit:(id,answers,bankVersion)=>window.__TIM_BRIDGE.mathTrainingSubmit(id,answers,bankVersion),
    progress:()=>window.__TIM_BRIDGE.mathTrainingProgress()
   });
+  renderTimEntBatchLessons(root,name);
   return;
  }
  root.append(button('← Toutes les matières',renderMatieres,'matter-back'),E('h2','',name));
