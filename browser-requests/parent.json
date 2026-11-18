@@ -1,8 +1,8 @@
 {
   "mode": "lecture-seule-parent",
   "site": "https://classeur-tim-v16.pages.dev/",
-  "scope": "Rectification exceptionnelle de la copie du samedi 14 novembre : questions maths 12 et 15 à 1/1, résultat 15/20, XP samedi 7, sauvegarde et contrôle de Firestore.",
+  "scope": "Inspection des cours ENT des 16 et 17 novembre : disponibilité des sept matières, cohérence des leçons et PDF privés sur le compte Parent ; lecture seule.",
   "launch_on_update": true,
-  "note": "PR : inspection Parent sans écriture. Après fusion autorisée : unique transaction serveur avec archivage puis confirmation Parent ; ne pas créer de seconde tentative.",
-  "checkVersion": "plein-credit-samedi-20261115-v2"
+  "note": "Aucun contrôle de recotation, aucune modification Firebase, aucune tentative, aucune note et aucun XP modifiés. Confirmer l'affichage Parent sur le site publié, sans exposer les documents privés.",
+  "checkVersion": "inspection-parent-lecons-ent-16-17-nov-2026"
 }
