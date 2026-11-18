@@ -131,6 +131,26 @@ const pyth={id:'M26PYT1001',kind:'school',subject:'Mathématiques',title:'Archiv
     return {marks,caption,shown,diagramCross:slopes(figure),
      numericEqualCross:slopes(numericEqual),numericDifferentCross:slopes(numericDifferent)};
    },stale);
+   // Régression capture Android du 18/11 : 2/5 et 4/10 sont des rapports,
+   // jamais « AB : 2 m » ou « AC : 4 m ». Le schéma suit les ratios fournis.
+   const fractionCheck=await page.evaluate(ex=>{
+    const fig=window.TIM_GEOMETRY_DIAGRAMS.render(ex,8);
+    const labels=[...fig.querySelectorAll('svg text')].map(n=>n.textContent);
+    const lines=[...fig.querySelectorAll('svg line')];
+    const coords=line=>[Number(line.getAttribute('x2'))-Number(line.getAttribute('x1')),
+     Number(line.getAttribute('y2'))-Number(line.getAttribute('y1'))];
+    const bc=coords(lines[2]),mn=coords(lines[3]);
+    return {labels,caption:fig.querySelector('figcaption')?.textContent||'',
+     cross:bc[0]*mn[1]-bc[1]*mn[0],
+     text:fig.textContent};
+   },bd);
+   assert(fractionCheck.labels.includes('AM/AB = 2/5')&&fractionCheck.labels.includes('AN/AC = 4/10'),
+    'Q9 doit afficher les deux rapports exacts : '+JSON.stringify(fractionCheck));
+   assert(!fractionCheck.labels.some(x=>/^(?:AB\s*:\s*2|AC\s*:\s*4)(?:\s*m)?$/i.test(x)),
+    'Q9 invente encore des longueurs : '+JSON.stringify(fractionCheck));
+   assert.match(fractionCheck.caption,/des rapports, pas des longueurs/);
+   assert(Math.abs(fractionCheck.cross)<1e-6,
+    'Avec 2/5=4/10 le schéma du segment MN doit être cohérent : '+JSON.stringify(fractionCheck));
    assert(consistent.shown.includes('M est sur [AB]')&&consistent.shown.includes('N sur [AC]'),
     'Le texte présenté doit bien être celui de M et N');
    assert(consistent.marks.includes('M')&&consistent.marks.includes('N'),
