@@ -231,4 +231,41 @@ class LotTest(unittest.TestCase):
             pack.write_text(json.dumps({'lessons':[lesson],'exercises':bonus}),encoding='utf-8')
             self.assertEqual(p.validate(validation),0)
 
+    def test_pdf_only_course_requires_verified_reading(self):
+        with tempfile.TemporaryDirectory() as d:
+            d=Path(d);a,b=self.inputs(d)
+            with zipfile.ZipFile(a) as z:
+                lessons=json.loads(z.read('cours_espagnol_ENT_originaux.json'))
+                homework=json.loads(z.read('travaux_associes_ENT_originaux.json'))
+            lessons[0]['included']=[x for x in lessons[0]['included'] if x.get('type')!='lessonContent']
+            self.make_zip(a,{'cours_espagnol_ENT_originaux.json':lessons,
+                             'travaux_associes_ENT_originaux.json':homework})
+            args=type('A',(),{'zips':[str(a),str(b)],'previous':None,
+                              'out':str(d/'out'),'date':'2026-11-18','subject':''})()
+            p.collect(args)
+            plan=json.loads((d/'out'/'plan_pedagogique.json').read_text())
+            self.assertEqual(len(plan['sourceReadingRequired']),1)
+            self.assertEqual(plan['sourceReadingRequired'][0]['entId'],'10099~6400507')
+
+    def test_today_overdue_and_tomorrow_not_silently_dropped(self):
+        with tempfile.TemporaryDirectory() as d:
+            d=Path(d);a,b=self.inputs(d)
+            with zipfile.ZipFile(a) as z:
+                lessons=json.loads(z.read('cours_espagnol_ENT_originaux.json'))
+                hw=json.loads(z.read('travaux_associes_ENT_originaux.json'))
+            for ident,day in [('TODAY','2026-11-18'),('PAST','2026-11-17')]:
+                h=json.loads(json.dumps(hw[0]))
+                h['data']['id']=ident
+                h['data']['attributes']['dueDate']=day
+                hw.append(h)
+            self.make_zip(a,{'cours_espagnol_ENT_originaux.json':lessons,
+                             'travaux_associes_ENT_originaux.json':hw})
+            args=type('A',(),{'zips':[str(a),str(b)],'previous':None,
+                              'out':str(d/'out'),'date':'2026-11-18','subject':''})()
+            p.collect(args)
+            plan=json.loads((d/'out'/'plan_pedagogique.json').read_text())
+            self.assertEqual(len(plan['dueToday']),1)
+            self.assertEqual(len(plan['overdueHomework']),1)
+            self.assertEqual(len(plan['dueTomorrow']),1)
+
 if __name__=='__main__':unittest.main()
