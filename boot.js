@@ -681,6 +681,13 @@ async function startSession(user){
   }
  }
  window.__TIM_BRIDGE={
+  // Rectification d'une seule question mal dessinée, réservée au Parent.
+  thalesQ9Correction:async(mode='preview',approval='')=>{
+   if(activeUser?.uid!==PARENT_UID)throw Error('Compte Parent requis.');
+   if(!['preview','apply'].includes(mode))throw Error('Mode non autorisé.');
+   const result=await cloudCallable('correctThalesNov16Question9')({mode,approval});
+   return result.data;
+  },
   /* Physique-chimie : deux véritables fiches ENT avec correction privée. */
   physicsEntTask:async(id)=>{
    if(!['PC_ENT_CTRL1','PC_ENT_MOLECULES'].includes(id))throw Error('Fiche ENT inconnue.');
