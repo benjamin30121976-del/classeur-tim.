@@ -267,6 +267,11 @@ def collect(args):
     tomorrow=(asof+dt.timedelta(days=1)).isoformat()
     due_tomorrow=[x for x in items if x['kind']=='homework' and x['due']==tomorrow]
     later=[x for x in items if x['kind']=='homework' and x['due']>tomorrow]
+    due_today=[x for x in items if x['kind']=='homework' and x['due']==asof.isoformat()]
+    overdue=[x for x in items if x['kind']=='homework' and x['due'] and x['due']<asof.isoformat()]
+    unplanned=[x for x in items if x['kind']=='homework' and not x['due']]
+    requires_pdf_reading=[{'entId':x['entId'],'subject':x['subject'],'attachmentIds':[a['id'] for a in x['attachments']]}
+                          for x in items if x['kind']=='lesson' and not x['sourceIsComplete'] and x['attachments']]
     future_tasks=homework_preparation_tasks(items,asof)
     upcoming=[x for x in future_tasks if x['area']=='devoirs-a-venir']
     lesson_tasks=[{'entId':x['entId'],'subject':x['subject'],'date':x['date'],
@@ -285,6 +290,8 @@ def collect(args):
     plan={'date':asof.isoformat(),'tomorrow':tomorrow,'lessonsToPrepare':lesson_tasks,
           'dueTomorrow':due_tomorrow,'dueLater':later,'bonusSuggestions':bonus_plan,
           'sourceIssues':source_issues,'sourceReady':len(source_issues)==0,
+          'sourceReadingRequired':requires_pdf_reading,
+          'dueToday':due_today,'overdueHomework':overdue,'homeworkWithoutDue':unplanned,
           'homeworkExercisePreparations':future_tasks,
           'upcomingHomeworkExercisePreparations':upcoming,
           'futureHomeworkSeriesRequired':sum(x['requiredSeries'] for x in upcoming),
@@ -306,6 +313,10 @@ def collect(args):
            'États : '+', '.join(f'{k} {v}' for k,v in status.items()),
            f'Devoirs pour demain ({tomorrow}) : {len(due_tomorrow)}',
            f'Devoirs à venir : {len(later)}',
+           f'Devoirs du jour (sans preuve de réalisation) : {len(due_today)}',
+           f'Devoirs à échéance passée (ne pas cocher comme faits) : {len(overdue)}',
+           f'Devoirs sans échéance : {len(unplanned)}',
+           f'Leçons avec cours uniquement en pièces à lire : {len(requires_pdf_reading)}',
            f'Éléments ENT manquants/à vérifier : {len(source_issues)}',
            f'Exercices dédiés aux devoirs à venir à construire/vérifier : {sum(x["requiredSeries"] for x in upcoming)}',
            f'Bonus proposés : {sum(x["proposedSeries"] for x in bonus_plan)}',
@@ -411,6 +422,15 @@ def validate(args):
         plan=json.loads(Path(args.plan).read_text(encoding='utf-8'))
         for issue in plan.get('sourceIssues',[]):
             issues.append('Source ENT non résolue '+str(issue.get('entId'))+': '+str(issue.get('message')))
+        if plan.get('sourceReadingRequired'):
+            reviewed={}
+            if getattr(args,'reviewed_sources',None):
+                reviewed=json.loads(Path(args.reviewed_sources).read_text(encoding='utf-8'))
+            for item in plan['sourceReadingRequired']:
+                evidence=reviewed.get(str(item['entId'])) if isinstance(reviewed,dict) else None
+                if not isinstance(evidence,dict) or not str(evidence.get('description') or '').strip() or not evidence.get('attachmentIds'):
+                    issues.append('Cours ENT '+str(item['entId'])+
+                                  ' : original PDF à lire et certifier avant leçon BIS')
         required_lessons=[t for t in plan.get('lessonsToPrepare',[]) if t.get('originalAvailable')]
         for task in required_lessons:
             candidates=[l for l in lessons if str(l.get('entId'))==str(task.get('entId')) and
@@ -473,6 +493,7 @@ def main(argv=None):
     v.add_argument('--out',help='Produire un JSON compatible avec import Parent existant, sans publier')
     v.add_argument('--plan',help='Exiger la couverture de tous les devoirs demain et à venir figurant dans ce plan ENT')
     v.add_argument('--existing',help='Lot des bonus déjà publiés : lecture seule pour éviter doublons')
+    v.add_argument('--reviewed-sources',dest='reviewed_sources',help='Compte rendu des PDF originaux réellement lus, par identifiant ENT')
     args=p.parse_args(argv)
     try:return collect(args) or 0 if args.mode=='collect' else validate(args)
     except (ValueError, OSError, json.JSONDecodeError,zipfile.BadZipFile) as exc:
