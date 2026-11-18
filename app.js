@@ -1173,6 +1173,44 @@ function makeAttachmentPanel(targetKind,targetId,options={}){
      if(!confirm('Supprimer définitivement « '+item.fileName+' » ?'))return;
      try{await api.remove(item);await refresh();}catch(e){alert('Suppression impossible : '+(e.message||e));}
     },'plain'));}
+
+    // Une pièce ENT importée dans une leçon doit être VISIBLE DANS la leçon.
+    // Le lecteur conserve les octets dans Firestore privé et charge les pages
+    // à l'approche du défilement, sans nouveau clic de Tim.
+    if(targetKind==='lesson'){
+     const embedded=E('div','attachment-inline-embed');
+     const fileName=String(item.fileName||'');
+     if(item.mime==='application/pdf'&&window.TIM_PHYSICS_INLINE_PDF?.createFullInline){
+      embedded.append(window.TIM_PHYSICS_INLINE_PDF.createFullInline(
+       {target:targetId,fileName},'Document ENT original complet — '+fileName));
+     }else if(item.mime?.startsWith('image/')){
+      const imageSlot=E('div','attachment-inline-image');
+      imageSlot.textContent='Chargement du schéma ENT…';
+      const show=async()=>{
+       try{
+        const blob=await api.read(item),url=URL.createObjectURL(blob);
+        const img=E('img','attachment-image');
+        img.alt='Schéma original ENT : '+fileName;img.src=url;img.loading='lazy';
+        img.style.maxWidth='100%';img.onload=()=>URL.revokeObjectURL(url);
+        imageSlot.replaceChildren(img);
+       }catch(err){imageSlot.textContent='Schéma indisponible : '+String(err.message||err);}
+      };
+      embedded.append(imageSlot);
+      if('IntersectionObserver' in window){
+       const observer=new IntersectionObserver(entries=>{
+        if(entries.some(e=>e.isIntersecting)){observer.disconnect();show();}
+       },{rootMargin:'700px'});
+       observer.observe(imageSlot);
+      }else show();
+     }else if(/\.(?:docx|odt)$/i.test(fileName)&&window.TIM_INLINE_ENT_DOCUMENTS?.renderOfficeDocument){
+      const documentSlot=E('div','attachment-inline-office');embedded.append(documentSlot);
+      window.TIM_INLINE_ENT_DOCUMENTS.renderOfficeDocument(documentSlot,item,
+       /\.docx$/i.test(fileName)?'docx':'odt');
+     }else{
+      embedded.append(E('p','small','Document original lié à cette leçon : ouverture ou téléchargement disponible ci-dessus.'));
+     }
+     row.append(embedded);
+    }
     row.append(controls,preview);list.append(row);
    }
   }catch(e){info.textContent='Pièces jointes indisponibles : '+(e.message||e);}
