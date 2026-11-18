@@ -28,6 +28,10 @@ test('SVT et Histoire : le texte ODT est déplié automatiquement',()=>{
   assert.match(s,/renderOfficeDocument\(area,saved,'odt'\)/,file);
   assert.doesNotMatch(s,/panel\.append\(read,download\)/,file);
  }
+ const svt=read('svt-documents.js');
+ assert.match(svt,/SVT_ENT_20261117/);
+ assert.match(svt,/SVT_HW_215689/);
+ assert.match(svt,/filenamePattern:.*102650/);
  const common=read('tim-inline-ent-documents.js');
  assert.match(common,/async function renderOfficeDocument\(/);
  assert.match(common,/await window\.JSZip\.loadAsync\(blob\)/);

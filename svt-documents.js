@@ -26,6 +26,19 @@ async function previewOdt(blob,slot){
 async function render(target,slot){
  slot.replaceChildren();
  const docs=plan().filter(d=>d.target===target);
+ // La capture originale du 17 novembre est rattachée dans le ZIP au devoir
+ // ENT 10099~215689 (pour le 23/11), pas à l'ancien ODT du 3 novembre.
+ // L'afficher automatiquement si elle est disponible dans l'un des deux
+ // emplacements privés ; ne jamais la fabriquer ou publier ici.
+ if(!docs.length&&target==='SVT_ENT_20261117'){
+  if(window.TIM_INLINE_ENT_DOCUMENTS?.mount){
+   await window.TIM_INLINE_ENT_DOCUMENTS.mount(slot,[target,'SVT_HW_215689'],{
+    title:'Capture du professeur liée aux défenses immunitaires',
+    filenamePattern:/Capture d.[ée]cran 2026-11-17 102650\.png/i,limit:1,auto:true
+   });
+  }else add(slot,'p','Lecteur de la capture originale indisponible.');
+  return;
+ }
  if(!docs.length){add(slot,'p','Aucune pièce jointe téléchargée pour cette séance dans la collecte ENT.');return;}
  if(window.__TIM_GUEST||!bridge()){add(slot,'p','Les originaux sont réservés aux comptes Tim et Parent.');return;}
  let found=[];
