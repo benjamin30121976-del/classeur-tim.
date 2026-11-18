@@ -147,8 +147,10 @@ class LotTest(unittest.TestCase):
                                   'existing':None,'out':str(d/'import.json')})()
             self.assertEqual(p.validate(validate),0)
             imported=json.loads(validate.out and Path(validate.out).read_text())
-            self.assertTrue(all(x['homeworkBonus'] for x in imported['exercises']))
-            self.assertTrue(all(x['homeworkDue'] and len(x['questions'])==10 for x in imported['exercises']))
+            bonus_only=[x for x in imported['exercises'] if x.get('homeworkBonus') is True]
+            self.assertEqual(len(bonus_only),len(exs)-1)
+            self.assertTrue(all(x['homeworkDue'] and len(x['questions'])==10 for x in bonus_only))
+            self.assertEqual(sum(x.get('kind')=='training' for x in imported['exercises']),1)
             data['exercises']=[x for x in exs if '10099~215364' not in x['linkedHomework']]
             pack.write_text(json.dumps(data),encoding='utf-8')
             self.assertEqual(p.validate(validate),1)
