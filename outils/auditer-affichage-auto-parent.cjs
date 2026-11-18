@@ -180,6 +180,18 @@ async function inspectNov17Lessons(page,device){
   const opening=await row.locator('button').allTextContents();
   if(opening.some(s=>/ouvrir|afficher ici|lire.*document/i.test(s)))
     throw Error('Leçon espagnole : bouton de lecture encore requis pour '+file.label);
+  const layout=await viewer.evaluate(node=>{
+   const rows=[];let target=node;
+   while(target&&rows.length<9){
+    const st=getComputedStyle(target),rect=target.getBoundingClientRect();
+    rows.push({tag:target.tagName,cls:String(target.className||'').slice(0,70),
+     display:st.display,visibility:st.visibility,width:Math.round(rect.width),
+     height:Math.round(rect.height),open:target.tagName==='DETAILS'?target.open:null});
+    target=target.parentElement;
+   }
+   return rows;
+  });
+  console.log('GEOMETRIE '+device+' '+file.label+' '+JSON.stringify(layout));
   await viewer.scrollIntoViewIfNeeded({timeout:12000});
   const ready=await page.waitForFunction(key=>{
    const rows=[...document.querySelectorAll('#matieres-content .tim-nov17-original')];
