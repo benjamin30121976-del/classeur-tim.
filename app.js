@@ -29,7 +29,7 @@ document.querySelectorAll('[data-nav]').forEach(b=>b.addEventListener('click',()
 function lessonBy(id){return DATA.lessons.find(l=>l.id===id);}
 function exerciseBy(id){return DATA.exercises.find(e=>e.id===id);}
 function quizLabel(q){return q.level==='Rédaction'?'Rédaction : 7 critères vérifiés':q.level+' · '+q.questions.length+' questions';}
-function exerciseDescription(ex){const description=safe(ex?.description);return ex?.kind==='training'?description.replace(/0 XP/g,'+1 / +0,5 / 0 XP selon la note'):ex?.kind?description:description.replace(/correction immédiate/gi,'correction après autorisation du parent');}
+function exerciseDescription(ex){const description=safe(ex?.description);if(ex?.homeworkBonus===true){return description.replace(/(?:\s*(?:Barème(?: des)? Bonus devoirs|XP des Bonus devoirs|Maximum de 3 XP bonus par jour|plafond quotidien)[^.]*\.)/gi,'').replace(/10\/10\s*=\s*\+?2 XP[^.]*\./gi,'').trim()+' · Bonus devoirs : 9–10/10 = +1 XP ; autres paliers non confirmés, aucun XP supplémentaire attribué sans règle validée ; aucun plafond quotidien.';}return ex?.kind==='training'?description.replace(/0 XP/g,'+1 / +0,5 / 0 XP selon la note'):ex?.kind?description:description.replace(/correction immédiate/gi,'correction après autorisation du parent');}
 function topicSelect(id,arr,sel,handler){const root=clear(document.getElementById(id));root.append(new Option('Tous les thèmes','all'));for(const x of arr)root.append(new Option(x,x));root.value=sel;root.addEventListener('change',()=>handler(root.value));}
 function cardAction(heading,meta,description,onClick,status){const b=E('button','tile');b.type='button';if(status)b.append(badge(status,status==='Terminé'?'green':''));b.append(E('strong','',heading),E('small','',meta));if(description)b.append(E('small','',description));b.append(E('span','end','Ouvrir →'));b.addEventListener('click',onClick);return b;}
 /* Liste compacte des bonus de devoirs : présentation seule, aucun changement de tentative ou de XP. */
@@ -48,7 +48,7 @@ function homeworkBonusCard(ex){
  const [theme,mark]=subjects[subject]||['autre','3e'];
  const done=Boolean(attemptFor(ex.id));
  const mode=window.TIM_EXERCISE.mode(ex);
- const xpLabel=ex.kind==='bonus-day'?'XP du défi':ex.kind==='training'?'Jusqu’à +1 XP':mode==='bonus'?'Jusqu’à +2 XP':mode==='school'?'0 XP':'XP selon la note';
+ const xpLabel=ex.kind==='bonus-day'?'XP du défi':ex.kind==='training'?'Jusqu’à +1 XP':ex.homeworkBonus===true?'9–10/10 : +1 XP':mode==='bonus'?'Jusqu’à +2 XP':mode==='school'?'0 XP':'XP selon la note';
  const total=Array.isArray(ex.questions)?ex.questions.length:0;
  const card=E('button','tile homework-bonus-card homework-subject-'+theme);card.type='button';
  const top=E('span','homework-bonus-band');
@@ -885,7 +885,7 @@ function openExercise(id,options={}){const ex=exerciseBy(id);if(!ex)return;
  if(!completedChallenge)root.append(makeAttachmentPanel('exercise',ex.id,{hideIfEmpty:isHomeworkDetail}));
 if(!window.__TIM_GUEST&&!ex.kind&&!attemptFor(ex.id)){
  const mode=window.TIM_EXERCISE.mode(ex);
- const modeInfo=notice(mode==='school'?'Devoir scolaire · 0 XP · Correction après accord du parent.':mode==='bonus'?'Bonus · 10/10 : +2 XP · Dès 6/10 : +1 XP · Sinon 0 XP · Plafond quotidien +3 XP.':'Cet exercice n’est pas encore disponible.');modeInfo.id='tim-exercise-mode-info';if(isHomeworkDetail)modeInfo.classList.add('homework-detail-mode-info');root.append(modeInfo);
+ const modeInfo=notice(mode==='school'?'Devoir scolaire · 0 XP · Correction après accord du parent.':mode==='bonus'?(isHomeworkDetail?'Bonus devoirs · 9–10/10 : +1 XP · Autres paliers non confirmés · Aucun plafond quotidien.':'Bonus · 10/10 : +2 XP · Dès 6/10 : +1 XP · Aucun plafond quotidien.'):'Cet exercice n’est pas encore disponible.');modeInfo.id='tim-exercise-mode-info';if(isHomeworkDetail)modeInfo.classList.add('homework-detail-mode-info');root.append(modeInfo);
 }
 showTaskGuide(root); // Un seul rappel court au début du bonus, pas dix répétitions.
 if(window.__TIM_GUEST){root.append(notice('Visite en lecture seule : tu peux voir les questions, mais tu ne peux ni répondre ni valider.','guest-preview'));
