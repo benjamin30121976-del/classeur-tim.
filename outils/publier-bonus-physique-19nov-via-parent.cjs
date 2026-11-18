@@ -58,6 +58,9 @@ const EMAIL=process.env.TIM_PARENT_EMAIL,PASSWORD=process.env.TIM_PARENT_PASSWOR
   },ex.id);
   assert.deepEqual(verified,{id:'BD1811_PC01',homeworkBonus:true,subject:'Physique-chimie',questions:10,category:'bonus'});
   await page.reload({waitUntil:'domcontentloaded'});
+  // Le classeur exige de choisir à nouveau Parent après chaque rechargement,
+  // même si Firebase conserve la session. Ne pas saisir de mot de passe Tim.
+  await page.locator('#parent-enter').click();
   await page.waitForFunction(()=>document.body.classList.contains('ready')&&window.__TIM_PARENT===true&&window.__TIM_DATA?.exercises?.some(x=>x.id==='BD1811_PC01'),null,{timeout:60000});
   const shown=await page.evaluate(()=>window.__TIM_DATA.exercises.some(x=>x.id==='BD1811_PC01'&&x.homeworkBonus===true&&x.questions?.length===10));
   assert(shown,'Le bonus n apparaît pas dans le catalogue rechargé Parent.');
