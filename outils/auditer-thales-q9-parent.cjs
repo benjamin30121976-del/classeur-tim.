@@ -32,7 +32,7 @@ const {chromium}=require('playwright');
    return {
     found:true,authorAttempt:a.id==='BD1611_MA01',
     question9:q!=null,answerCount:a.answers?.length||0,
-    textIdentified:/AM\\s*\\/\\s*AB\\s*=\\s*2\\s*\\/\\s*5/i.test(text)&&/AN\\s*\\/\\s*AC\\s*=\\s*4\\s*\\/\\s*10/i.test(text),
+    textIdentified:/AM\s*\/\s*AB\s*=\s*2\s*\/\s*5/i.test(text)&&/AN\s*\/\s*AC\s*=\s*4\s*\/\s*10/i.test(text),
     chosenIncorrectRatios:/rapport/i.test(response)&&/diff[eé]rent/i.test(response),
     point9:Number(q?.points)===0&&q?.correct===false,
     otherPointsFixed:other.every(x=>Number(x?.points)===1&&x?.correct===true),
