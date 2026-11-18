@@ -1054,7 +1054,31 @@ function renderFeedback(ex,t,root){
   if(a.correct===false){
    p.append(E('p','correct','Réponse attendue : '+safe(a.expected)));
    const explanation=safe(a.explanation).trim()||'Compare les mots, leur ordre et les terminaisons avec la réponse attendue. Relis la leçon pour comprendre la règle.';
-   p.append(E('p','subtle','Explication : '+explanation));
+   const explanationNode=E('p',ex.subject==='Mathématiques'?'math-feedback-explanation':'subtle','Explication : '+explanation);
+   if(ex.subject==='Mathématiques'){
+    explanationNode.style.setProperty('color','#203754','important');
+    explanationNode.style.fontSize='16px';
+    explanationNode.style.lineHeight='1.6';
+    explanationNode.style.fontWeight='650';
+   }
+   p.append(explanationNode);
+   // Complément pédagogique d'affichage uniquement : aucune modification du corrigé,
+   // de la réponse enregistrée, du score, de la tentative ou des XP.
+   const currentQuestion=String(a.question||q.q||'');
+   if(ex.subject==='Mathématiques'&&/AM\s*\/\s*AB\s*=\s*2\s*\/\s*5/i.test(currentQuestion)&&
+      /AN\s*\/\s*AC\s*=\s*4\s*\/\s*10/i.test(currentQuestion)){
+    const guide=E('section','math-thales-correction-steps');
+    guide.style.cssText='margin:12px 0;padding:13px 14px;border-left:4px solid #24628d;border-radius:10px;background:#edf5ff;color:#1d354d;line-height:1.6';
+    guide.append(E('strong','','Comment rédiger le raisonnement'));
+    for(const line of [
+     '1. Je vérifie les alignements : A, M, B et A, N, C sont dans le même ordre.',
+     '2. Je calcule : AM/AB = 2 ÷ 5 = 0,4 et AN/AC = 4 ÷ 10 = 0,4.',
+     '3. Les deux rapports sont égaux : AM/AB = AN/AC.',
+     '4. Donc, d’après la réciproque du théorème de Thalès, (MN) est parallèle à (BC).',
+     'Phrase à écrire : « Les points sont alignés dans le même ordre et les rapports sont égaux ; par la réciproque de Thalès, (MN) // (BC). »'
+    ])guide.append(E('p','',line));
+    p.append(guide);
+   }
    const spanishSource=ex.questionBank==='spanish-ent-v1'?
     /^ESE_L(0[1-9]|1[0-3])_0[1-3]:\d+$/.exec(String(q.sourceId||'')):null;
    if(spanishSource){
