@@ -52,3 +52,18 @@ Le validateur exige notamment : matière reconnue, identifiant unique, leçon BI
 - Vérifier le vrai parcours sur les deux comptes Parent/Tim avec GitHub Actions et Chromium/Playwright en lecture seule. Tester les nouveaux écrans dans un environnement isolé avant publication, puis revérifier le site après accord du Parent. **Jamais de copie, de réponse ou de XP de Tim modifié par les tests.**
 
 **État des vérifications** : ZIP et devoirs simulés jusqu'à J+7, tests automatiques et rendu sur échantillons synthétiques. La chaîne avec les ZIP réels du Parent, la rédaction des nouvelles questions et la publication après accord ne peut pas être déclarée vérifiée avant sa première exécution complète.
+
+## État du raccordement unique ENT — 19 novembre 2026
+
+Le circuit Termux validé ne change pas : le parent récupère les ZIP avec le programme Python existant, puis les transmet dans la conversation. L'assistant lit les cours et PDF, rédige et contrôle les leçons BIS, les aides, tous les exercices et leurs corrections avant de préparer un seul lot.
+
+1. tools/tim_ent_lot.py collect : inventaire, changements, devoirs du jour, demain, à venir, dates absentes, sources PDF incomplètes.
+2. Rédaction pédagogique à partir des vrais documents : cours original exact distinct de BIS, Je n'ai pas compris, exemples guidés, 10 questions et corrections détaillées, bonus par devoir et 2–5 entraînements de révision selon le plan. Ne pas considérer un simple plan comme une fiche réellement créée.
+3. tools/tim_ent_lot.py assemble : contrôle du pack rédigé et création du ZIP unique avec PACK_PEDAGOGIQUE.json, MANIFESTE_LOT_TIM.json et les originaux, par ID ENT exact. Le paramètre --mapping permet de relier explicitement les anciens cours et pièces lorsqu'ils sont prouvés. Les PDF uniquement référencés dans un index séparé sont recherchés aussi.
+4. tim-ent-batch-import.js : dans le compte Parent, une validation et une confirmation pour le lot ; utilise le pont d'import existant, puis vérifie tous les SHA-256 avant et après le stockage privé.
+5. boot.js et app.js : nouvelles fiches dans les sept matières, devoirs dans le calendrier, originaux affichés dans les leçons ENT et BIS, entraînements et bonus consultables ; aucun historique Tim effacé.
+6. Tests : GitHub Actions hors ligne et Chromium/Playwright Parent/Tim en lecture seule, sur PC et téléphone. Les tests graphiques du nouvel import utilisent des données fictives ; le site publié n'est pas modifié.
+
+Limites bloquantes : aucun vrai ZIP Termux de ce nouveau lot n'a encore été exécuté jusqu'à la publication. Le stockage privé limite actuellement chaque fichier à 4 Mo. Le générateur serveur des défis est essentiellement statique et n'intègre pas automatiquement les nouveautés ENT. Le dernier contrôle du compte Tim a rencontré un accès au catalogue de secours et une erreur JavaScript. Aucune publication sans autorisation distincte ; jamais de modification des notes, XP ou tentatives lors des tests.
+
+Feu vert interdit si un document n'est pas intégré et lisible dans la bonne leçon, si une correction n'a pas été vérifiée, si un devoir futur n'a pas sa préparation ou si les deux comptes n'affichent pas correctement le travail réellement publié.
