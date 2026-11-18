@@ -438,11 +438,18 @@ def validate(args):
             if not candidates:
                 issues.append('Leçon BIS absente pour cours ENT '+str(task.get('entId')))
                 continue
-            for l in candidates:
-                if not any(ex.get('kind')=='training' and ex.get('lesson')==l.get('id') and
-                           ex.get('subject')==l.get('subject') and
-                           len(ex.get('questions') or [])==10 for ex in exercises):
-                    issues.append('Entraînement de leçon absent pour '+str(l.get('id')))
+            if any(l.get('timEntBatch') is True for l in candidates):
+                ent=[l for l in candidates if l.get('kind')=='ent']
+                bis=[l for l in candidates if l.get('kind')=='bis']
+                if not ent or not bis:
+                    issues.append('Cours ENT et BIS distincts obligatoires pour '+str(task.get('entId')))
+                eligible={l.get('id') for l in bis}
+            else:
+                eligible={l.get('id') for l in candidates}
+            if not any(ex.get('kind')=='training' and ex.get('lesson') in eligible and
+                       ex.get('subject')==task.get('subject') and
+                       len(ex.get('questions') or [])==10 for ex in exercises):
+                issues.append('Entraînement de leçon absent pour '+str(task.get('entId')))
         existing=[]
         if getattr(args,'existing',None):
             prev=json.loads(Path(args.existing).read_text(encoding='utf-8'))
