@@ -534,6 +534,13 @@ def assemble(args):
                 body='\n'.join(str(b.get('body') or '') for b in (l.get('blocks') or []))
                 if original['original'].strip() not in body:
                     raise ValueError('Texte original ENT non recopié intégralement : '+original['entId'])
+    expected_reviews=int(plan.get('dailyTrainingSuggested') or 0)
+    got_reviews=len([x for x in exercises if x.get('kind')=='training'
+                     and x.get('practiceRole')=='daily-review' and
+                     len(x.get('questions') or [])==10])
+    if got_reviews<expected_reviews:
+        raise ValueError('Entraînements du jour manquants : '+str(got_reviews)+'/'+
+                         str(expected_reviews)+' séries corrigées')
     for e in exercises:
         if e.get('timEntBatch') is not True:raise ValueError('Exercice sans marqueur de lot ENT : '+str(e.get('id')))
     source_targets={}
@@ -600,7 +607,8 @@ def assemble(args):
                'attachments':[a['id'] for a in x['attachments']]}
               for x in work.values()]
     manifest={'schema':'tim-ent-batch-v1','sources':sources,
-              'homework':homework,'documents':docs,'date':plan.get('date','')}
+              'homework':homework,'documents':docs,'date':plan.get('date',''),
+              'dailyTrainingRequired':expected_reviews}
     target=Path(args.out)
     if target.exists() and not args.overwrite:raise ValueError('ZIP de sortie déjà présent : refuser écrasement')
     target.parent.mkdir(parents=True,exist_ok=True)
