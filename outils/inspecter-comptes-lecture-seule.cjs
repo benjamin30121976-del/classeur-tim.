@@ -61,8 +61,21 @@ async function inspect(browser,role,device,report) {
     await route.continue();
   });
   const page=await context.newPage();
-  const jsErrors=[];
-  page.on('pageerror',()=>jsErrors.push('Erreur JS'));
+  const jsErrors=[],privateReadErrors=[];
+  page.on('pageerror',error=>{
+    const name=String(error?.name||'Erreur JS');
+    jsErrors.push(/^(TypeError|ReferenceError|SyntaxError|Error)$/.test(name)?name:'Erreur JS');
+  });
+  page.on('response',async response=>{
+    if(!response.url().includes('/api/tim')||response.status()<400)return;
+    const payload=response.request().postData()||'';
+    if(!payload.includes('"getTimCourseContent"'))return;
+    try{
+      const data=await response.json();
+      const code=/^[a-z0-9-]{1,70}$/.test(String(data?.error||''))?data.error:'unknown';
+      privateReadErrors.push({http:response.status(),code});
+    }catch{privateReadErrors.push({http:response.status(),code:'invalid-response'});}
+  });
   try {
     const res=await page.goto(SITE,{waitUntil:'domcontentloaded',timeout:45000});
     // Diagnostic public d'accès au backend ; aucun jeton ou document privé.
@@ -119,7 +132,8 @@ async function inspect(browser,role,device,report) {
     check(report,prefix+' : espace defi quotidien',stats.challengePanel);
     // Le moteur d'exercices et les parcours de matieres sont separés.
     // Le nombre de matieres dans __TIM_DATA n'est donc PAS un compteur UI.
-    if(!role.parent) check(report,prefix+' : donnees privees, pas secours Invite',!stats.guestFallback);
+    if(!role.parent) check(report,prefix+' : donnees privees, pas secours Invite',!stats.guestFallback,
+      stats.guestFallback?(privateReadErrors.map(x=>'HTTP '+x.http+' '+x.code).join(', ')||'service du cours indisponible'):'lecture privee disponible');
     const pages=[
       {id:'home',file:'accueil'}, {id:'matieres',file:'matieres'},
       {id:'prochaines',file:'missions-a-venir'}, {id:'exercices',file:'exercices'}
@@ -188,7 +202,7 @@ async function inspect(browser,role,device,report) {
     check(report,prefix+' : aucune ecriture',blocked.length===0,
       blocked.length?blocked.length+' appel(s) bloques':'aucun appel d ecriture');
     check(report,prefix+' : erreurs JavaScript',jsErrors.length===0,
-      jsErrors.length?jsErrors.length+' erreur(s)':'aucune');
+      jsErrors.length?jsErrors.join(', ').slice(0,110):'aucune');
   }catch{
     check(report,prefix+' : inspection complete',false,
       'connexion ou navigation impossible ; aucun secret publie');
