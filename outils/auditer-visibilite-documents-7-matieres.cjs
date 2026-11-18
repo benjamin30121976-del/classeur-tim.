@@ -107,7 +107,10 @@ async function run(browser,device,viewport){
  }finally{await context.close();}
 }
 (async()=>{
- const browser=await chromium.launch({headless:true});
+ const paths=['/usr/bin/google-chrome','/usr/bin/google-chrome-stable','/usr/bin/chromium'];
+ const fs=require('node:fs');
+ const executable=paths.find(p=>fs.existsSync(p));
+ const browser=await chromium.launch({headless:true,...(executable?{executablePath:executable}:{})});
  try{
   for(const [name,viewport]of [['telephone',{width:390,height:844}],['ordinateur',{width:1280,height:840}]])
    await run(browser,name,viewport);
