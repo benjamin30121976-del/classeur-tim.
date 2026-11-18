@@ -22,6 +22,7 @@ on:
       - 'worker/test/saturday-20261114-full-credit.test.mjs'
       - 'worker/saturday-20261114-review.mjs'
       - 'worker/server.mjs'
+      - 'worker/test/thales-q9-correction.test.mjs'
       - '.github/workflows/inspection-parent-authentifie.yml'
   workflow_dispatch:
 permissions:
@@ -64,7 +65,7 @@ jobs:
           node --check worker/saturday-20261114-full-credit.mjs
           node --check worker/saturday-20261114-review.mjs
       - name: Tester les 23 évaluations et la sécurité des tentatives
-        run: node --test worker/test/math-training.test.mjs worker/test/saturday-20261114-review.test.mjs worker/test/saturday-20261114-server.test.mjs worker/test/saturday-20261114-full-credit.test.mjs
+        run: node --test worker/test/math-training.test.mjs worker/test/saturday-20261114-review.test.mjs worker/test/saturday-20261114-server.test.mjs worker/test/saturday-20261114-full-credit.test.mjs worker/test/thales-q9-correction.test.mjs
       - name: Verifier la configuration des secrets sans les afficher
         id: verify
         run: |
