@@ -303,8 +303,13 @@ class LotTest(unittest.TestCase):
                    'linkedHomework':['10099~215356'],'lesson':bis['id'],
                    'title':'Préparation du devoir n°'+str(i+1),
                    'questions':[dict(q) for _ in range(10)]})
+            daily=[]
+            for j in range(2):
+                daily.append({**training,'id':'ES_DAILY_REVIEW'+str(j+1),
+                    'practiceRole':'daily-review',
+                    'title':'Révision quotidienne du cours '+str(j+1)})
             pack=d/'pack.json';pack.write_text(json.dumps({'lessons':[ent,bis],
-                                    'exercises':[training]+extras},ensure_ascii=False))
+                                    'exercises':[training]+daily+extras},ensure_ascii=False))
             result=d/'valid-import.zip'
             cmd=type('A',(),{'pack':str(pack),'plan':str(d/'out'/'plan_pedagogique.json'),
                  'inventory':str(d/'out'/'ent_prive_lot.json'),'existing':None,
@@ -324,7 +329,7 @@ class LotTest(unittest.TestCase):
             with self.assertRaises(ValueError):
                 p.assemble(cmd)  # pas d'écrasement
             ent['blocks']=[{'kind':'note','body':'Résumé seulement'}]
-            pack.write_text(json.dumps({'lessons':[ent,bis],'exercises':[training]+extras}))
+            pack.write_text(json.dumps({'lessons':[ent,bis],'exercises':[training]+daily+extras}))
             cmd.out=str(d/'bad.zip')
             with self.assertRaises(ValueError):
                 p.assemble(cmd)  # texte du professeur non remplacé par résumé
