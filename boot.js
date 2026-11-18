@@ -774,7 +774,7 @@ async function startSession(user){
    return r.data;
   },
   englishTrainingTask:async(id)=>{
-   if(!/^ENQ_L0[1-8]_0[1-3]$/.test(String(id||'')))throw Error('Exercice de anglais inconnu.');
+   if(!/^ENQ_L(?:0[1-2]_0[1-3]|0[3-8]_01)$/.test(String(id||'')))throw Error('Exercice de anglais inconnu.');
    const r=await cloudCallable('getEnglishTrainingTask')({id});
    if(!r.data?.task||r.data.task.questions?.length!==10||
       r.data.task.questions.some(q=>!['qcm','text'].includes(q.kind)))
@@ -783,7 +783,7 @@ async function startSession(user){
   },
   englishTrainingSubmit:async(id,answers,bankVersion)=>{
    if(activeUser?.uid!==TIM_UID)throw Error('Seul Tim peut valider un exercice.');
-   if(!/^ENQ_L0[1-8]_0[1-3]$/.test(String(id||''))||
+   if(!/^ENQ_L(?:0[1-2]_0[1-3]|0[3-8]_01)$/.test(String(id||''))||
       !Array.isArray(answers)||answers.length!==10||
       answers.some(x=>!((Number.isInteger(x)&&x>=0&&x<=3)||
         (typeof x==='string'&&x.trim()&&x.length<=80))))
@@ -800,7 +800,7 @@ async function startSession(user){
   /* Un essai sur le compte Parent ne crée aucun résultat dans le dossier de Tim. */
   englishTrainingPreviewSubmit:async(id,answers,bankVersion)=>{
    if(activeUser?.uid!==PARENT_UID)throw Error('Mode essai réservé au compte Parent.');
-   if(!/^ENQ_L0[1-8]_0[1-3]$/.test(String(id||''))||
+   if(!/^ENQ_L(?:0[1-2]_0[1-3]|0[3-8]_01)$/.test(String(id||''))||
       !Array.isArray(answers)||answers.length!==10||
       answers.some(x=>!((Number.isInteger(x)&&x>=0&&x<=3)||
         (typeof x==='string'&&x.trim()&&x.length<=80))))
