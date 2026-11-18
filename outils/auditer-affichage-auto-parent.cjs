@@ -25,6 +25,10 @@ async function testDevice(browser,label,viewport){
    await page.locator('#intro-silent').click({timeout:8000});
    await intro.waitFor({state:'hidden',timeout:14000});
   }
+  if(process.env.TIM_NOV17_ONLY==='1'){
+   await inspectNov17Lessons(page,label);
+   return;
+  }
   // Contrôle la vraie version Cloudflare, sans injecter le code de la branche.
   const production=await page.evaluate(()=>{
    const modules=['physique-chimie-inline-pdf.js','tim-inline-ent-documents.js',
@@ -142,7 +146,7 @@ async function testDevice(browser,label,viewport){
    publiées, sans importer, valider ni modifier la moindre donnée de Tim. */
 async function inspectNov17Lessons(page,device){
  const nav=page.locator('[data-nav="matieres"]');
- await nav.click();
+ await page.evaluate(()=>document.querySelector('[data-nav="matieres"]')?.click());
  await page.locator('#matieres-content .matter-card').filter({hasText:'Espagnol'}).first().click();
  await page.waitForFunction(()=>[...document.querySelectorAll('#matieres-content details.tim-es-lesson')]
   .some(x=>/17 novembre|17\/11/i.test(x.querySelector(':scope > summary')?.textContent||'')),
@@ -187,7 +191,7 @@ async function inspectNov17Lessons(page,device){
   console.log('VISUEL '+device+' '+file.label+' : '+total+'/'+total+
    ' pages rendues dans la leçon sans bouton d’ouverture');
  }
- await nav.click();
+ await page.evaluate(()=>document.querySelector('[data-nav="matieres"]')?.click());
  await page.locator('#matieres-content .matter-card').filter({hasText:'SVT'}).first().click();
  const chapter=page.locator('#matieres-content details.chapter-section')
   .filter({has:page.locator('summary').filter({hasText:'Lymphocytes B et T'})}).first();
