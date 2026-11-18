@@ -13,7 +13,8 @@ const {chromium}=require('playwright');
    window.__TIM_PARENT=true;window.__TIM_GUEST=false;
    window.TIM_FR_PACK={lessons:[],bis:[{id:'FR_BIS12',examples:[],help:[]}]};
    window.TIM_SPANISH_ENT_EXACT={render:async(root)=>{root.innerHTML='<div class="tim-es-chronological"></div>'; }};
-   window.__TIM_BRIDGE={attachments:{list:async()=>[],upload:()=>{throw Error('AUCUN IMPORT ATTENDU');},read:()=>{throw Error('AUCUNE LECTURE ATTENDUE')}}};
+   window.TIM_SPANISH_SIMPLIFIED={renderQuestions:(slot,task)=>{slot.textContent='Questionnaire de '+task.questions.length+' questions, aucune soumission de test';},drawCorrection:()=>{throw Error('Correction réelle interdite au test');}};
+   window.__TIM_BRIDGE={attachments:{list:async()=>[],upload:()=>{throw Error('AUCUN IMPORT ATTENDU');},read:()=>{throw Error('AUCUNE LECTURE ATTENDUE')}},spanishEntTrainingTask:async()=>({completed:false,task:{questions:Array.from({length:10},(_,i)=>({prompt:'Question '+i}))}})};
   });
   for(const p of ['tim-ent-18nov-private-import.js','tim-ent-18nov-lessons.js'])
    await page.addScriptTag({content:fs.readFileSync(p,'utf8')});
@@ -28,8 +29,10 @@ const {chromium}=require('playwright');
   assert.equal(await page.getByText(/je repère d’abord la personne/i).count(),1);
   await page.getByRole('button',{name:'Exercices ENT',exact:true}).click();
   assert.equal(await page.getByText(/215358/).count(),1);
-  await page.getByRole('button',{name:'Préparation écrite',exact:true}).click();
-  assert.equal(await page.locator('[data-ent-id="10099~6400507"] details details').count(),10);
+  await page.getByRole('button',{name:'Entraînement',exact:true}).click();
+  assert.equal(await page.locator('[data-ent-id="10099~6400507"] [data-es-training-id]').count(),3);
+  await page.locator('[data-es-training-id="ESE_L17_01"]').click();
+  assert.equal(await page.getByText(/Questionnaire de 10 questions/).count(),1);
   const fr=await page.evaluate(()=>({
     count:window.TIM_FR_PACK.lessons.length,
     id:window.TIM_FR_PACK.lessons[0]?.entId,
@@ -41,10 +44,10 @@ const {chromium}=require('playwright');
   assert.equal(await page.locator('[data-ent-id="10099~6400507"]').count(),1);
   const checks=await page.evaluate(()=>({
     files:window.TIM_ENT_18NOV_IMPORT.spec.map(x=>x.id),
-    educational:window.TIM_ENT_18NOV_LESSONS.questions.length
+    educational:window.TIM_ENT_18NOV_LESSONS.exerciseIds.length
   }));
-  assert.equal(checks.files.length,5);assert.equal(checks.educational,10);
+  assert.equal(checks.files.length,5);assert.equal(checks.educational,3);
   await page.screenshot({path:'/tmp/tim-ent-18nov-lecture-seule.png',fullPage:true});
-  console.log('CHROMIUM_OK: 5 pièces, cours français unique, 5 onglets espagnols, 10 questions, 0 écriture.');
+  console.log('CHROMIUM_OK: 5 pièces, cours français unique, 5 onglets espagnols, 3 exercices x 10 questions, 0 écriture.');
  }finally{await browser.close();}
 })().catch(e=>{console.error(e);process.exitCode=1;});
