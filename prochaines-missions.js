@@ -30,22 +30,29 @@ function packAssignments(data){
   ['Physique-chimie',window.TIM_PHYSIQUE_PACK?.homework],
   ['SVT',window.TIM_SVT_PACK?.homework],
   ['Histoire-géographie',window.TIM_HG_PACK?.homework],
-  ['Français',window.TIM_FR_PACK?.homework]
+  ['Français',window.TIM_FR_PACK?.homework],
+  // Compléments éventuels de l'import ENT ; les devoirs officiels restent des annonces, jamais de faux questionnaires.
+  ['',data?.metadata?.timEntHomework],
+  ['',data?.metadata?.entHomework],
+  ['',(data?.exercises||[]).filter(ex=>ex?.category==='school' && ex?.homeworkDue)]
  ];
  const found=new Map();
  for(const [subject,list] of sources){
   if(!Array.isArray(list))continue;
   for(const h of list){
    if(!h||typeof h!=='object')continue;
-   const due=String(h.due||h.dueDate||h.homeworkDue||'').slice(0,10);
+   const subjectName=subject||text(h.subject||'');
+   if(!subjectName)continue;
+   const due=String(h.due||h.dueDate||h.dueDateTime||h.homeworkDue||'').slice(0,10);
    if(!iso.test(due)||!Number.isFinite(dayNumber(due)))continue;
    const id=String(h.entId||h.id||'');
    const title=text(h.title||h.label||'Travail à préparer');
    const description=text(h.content||h.description||h.instructions||'');
    const keys=new Set([id,String(h.id||''),String(h.entId||'')].filter(Boolean));
    const isExam=/(?:^|[^A-Za-zÀ-ÿ])(contr[oô]le|[eé]valuation|interro(?:gation)?|dict[eé]e|test)(?=$|[^A-Za-zÀ-ÿ])/i.test(title+' '+description);
-   const key=(id||title.toLowerCase())+'|'+due+'|'+subject;
-   if(!found.has(key))found.set(key,{id,keys,subject,due,title,description,isExam,origin:'ENT'});
+   const key=(id||title.toLowerCase())+'|'+due+'|'+subjectName;
+   if(!found.has(key))found.set(key,{id,keys,subject:subjectName,due,title,description,isExam,origin:'ENT'});
+   else for(const identity of keys)found.get(key).keys.add(identity);
   }
  }
  return [...found.values()].sort((a,b)=>a.due.localeCompare(b.due)||a.subject.localeCompare(b.subject,'fr'));
@@ -93,7 +100,7 @@ function card(task,opts,done,today,unlinked=false){
   node.append(E('p','future-no-bonus','Aucun exercice bonus associé précisément à cette consigne pour le moment.'));
  }
  const actions=E('div','future-actions');
- for(const ex of available.slice(0,2)){
+ for(const ex of available){
   const completed=done.has(String(ex.id));
   actions.append(makeButton((completed?'Voir la correction':'Faire le bonus')+' · '+text(ex.title||'Révision'),()=>opts.openBonus?.(ex.id),completed?'secondary':'primary'));
  }
@@ -113,8 +120,10 @@ function collect(data,now=new Date()){
  // À J-1, Tim le prépare dans les bonus déjà existants : pas de doublon.
  const today=parisToday(now);
  const all=packAssignments(data).filter(x=>daysUntil(x.due,today)>=2);
- const later=all;
- return {today,all,later,examCount:all.filter(x=>x.isExam).length};
+ const allBonuses=bonuses(data);
+ const later=all.map(task=>({...task,bonusCount:allBonuses.filter(ex=>linked(ex,task)).length}));
+ return {today,all:later,later,examCount:later.filter(x=>x.isExam).length,
+   withBonus:later.filter(x=>x.bonusCount>0).length,withoutBonus:later.filter(x=>x.bonusCount===0).length};
 }
 function render(root,opts={}){
  if(!root)return;
@@ -125,7 +134,7 @@ function render(root,opts={}){
  const copy=E('div','future-hero-copy');
  copy.append(E('span','future-overline','OBJECTIF : PRENDRE DE L’AVANCE'),E('h2','','Mes prochaines missions'),E('p','','Devoirs, interrogations et révisions : prépare-toi plusieurs jours avant la date !'));
  const figures=E('div','future-numbers');
- for(const [n,label] of [[state.later.length,'missions à venir'],[state.examCount,'contrôles annoncés']]){
+ for(const [n,label] of [[state.later.length,'missions à venir'],[state.withBonus,'avec exercices'],[state.examCount,'contrôles annoncés']]){
   const stat=E('div','future-number');stat.append(E('strong','',n),E('small','',label));figures.append(stat);
  }
  copy.append(figures);hero.append(copy,E('span','future-hero-symbol','✦'));root.append(hero);
