@@ -1418,12 +1418,12 @@ function makeRewardsTile(){
   addDetails('Grand défi du samedi · 20 questions',[
    ['17–20 bonnes réponses','+10 XP'],['15–16 bonnes réponses','+7 XP'],
    ['12–14 bonnes réponses','+4 XP'],['10–11 bonnes réponses','+1 XP'],
-   ['8–9 bonnes réponses','0 XP'],['0–7 bonne réponse','−1 XP']
+   ['8–9 bonnes réponses','0 XP'],['0–7 bonnes réponses','−1 XP']
   ]);
   addDetails('Grand défi du dimanche · 20 questions',[
    ['17–20 bonnes réponses','+20 XP'],['15–16 bonnes réponses','+14 XP'],
    ['12–14 bonnes réponses','+8 XP'],['10–11 bonnes réponses','+2 XP'],
-   ['8–9 bonnes réponses','0 XP'],['0–7 bonne réponse','−2 XP']
+   ['8–9 bonnes réponses','0 XP'],['0–7 bonnes réponses','−2 XP']
   ]);
   addDetails('Devoirs, entraînements et bonus',[
    ['Devoirs scolaires ENT','0 XP'],
