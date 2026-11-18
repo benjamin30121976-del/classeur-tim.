@@ -27,13 +27,16 @@ const {chromium}=require('playwright');
    const ex=window.__TIM_DATA?.exercises?.find(x=>x.id==='BD1611_MA01');
    if(!a)return {found:false};
    const q=a.answers?.[8],other=a.answers?.filter((_,i)=>i!==8)||[];
-   const text=String(q?.question||ex?.questions?.[8]?.q||'');
+   const source=ex?.questions?.[8],text=String(q?.question||source?.q||'');
    const response=String(q?.response??'');
+   const selected=source?.type==='mc'?String(source.options?.[Number(response)]||''):response;
    return {
     found:true,authorAttempt:a.id==='BD1611_MA01',
     question9:q!=null,answerCount:a.answers?.length||0,
     textIdentified:/AM\s*\/\s*AB\s*=\s*2\s*\/\s*5/i.test(text)&&/AN\s*\/\s*AC\s*=\s*4\s*\/\s*10/i.test(text),
-    chosenIncorrectRatios:/rapport/i.test(response)&&/diff[eé]rent/i.test(response),
+    chosenIncorrectRatios:/rapport/i.test(selected)&&/diff[eé]rent/i.test(selected),
+    responseIsMcIndex:source?.type==='mc'&&/^\\d$/.test(response),
+    expectedParallels:/parall[eè]le/i.test(String(q?.expected||'')),
     point9:Number(q?.points)===0&&q?.correct===false,
     otherPointsFixed:other.every(x=>Number(x?.points)===1&&x?.correct===true),
     oneCreditAvailable:Number.isFinite(a.score)&&a.total===10&&a.score===9,
