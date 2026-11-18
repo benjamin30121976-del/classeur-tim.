@@ -57,6 +57,7 @@ function renderDocs(host){
 function render18(){
  const card=E('details',null,'tim-es-lesson ent-es-followup');
  card.dataset.entId='10099~6400507';
+ card.dataset.entDate='2026-11-18';
  card.style.cssText='border:1px solid #9bbfda;border-radius:13px;background:#f5f8ff;color:#243c56;margin:14px 0;padding:12px';
  card.append(E('summary','Mercredi 18 novembre — Conjugaison, hemisferio et corrections (ENT 10099~6400507)'));
  const tabs=E('nav');tabs.style.cssText='display:flex;flex-wrap:wrap;gap:4px;margin-top:14px';
@@ -157,14 +158,27 @@ if(route?.render&&!route.__nov18Wrapped){
  route.render=async function(root,options){
   await original(root,options);
   if(window.__TIM_GUEST)return;
-  // Une seule fiche pédagogique datée ; les références ENT restent uniques.
+  const chronology=root.querySelector('.tim-es-chronological-lessons');
+  // La nouvelle séance rejoint le même sommaire que les autres, après le 17/11.
   if(!root.querySelector('[data-ent-id="10099~6400507"]')){
    const node=render18();
-   const chronology=root.querySelector('.tim-es-chronological');
-   if(chronology)chronology.prepend(node);else root.append(node);
+   if(chronology)chronology.append(node);else root.append(node);
   }
-  if(window.__TIM_PARENT&&window.TIM_ENT_18NOV_IMPORT?.panel&&!root.querySelector('#tim-ent-18nov-private-import'))
-   root.prepend(window.TIM_ENT_18NOV_IMPORT.panel());
+  if(chronology){
+   const dated=[...chronology.children].filter(n=>n.dataset.entDate);
+   dated.sort((a,b)=>a.dataset.entDate.localeCompare(b.dataset.entDate)||
+    String(a.dataset.entId||'').localeCompare(String(b.dataset.entId||'')));
+   dated.forEach(n=>chronology.append(n));
+  }
+  // Après l'import déjà réussi, le gros formulaire ne doit plus masquer les leçons.
+  // Il reste accessible au Parent, sans transfert ou suppression automatique.
+  if(window.__TIM_PARENT&&window.TIM_ENT_18NOV_IMPORT?.panel&&!root.querySelector('#tim-ent-18nov-private-import')){
+   const tools=E('details',null,'tim-ent18-import-tools');
+   tools.style.cssText='border:1px solid #9cb7d1;border-radius:11px;padding:10px 13px;margin:14px 0';
+   tools.append(E('summary','Documents originaux ENT — gérer l’import (Parent)'));
+   tools.append(window.TIM_ENT_18NOV_IMPORT.panel());
+   root.append(tools);
+  }
  };
  route.__nov18Wrapped=true;
 }
