@@ -29,6 +29,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 8
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
       - name: Contrôler les vrais modules publiés sans anciennes versions figées
         run: node outils/verifier-version-production-maths-espagnol.cjs
       - name: Vérifier la non-publication du corrigé et du stockage privé
