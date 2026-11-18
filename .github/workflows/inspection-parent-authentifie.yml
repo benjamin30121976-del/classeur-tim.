@@ -9,6 +9,7 @@ on:
     paths:
       - 'browser-requests/parent.json'
       - 'outils/inspecter-parent-securise.cjs'
+      - 'outils/auditer-thales-q9-parent.cjs'
       - 'outils/auditer-bonus-hg-parent.cjs'
       - 'functions/xp-week-exception.mjs'
       - 'functions/test/xp-week-exception.test.mjs'
@@ -75,6 +76,11 @@ jobs:
           mkdir -p /tmp/tim-parent-browser
           npm install --prefix /tmp/tim-parent-browser --no-audit --no-fund playwright
           /tmp/tim-parent-browser/node_modules/.bin/playwright install --with-deps chromium
+      - name: Vérifier la copie Thalès Q9 sans modification
+        if: steps.verify.outputs.configured == 'true' && github.event_name == 'pull_request'
+        env:
+          NODE_PATH: /tmp/tim-parent-browser/node_modules
+        run: node outils/auditer-thales-q9-parent.cjs
       - name: Tester la vraie connexion Parent en lecture seule
         if: steps.verify.outputs.configured == 'true'
         env:
