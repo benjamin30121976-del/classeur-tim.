@@ -3,6 +3,16 @@ on:
   pull_request:
     paths:
       - 'outils/auditer-pdf-reels-parent.cjs'
+      - 'outils/auditer-affichage-auto-parent.cjs'
+      - 'tools/test/documents-inline-20261118.test.mjs'
+      - 'physique-chimie-inline-pdf.js'
+      - 'tim-inline-ent-documents.js'
+      - 'francais-documents.js'
+      - 'anglais-documents.js'
+      - 'svt-documents.js'
+      - 'histoire-geographie-documents.js'
+      - 'maths-parcours.js'
+      - 'espagnol-ent-exact.js'
       - '.github/workflows/audit-pdf-reels-parent.yml'
   push:
     branches: [main]
@@ -15,7 +25,7 @@ permissions:
 jobs:
   pdf-lecture-seule:
     runs-on: ubuntu-latest
-    timeout-minutes: 12
+    timeout-minutes: 18
     env:
       TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
       TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
@@ -25,6 +35,19 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Vérifier syntaxe des sept matières et affichage sans clic
+        run: |
+          node --check physique-chimie-inline-pdf.js
+          node --check tim-inline-ent-documents.js
+          node --check francais-documents.js
+          node --check anglais-documents.js
+          node --check svt-documents.js
+          node --check histoire-geographie-documents.js
+          node --check maths-parcours.js
+          node --check espagnol-ent-exact.js
+          node --check outils/auditer-affichage-auto-parent.cjs
+          node --check outils/auditer-pdf-reels-parent.cjs
+          node --test tools/test/documents-inline-20261118.test.mjs
       - name: Verifier le programme de test
         run: node --check outils/auditer-pdf-reels-parent.cjs
       - name: Verifier l'acces Parent sans afficher les identifiants
@@ -43,3 +66,7 @@ jobs:
         env:
           NODE_PATH: /tmp/tim-pdf-audit/node_modules
         run: node outils/auditer-pdf-reels-parent.cjs
+      - name: Rendre les originaux dans le compte Parent avec code prepare et Chromium
+        env:
+          NODE_PATH: /tmp/tim-pdf-audit/node_modules
+        run: node outils/auditer-affichage-auto-parent.cjs
