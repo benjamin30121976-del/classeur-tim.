@@ -39,7 +39,22 @@
       "type": "click",
       "selector": "#matieres-content details.tim-es-lesson:has-text('Songs rooted in rebellion') button:has-text('Entraînement')",
       "name": "ouvrir-entrainement-anglais-17nov"
+    },
+    {
+      "type": "nav",
+      "page": "home",
+      "name": "retour-accueil-apres-xp"
+    },
+    {
+      "type": "click",
+      "selector": "button.reward-open",
+      "name": "ouvrir-mes-recompenses-apres-xp"
+    },
+    {
+      "type": "click",
+      "selector": "#rewards-dialog .rewards-details:has-text('Devoirs, entraînements et bonus') > summary",
+      "name": "voir-bareme-bonus-devoirs"
     }
   ],
-  "note": "Contrôle du site publié après intégration des 11 nouveaux exercices ENT : leçon anglaise du 17 novembre, BIS et onglet Entraînement. Aucun questionnaire validé, aucune écriture et aucun XP."
+  "note": "Audit du classeur réellement publié : vérifier les récompenses et le barème des Bonus devoirs sur mobile et ordinateur, sans écriture ni tentative. Les contrôles pédagogiques existants restent présents."
 }
