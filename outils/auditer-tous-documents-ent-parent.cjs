@@ -231,11 +231,19 @@ async function session(browser,device,viewport){
      },{key,file});
      const viewer=page.locator('#'+key+' .pc-inline-full-document');
      await viewer.scrollIntoViewIfNeeded({timeout:15000});
-     await viewer.locator('.pc-pdf-page').first().waitFor({state:'attached',timeout:25000});
-     await viewer.locator('.pc-pdf-page').last().scrollIntoViewIfNeeded({timeout:15000});
+     const first=viewer.locator('.pc-pdf-page').first();
+     await first.waitFor({state:'attached',timeout:25000});
+     await first.scrollIntoViewIfNeeded({timeout:15000});
      await page.waitForFunction(key=>{
-      const nodes=document.getElementById(key)?.querySelectorAll('.pc-pdf-page canvas');
-      const blocks=document.getElementById(key)?.querySelectorAll('.pc-pdf-page');return !!nodes?.length&&blocks[0]?.dataset.rendered==='1'&&blocks[blocks.length-1]?.dataset.rendered==='1';
+      const first=document.getElementById(key)?.querySelector('.pc-pdf-page');
+      return first?.dataset.rendered==='1'&&first.querySelector('canvas')?.width>0;
+     },key,{timeout:25000});
+     const last=viewer.locator('.pc-pdf-page').last();
+     await last.scrollIntoViewIfNeeded({timeout:15000});
+     await page.waitForFunction(key=>{
+      const blocks=document.getElementById(key)?.querySelectorAll('.pc-pdf-page');
+      const last=blocks?.[blocks.length-1];
+      return last?.dataset.rendered==='1'&&last.querySelector('canvas')?.width>0;
      },key,{timeout:25000});
      success++;
     }catch(e){failed++;report.errors.push('Lecture '+subject+': '+safeErr(e));}
