@@ -147,7 +147,7 @@ async function loadCourseAdditions(content){
 async function publishCoursePack(pack){
  if(activeUser?.uid!==PARENT_UID)throw Error('Réservé au parent.');
  const entries=[...(pack.lessons||[]).map(v=>['lessons',v]),...(pack.exercises||[]).map(v=>['exercises',v])];
- if(!entries.length || entries.length>30)throw Error('Ajouter entre 1 et 30 contenus par lot.');
+ if(!entries.length || entries.length>120)throw Error('Ajouter entre 1 et 120 contenus par lot.');
  const seen=new Set();
  const ids=new Set(window.__TIM_DATA.lessons.concat(window.__TIM_DATA.exercises).map(x=>x.id));
  for(const [type,v] of entries){
@@ -165,6 +165,19 @@ async function publishCoursePack(pack){
    v.questions.some(q=>!['mc','text'].includes(q.type)||typeof q.why!=='string'||!q.why.trim()||
     (q.type==='mc'&&(!Array.isArray(q.options)||q.options.length!==4||!Number.isInteger(Number(q.right))||Number(q.right)<0||Number(q.right)>3)))
   ))throw Error('Défi bonus : 10 à 20 questions avec bonne réponse et explication pour chacune.');
+  if(type==='exercises'&&(v.kind==='training'||v.homeworkBonus===true)){
+    if(v.questions.length!==10)throw Error('Dix questions obligatoires : '+v.id);
+    for(const [index,q] of v.questions.entries()){
+      if(!String(q.why||'').trim()||String(q.why).trim().length<30)
+        throw Error('Correction pédagogique insuffisante : '+v.id+' Q'+(index+1));
+      if(q.type==='mc'&&(!Array.isArray(q.options)||q.options.length!==4||
+          new Set(q.options.map(x=>String(x).trim().toLowerCase())).size!==4||
+          !Number.isInteger(q.right)||q.right<0||q.right>3))
+        throw Error('QCM invalide ou sans bonne réponse : '+v.id+' Q'+(index+1));
+      if(q.type==='text'&&!String(q.right||'').trim())
+        throw Error('Réponse écrite manquante : '+v.id+' Q'+(index+1));
+    }
+  }
   seen.add(v.id);
  }
  const supportedLessons=new Set([...window.__TIM_DATA.lessons.map(x=>x.id),...(pack.lessons||[]).map(x=>x.id)]);
@@ -188,6 +201,52 @@ async function publishCoursePack(pack){
 
 // V16 : le parent peut corriger un cours existant sans republier Netlify.
 // Les blocs, identifiants et références d'exercices ne sont pas réinitialisés.
+// Publication des échéances ENT dans le calendrier déjà lu par « À venir ».
+// Jamais d'écriture dans les tentatives, XP ou copies de Tim.
+async function publishEntHomeworks(homework){
+ if(activeUser?.uid!==PARENT_UID)throw Error('Compte Parent requis.');
+ if(!Array.isArray(homework)||homework.length>150)throw Error('Lot de devoirs ENT invalide.');
+ const subjects=new Set(['Espagnol','Mathématiques','Physique-chimie',
+  'Anglais','SVT','Histoire-géographie','Français']);
+ const normalized=homework.map(h=>{
+  if(!h||!String(h.entId||'').trim()||!subjects.has(h.subject)||
+     !/^(?:20\d\d)-\d\d-\d\d$/.test(String(h.due||''))||
+     !String(h.title||'').trim()||String(h.title).length>200)
+    throw Error('Devoir ENT invalide ou sans échéance.');
+  return {entId:String(h.entId),id:String(h.entId),subject:h.subject,
+   due:h.due,title:String(h.title),content:String(h.content||'').slice(0,2500),
+   attachments:(h.attachments||[]).map(x=>String(x)).slice(0,30)};
+ });
+ if(!normalized.length)return 0;
+ const ref=doc(db,'content','main');
+ const changed=await runTransaction(db,async tx=>{
+  const snap=await tx.get(ref);
+  if(!snap.exists())throw Error('Classeur principal introuvable.');
+  const old=decodeFromFirestore(snap.data());
+  const metadata={...(old.metadata||{})};
+  const previous=Array.isArray(metadata.timEntHomework)?metadata.timEntHomework:[];
+  const known=new Map(previous.map(x=>[String(x.entId||x.id),x]));
+  let count=0;
+  for(const h of normalized){
+   const prior=known.get(h.entId);
+   if(prior){
+    if(prior.due!==h.due||prior.title!==h.title||prior.subject!==h.subject)
+     throw Error('Devoir ENT modifié : contrôler avant mise à jour '+h.entId);
+    continue;
+   }
+   known.set(h.entId,h);count++;
+  }
+  if(!count)return 0;
+  metadata.timEntHomework=[...known.values()].sort((a,b)=>a.due.localeCompare(b.due));
+  const updated={...old,metadata};
+  const bytes=new TextEncoder().encode(JSON.stringify(updated)).length;
+  if(bytes>850000)throw Error('Calendrier ENT trop volumineux : lot non publié.');
+  tx.set(ref,encodeForFirestore(updated));
+  return count;
+ });
+ return changed;
+}
+
 async function saveEditableLesson(lesson){
  if(activeUser?.uid!==PARENT_UID)throw Error('Réservé au parent.');
  if(!lesson||typeof lesson.id!=='string'||!/^[A-Za-z][A-Za-z0-9_-]{1,35}$/.test(lesson.id))throw Error('Référence de cours invalide.');
@@ -1343,6 +1402,7 @@ async function startSession(user){
   },
   refresh:async()=>fetchAttempts(window.__TIM_DATA),
   publish:publishCoursePack,
+  publishEntHomeworks,
   saveLesson:saveEditableLesson,
   attachments:makeAttachmentBridge(db,()=>activeUser,PARENT_UID,TIM_UID),
   saveSpanishEnt,
