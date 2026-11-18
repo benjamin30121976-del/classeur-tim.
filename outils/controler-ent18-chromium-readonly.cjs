@@ -22,7 +22,7 @@ const {chromium}=require('playwright');
   assert.equal(await page.locator('[data-ent-id="10099~6400507"]').count(),1);
   assert.equal(await page.locator('#tim-ent-18nov-private-import').count(),1);
   await page.locator('[data-ent-id="10099~6400507"] summary').first().click();
-  assert.equal(await page.getByText('1 · Leçon ENT — Mme Gonzalez').count(),1);
+  await page.getByText('1 · Leçon ENT — Mme Gonzalez').waitFor({state:'visible'});
   await page.getByRole('button',{name:'Leçon BIS',exact:true}).click();
   assert.equal(await page.locator('[data-ent-id="10099~6400507"] table tr').count(),7);
   await page.getByRole('button',{name:"Je n’ai pas compris",exact:true}).click();
@@ -32,7 +32,7 @@ const {chromium}=require('playwright');
   await page.getByRole('button',{name:'Entraînement',exact:true}).click();
   assert.equal(await page.locator('[data-ent-id="10099~6400507"] [data-es-training-id]').count(),3);
   await page.locator('[data-es-training-id="ESE_L17_01"]').click();
-  assert.equal(await page.getByText(/Questionnaire de 10 questions/).count(),1);
+  await page.getByText(/Questionnaire de 10 questions/).waitFor({state:'visible'});
   const fr=await page.evaluate(()=>({
     count:window.TIM_FR_PACK.lessons.length,
     id:window.TIM_FR_PACK.lessons[0]?.entId,
