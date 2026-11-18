@@ -66,6 +66,11 @@ function checkPack(pack,manifest,existing={lessons:[],exercises:[]}){
    already.push(ex.id);
   }
  }
+ const dailyTarget=Number(manifest.dailyTrainingRequired||0);
+ if(!Number.isInteger(dailyTarget)||dailyTarget<0||dailyTarget>5)
+   fail('Nombre d’entraînements quotidiens invalide.');
+ const dailyCount=exercises.filter(e=>e.kind==='training'&&e.practiceRole==='daily-review').length;
+ if(dailyCount<dailyTarget)fail('Entraînements quotidiens manquants : '+dailyCount+'/'+dailyTarget);
  const hIds=homework.map(h=>String(h.entId));
  if(!unique(hIds))fail('Devoir ENT dupliqué.');
  for(const h of homework){
