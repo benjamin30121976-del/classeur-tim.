@@ -1,0 +1,142 @@
+{
+  "lessons": [],
+  "exercises": [
+    {
+      "id": "BD1811_PC01",
+      "subject": "Physique-chimie",
+      "title": "19/11 — Contrôle n°2 : réactions et méthodes",
+      "lesson": "PC_BIS07",
+      "category": "bonus",
+      "homeworkBonus": true,
+      "homeworkDue": "2026-11-19",
+      "linkedLessons": [
+        "PC_BIS04",
+        "PC_BIS05",
+        "PC_BIS06",
+        "PC_BIS07"
+      ],
+      "linkedHomework": [],
+      "originalSourceStatus": "L’ENT demande de réviser pour le contrôle n°2 du 19/11 mais ne donne pas le programme précis. Questionnaire pédagogique inédit, non officiel.",
+      "level": "3e D · Bonus devoirs · Contrôle n°2",
+      "description": "10 questions, une seule tentative, correction expliquée après validation. Barème des Bonus devoirs : 10/10 = +2 XP ; 6 à 9/10 = +1 XP ; 0 à 5/10 = 0 XP. Maximum de 3 XP bonus par jour.",
+      "instructions": "Réponds sans regarder le corrigé. Pour les réponses écrites, note la formule ou le nombre demandé. Explique la démarche au brouillon en comptant les atomes et en distinguant réactifs et produits.",
+      "questions": [
+        {
+          "type": "mc",
+          "q": "Lors d’une réaction chimique, comment appelle-t-on les substances présentes au départ ?",
+          "options": [
+            "Les produits",
+            "Les réactifs",
+            "Les précipités",
+            "Les coefficients"
+          ],
+          "right": 1,
+          "why": "Les réactifs sont à gauche de la flèche ; les produits sont obtenus à droite après la réaction.",
+          "skill": "Réactifs et produits · PC_BIS06"
+        },
+        {
+          "type": "mc",
+          "q": "Pendant une expérience encadrée en classe, un métal réagit avec un acide et des bulles apparaissent. Que prouve cette observation, à elle seule ?",
+          "options": [
+            "Un gaz se forme, sans qu’on sache encore lequel",
+            "Le gaz est forcément du dioxygène",
+            "Aucun produit nouveau ne s’est formé",
+            "Le métal s’est transformé en eau"
+          ],
+          "right": 0,
+          "why": "Des bulles indiquent un dégagement de gaz, mais ne suffisent pas à identifier le gaz. Il faut un test adapté.",
+          "skill": "Observer une réaction · PC_BIS06"
+        },
+        {
+          "type": "text",
+          "q": "Dans Fe + 2 H⁺ → Fe²⁺ + H₂, écris la formule du gaz formé (avec un chiffre 2 normal au clavier).",
+          "right": "H2",
+          "also": [
+            "H₂"
+          ],
+          "why": "Le produit gazeux est le dihydrogène H₂. Les réactifs Fe et H⁺ sont à gauche et les produits Fe²⁺ et H₂ sont à droite.",
+          "skill": "Lire une équation · PC_BIS06"
+        },
+        {
+          "type": "text",
+          "q": "Dans 2 H₂O, combien d’atomes d’hydrogène y a-t-il au total ? Réponds par un nombre.",
+          "right": "4",
+          "why": "Deux molécules H₂O comportent chacune deux atomes H : 2 × 2 = 4 atomes d’hydrogène.",
+          "skill": "Compter les atomes · PC_BIS07"
+        },
+        {
+          "type": "mc",
+          "q": "Quelle équation de formation de l’eau est équilibrée ?",
+          "options": [
+            "H₂ + O₂ → H₂O",
+            "2 H₂ + O₂ → 2 H₂O",
+            "H₂ + 2 O₂ → H₂O",
+            "2 H₂ + 2 O₂ → 2 H₂O"
+          ],
+          "right": 1,
+          "why": "2 H₂ + O₂ → 2 H₂O comporte quatre H et deux O de chaque côté. Les autres équations n’ont pas les mêmes nombres d’atomes.",
+          "skill": "Équilibrer une équation · PC_BIS07"
+        },
+        {
+          "type": "text",
+          "q": "Complète le nombre devant H₂ : … H₂ + O₂ → 2 H₂O. Écris seulement ce coefficient.",
+          "right": "2",
+          "why": "À droite, 2 H₂O contient quatre H. Il faut donc 2 molécules H₂ à gauche, soit le coefficient 2.",
+          "skill": "Coefficients · PC_BIS07"
+        },
+        {
+          "type": "mc",
+          "q": "Pour équilibrer une équation chimique, que peut-on modifier ?",
+          "options": [
+            "Les indices à l’intérieur des formules",
+            "Le symbole des éléments",
+            "Les coefficients placés devant les formules",
+            "Le nombre d’éléments chimiques en supprimant des atomes"
+          ],
+          "right": 2,
+          "why": "On change les coefficients, jamais les indices. Transformer H₂O en H₂O₂ changerait la nature de la substance.",
+          "skill": "Méthode d’équilibrage · PC_BIS07"
+        },
+        {
+          "type": "mc",
+          "q": "Le professeur ajoute de la soude à une solution et observe un précipité bleu. Quel ion la leçon associe-t-elle à ce test ?",
+          "options": [
+            "L’ion chlorure Cl⁻",
+            "L’ion cuivre Cu²⁺",
+            "L’ion hydrogène H⁺",
+            "Aucun ion"
+          ],
+          "right": 1,
+          "why": "Avec la soude, un précipité bleu est un indice de présence d’ions cuivre Cu²⁺.",
+          "skill": "Identifier un ion · PC_BIS05"
+        },
+        {
+          "type": "mc",
+          "q": "Avec du nitrate d’argent, un précipité blanc apparaît. Quel ion recherche-t-on ?",
+          "options": [
+            "L’ion chlorure Cl⁻",
+            "L’ion cuivre Cu²⁺",
+            "L’ion fer Fe²⁺",
+            "L’ion hydrogène H⁺"
+          ],
+          "right": 0,
+          "why": "Avec le nitrate d’argent, un précipité blanc est un indice de présence d’ions chlorure Cl⁻.",
+          "skill": "Identifier un ion · PC_BIS05"
+        },
+        {
+          "type": "mc",
+          "q": "Dans un graphique de température en fonction du temps, quels axes utiliser ?",
+          "options": [
+            "Temps (min) à l’horizontale ; température (°C) à la verticale",
+            "Température (°C) à l’horizontale ; temps (min) à la verticale",
+            "Toutes les mesures sur l’axe horizontal",
+            "Des axes sans noms ni unités"
+          ],
+          "right": 0,
+          "why": "Le temps se place sur l’axe horizontal (abscisses), la température sur l’axe vertical (ordonnées). Les unités doivent figurer sur les axes.",
+          "skill": "Graphiques · PC_BIS04"
+        }
+      ]
+    }
+  ]
+}
