@@ -91,21 +91,26 @@ async function inspect(browser,role,device,report) {
     const stats=await page.evaluate(()=>({
       lessons:window.__TIM_DATA?.lessons?.length||0,
       exercises:window.__TIM_DATA?.exercises?.length||0,
-      subjects:new Set((window.__TIM_DATA?.lessons||[]).map(x=>x.subject||'Espagnol')).size,
+      dataSubjectCount:new Set((window.__TIM_DATA?.lessons||[]).map(x=>x.subject||'Espagnol')).size,
       guestFallback:window.__TIM_READONLY_FALLBACK===true,
       parentMenu:[...document.querySelectorAll('[data-nav="parent"]')].some(el=>!el.hidden),
-      xp:!!document.querySelector('#xp-header')
+      xp:!!document.querySelector('#xp-header'),
+      challengePanel:!!document.querySelector('#home-content .daily-loup-panel'),
+      weekendPanels:(document.querySelector('#home-content')?.innerText||'').toLowerCase().includes('samedi')&&
+        (document.querySelector('#home-content')?.innerText||'').toLowerCase().includes('dimanche')
     }));
     report.devices.push({role:role.id,device:device.id,authenticated,...stats});
     check(report,prefix+' : cours et exercices',stats.lessons>0&&stats.exercises>0,
       stats.lessons+' lecons, '+stats.exercises+' exercices');
-    check(report,prefix+' : sept matieres',stats.subjects>=7,stats.subjects+' matieres');
     check(report,prefix+' : menu du bon compte',stats.parentMenu===role.parent);
     check(report,prefix+' : jauge XP visible',stats.xp);
+    check(report,prefix+' : espace defi quotidien',stats.challengePanel);
+    // Le moteur d'exercices et les parcours de matieres sont separés.
+    // Le nombre de matieres dans __TIM_DATA n'est donc PAS un compteur UI.
     if(!role.parent) check(report,prefix+' : donnees privees, pas secours Invite',!stats.guestFallback);
     const pages=[
       {id:'home',file:'accueil'}, {id:'matieres',file:'matieres'},
-      {id:'cours',file:'cours'}, {id:'exercices',file:'exercices'}
+      {id:'prochaines',file:'missions-a-venir'}, {id:'exercices',file:'exercices'}
     ];
     if(role.parent)pages.push({id:'parent',file:'espace-parent'});
     for(const dest of pages){
@@ -123,6 +128,33 @@ async function inspect(browser,role,device,report) {
         try{await capture(page,role.id+'-'+device.id+'-'+dest.file);}
         catch{check(report,prefix+' : capture '+dest.id,false,'capture indisponible');}
       }
+    }
+    // Les cours se trouvent dans les tuiles Matières : aucun bouton
+    // de navigation global "cours" n'existe dans la version actuelle.
+    await page.locator('[data-nav="matieres"]:visible').first().click({timeout:12000});
+    const required=['Espagnol','Mathématiques','Physique-chimie','Anglais',
+      'Français','Histoire-géographie','SVT'];
+    const matterCards=await page.locator('#matieres-content .matter-card').evaluateAll(buttons=>
+      buttons.map(b=>({name:b.querySelector('strong')?.textContent?.trim()||'',enabled:!b.disabled})));
+    const core=required.map(name=>({name,card:matterCards.find(c=>c.name===name)}));
+    const available=core.filter(x=>x.card&&x.card.enabled);
+    report.devices.at(-1).matterCards=matterCards.length;
+    report.devices.at(-1).coreSubjectsAvailable=available.length;
+    check(report,prefix+' : sept matieres visibles et accessibles',available.length===7,
+      available.length+'/7 matieres principales');
+    for(const {name} of available){
+      await page.locator('#matieres-content .matter-card').filter({has:page.locator('strong', {hasText:name})}).first().click({timeout:12000});
+      await page.waitForTimeout(name==='Espagnol'?850:220);
+      const display=await page.locator('#matieres-content').evaluate(node=>({
+        textLength:(node.innerText||'').trim().length,
+        controls:node.querySelectorAll('button,details,summary,a').length,
+        hasError:/\bindisponible\s*:/i.test((node.innerText||'').slice(0,500))
+      }));
+      check(report,prefix+' : presentation '+name,
+        display.textLength>=45 && display.controls>=1 && !display.hasError,
+        'contenu et navigation visibles');
+      // Retour uniquement par navigation : aucune réponse ou correction soumise.
+      await page.locator('[data-nav="matieres"]:visible').first().click({timeout:12000});
     }
     // Ne jamais cliquer sur un bouton Commencer, Valider, Corriger ou Publier.
     check(report,prefix+' : aucune ecriture',blocked.length===0,
