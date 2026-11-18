@@ -38,12 +38,6 @@ const forms=[
  ['vosotros','conocéis','pedís','salís','ponéis'],
  ['ellos / ellas','conocen','piden','salen','ponen']
 ];
-const tasks=[
- ['Conocer, yo','conozco'],['Pedir, yo','pido'],['Salir, yo','salgo'],['Poner, yo','pongo'],
- ['Conocer, nosotros','conocemos'],['Pedir, vosotros','pedís'],['Salir, ellos','salen'],['Poner, tú','pones'],
- ['Traduis : « Nunca tengo clase el sábado »','Je n’ai jamais cours le samedi'],
- ['Complète : « No empiezo en septiembre ___ en abril »','sino']
-];
 function renderDocs(host){
  const api=window.__TIM_BRIDGE?.attachments;host.replaceChildren();
  if(window.__TIM_GUEST||!api?.list){add(host,'p','PDF du professeur : connexion Parent ou Tim nécessaire.');return;}
@@ -101,15 +95,56 @@ function render18(){
    add(pane,'p','La correction du 18/11 et la liste 2 figurent dans les PDF originaux de la leçon ENT.');
    const slot=E('section');pane.append(slot);renderDocs(slot);
   }else{
-   add(pane,'h3','5 · Préparation écrite — dix questions');
-   add(pane,'p','Brouillon pédagogique pour réviser. Les réponses sont affichées à la demande. Aucun enregistrement, aucune note ni XP : ce module ne remplace pas les exercices à tentative unique du classeur.');
-   tasks.forEach(([q,a],i)=>{
-    const d=E('details');d.style.cssText='border:1px solid #d5e0eb;padding:8px;margin:7px 0';
-    d.append(E('summary','Question '+(i+1)+' : '+q),E('p','Réponse attendue : '+a));pane.append(d);
-   });
+   add(pane,'h3','5 · Entraînement — trois exercices de dix questions');
+   add(pane,'p','QCM, phrases à compléter, écriture et conjugaison. Une seule tentative pour Tim ; correction immédiate. Le Parent peut essayer sans enregistrer de note ni de XP.');
+   const module=window.TIM_SPANISH_SIMPLIFIED,bridge=window.__TIM_BRIDGE;
+   if(!module?.renderQuestions||!module?.drawCorrection||!bridge?.spanishEntTrainingTask||window.__TIM_GUEST){
+    add(pane,'p','Correcteur sécurisé indisponible : aucune tentative ne peut être lancée.');return;
+   }
+   const actions=E('div');actions.style.cssText='display:grid;gap:8px;margin:12px 0';
+   const work=E('section');pane.append(actions,work);
+   const ids=['ESE_L17_01','ESE_L17_02','ESE_L17_03'];
+   const titles=['Je comprends les mots','Je complète les phrases','Je conjugue et j’écris'];
+   for(let i=0;i<ids.length;i++){
+    const id=ids[i],button=E('button','Exercice '+(i+1)+' — '+titles[i]);
+    button.type='button';button.dataset.esTrainingId=id;button.className='plain';
+    button.style.cssText='text-align:left;min-height:45px;padding:10px;margin:3px 0;white-space:normal';
+    button.onclick=async()=>{
+     work.replaceChildren(E('p','Ouverture sécurisée de l’exercice…'));
+     const back=()=>open('bis'),refresh=async()=>{};
+     try{
+      const data=await bridge.spanishEntTrainingTask(id);
+      if(!data?.task||data.task.questions?.length!==10)throw Error('Banque de dix questions indisponible');
+      if(data.completed&&!window.__TIM_PARENT){
+       const saved=await bridge.spanishEntTrainingProgress(id);
+       if(!saved?.attempt)throw Error('Copie déjà enregistrée mais non disponible ; deuxième tentative interdite');
+       module.drawCorrection(work,saved.attempt,17,back);return;
+      }
+      if(data.completed&&window.__TIM_PARENT){
+       const details=E('details');details.append(E('summary','Voir la copie existante de Tim'));
+       const copy=E('div');details.append(copy);
+       details.addEventListener('toggle',async()=>{
+        if(!details.open)return;
+        try{
+         const saved=await bridge.spanishEntTrainingProgress(id);
+         if(saved?.attempt)module.drawCorrection(copy,saved.attempt,17,back);
+         else copy.textContent='Copie non disponible.';
+        }catch{copy.textContent='Consultation du résultat indisponible.';}
+       });
+       work.replaceChildren(details);
+       const trial=E('section');work.append(trial);
+       module.renderQuestions(trial,data.task,17,refresh,back);return;
+      }
+      module.renderQuestions(work,data.task,17,refresh,back);
+     }catch(error){
+      work.replaceChildren(E('p','Exercice indisponible : '+String(error?.message||error)+'. Aucune tentative ne doit être consommée.'));
+     }
+    };
+    actions.append(button);
+   }
   }
  }
- for(const [key,label] of [['ent','Leçon ENT'],['bis','Leçon BIS'],['help','Je n’ai pas compris'],['entex','Exercices ENT'],['train','Préparation écrite']]){
+ for(const [key,label] of [['ent','Leçon ENT'],['bis','Leçon BIS'],['help','Je n’ai pas compris'],['entex','Exercices ENT'],['train','Entraînement']]){
   const button=E('button',label);button.type='button';button.dataset.which=key;button.className='plain';
   button.style.cssText='margin:3px;padding:8px;min-height:44px';button.onclick=()=>open(key);tabs.append(button);
  }
@@ -133,5 +168,5 @@ if(route?.render&&!route.__nov18Wrapped){
  };
  route.__nov18Wrapped=true;
 }
-window.TIM_ENT_18NOV_LESSONS={render18,questions:tasks,assets:ASSETS};
+window.TIM_ENT_18NOV_LESSONS={render18,exerciseIds:['ESE_L17_01','ESE_L17_02','ESE_L17_03'],assets:ASSETS};
 })();
