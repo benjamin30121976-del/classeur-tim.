@@ -7,9 +7,9 @@ test('Bonus grants 0-2 XP',()=>{
  for(let score=0;score<=10;score++){const n=rawPoints({category:'bonus',score,total:10});assert.ok(n>=0&&n<=2)}
 });
 test('Manual review blocks automatic XP',()=>assert.equal(rawPoints({category:'bonus',score:2,total:2,needsReview:true}),0));
-test('Défis V18 sans plafond supplémentaire, bonus plafonné et pénalité réelle à -1',()=>{
+test('Défis V18 et bonus sans plafond quotidien ; pénalité quotidienne inchangée',()=>{
  assert.equal(cappedPoints(8,9,0,49,0,'daily'),8);
- assert.equal(cappedPoints(2,0,0,0,3,'bonus'),0);
+ assert.equal(cappedPoints(2,0,0,0,3,'bonus'),2);
  assert.equal(cappedPoints(-1,0,4,0,0,'daily'),-1);
 });
 
@@ -37,4 +37,11 @@ test('Les devoirs ENT, défis et relevés privés conservent leur barème initia
  assert.equal(rawPoints({kind:'daily',category:'challenge',score:10,total:10}),3);
  assert.equal(rawPoints({kind:'daily',category:'challenge',score:0,total:10}),-1);
  assert.equal(cappedPoints(0.5,0,0,0,0,'school'),0.5);
+});
+
+// Les bonus devoirs utilisent leur barème propre : pas les XP des leçons ou des défis.
+test('Bonus devoirs : 9–10 +3, 7–8 +2, 5–6 +1, 0–4 0',()=>{
+ const expected=[0,0,0,0,0,1,1,2,2,3,3];
+ for(let score=0;score<=10;score++)assert.equal(rawPoints({category:'bonus',homeworkBonus:true,score,total:10}),expected[score]);
+ assert.equal(rawPoints({category:'bonus',homeworkBonus:true,score:10,total:10,needsReview:true}),0);
 });
