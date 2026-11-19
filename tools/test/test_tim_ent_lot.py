@@ -397,4 +397,55 @@ class LotTest(unittest.TestCase):
             path.write_text(json.dumps({'lessons':lessons,'exercises':[school,daily]}))
             self.assertEqual(p.validate(args),1)
 
+
+    def test_zip_unique_sept_matieres_et_devoir_futur_compatible(self):
+        """Le ZIP unique Android rejoint le moteur ENT sans reconditionnement."""
+        with tempfile.TemporaryDirectory() as td:
+            d=Path(td); zpath=d/'ENT-Tim-nouveautes-20261119_020000.zip'
+            labels=[
+                ('Espagnol','ESPAGNOL LV2'),
+                ('Mathématiques','MATHÉMATIQUES'),
+                ('Physique-chimie','PHYSIQUE-CHIMIE'),
+                ('Anglais','ANGLAIS LV1'),
+                ('SVT','SVT'),
+                ('Histoire-géographie','HISTOIRE-GÉOGRAPHIE'),
+                ('Français','FRANÇAIS'),
+            ]
+            cours=[]
+            for i,(subject,label) in enumerate(labels):
+                cours.append({'data':{'id':'LESSON_'+str(i),
+                    'attributes':{'title':'Cours '+subject,'subject':{'label':label}}},
+                    'included':[{'type':'subject','attributes':{'label':label}},
+                                {'type':'lessonContent','attributes':{
+                                    'html':'<p>Le cours original du professeur sur '+subject+'</p>'}}]})
+            devoirs=[{'data':{'id':'HOMEWORK_UNLINKED','attributes':{
+                'title':'Devoir du 23 novembre',
+                'subject':{'label':'MATHÉMATIQUES'},'dueDate':'2026-11-23',
+                'html':'Faire les exercices demandés par le professeur'}},
+                'included':[{'type':'subject','attributes':{'label':'MATHÉMATIQUES'}},
+                    {'type':'attachment','id':'PDF-1','attributes':{'name':'3D.pdf'}}]}]
+            with zipfile.ZipFile(zpath,'w',zipfile.ZIP_DEFLATED) as z:
+                for name,data in [
+                    ('cours_toutes_matieres_ENT_originaux.json',cours),
+                    ('travaux_toutes_matieres_ENT_originaux.json',devoirs),
+                    ('dates_seances.json',{'LESSON_'+str(i):'2026-11-19' for i in range(7)}),
+                    ('index_fiches_toutes_matieres.json',[{
+                        'id':'PDF-1','nom_ENT':'3D.pdf',
+                        'nom_dans_archive':'pieces/PDF-1_3D.pdf','present':True}]),
+                    ('rapport_collecte_en_ligne.json',{'matiere':'SEPT MATIERES',
+                        'cours_dans_le_zip':7,'devoirs_dans_le_zip':1})]:
+                    z.writestr(name,json.dumps(data,ensure_ascii=False))
+                z.writestr('pieces/PDF-1_3D.pdf',b'%PDF-1.4\\nPDF de test\\n')
+            args=type('A',(),{'zips':[str(zpath)],'previous':None,
+                'out':str(d/'plan'),'date':'2026-11-19','subject':''})()
+            p.collect(args)
+            plan=json.loads((d/'plan'/'plan_pedagogique.json').read_text())
+            inventory=json.loads((d/'plan'/'ent_prive_lot.json').read_text())
+            self.assertEqual(plan['sourceIssues'],[])
+            self.assertEqual(len(plan['lessonsToPrepare']),7)
+            self.assertEqual(len(plan['dueLater']),1)
+            self.assertEqual(plan['dueLater'][0]['due'],'2026-11-23')
+            self.assertEqual({x['subject'] for x in inventory['items']
+                if x['kind']=='lesson'},{v[0] for v in labels})
+
 if __name__=='__main__':unittest.main()
