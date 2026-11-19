@@ -115,7 +115,9 @@ async function submitExercise(db,uid,payload){
  if(exercise.enabled!==true)throw new ApiFault(409,'exercise-closed');
  // Un nouveau défi ENT daté ne peut être remis qu'à son jour prévu.
  // La date est revérifiée côté serveur, pas seulement cachée dans l'interface.
- if(exercise.timEntBatch===true&&['daily','weekly','sunday'].includes(exercise.kind)){
+ // Seuls les grands défis du week-end restent verrouillés jusqu'au jour prévu.
+ // Les défis quotidiens ENT importés sont des entraînements libres dès publication.
+ if(exercise.timEntBatch===true&&['weekly','sunday'].includes(exercise.kind)){
   const today=parisDate(new Date()),dow=new Date(today+'T12:00:00Z').getUTCDay();
   const due=exercise.period===today;
   const correctDay=exercise.kind==='daily'?(dow>=1&&dow<=5):
