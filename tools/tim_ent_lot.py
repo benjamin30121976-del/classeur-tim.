@@ -535,8 +535,8 @@ def validate(args):
                 v['help']={'simple':v['help'],'steps':[],'example':str(v['examples'][0])}
             v.setdefault('chapter',v['title'])
             output['lessons'].append(v)
-        if len(output['lessons'])+len(output['exercises'])>30:
-            raise ValueError('Lot >30 contenus : découper pour respecter le moteur Parent')
+        if len(output['lessons'])+len(output['exercises'])>120:
+            raise ValueError('Lot >120 contenus : découper pour respecter le moteur Parent')
         dump(Path(args.out),output)
         print('Lot au format import Parent créé (NON PUBLIÉ) : '+str(args.out))
     print('Ne prouve PAS exactitude pédagogique, publication, XP serveur, ni vue Parent/Tim. Aucune donnée en ligne écrite.')
