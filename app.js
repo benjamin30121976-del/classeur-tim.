@@ -881,6 +881,21 @@ function renderEntSpanishQuestionAids(row,ex,q){
  }
  row.append(tools,french);
 }
+function renderImportedQuestionDiagram(row,ex,q){
+ // Figure de la même question, avant et après correction ; jamais d'indice ajouté.
+ if(ex.timEntBatch!==true||!['Mathématiques','Physique-chimie','SVT'].includes(q.subject||ex.subject))return;
+ const svg=q.diagramSvg,alt=String(q.diagramAlt||'').trim();
+ if(!svg)return;
+ const safe=typeof svg==='string'&&svg.length<=25000&&alt.length>=8&&
+   window.TIM_LESSON_EDITOR?.safeSvg?.(svg)&&
+   !/<\s*(?:style|a|script|foreignObject|iframe|object|embed|video|audio|image|use|animate|set|feImage)\b/i.test(svg)&&
+   !/\b(?:href|xlink:href)\s*=|url\s*\(|@import|javascript:/i.test(svg);
+ if(!safe){row.append(notice('Figure de l’exercice indisponible : schéma non validé.'));return;}
+ const img=E('img','v16-inline-figure ent-question-figure');
+ img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+ img.alt=alt;img.loading='lazy';
+ row.append(img);
+}
 function openExercise(id,options={}){const ex=exerciseBy(id);if(!ex)return;
  // Figures ajoutées en lecture seule : les énoncés/scores Firestore restent intacts.
  const bonusPrompt=(q,i)=>window.TIM_BONUS_FIGURES?.displayPrompt?.(ex,i,q.q)||q.q;
@@ -1000,9 +1015,9 @@ if(!window.__TIM_GUEST&&!ex.kind&&!attemptFor(ex.id)){
 }
 showTaskGuide(root); // Un seul rappel court au début du bonus, pas dix répétitions.
 if(window.__TIM_GUEST){root.append(notice('Visite en lecture seule : tu peux voir les questions, mais tu ne peux ni répondre ni valider.','guest-preview'));
- for(const [i,q] of ex.questions.entries()){const row=E('div','q');row.append(E('strong','',(i+1)+'. '+bonusPrompt(q,i)));renderEntSpanishQuestionAids(row,ex,q);bonusFigure(row,i);if(q.type==='mc'){const ul=E('ul');for(const option of q.options)ul.append(E('li','',option));row.append(ul);}root.append(row);}return;}
+ for(const [i,q] of ex.questions.entries()){const row=E('div','q');row.append(E('strong','',(i+1)+'. '+bonusPrompt(q,i)));renderEntSpanishQuestionAids(row,ex,q);bonusFigure(row,i);renderImportedQuestionDiagram(row,ex,q);if(q.type==='mc'){const ul=E('ul');for(const option of q.options)ul.append(E('li','',option));row.append(ul);}root.append(row);}return;}
 const old=existing,draft=drafts()[ex.id]||[];let form=E('div','panel');let controls=[];
-ex.questions.forEach((question,i)=>{const row=E('div','q');row.append(E('div','qtitle',(i+1)+'. '+bonusPrompt(question,i)));renderEntSpanishQuestionAids(row,ex,question);bonusFigure(row,i);const rawPrevious=old?old.answers[i]?.response:draft[i];const previous=typeof rawPrevious==='string'?rawPrevious.split(' ||| ')[0]:rawPrevious;if(question.type==='mc'){let options=E('div','check-answers');question.options.forEach((option,j)=>{const label=E('label','choose');const input=E('input');input.type='radio';input.name='question-'+ex.id+'-'+i;input.value=String(j);input.checked=previous!==undefined&&String(previous)===String(j);input.disabled=!!old;input.addEventListener('change',saveDraft);label.append(input,E('span','',option));options.append(label);});row.append(options);controls.push({kind:'mc',name:'question-'+ex.id+'-'+i});}else{const input=question.type==='free'?E('textarea','answer wide'):E('input','answer');if(question.type==='text'){input.type='text';input.autocomplete='off';input.spellcheck=false;input.placeholder=ex.subject==='Mathématiques'?'Écris le résultat, par exemple 5/8 ou 12 cm':'Écris la réponse en espagnol';}else{input.rows=6;input.placeholder='Écris ta lettre ici…';}input.value=previous===undefined?'':safe(previous);input.disabled=!!old;input.addEventListener('input',saveDraft);row.append(input);if(ex.kind==='bonus-day'&&ex.subject==='Mathématiques'&&question.reasoningRequired){
+ex.questions.forEach((question,i)=>{const row=E('div','q');row.append(E('div','qtitle',(i+1)+'. '+bonusPrompt(question,i)));renderEntSpanishQuestionAids(row,ex,question);bonusFigure(row,i);renderImportedQuestionDiagram(row,ex,question);const rawPrevious=old?old.answers[i]?.response:draft[i];const previous=typeof rawPrevious==='string'?rawPrevious.split(' ||| ')[0]:rawPrevious;if(question.type==='mc'){let options=E('div','check-answers');question.options.forEach((option,j)=>{const label=E('label','choose');const input=E('input');input.type='radio';input.name='question-'+ex.id+'-'+i;input.value=String(j);input.checked=previous!==undefined&&String(previous)===String(j);input.disabled=!!old;input.addEventListener('change',saveDraft);label.append(input,E('span','',option));options.append(label);});row.append(options);controls.push({kind:'mc',name:'question-'+ex.id+'-'+i});}else{const input=question.type==='free'?E('textarea','answer wide'):E('input','answer');if(question.type==='text'){input.type='text';input.autocomplete='off';input.spellcheck=false;input.placeholder=ex.subject==='Mathématiques'?'Écris le résultat, par exemple 5/8 ou 12 cm':'Écris la réponse en espagnol';}else{input.rows=6;input.placeholder='Écris ta lettre ici…';}input.value=previous===undefined?'':safe(previous);input.disabled=!!old;input.addEventListener('input',saveDraft);row.append(input);if(ex.kind==='bonus-day'&&ex.subject==='Mathématiques'&&question.reasoningRequired){
  const detailed=question.reasoningCheck?.kind==='rectangle-perimeter-v1';
  const initial=old?String(old.answers?.[i]?.reasoning||''):String(draft[i]||'').split(' ||| ')[1]||'';
  let previousReasoning={};if(detailed){try{previousReasoning=JSON.parse(initial)||{};}catch{previousReasoning={};}}
@@ -1224,7 +1239,7 @@ function renderFeedback(ex,t,root){
  for(const [i,a] of t.answers.entries()){
   const q=ex.questions[i]||{},given=q.type==='mc'?(q.options?.[Number(a.response)]??a.response):a.response;
   const row=E('div','separated');
-  row.append(E('strong','',(i+1)+'. '+safe(correctedPrompt(i,a.question||q.q||'Question'))));correctedFigure(row,i);row.append(E('p','','Ma réponse : '+safe(given)));
+  row.append(E('strong','',(i+1)+'. '+safe(correctedPrompt(i,a.question||q.q||'Question'))));correctedFigure(row,i);renderImportedQuestionDiagram(row,ex,q);row.append(E('p','','Ma réponse : '+safe(given)));
   showWrittenMethod(row,a);
   review.append(row);
  }
@@ -1233,7 +1248,7 @@ function renderFeedback(ex,t,root){
   if(!a.neutralized&&(a.correct===true||(isBonusDay&&a.correct!==false)))continue;
   const q=ex.questions[i]||{},p=E('div','feedback');
   const given=q.type==='mc'?(q.options?.[Number(a.response)]??a.response):a.response;
-  p.append(E('strong','',(i+1)+'. '+safe(correctedPrompt(i,a.question||q.q||'Question'))));correctedFigure(p,i);p.append(E('p','','Ta réponse : '+safe(given)));
+  p.append(E('strong','',(i+1)+'. '+safe(correctedPrompt(i,a.question||q.q||'Question'))));correctedFigure(p,i);renderImportedQuestionDiagram(p,ex,q);p.append(E('p','','Ta réponse : '+safe(given)));
   showWrittenMethod(p,a);
   if(a.neutralized===true){
    p.classList.add('neutralized-correction');
