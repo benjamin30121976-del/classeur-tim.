@@ -154,7 +154,7 @@ async function publishCoursePack(pack){
   if(!v||typeof v.id!=='string'||!/^[A-Za-z][A-Za-z0-9_-]{1,35}$/.test(v.id)||typeof v.title!=='string'||!v.title.trim()||v.title.length>200)throw Error('Identifiant ou titre incorrect.');
   if(ids.has(v.id)||seen.has(v.id))throw Error('Le contenu '+v.id+' existe déjà. Aucun écrasement autorisé.');
   if(type==='lessons'&&(!Array.isArray(v.blocks)||!v.help))throw Error('Structure de leçon invalide : '+v.id);
-  if(type==='exercises'&&(!Array.isArray(v.questions)||v.questions.length<1||v.questions.length>(['bonus-day','weekly','sunday'].includes(v.kind)?20:15)||v.questions.some(q=>!['mc','text','free'].includes(q.type)||!q.q||q.right===undefined||(q.type==='free'&&q.rubric!=='letter'))))throw Error('Questions invalides : '+v.id);
+  if(type==='exercises'&&(!Array.isArray(v.questions)||v.questions.length<1||v.questions.length>(['bonus-day','weekly','sunday','school'].includes(v.kind)?20:15)||v.questions.some(q=>!['mc','text','free'].includes(q.type)||!q.q||q.right===undefined||(q.type==='free'&&q.rubric!=='letter'))))throw Error('Questions invalides : '+v.id);
   if(type==='exercises'&&!['school','bonus','training','challenge'].includes(v.category))throw Error('Catégorie exercice invalide : '+v.id+'.');
   // Autoriser le barème déjà validé des entraînements de leçon, sans le confondre avec les bonus historiques.
   if(type==='exercises'&&v.category==='training'&&(v.kind!=='training'||v.questions.length!==10||v.homeworkBonus===true))throw Error('Entraînement de leçon : 10 questions, type training et aucun marqueur bonus requis : '+v.id);
