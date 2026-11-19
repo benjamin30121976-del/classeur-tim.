@@ -256,8 +256,12 @@ def challenge_tasks(asof):
     if target.weekday()<5:
         dates.extend([{'date':target.isoformat(),'id':f'ENTD_{target:%Y%m%d}_{i:02}',
                        'kind':'daily','questionCount':10,'category':'challenge'} for i in (1,2,3)])
-    saturday=asof+dt.timedelta(days=5-asof.weekday()) if asof.weekday()<=5 else asof+dt.timedelta(days=6)
-    sunday=saturday+dt.timedelta(days=1)
+    # Les deux prochaines échéances strictement futures sont préparées ;
+    # le samedi ne remplace jamais un questionnaire déjà lancé ce samedi.
+    days_to_sat=(5-asof.weekday())%7 or 7
+    days_to_sun=(6-asof.weekday())%7 or 7
+    saturday=asof+dt.timedelta(days=days_to_sat)
+    sunday=asof+dt.timedelta(days=days_to_sun)
     dates.extend([{'date':saturday.isoformat(),'id':f'ENTW_{saturday:%Y%m%d}',
                    'kind':'weekly','questionCount':20,'category':'challenge'},
                   {'date':sunday.isoformat(),'id':f'ENTS_{sunday:%Y%m%d}',
