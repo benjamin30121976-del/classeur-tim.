@@ -155,7 +155,7 @@ async function publishCoursePack(pack){
   if(ids.has(v.id)||seen.has(v.id))throw Error('Le contenu '+v.id+' existe déjà. Aucun écrasement autorisé.');
   if(type==='lessons'&&(!Array.isArray(v.blocks)||!v.help))throw Error('Structure de leçon invalide : '+v.id);
   if(type==='exercises'&&(!Array.isArray(v.questions)||v.questions.length<1||v.questions.length>(['bonus-day','weekly','sunday'].includes(v.kind)?20:15)||v.questions.some(q=>!['mc','text','free'].includes(q.type)||!q.q||q.right===undefined||(q.type==='free'&&q.rubric!=='letter'))))throw Error('Questions invalides : '+v.id);
-  if(type==='exercises'&&!['school','bonus','training'].includes(v.category))throw Error('Catégorie exercice invalide : '+v.id+'.');
+  if(type==='exercises'&&!['school','bonus','training','challenge'].includes(v.category))throw Error('Catégorie exercice invalide : '+v.id+'.');
   // Autoriser le barème déjà validé des entraînements de leçon, sans le confondre avec les bonus historiques.
   if(type==='exercises'&&v.category==='training'&&(v.kind!=='training'||v.questions.length!==10||v.homeworkBonus===true))throw Error('Entraînement de leçon : 10 questions, type training et aucun marqueur bonus requis : '+v.id);
   // Bonus devoirs : éligibles au barème training uniquement avec le marqueur explicite et le lien ENT.
@@ -654,7 +654,7 @@ async function startSession(user){
   sunday:effectiveSunday,weekly:freshWeekly?.id||missionPlan.meta.weekly,
   dailyIds:completeDaily?todayBatch.map(e=>e.id).sort():effectiveDailyIds,daily:completeDaily?todayBatch.map(e=>e.id).sort()[0]:(effectiveDailyIds[0]||null),
   dailyBankStatus:mixedChallengePlan?(mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='Français'))?'seven-subjects':mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='Histoire-géographie'))?'six-subjects':mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='SVT'))?'five-subjects':mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='Anglais'))?'four-subjects':'three-subjects'):mixedDaily?'mixed':'classic'};
- window.__TIM_NEXT_DAILY=effectiveDailyIds[0]||null;
+ window.__TIM_NEXT_DAILY=window.__TIM_CHALLENGES.dailyIds[0]||null;
  const mixedIds=new Set((mixedChallengePlan||[]).map(ex=>ex.id));
  const retainedExercises=content.exercises.filter(x=>
   !/^DAY_20\d{6}(?:_\d{2})?$/.test(String(x.id||''))&&!mixedIds.has(x.id));
