@@ -15,7 +15,7 @@ const sample=()=> {
    blocks:[{kind:'note',body:'Le présent de conocer'}],help}
  ];
  const q={type:'mc',q:'Que signifie conocer ?',options:['connaître','venir','pouvoir','faire'],right:0,
-  why:'Le verbe espagnol conocer signifie connaître et non venir ou pouvoir.'};
+  fr:'Que signifie le verbe conocer ?',why:'Le verbe espagnol conocer signifie connaître et non venir ou pouvoir.'};
  const exercises=[
   {id:'TR_ES001',lesson:'BIS_ES001',kind:'training',category:'training',
    subject:'Espagnol',title:'Révisions',timEntBatch:true,questions:Array(10).fill(0).map(()=>({...q}))},
