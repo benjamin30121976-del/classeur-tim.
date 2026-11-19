@@ -81,14 +81,13 @@ function checkPack(pack,manifest,existing={lessons:[],exercises:[]}){
       !Array.isArray(ex.realLessons)||!ex.realLessons.length||
       new Set(ex.questions.map(q=>str(q.subject))).size<2))
    fail('Défi ENT sans date, barème ou leçons sources : '+ex.id);
-  // Bonus daté : ne pas confondre avec un défi quotidien de 3 missions ni
-  // avec un Bonus devoirs. Barème dédié, 10 questions, ouverture à la date prévue.
+  // Défis bonus libres : tous visibles dès publication et sans date d'ouverture.
+  // Un champ period éventuel est informatif et ne limite pas l'accès.
   if(ex.kind==='bonus-day'&&
-     (ex.category!=='bonus'||!DATE.test(String(ex.period||''))||
-      ex.homeworkBonus===true||ex.questions.length!==10||
+     (ex.category!=='bonus'||ex.homeworkBonus===true||ex.questions.length!==10||
       !Array.isArray(ex.realLessons)||!ex.realLessons.length||
       new Set(ex.questions.map(q=>str(q.subject))).size<2))
-   fail('Défi bonus daté : période, barème, mélange ou corrigé invalide : '+ex.id);
+   fail('Défi bonus : barème, mélange ou corrigé invalide : '+ex.id);
   if(ex.kind==='homework-bonus'&&
      (ex.homeworkBonus!==true||ex.category!=='bonus'||!DATE.test(ex.homeworkDue)||!ex.linkedHomework?.length))
    fail('Lien ENT ou échéance du bonus absent : '+ex.id);
