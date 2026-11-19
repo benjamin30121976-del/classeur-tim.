@@ -19,7 +19,7 @@ test('les nouveaux énoncés espagnols gardent la question et révèlent la trad
  assert.match(app,/french\.hidden=!french\.hidden/);
  assert.match(app,/button\('Écouter en espagnol'/);
  assert.match(app,/voice\.lang='es-ES'/);
- assert.match(importPack,/Traduction française manquante pour un énoncé espagnol/);
+ assert.match(importPack,/Traduction française manquante pour un énoncé anglais\/espagnol/);
 });
 
 test('les nouveaux exercices anglais traduisent seulement la consigne et parlent anglais',()=>{
