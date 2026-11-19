@@ -535,8 +535,8 @@ def validate(args):
             issues.append(f'{ident}: bonus devoirs sans liaison ENT, échéance ou marqueur XP correct')
         for i,q in enumerate(questions,1):
             prefix=f'{ident} Q{i}'
-            if ex.get('timEntBatch') is True and (q.get('subject') or ex.get('subject'))=='Espagnol' and not str(q.get('fr') or q.get('translationFr') or '').strip():
-                issues.append(prefix+': traduction française de l’énoncé espagnol absente')
+            if ex.get('timEntBatch') is True and (q.get('subject') or ex.get('subject')) in ('Espagnol', 'Anglais') and not str(q.get('fr') or q.get('translationFr') or '').strip():
+                issues.append(prefix+': traduction française de l’énoncé anglais/espagnol absente')
             if not str(q.get('q','')).strip():issues.append(prefix+': énoncé absent')
             if len(str(q.get('why','')).strip())<30:issues.append(prefix+': correction insuffisamment expliquée')
             if q.get('type')=='mc':
