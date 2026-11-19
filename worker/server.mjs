@@ -118,7 +118,7 @@ async function submitExercise(db,uid,payload){
   const correctDay=exercise.kind==='daily'?(dow>=1&&dow<=5):
    exercise.kind==='weekly'?dow===6:dow===0;
   const count=exercise.kind==='daily'?10:20;
-  if(!due||!correctDay||String(exercise.publishedAt||'').slice(0,10)>=today||exercise.category!=='challenge'||
+  if(!due||!correctDay||!(exercise.publishedAt&&parisDate(new Date(exercise.publishedAt))<today)||exercise.category!=='challenge'||
       exercise.questions?.length!==count)
    throw new ApiFault(409,'mission-not-open');
  }
