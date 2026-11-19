@@ -45,6 +45,11 @@ test('Le lot cours/BIS, bonus et PDF correctement reliés passe le précontrôle
  assert.equal(report.homework,1);
  assert.equal(report.documents,1);
 });
+test('Tout énoncé espagnol ENT exige une traduction française',()=>{
+ const api=load(),s=sample();
+ delete s.pack.exercises[0].questions[0].fr;
+ assert.throws(()=>api.checkPack(s.pack,s.manifest),/Traduction française manquante/);
+});
 test('Blocage si un PDF est rattaché à une mauvaise leçon',()=>{
  const api=load(),s=sample();
  s.manifest.documents[0].targetId='FR_FAUX';
