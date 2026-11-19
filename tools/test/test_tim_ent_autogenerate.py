@@ -126,6 +126,14 @@ class AutoGenerationTests(unittest.TestCase):
             self.assertTrue((root / "resultat" / "ETAT_RELECTURE_OBLIGATOIRE.txt").exists())
             self.assertFalse(any(p.name == "session.json" for p in root.rglob("*")))
             self.assertFalse(any("publicationReady" in str(x) for x in pack["lessons"]))
+            saved_dir = root / "resultat" / "sources_privees"
+            previous_inv = json.loads((saved_dir / "ent_prive_lot.json").read_text())
+            previous_plan = json.loads((saved_dir / "plan_pedagogique.json").read_text())
+            second_ai = FauxModele()
+            same = auto.prepare(previous_inv, previous_plan, second_ai, existing=pack)
+            self.assertEqual(second_ai.count, 0, "Un lot identique ne doit pas relancer l'IA")
+            self.assertEqual({x["id"] for x in same["exercises"]},
+                             {x["id"] for x in pack["exercises"]})
 
     def test_defi_melange_avec_reference_deja_publiee(self):
         nouveau = source("N_MA", "Mathématiques", "lesson")
