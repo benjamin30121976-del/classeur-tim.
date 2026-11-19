@@ -1814,8 +1814,10 @@ function renderHome(){
  const hero=E('section','mission-hero');
  const copy=E('div','mission-copy');copy.append(E('div','shout','RÉVISIONS DES DEVOIRS'),E('h1','','MES DEVOIRS EN BONUS'),E('p','','Des exercices préparés ensemble pour réviser les devoirs. Note, correction et XP selon le barème de chaque exercice.'));
  copy.append(button('Ouvrir mes exercices bonus →',()=>{exerciseSubject='';exerciseGroup='';exerciseMode='homework-bonus';page('exercices');},'lobo-go'));hero.append(copy);const wolf=E('img','mission-wolf');wolf.src='./assets/loup-accueil.webp';wolf.alt='Le loup jongleur du classeur';hero.append(wolf);// Défis quotidiens rétablis avec les images originales du parent.
- root.append(hero);
+ // Tim voit d'abord les devoirs à venir, puis les Bonus devoirs.
+ // Ne modifie ni les défis, ni les règles de correction, ni les XP.
  window.TIM_NEXT_MISSIONS?.renderTeaser(root,DATA,()=>page('prochaines'));
+ root.append(hero);
  if(window.__TIM_READONLY_FALLBACK)
   root.append(notice('Accès provisoire : le serveur des cours est indisponible. Les leçons et les défis sont consultables, mais la validation des réponses et les XP sont suspendus sur cet appareil. Actualise la page pour rétablir le compte complet.'));
  else if(window.__TIM_ADDONS_INCOMPLETE)
