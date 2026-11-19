@@ -5,6 +5,7 @@ on:
     paths:
       - 'boot.js'
       - 'app.js'
+      - 'index.html'
       - 'tim-ent-batch-import.js'
       - 'tools/test/tim-ent-batch-validation.test.cjs'
       - 'tools/test/diagnostic-lecture-seule.test.cjs'
@@ -75,6 +76,7 @@ jobs:
           node --test tools/test/school-homework-retry-ui.test.mjs
           node --test tools/test/tim-private-course-availability.test.mjs
           node --test worker/test/course-fallback.test.mjs worker/test/firestore-quota.test.mjs worker/test/tim-course-cache.test.mjs
+          node --test worker/test/firestore-read-corrections.test.mjs
           node --test tools/test/firestore-reads-budget.test.mjs
           node --test tools/test/prochaines-missions.readonly.test.cjs
       - name: Tester les corrections, sept matières, défis et barèmes sans copie réelle
