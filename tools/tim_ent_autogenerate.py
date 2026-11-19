@@ -463,7 +463,7 @@ def run(args, provider=None):
     reviewed_file = root / "preuves_extraction_PDF.json"
     lot.dump(reviewed_file, reviewed)
     catalog = {}
-    if args.catalog:
+    if getattr(args, "catalog", None):
         catalog = json.loads(Path(args.catalog).read_text(encoding="utf-8"))
     reference_items = catalog.get("items") or []
     if not isinstance(reference_items, list):
