@@ -243,16 +243,22 @@ async function releasedCorrections(db,uid){
  const owned=attempts.filter(x=>x.data?.authorUid===uid&&schoolCorrectionIsOpen(x.data,today));
  const legacy=owned.filter(x=>!allowed.has(x.id)&&x.data?.correctionStatus==='pending-parent'&&
   !x.id.startsWith('TRH_'));
+ // Éviter de facturer deux lectures de la même copie : celles vérifiées
+ // pour le déblocage historique sont réutilisées pour le compte Tim.
+ const checkedCopies=new Map();
  const eligible=await Promise.all(legacy.map(async x=>{
   const detail=await db.get('privateAttempts/'+x.id);
+  checkedCopies.set(x.id,detail);
   // Aucun corrigé de rédaction libre non corrigée ne peut être divulgué.
   return detail?.needsReview===false&&Array.isArray(detail.answers)&&detail.answers.length>0&&
    detail.answers.every(a=>typeof a.correct==='boolean')?x.id:null;
  }));
- for(const id of eligible)if(id)allowed.add(id);
+ const eligibleSet=new Set(eligible.filter(Boolean));
+ for(const id of eligibleSet)allowed.add(id);
  const entries=await Promise.all(owned.filter(x=>allowed.has(x.id)&&
-  (x.data.correctionStatus==='released'||eligible.includes(x.id)))
-  .map(async x=>({id:x.id,details:await db.get('privateAttempts/'+x.id)})));
+  (x.data.correctionStatus==='released'||eligibleSet.has(x.id)))
+  .map(async x=>({id:x.id,details:checkedCopies.has(x.id)?
+   checkedCopies.get(x.id):await db.get('privateAttempts/'+x.id)})));
  return {corrections:entries.filter(x=>x.details).map(x=>({
   id:x.id,answers:x.details.answers||[],score:x.details.score,total:x.details.total,translationHelpCount:x.details.translationHelpCount??null
  }))};
