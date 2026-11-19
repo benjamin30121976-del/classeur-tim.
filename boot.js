@@ -169,7 +169,8 @@ async function publishCoursePack(pack){
     const expected=v.kind==='daily'?10:20;
     if(v.category!=='challenge'||v.questions.length!==expected||
        !/^(?:20\d{2})-\d{2}-\d{2}$/.test(String(v.period||''))||
-       !Array.isArray(v.realLessons)||!v.realLessons.length)
+       !Array.isArray(v.realLessons)||!v.realLessons.length||
+       new Set(v.questions.map(q=>String(q.subject||''))).size<2)
       throw Error('Défi ENT incomplet ou sans calendrier : '+v.id);
     for(const [index,q] of v.questions.entries()){
       if(!['text','mc'].includes(q.type)||!String(q.why||'').trim()||
