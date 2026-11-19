@@ -365,4 +365,36 @@ class LotTest(unittest.TestCase):
         self.assertEqual([t['date'] for t in p.challenge_tasks(p.dt.date(2026,11,28))],
                          ['2026-12-05','2026-11-29'])
 
+
+    def test_school_original_and_dated_challenge_remain_distinct_in_export(self):
+        with tempfile.TemporaryDirectory() as d:
+            d=Path(d)
+            q={'type':'mc','q':'Combien font deux et deux ?',
+               'options':['4','5','6','7'],'right':0,
+               'why':'Deux unités ajoutées à deux unités font quatre unités, soit le nombre quatre.'}
+            lessons=[{'id':'BIS_MATH_A','entId':'ENT_MATH_A','kind':'bis','timEntBatch':True,
+                'subject':'Mathématiques','title':'Addition','blocks':[{'kind':'note','body':'2 + 2 = 4'}],
+                'help':'Comprendre la somme','examples':['2 + 2 = 4']}]
+            school={'id':'SCHOOL_MATH_A','title':'Devoir original',
+                'lesson':'BIS_MATH_A','kind':'school','category':'school','subject':'Mathématiques',
+                'timEntBatch':True,'entHomeworkOriginal':True,
+                'linkedHomework':['ENT_HW_A'],'homeworkDue':'2026-11-20',
+                'questions':[dict(q),dict(q)]}
+            daily={'id':'ENTD_20261120_01','title':'Défi multi-matière',
+                'lesson':'BIS_MATH_A','kind':'daily','category':'challenge',
+                'subject':'Défis','timEntBatch':True,'period':'2026-11-20',
+                'realLessons':['BIS_MATH_A'],
+                'questions':[{**q,'subject':('Mathématiques' if i%2 else 'Physique-chimie')}
+                             for i in range(10)]}
+            path=d/'pack.json';export=d/'import.json'
+            path.write_text(json.dumps({'lessons':lessons,'exercises':[school,daily]}))
+            args=type('A',(),{'pack':str(path),'out':str(export)})()
+            self.assertEqual(p.validate(args),0)
+            saved=json.loads(export.read_text())
+            self.assertEqual([x['kind'] for x in saved['exercises']],['school','daily'])
+            self.assertEqual([x['category'] for x in saved['exercises']],['school','challenge'])
+            school['entHomeworkOriginal']=False
+            path.write_text(json.dumps({'lessons':lessons,'exercises':[school,daily]}))
+            self.assertEqual(p.validate(args),1)
+
 if __name__=='__main__':unittest.main()
