@@ -251,11 +251,14 @@ def challenge_tasks(asof):
     if asof<dt.date(2026,11,22):
         return []  # missions V18 déjà attribuées jusque-là
     dates=[]
-    # Préparer le lendemain pour éviter tout remplacement en plein jour.
+    # Préparer le prochain jour de classe, y compris le lundi lors d'une
+    # collecte du vendredi / week-end. Sans cette avance, une collecte
+    # le vendredi ne préparait aucun défi du lundi.
     target=asof+dt.timedelta(days=1)
-    if target.weekday()<5:
-        dates.extend([{'date':target.isoformat(),'id':f'ENTD_{target:%Y%m%d}_{i:02}',
-                       'kind':'daily','questionCount':10,'category':'challenge'} for i in (1,2,3)])
+    while target.weekday()>=5:
+        target+=dt.timedelta(days=1)
+    dates.extend([{'date':target.isoformat(),'id':f'ENTD_{target:%Y%m%d}_{i:02}',
+                   'kind':'daily','questionCount':10,'category':'challenge'} for i in (1,2,3)])
     # Les deux prochaines échéances strictement futures sont préparées ;
     # le samedi ne remplace jamais un questionnaire déjà lancé ce samedi.
     days_to_sat=(5-asof.weekday())%7 or 7
