@@ -21,6 +21,15 @@ function validQuestions(ex){
   return false;
  return ex.questions.every(q=>{
   if(!str(q.q)||str(q.why).length<30)return false;
+  if(q.diagramSvg!==undefined){
+   const svg=q.diagramSvg,alt=str(q.diagramAlt),subject=q.subject||ex.subject;
+   if(!['Mathématiques','Physique-chimie','SVT'].includes(subject)||
+      typeof svg!=='string'||svg.length>25000||alt.length<8||
+      !/^\s*(?:<\?xml[^>]*>\s*)?<svg[\s>]/i.test(svg)||
+      /<\s*(?:style|a|script|foreignObject|iframe|object|embed|video|audio|image|use|animate|set|feImage)\b/i.test(svg)||
+      /\bon\w+\s*=|\b(?:href|xlink:href)\s*=|url\s*\(|@import|javascript:/i.test(svg))
+    return false;
+  }
   if(q.type==='text')return Boolean(str(q.right));
   if(q.type==='mc')return Array.isArray(q.options)&&q.options.length===4&&
    unique(q.options.map(x=>str(x).toLowerCase()))&&Number.isInteger(q.right)&&q.right>=0&&q.right<4;
