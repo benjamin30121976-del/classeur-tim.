@@ -53,6 +53,8 @@ function checkPack(pack,manifest,existing={lessons:[],exercises:[]}){
  }
  for(const ex of exercises){
   if(ex.timEntBatch!==true||!str(ex.title)||!validQuestions(ex))fail('Exercice sans dix corrections pédagogiques : '+ex.id);
+  if(ex.subject==='Espagnol'&&ex.questions.some(q=>!str(q.fr||q.translationFr)))
+   fail('Traduction française manquante pour un énoncé espagnol : '+ex.id);
   if(!['training','homework-bonus'].includes(ex.kind))fail('Catégorie d’exercice non prise en charge dans ce lot : '+ex.id);
   if(ex.kind==='training'&&(ex.category!=='training'||ex.homeworkBonus===true))
    fail('Catégorie entraînement invalide : '+ex.id);
