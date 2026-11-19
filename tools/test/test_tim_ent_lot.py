@@ -498,4 +498,28 @@ class LotTest(unittest.TestCase):
         c=p.source_card({**original,'kind':'homework','due':'2026-11-20'})
         self.assertNotEqual(a['id'],c['id'])
 
+
+    def test_other_subject_does_not_block_creating_binder_sources(self):
+        with tempfile.TemporaryDirectory() as td:
+            d=Path(td)
+            docs=[
+                {'data':{'id':'MATH_01','attributes':{'title':'Mathématiques'}},
+                  'included':[{'type':'subject','attributes':{'label':'MATHÉMATIQUES'}},
+                              {'type':'lessonContent','attributes':{'html':'<p>Triangle rectangle.</p>'}}]},
+                {'data':{'id':'TECH_01','attributes':{'title':'Technologie'}},
+                  'included':[{'type':'subject','attributes':{'label':'TECHNOLOGIE'}},
+                              {'type':'lessonContent','attributes':{'html':'<p>Une roue dentée.</p>'}}]}
+            ]
+            z=d/'un-zip.zip'
+            self.make_zip(z,{'cours_toutes_matieres_ENT_originaux.json':docs})
+            args=type('A',(),{'zips':[str(z)],'previous':None,'out':str(d/'out'),
+                               'date':'2026-11-19','subject':''})()
+            p.collect(args)
+            plan=json.loads((d/'out'/'plan_pedagogique.json').read_text())
+            drafts=json.loads((d/'out'/'pack_sources_ENT_brouillon.json').read_text())
+            self.assertEqual(len(drafts['lessons']),1)
+            self.assertEqual(drafts['lessons'][0]['subject'],'Mathématiques')
+            self.assertEqual(len(plan['otherSubjectsNotImported']),1)
+            self.assertEqual(plan['sourceIssues'],[])
+
 if __name__=='__main__':unittest.main()
