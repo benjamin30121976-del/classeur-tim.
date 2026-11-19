@@ -50,6 +50,20 @@ test('Tout énoncé espagnol ENT exige une traduction française',()=>{
  delete s.pack.exercises[0].questions[0].fr;
  assert.throws(()=>api.checkPack(s.pack,s.manifest),/Traduction française manquante/);
 });
+test('Les défis ENT datés doivent contenir 10 ou 20 réponses et corrections',()=>{
+ const api=load(),s=sample();
+ const q={...s.pack.exercises[0].questions[0],subject:'Espagnol'};
+ const daily={id:'ENTD_20261124_01',title:'Défi ENT du jour',kind:'daily',
+  category:'challenge',subject:'Défis',timEntBatch:true,
+  period:'2026-11-24',realLessons:['BIS_ES001'],lesson:'BIS_ES001',
+  questions:Array.from({length:10},()=>({...q}))};
+ const weekend={...daily,id:'ENTW_20261128',kind:'weekly',
+  period:'2026-11-28',questions:Array.from({length:20},()=>({...q}))};
+ s.pack.exercises.push(daily,weekend);
+ assert.equal(api.checkPack(s.pack,s.manifest).exercises,4);
+ weekend.questions.pop();
+ assert.throws(()=>api.checkPack(s.pack,s.manifest),/corrections pédagogiques/);
+});
 test('Blocage si un PDF est rattaché à une mauvaise leçon',()=>{
  const api=load(),s=sample();
  s.manifest.documents[0].targetId='FR_FAUX';
