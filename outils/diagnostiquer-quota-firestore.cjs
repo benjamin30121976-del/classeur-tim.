@@ -17,11 +17,9 @@ function pacificMidnight(now=new Date()){
  const parts=f.formatToParts(now);const get=t=>parts.find(p=>p.type===t)?.value;
  const date=get('year')+'-'+get('month')+'-'+get('day');
  // Pacific midnight corresponds to 07:00 or 08:00 UTC (DST aware).
- let h=8,guess=new Date(date+'T08:00:00.000Z');
- const fmt=d=>f.formatToParts(d).filter(p=>['year','month','day','hour'].includes(p.type)).map(p=>p.value).join('-');
- const midnight=new Date(date+'T07:00:00.000Z');
- if(fmt(midnight).startsWith([get('month'),get('day')].join('-')))h=7;
- // More robust: compare date part in Pacific explicitly, then choose earliest
+ // Compare the full Pacific date and hour: 07:00 UTC during daylight
+ // saving, 08:00 UTC during standard time. Never guess which day is billed.
+ // Compare date part in Pacific explicitly, then choose the earliest
  // UTC hour 07/08 that corresponds to today's 00:00 Pacific.
  for(const utcHour of [7,8,9]){
   const d=new Date(date+'T'+String(utcHour).padStart(2,'0')+':00:00.000Z');
@@ -30,7 +28,7 @@ function pacificMidnight(now=new Date()){
   const map=Object.fromEntries(v.filter(x=>x.type!=='literal').map(x=>[x.type,x.value]));
   if(map.year===get('year')&&map.month===get('month')&&map.day===get('day')&&map.hour==='00')return d;
  }
- return guess;
+ throw new Error('pacific-midnight-not-established');
 }
 async function transport(url,options={}){
  const abort=AbortSignal.timeout(LIMIT);
