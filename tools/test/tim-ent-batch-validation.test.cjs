@@ -49,6 +49,7 @@ test('Un schéma mathématique associé au nouvel exercice est vérifié, sinon 
  const api=load(),s=sample();
  for(const l of s.pack.lessons)l.subject='Mathématiques';
  for(const e of s.pack.exercises)e.subject='Mathématiques';
+ s.manifest.homework[0].subject='Mathématiques';
  const diagram='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><line x1="0" y1="0" x2="90" y2="90" stroke="black"/></svg>';
  const q=s.pack.exercises[0].questions[0];
  q.diagramSvg=diagram;
