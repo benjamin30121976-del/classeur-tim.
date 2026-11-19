@@ -12,6 +12,7 @@ import datetime as dt
 import hashlib
 import io
 import json
+import re
 import os
 import re
 import zipfile
@@ -106,7 +107,13 @@ Réponds avec UN OBJET JSON, sans markdown. Signale insuffisance avec
 Clarté : consigne courte, raisonnement en étapes, unités et phrase réponse utiles.
 Les questions de mathématiques/physique doivent avoir des données et résultats
 cohérents. Le QCM comporte exactement 4 options distinctes et right=index 0..3.
-Les réponses texte ont right=réponse attendue. why explique la méthode et
+Les réponses texte ont right=réponse attendue.
+En géométrie/physique, si le cours comporte une figure indispensable à la question,
+fournis diagramSvg (SVG simple avec traits, polygones, cercles, textes) et diagramAlt
+(description accessible). Dessine uniquement les données vérifiées dans le document
+source ; jamais de réponse ou mesure calculée cachée dans le schéma. Si la figure
+nécessaire manque, refuse cette question : {"blocked":"figure non vérifiable"}.
+why explique la méthode et
 l'erreur fréquente en français (minimum 30 caractères). Pour l'espagnol ET l'anglais, q reste dans la langue de la matière, et
 fr traduit uniquement la consigne en français (jamais sa réponse).
 Ne révèle aucune solution dans l'énoncé. Évite les questions redondantes.
@@ -242,6 +249,15 @@ def ask_checked(provider, task, sources, count=None):
                     raise GenerationBlocked("QCM ambigu ou réponse invalide.")
             elif q.get("type") != "text" or not str(q.get("right") or "").strip():
                 raise GenerationBlocked("Réponse écrite non vérifiable.")
+            if "diagramSvg" in q:
+                svg = q.get("diagramSvg")
+                alt = str(q.get("diagramAlt") or "").strip()
+                if (q.get("subject") not in ("Mathématiques", "Physique-chimie", "SVT")
+                        or not isinstance(svg,str) or len(svg)>25000 or len(alt)<8
+                        or not re.match(r'^\s*(?:<\?xml[^>]*>\s*)?<svg[\s>]',svg,re.I)
+                        or re.search(r'<\s*(?:style|a|script|foreignObject|iframe|object|embed|video|audio|image|use|animate|set|feImage)\b',svg,re.I)
+                        or re.search(r'\bon\w+\s*=|\b(?:href|xlink:href)\s*=|url\s*\(|@import|javascript:',svg,re.I)):
+                    raise GenerationBlocked("Schéma SVG non sûr ou légende manquante.")
             if q.get("subject") in ("Espagnol", "Anglais") and not str(q.get("fr") or "").strip():
                 raise GenerationBlocked("Traduction de consigne anglais/espagnol absente.")
     audit = provider.ask(REVIEW, {"task": task, "sources": sources, "candidate": answer})
