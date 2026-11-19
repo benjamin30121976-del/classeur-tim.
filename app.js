@@ -308,7 +308,41 @@ function openLesson(id){const l=lessonBy(id);if(!l)return;
  // Les éventuels documents complémentaires spécifiques à la BIS restent visibles.
  if(bis&&(!originalForPdf||originalForPdf.id!==l.id))
   dest.append(makeAttachmentPanel('lesson',l.id,{hideIfEmpty:true,inlineRequired:true}));
-let related=DATA.exercises.filter(e=>e.lesson===l.id&&!e.id.startsWith('R'));let controls=E('div','panel separated');controls.append(E('h3','','S’entraîner sur cette leçon'));if(related.length){let list=E('div','clicklist');for(const ex of related)list.append(cardAction(ex.title,(ex.kind==='training'?'Entraînement · +1 / +0,5 / 0 XP':window.TIM_EXERCISE.school(ex)?'Devoir ENT · 0 XP':'Bonus · jusqu’à +2 XP')+' · '+quizLabel(ex),null,()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));controls.append(list);}else controls.append(E('p','','Un exercice pourra être ajouté ultérieurement.'));dest.append(controls);
+// Séparation décidée par le Parent le 19/11 : aucune révision fabriquée
+// dans la fiche ENT/BIS importée. Seuls les vrais questionnaires scolaires
+// explicitement rattachés au cours ENT peuvent y être proposés.
+// Les entraînements restent dans les rubriques dédiées, sans modifier leurs XP.
+if(l.timEntBatch===true){
+ const panel=E('div','panel separated');
+ if(l.kind==='ent'){
+  panel.append(E('h3','','Exercices ENT du professeur'));
+  const originals=DATA.exercises.filter(e=>
+   e.lesson===l.id&&e.entHomeworkOriginal===true&&
+   e.kind==='school'&&e.category==='school');
+  if(originals.length){
+   const list=E('div','clicklist');
+   for(const ex of originals)list.append(cardAction(
+    ex.title,'Devoir officiel ENT · 0 XP · '+quizLabel(ex),null,
+    ()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));
+   panel.append(list);
+  }else panel.append(E('p','','Les exercices originaux, lorsqu’ils existent, figurent dans le cours et ses PDF. Aucun questionnaire officiel supplémentaire n’est disponible ici.'));
+ }else{
+  panel.append(E('h3','','S’entraîner après la leçon BIS'));
+  panel.append(E('p','','Les exercices créés pour réviser se trouvent dans les Bonus devoirs et les défis, pas dans les documents du professeur.'));
+ }
+ panel.append(button('Accéder aux bonus et défis',()=>page('exercices'),'plain'));
+ dest.append(panel);
+}else{
+ let related=DATA.exercises.filter(e=>e.lesson===l.id&&!e.id.startsWith('R'));
+ let controls=E('div','panel separated');controls.append(E('h3','','S’entraîner sur cette leçon'));
+ if(related.length){let list=E('div','clicklist');
+  for(const ex of related)list.append(cardAction(ex.title,
+   (ex.kind==='training'?'Entraînement · +1 / +0,5 / 0 XP':window.TIM_EXERCISE.school(ex)?'Devoir ENT · 0 XP':'Bonus · jusqu’à +2 XP')+' · '+quizLabel(ex),
+   null,()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));
+  controls.append(list);
+ }else controls.append(E('p','','Un exercice pourra être ajouté ultérieurement.'));
+ dest.append(controls);
+}
 let help=E('div','helpbox');help.append(E('h3','','Je n’ai pas compris'));help.append(E('p','','Voici une autre manière de comprendre. Les explications suivantes ont été écrites spécialement pour le classeur.'));const stage=E('div');let index=0;function step(){clear(stage);if(index===0){stage.append(badge('Niveau 1 · Explication simple'),E('p','',l.help.simple));}if(index===1){stage.append(badge('Niveau 2 · Étapes guidées'));let ol=E('ol');for(const x of l.help.steps)ol.append(E('li','',x));stage.append(ol,E('p','note info',l.help.example));}if(index>=2){stage.append(badge('Niveau 3 · Vérifier avec un exemple'));const ck=l.help.check;if(ck){stage.append(E('p','',ck.q));let opts=E('div','check-answers');ck.options.forEach((o,j)=>opts.append(button(o,()=>{msg.textContent=(j===ck.right?'Bonne réponse. ':'Ce n’est pas la bonne réponse. ')+ck.why;msg.style.color=j===ck.right?'var(--green)':'var(--red)';},'plain')));stage.append(opts);const msg=E('p','subtle','Cette mini-question est une aide, pas un exercice noté.');stage.append(msg);}else stage.append(E('p','',l.help.example));}next.textContent=index===0?'Explication pas à pas →':index===1?'Vérifier avec un exemple →':'Recommencer l’aide';}
 const next=button('Explication pas à pas →',()=>{index=(index+1)%3;step();});help.append(stage,next);step();dest.append(help);
 let arch=E('div','panel');arch.append(E('h3','','Historique des cours'));arch.append(E('p','small', 'Les originaux ENT doivent être ajoutés dans l’espace parent pour être consultables de façon privée, sans mettre les PDF scolaires sur un site public.'));arch.append(button('Voir le journal des séances',()=>page('archives'),'plain'));dest.append(arch);scrollTop();}
