@@ -448,4 +448,54 @@ class LotTest(unittest.TestCase):
             self.assertEqual({x['subject'] for x in inventory['items']
                 if x['kind']=='lesson'},{v[0] for v in labels})
 
+
+    def test_source_cards_auto_created_without_fake_bis_or_exercises(self):
+        """Dès réception d'un ZIP : cours et devoir fidèles, sans inventer de réponse."""
+        with tempfile.TemporaryDirectory() as directory:
+            d=Path(directory); a,b=self.inputs(d)
+            args=type('A',(),{'zips':[str(a),str(b)],'previous':None,
+                               'out':str(d/'initial'),'date':'2026-11-18','subject':''})()
+            p.collect(args)
+            folder=d/'initial'
+            generated=json.loads((folder/'pack_sources_ENT_brouillon.json').read_text())
+            plan=json.loads((folder/'plan_pedagogique.json').read_text())
+            self.assertEqual(len(generated['lessons']),2)
+            self.assertEqual(generated['exercises'],[])
+            self.assertFalse(generated['publicationReady'])
+            self.assertEqual(len(generated['pedagogicalWorkRemaining']),2)
+            self.assertEqual(len(plan['originCardsPrepared']),2)
+            originals={x['sourceKind']:x for x in generated['lessons']}
+            self.assertEqual(originals['lesson']['blocks'][0]['body'],'Conocer : yo conozco')
+            self.assertIn('Apprendre les verbes',originals['homework']['blocks'][0]['body'])
+            self.assertEqual(originals['homework']['homeworkDue'],'2026-11-19')
+            self.assertEqual(originals['homework']['linkedHomework'],['10099~215356'])
+            self.assertTrue(all(x['kind']=='ent' and x['teacherOriginal'] for x in originals.values()))
+            self.assertTrue(all(x['id'].startswith('ENT') for x in originals.values()))
+            self.assertEqual(len({x['id'] for x in originals.values()}),2)
+            # Le brouillon ne peut PAS passer l'examen de couverture pédagogique.
+            pack=folder/'as-pack.json'
+            pack.write_text(json.dumps(generated,ensure_ascii=False))
+            validate_args=type('A',(),{'pack':str(pack),'plan':str(folder/'plan_pedagogique.json'),
+                 'existing':None,'reviewed_sources':None,'out':None})()
+            self.assertEqual(p.validate(validate_args),1)
+            # La collecte suivante ne duplique pas des fiches inchangées.
+            args.previous=str(folder/'etat_candidat_non_confirme.json')
+            args.out=str(d/'next')
+            p.collect(args)
+            unchanged=json.loads((d/'next'/'pack_sources_ENT_brouillon.json').read_text())
+            self.assertEqual(unchanged['lessons'],[])
+
+    def test_source_card_ids_stable_and_unsupported_subject_rejected(self):
+        original={'entId':'123~456','kind':'lesson','subject':'Mathématiques',
+                  'title':'Deux plus deux','date':'2026-11-18',
+                  'original':'2 + 2 = 4','fingerprint':'x','attachments':[]}
+        a=p.source_card(original)
+        b=p.source_card({**original,'title':'Titre corrigé','original':'2 + 2 = 4.'})
+        self.assertEqual(a['id'],b['id'])
+        self.assertEqual(a['blocks'][0]['body'],'2 + 2 = 4')
+        self.assertIsNone(p.source_card({**original,'subject':'Technologie'}))
+        self.assertIsNone(p.source_card({**original,'original':''}))
+        c=p.source_card({**original,'kind':'homework','due':'2026-11-20'})
+        self.assertNotEqual(a['id'],c['id'])
+
 if __name__=='__main__':unittest.main()
