@@ -325,10 +325,15 @@ def prepare(inventory, plan, provider, existing=None, reference_items=()):
     """Produit un BROUILLON complet ; aucun appel à Firebase."""
     items = inventory["items"]
     problems = plan.get("sourceIssues") or []
-    if problems or plan.get("sourceReadingRequired"):
+    if problems:
         raise GenerationBlocked(
-            "Pièces ou textes ENT non vérifiés : lecture des PDF nécessaire. "
-            "Aucun lot trompeusement 'prêt' n'est créé."
+            "Pièces ENT absentes/ambiguës : lot refusé avant génération."
+        )
+    needed = {str(x["entId"]) for x in plan.get("sourceReadingRequired") or []}
+    fulfilled = {str(x["entId"]) for x in items if x.get("sourceContent")}
+    if not needed.issubset(fulfilled):
+        raise GenerationBlocked(
+            "PDF ENT non extrait ou non vérifiable : lot refusé."
         )
     sources = {(x["kind"], str(x["entId"])): x for x in items}
     selected = [
