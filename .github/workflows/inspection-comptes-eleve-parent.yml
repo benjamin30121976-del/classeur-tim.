@@ -28,6 +28,8 @@ jobs:
       - name: Verifier script et protections sans session privee
         run: |
           node --check outils/inspecter-comptes-lecture-seule.cjs
+          node --check outils/diagnostiquer-quota-firestore.cjs
+          node --test outils/test/diagnostic-quota-firestore.test.cjs
           node --check tools/test/prochaines-missions-ui.cjs
           node --check tim-ent-batch-import.js
           node --check app.js
@@ -40,6 +42,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 18
     env:
+      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
       TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
       TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
       TIM_STUDENT_EMAIL: ${{ secrets.TIM_STUDENT_EMAIL }}
@@ -55,6 +58,8 @@ jobs:
           test -n "$TIM_PARENT_PASSWORD" || { echo 'Secret Parent PASSWORD absent'; exit 1; }
           test -n "$TIM_STUDENT_EMAIL" || { echo 'Secret Student EMAIL absent'; exit 1; }
           test -n "$TIM_STUDENT_PASSWORD" || { echo 'Secret Student PASSWORD absent'; exit 1; }
+      - name: Lire les quotas et tester deux requêtes Firestore au maximum, sans données de Tim
+        run: node outils/diagnostiquer-quota-firestore.cjs
       - name: Installer Chromium/Playwright
         run: |
           mkdir -p /tmp/tim-inspection-playwright
@@ -79,6 +84,7 @@ jobs:
           name: controle-eleve-parent-lecture-seule
           path: |
             browser-comptes-lecture-seule/
+            diagnostic-firestore/
             browser-fixture-avenir/
             browser-fixture-ent-batch/
           retention-days: 1
