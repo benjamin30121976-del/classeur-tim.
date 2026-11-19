@@ -7,6 +7,7 @@ on:
       - 'app.js'
       - 'tim-ent-batch-import.js'
       - 'tools/test/tim-ent-batch-validation.test.cjs'
+      - 'tools/test/diagnostic-lecture-seule.test.cjs'
       - 'tools/test/tim-ent-spanish-visibility.test.cjs'
       - 'prochaines-missions.js'
       - 'tools/test/prochaines-missions.readonly.test.cjs'
@@ -52,6 +53,7 @@ jobs:
           node --check app.js
           node --check prochaines-missions.js
           node --check tim-ent-batch-import.js
+          node --test tools/test/diagnostic-lecture-seule.test.cjs
           node --test tools/test/tim-ent-batch-validation.test.cjs
           node --test tools/test/tim-ent-spanish-visibility.test.cjs
           node --test tools/test/prochaines-missions.readonly.test.cjs
