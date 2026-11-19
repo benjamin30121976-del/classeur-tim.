@@ -118,3 +118,17 @@ test('Réception d’un ZIP fictif avec PDF altéré : aucune écriture possible
  json.set('MANIFESTE_LOT_TIM.json',JSON.stringify(s.manifest));
  await assert.rejects(ctx.window.TIM_ENT_BATCH.prepare(file,{lessons:[],exercises:[]}),/altéré/);
 });
+
+test('Un devoir scolaire original ENT est distinct du bonus, avec échéance et note sans corrigé',()=>{
+ const api=load(),s=sample(),q=s.pack.exercises[0].questions[0];
+ const original={id:'SCH_ES001',lesson:'BIS_ES001',kind:'school',category:'school',
+  subject:'Espagnol',title:'Exercice original du professeur',timEntBatch:true,
+  entHomeworkOriginal:true,linkedHomework:['10099~215356'],homeworkDue:'2026-11-19',
+  questions:[{...q},{...q,q:'Deuxième question exacte du professeur ?'}]};
+ s.pack.exercises.push(original);
+ assert.equal(api.checkPack(s.pack,s.manifest).exercises,3);
+ original.entHomeworkOriginal=false;
+ assert.throws(()=>api.checkPack(s.pack,s.manifest),/Devoir scolaire/);
+ original.entHomeworkOriginal=true;original.homeworkDue='2026-11-20';
+ assert.throws(()=>api.checkPack(s.pack,s.manifest),/Devoir scolaire/);
+});
