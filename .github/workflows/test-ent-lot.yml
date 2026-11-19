@@ -13,7 +13,9 @@ on:
       - 'worker/**'
       - 'functions/**'
       - 'tools/tim_ent_lot.py'
+      - 'tools/ent_tim_nouveautes_7_matieres.py'
       - 'tools/test/test_tim_ent_lot.py'
+      - 'tools/test/test_ent_tim_nouveautes_7_matieres.py'
       - '.github/workflows/test-ent-lot.yml'
   workflow_dispatch:
 permissions:
@@ -28,9 +30,10 @@ jobs:
           python-version: '3.12'
       - name: Compilation et cinq tests hors ligne
         run: |
-          python -m py_compile tools/tim_ent_lot.py
+          python -m py_compile tools/tim_ent_lot.py tools/ent_tim_nouveautes_7_matieres.py
           node --check boot.js
           python -m unittest discover -s tools/test -p 'test_tim_ent_lot.py' -v
+          python -m unittest discover -s tools/test -p 'test_ent_tim_nouveautes_7_matieres.py' -v
 
   audit-pedagogie:
     needs: verification
