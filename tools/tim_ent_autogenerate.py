@@ -345,6 +345,25 @@ def prepare(inventory, plan, provider, existing=None, reference_items=()):
                  and str(x["entId"]) in wanted_homework]
     if not selected:
         raise GenerationBlocked("Aucune nouveauté pédagogique à générer.")
+    old_lessons = {x["id"]: x for x in (existing or {}).get("lessons", [])
+                   if x.get("timEntBatch") is True and x.get("id")}
+    old_exercises = {x["id"]: x for x in (existing or {}).get("exercises", [])
+                     if x.get("timEntBatch") is True and x.get("id")}
+
+    def exact_old(original, kind):
+        saved = (old_lessons if kind == "lesson" else old_exercises).get(original["id"])
+        if saved is None:
+            return original
+        if kind == "lesson" and original.get("sourceFingerprint") and (
+            saved.get("sourceFingerprint") != original["sourceFingerprint"]
+        ):
+            raise GenerationBlocked("Source ENT modifiée après publication : "
+                                    "ne pas écraser " + original["id"])
+        if kind == "exercise" and saved.get("kind") != original.get("kind"):
+            raise GenerationBlocked("Exercice déjà publié avec un autre type : "
+                                    + original["id"])
+        return saved
+
     cards = []
     bis_by_key = {}
     exercises = []
@@ -363,6 +382,7 @@ def prepare(inventory, plan, provider, existing=None, reference_items=()):
                 "chapter": item["title"], "title": "Cours ENT (PDF original) — " + item["title"],
                 "subject": item["subject"], "date": item.get("date") or "",
                 "teacherOriginal": False, "timEntBatch": True,
+                "sourceFingerprint": item.get("fingerprint") or "",
                 "blocks": [{"kind": "note", "h": "Document officiel du professeur",
                             "body": "Consulter la pièce PDF originale jointe. "
                                     "La transcription automatique n'est pas le document officiel."}],
@@ -371,15 +391,29 @@ def prepare(inventory, plan, provider, existing=None, reference_items=()):
                 "attachmentsEntIds": [a["id"] for a in item.get("attachments", [])],
             }
         require(original, "Texte ENT d'origine indisponible.")
-        bis = make_bis(provider, item)
+        original = exact_old(original, "lesson")
+        bis_id_value = uid("BISENT_", *key)
+        bis = old_lessons.get(bis_id_value)
+        if bis:
+            if bis.get("sourceFingerprint") != (item.get("fingerprint") or ""):
+                raise GenerationBlocked("BIS déjà publiée sur une version ENT différente : " +
+                                        str(item["entId"]))
+        else:
+            bis = make_bis(provider, item)
         cards.extend([original, bis])
         bis_by_key[key] = bis["id"]
-        # Entraînement distinct de l'exercice exact du professeur.
-        questions = make_questions(provider, [item], "la leçon " + item["title"], 10)
-        exercises.append(exercise(
-            uid("TRENT_", *key), "Entraînement — " + item["title"],
-            item["subject"], bis["id"], "training", questions,
-        ))
+        training_id = uid("TRENT_", *key)
+        if training_id in old_exercises:
+            previous_ex = old_exercises[training_id]
+            if previous_ex.get("kind") != "training":
+                raise GenerationBlocked("Ancien exercice sous un type différent.")
+            exercises.append(previous_ex)
+        else:
+            questions = make_questions(provider, [item], "la leçon " + item["title"], 10)
+            exercises.append(exercise(
+                training_id, "Entraînement — " + item["title"],
+                item["subject"], bis["id"], "training", questions,
+            ))
     task_by_id = {str(x["entId"]): x for x in plan.get("homeworkExercisePreparations") or []}
     for ent_id, task in task_by_id.items():
         item = sources.get(("homework", ent_id))
@@ -388,10 +422,18 @@ def prepare(inventory, plan, provider, existing=None, reference_items=()):
         require(linked, "Leçon pour le devoir absente : " + ent_id)
         required = max(int(task.get("requiredSeries", 1)), int(task.get("suggestedSeries", 1)))
         for n in range(1, required + 1):
+            bonus_id = lot.exercise_id_for_homework(ent_id, task["due"], n)
+            if bonus_id in old_exercises:
+                previous_bonus = old_exercises[bonus_id]
+                if previous_bonus.get("homeworkDue") != task["due"] or (
+                    ent_id not in previous_bonus.get("linkedHomework", [])
+                ):
+                    raise GenerationBlocked("Ancien bonus avec échéance incompatible.")
+                exercises.append(exact_old(previous_bonus, "exercise"))
+                continue
             questions = make_questions(provider, [item], "le devoir " + item["title"], 10)
             exercises.append(exercise(
-                lot.exercise_id_for_homework(ent_id, task["due"], n),
-                "Bonus devoir — " + item["title"] + " (" + str(n) + ")",
+                bonus_id, "Bonus devoir — " + item["title"] + " (" + str(n) + ")",
                 item["subject"], linked, "homework-bonus", questions,
                 homeworkBonus=True, linkedHomework=[ent_id], homeworkDue=task["due"],
             ))
@@ -400,9 +442,13 @@ def prepare(inventory, plan, provider, existing=None, reference_items=()):
     for i in range(desired):
         item = selected[i % len(selected)]
         bis = bis_by_key[(item["kind"], str(item["entId"]))]
+        review_id = uid("REV_", item["kind"], item["entId"], i)
+        if review_id in old_exercises:
+            exercises.append(exact_old(old_exercises[review_id], "exercise"))
+            continue
         questions = make_questions(provider, [item], "la révision quotidienne " + item["title"], 10)
         exercises.append(exercise(
-            uid("REV_", item["kind"], item["entId"], i),
+            review_id,
             "Révision du jour — " + item["title"], item["subject"], bis,
             "training", questions, practiceRole="daily-review",
         ))
@@ -430,6 +476,12 @@ def prepare(inventory, plan, provider, existing=None, reference_items=()):
         return bis_by_key.get(key) or str(x.get("publishedBisId") or "")
 
     for task in plan.get("newChallengeTasks") or []:
+        if task["id"] in old_exercises:
+            old = old_exercises[task["id"]]
+            if old.get("period") != task["date"] or old.get("kind") != task["kind"]:
+                raise GenerationBlocked("Défi ancien : période ou type en conflit.")
+            exercises.append(old)
+            continue
         sample = challenge_sources[:7]
         if not all(bis_id(x) for x in sample):
             raise GenerationBlocked("Défi : référence BIS historique non vérifiée.")
@@ -468,7 +520,11 @@ def run(args, provider=None):
     reference_items = catalog.get("items") or []
     if not isinstance(reference_items, list):
         raise GenerationBlocked("Catalogue pédagogique privé invalide.")
-    result = prepare(inv, plan, provider, reference_items=reference_items)
+    previous_content = {}
+    if args.existing:
+        previous_content = json.loads(Path(args.existing).read_text(encoding="utf-8"))
+    result = prepare(inv, plan, provider, existing=previous_content,
+                     reference_items=reference_items)
     inventory_enriched = root / "inventaire_enrichi_prive.json"
     lot.dump(inventory_enriched, inv)
     pack = root / "pack_pedagogique_brouillon.json"
