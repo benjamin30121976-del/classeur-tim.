@@ -706,7 +706,9 @@ async function startSession(user){
  const completeDaily=todayBatch.length===3&&new Set(todayBatch.map(e=>e.id)).size===3&&
     missionPlan.meta.today>='2026-11-23';
  const saturdayDate=(()=>{const d=new Date(missionPlan.meta.today+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+(6-d.getUTCDay()+7)%7);return d.toISOString().slice(0,10);})();
- const sundayDate=(()=>{const d=new Date(saturdayDate+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+1);return d.toISOString().slice(0,10);})();
+ // Dimanche doit désigner AUJOURD'HUI lorsque nous sommes dimanche,
+ // et non le dimanche suivant (ancien calcul : samedi suivant + 1).
+ const sundayDate=(()=>{const d=new Date(missionPlan.meta.today+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+(7-d.getUTCDay())%7);return d.toISOString().slice(0,10);})();
  const freshWeekly=batchFor('weekly',saturdayDate)[0];
  const freshSunday=batchFor('sunday',sundayDate)[0];
  const effectiveDailyIds=mixedChallengePlan?
