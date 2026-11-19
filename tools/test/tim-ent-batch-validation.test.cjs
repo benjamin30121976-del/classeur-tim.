@@ -45,6 +45,21 @@ test('Le lot cours/BIS, bonus et PDF correctement reliés passe le précontrôle
  assert.equal(report.homework,1);
  assert.equal(report.documents,1);
 });
+test('Un schéma mathématique associé au nouvel exercice est vérifié, sinon refusé',()=>{
+ const api=load(),s=sample();
+ for(const l of s.pack.lessons)l.subject='Mathématiques';
+ for(const e of s.pack.exercises)e.subject='Mathématiques';
+ const diagram='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><line x1="0" y1="0" x2="90" y2="90" stroke="black"/></svg>';
+ const q=s.pack.exercises[0].questions[0];
+ q.diagramSvg=diagram;
+ q.diagramAlt='Segment AB de la figure, sans mesure donnée';
+ assert.equal(api.checkPack(s.pack,s.manifest).exercises,2);
+ q.diagramSvg='<svg onload="alert(1)"><line/></svg>';
+ assert.throws(()=>api.checkPack(s.pack,s.manifest),/sans dix corrections pédagogiques/);
+ q.diagramSvg=diagram;q.diagramAlt='';
+ assert.throws(()=>api.checkPack(s.pack,s.manifest),/sans dix corrections pédagogiques/);
+});
+
 test('Tout énoncé espagnol ENT exige une traduction française',()=>{
  const api=load(),s=sample();
  delete s.pack.exercises[0].questions[0].fr;
