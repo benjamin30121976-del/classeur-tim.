@@ -10,6 +10,8 @@ on:
       - 'tools/test/diagnostic-lecture-seule.test.cjs'
       - 'tools/test/matieres-presentes.test.cjs'
       - 'tools/test/tim-ent-spanish-visibility.test.cjs'
+      - 'tools/test/tim-ent-pdf-inline-ent-bis.test.cjs'
+      - 'physique-chimie-inline-pdf.js'
       - 'prochaines-missions.js'
       - 'tools/test/prochaines-missions.readonly.test.cjs'
       - 'worker/**'
@@ -63,6 +65,7 @@ jobs:
           node --test tools/test/diagnostic-lecture-seule.test.cjs
           node --test tools/test/tim-ent-batch-validation.test.cjs
           node --test tools/test/tim-ent-spanish-visibility.test.cjs
+          node --test tools/test/tim-ent-pdf-inline-ent-bis.test.cjs
           node --test tools/test/prochaines-missions.readonly.test.cjs
       - name: Tester les corrections, sept matières, défis et barèmes sans copie réelle
         run: |
