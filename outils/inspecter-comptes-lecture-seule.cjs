@@ -67,7 +67,10 @@ async function inspect(browser,role,device,report) {
     const stack=String(error?.stack||'');
     const hit=stack.match(/\/([A-Za-z0-9_-]+\.m?js):(\d{1,6}):(\d{1,5})/);
     const location=hit?hit[1]+':'+hit[2]+':'+hit[3]:'emplacement inconnu';
-    jsErrors.push((/^(TypeError|ReferenceError|SyntaxError|Error)$/.test(name)?name:'Erreur JS')+' '+location);
+    const cause=String(error?.message||'');
+    const onlyProperty=cause.match(/Cannot read properties of (?:undefined|null) \\(reading ['"]([A-Za-z0-9_]{1,60})['"]\\)/);
+    const safeCause=onlyProperty?' propriété '+onlyProperty[1]:'';
+    jsErrors.push((/^(TypeError|ReferenceError|SyntaxError|Error)$/.test(name)?name:'Erreur JS')+' '+location+safeCause);
   });
   page.on('response',async response=>{
     if(!response.url().includes('/api/tim')||response.status()<400)return;
