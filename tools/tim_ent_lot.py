@@ -426,14 +426,20 @@ def validate(args):
         if not l.get('examples'):issues.append(f'{ident}: aucun exemple guidé')
     for ex in exercises:
         ident=ex.get('id','?');kind=ex.get('kind')
-        if kind not in ('training','homework-bonus','daily','weekly','sunday'):issues.append(f'{ident}: type inédit/non pris en charge')
+        if kind not in ('training','homework-bonus','school','daily','weekly','sunday'):issues.append(f'{ident}: type inédit/non pris en charge')
         if not ex.get('lesson'):issues.append(f'{ident}: leçon associée absente')
         questions=ex.get('questions')
         expected=20 if kind in ('weekly','sunday') else 10
-        if not isinstance(questions,list) or len(questions)!=expected:
-            issues.append(f'{ident}: {expected} questions obligatoires');continue
+        if not isinstance(questions,list) or (
+            kind=='school' and not 1<=len(questions)<=20) or (
+            kind!='school' and len(questions)!=expected):
+            issues.append(f'{ident}: '+('de 1 à 20 questions originales obligatoires' if kind=='school' else f'{expected} questions obligatoires'))
+            continue
         if kind in ('daily','weekly','sunday') and (ex.get('category')!='challenge' or not norm_date(ex.get('period')) or not ex.get('realLessons') or len({str(q.get('subject') or '') for q in questions})<2):
             issues.append(f'{ident}: défi sans catégorie XP, date ou leçons sources')
+        if kind=='school' and (ex.get('category')!='school' or ex.get('entHomeworkOriginal') is not True or
+            ex.get('homeworkBonus') is True or not ex.get('linkedHomework') or not norm_date(ex.get('homeworkDue'))):
+            issues.append(f'{ident}: devoir scolaire original sans provenance ou échéance ENT')
         if kind=='homework-bonus' and (ex.get('homeworkBonus') is not True or not ex.get('linkedHomework') or not norm_date(ex.get('homeworkDue'))):
             issues.append(f'{ident}: bonus devoirs sans liaison ENT, échéance ou marqueur XP correct')
         for i,q in enumerate(questions,1):
@@ -502,7 +508,7 @@ def validate(args):
     if issues:
         print('VALIDATION REFUSÉE : '+str(len(issues))+' problème(s):\n'+'\n'.join('- '+x for x in issues[:80]))
         return 1
-    print(f'VALIDATION TECHNIQUE RÉUSSIE : {len(lessons)} leçon(s), {len(exercises)} exercice(s) de 10 questions, corrections présentes.')
+    print(f'VALIDATION TECHNIQUE RÉUSSIE : {len(lessons)} leçon(s), {len(exercises)} exercice(s) correctement structurés, corrections présentes.')
     if getattr(args,"out",None):
         # Le format exporté cible l'import Parent déjà présent dans app.js/boot.js.
         # Aucune donnée n'est envoyée à Firebase par ce script.
@@ -513,6 +519,9 @@ def validate(args):
                 e.pop('kind',None)
                 e['category']='bonus'
                 e['homeworkBonus']=True
+            elif e['kind'] in ('daily','weekly','sunday','school'):
+                # Préserver la catégorie : jamais convertir un devoir noté ou un défi en entraînement.
+                pass
             else:
                 e['kind']='training'
                 e['category']='training'
