@@ -154,7 +154,7 @@ async function publishCoursePack(pack){
   if(!v||typeof v.id!=='string'||!/^[A-Za-z][A-Za-z0-9_-]{1,35}$/.test(v.id)||typeof v.title!=='string'||!v.title.trim()||v.title.length>200)throw Error('Identifiant ou titre incorrect.');
   if(ids.has(v.id)||seen.has(v.id))throw Error('Le contenu '+v.id+' existe déjà. Aucun écrasement autorisé.');
   if(type==='lessons'&&(!Array.isArray(v.blocks)||!v.help))throw Error('Structure de leçon invalide : '+v.id);
-  if(type==='exercises'&&(!Array.isArray(v.questions)||v.questions.length<1||v.questions.length>(v.kind==='bonus-day'?20:15)||v.questions.some(q=>!['mc','text','free'].includes(q.type)||!q.q||q.right===undefined||(q.type==='free'&&q.rubric!=='letter'))))throw Error('Questions invalides : '+v.id);
+  if(type==='exercises'&&(!Array.isArray(v.questions)||v.questions.length<1||v.questions.length>(['bonus-day','weekly','sunday'].includes(v.kind)?20:15)||v.questions.some(q=>!['mc','text','free'].includes(q.type)||!q.q||q.right===undefined||(q.type==='free'&&q.rubric!=='letter'))))throw Error('Questions invalides : '+v.id);
   if(type==='exercises'&&!['school','bonus','training'].includes(v.category))throw Error('Catégorie exercice invalide : '+v.id+'.');
   // Autoriser le barème déjà validé des entraînements de leçon, sans le confondre avec les bonus historiques.
   if(type==='exercises'&&v.category==='training'&&(v.kind!=='training'||v.questions.length!==10||v.homeworkBonus===true))throw Error('Entraînement de leçon : 10 questions, type training et aucun marqueur bonus requis : '+v.id);
@@ -165,6 +165,21 @@ async function publishCoursePack(pack){
    v.questions.some(q=>!['mc','text'].includes(q.type)||typeof q.why!=='string'||!q.why.trim()||
     (q.type==='mc'&&(!Array.isArray(q.options)||q.options.length!==4||!Number.isInteger(Number(q.right))||Number(q.right)<0||Number(q.right)>3)))
   ))throw Error('Défi bonus : 10 à 20 questions avec bonne réponse et explication pour chacune.');
+  if(type==='exercises'&&['daily','weekly','sunday'].includes(v.kind)&&v.timEntBatch===true){
+    const expected=v.kind==='daily'?10:20;
+    if(v.category!=='challenge'||v.questions.length!==expected||
+       !/^(?:20\d{2})-\d{2}-\d{2}$/.test(String(v.period||''))||
+       !Array.isArray(v.realLessons)||!v.realLessons.length)
+      throw Error('Défi ENT incomplet ou sans calendrier : '+v.id);
+    for(const [index,q] of v.questions.entries()){
+      if(!['text','mc'].includes(q.type)||!String(q.why||'').trim()||
+         String(q.why).trim().length<30||!String(q.q||'').trim()||
+         (q.type==='mc'&&(!Array.isArray(q.options)||q.options.length!==4||
+           !Number.isInteger(q.right)||q.right<0||q.right>3))||
+         (q.type==='text'&&!String(q.right||'').trim()))
+        throw Error('Correction absente dans le défi '+v.id+' Q'+(index+1));
+    }
+  }
   if(type==='exercises'&&(v.kind==='training'||v.homeworkBonus===true)){
     if(v.questions.length!==10)throw Error('Dix questions obligatoires : '+v.id);
     for(const [index,q] of v.questions.entries()){
@@ -618,14 +633,26 @@ async function startSession(user){
    mixedDaily=data.exercises;
   }catch(error){console.warn('Défis espagnols indisponibles ; anciens défis conservés :',error.message||error);}
  }
+ // Défis rédigés à partir des nouveaux cours ENT, sans toucher aux anciens IDs.
+ // La substitution ne se fait qu'avec un lot COMPLET et daté, jamais partiel.
+ const batchFor=(kind,period)=>content.exercises.filter(e=>e.timEntBatch===true&&
+    e.kind===kind&&e.category==='challenge'&&e.period===period&&
+    e.questions?.length===(kind==='daily'?10:20));
+ const todayBatch=batchFor('daily',missionPlan.meta.today);
+ const completeDaily=todayBatch.length===3&&new Set(todayBatch.map(e=>e.id)).size===3&&
+    missionPlan.meta.today>='2026-11-23';
+ const saturdayDate=(()=>{const d=new Date(missionPlan.meta.today+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+(6-d.getUTCDay()+7)%7);return d.toISOString().slice(0,10);})();
+ const sundayDate=(()=>{const d=new Date(saturdayDate+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+1);return d.toISOString().slice(0,10);})();
+ const freshWeekly=batchFor('weekly',saturdayDate)[0];
+ const freshSunday=batchFor('sunday',sundayDate)[0];
  const effectiveDailyIds=mixedChallengePlan?
    mixedChallengePlan.filter(ex=>ex.kind==='daily').map(ex=>ex.id):
    missionPlan.meta.dailyIds;
  // Utiliser la carte du dimanche déjà prévue, avec son questionnaire réel côté serveur.
- const effectiveSunday=mixedChallengePlan?.find(ex=>ex.kind==='sunday'&&ex.questions?.length===20)?.id||missionPlan.meta.sunday;
+ const effectiveSunday=freshSunday?.id||mixedChallengePlan?.find(ex=>ex.kind==='sunday'&&ex.questions?.length===20)?.id||missionPlan.meta.sunday;
  window.__TIM_CHALLENGES={...missionPlan.meta,
-  sunday:effectiveSunday,
-  dailyIds:effectiveDailyIds,daily:effectiveDailyIds[0]||null,
+  sunday:effectiveSunday,weekly:freshWeekly?.id||missionPlan.meta.weekly,
+  dailyIds:completeDaily?todayBatch.map(e=>e.id).sort():effectiveDailyIds,daily:completeDaily?todayBatch.map(e=>e.id).sort()[0]:(effectiveDailyIds[0]||null),
   dailyBankStatus:mixedChallengePlan?(mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='Français'))?'seven-subjects':mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='Histoire-géographie'))?'six-subjects':mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='SVT'))?'five-subjects':mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='Anglais'))?'four-subjects':'three-subjects'):mixedDaily?'mixed':'classic'};
  window.__TIM_NEXT_DAILY=effectiveDailyIds[0]||null;
  const mixedIds=new Set((mixedChallengePlan||[]).map(ex=>ex.id));
