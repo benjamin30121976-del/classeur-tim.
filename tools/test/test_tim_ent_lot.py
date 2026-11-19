@@ -363,7 +363,17 @@ class LotTest(unittest.TestCase):
         self.assertEqual([t['kind'] for t in tasks[-2:]],['weekly','sunday'])
         self.assertEqual(p.challenge_tasks(p.dt.date(2026,11,19)),[])
         self.assertEqual([t['date'] for t in p.challenge_tasks(p.dt.date(2026,11,28))],
-                         ['2026-12-05','2026-11-29'])
+                         ['2026-11-30']*3+['2026-12-05','2026-11-29'])
+        # Une collecte du vendredi couvre déjà le lundi : aucune collecte
+        # obligatoire le dimanche soir, aucun défi historique écrasé.
+        friday=p.challenge_tasks(p.dt.date(2026,11,27))
+        self.assertEqual([t['id'] for t in friday[:3]],
+                         ['ENTD_20261130_01','ENTD_20261130_02','ENTD_20261130_03'])
+        self.assertEqual([t['date'] for t in friday[-2:]],
+                         ['2026-11-28','2026-11-29'])
+        sunday=p.challenge_tasks(p.dt.date(2026,11,29))
+        self.assertEqual([t['date'] for t in sunday[:3]],['2026-11-30']*3)
+        self.assertEqual(len({t['id'] for t in friday+sunday}),7)
 
 
     def test_school_original_and_dated_challenge_remain_distinct_in_export(self):
