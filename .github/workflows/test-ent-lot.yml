@@ -78,7 +78,8 @@ jobs:
             tools/test/xp-v18.test.mjs \
             worker/test/corrections-pedagogiques.test.mjs \
             worker/test/school-homework-policy.test.mjs \
-            worker/test/school-homework-submit.test.mjs \
+            worker/test/school-homework-submit.test.mjs
+            worker/test/school-homework-retry.test.mjs \
             worker/test/math-training.test.mjs \
             worker/test/physics-training.test.mjs \
             worker/test/lesson-training-xp.test.mjs \
