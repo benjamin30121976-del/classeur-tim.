@@ -12,7 +12,6 @@ import datetime as dt
 import hashlib
 import io
 import json
-import re
 import os
 import re
 import zipfile
