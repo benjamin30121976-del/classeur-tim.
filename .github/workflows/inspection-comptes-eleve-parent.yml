@@ -36,7 +36,9 @@ jobs:
     needs: controle-code
     # Inspection authentifiee uniquement sur declenchement manuel cible :
     # les push de branche testent le code sans epuiser les lectures Firestore.
-    if: github.event_name == 'workflow_dispatch'
+    # Audit exceptionnel expressément demandé : lecture seule des deux comptes.
+    # Uniquement ce message de commit sur la branche de travail, pas les push ordinaires.
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && github.ref == 'refs/heads/automatisation-ent-pedagogie-20261118' && contains(github.event.head_commit.message, '[AUDIT_READONLY_TIM_19NOV_2026]'))
     runs-on: ubuntu-latest
     timeout-minutes: 18
     env:
