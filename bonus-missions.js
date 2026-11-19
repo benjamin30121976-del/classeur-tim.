@@ -13,9 +13,8 @@
   return (exercises||[])
    .filter(ex=>ex?.kind==='bonus-day'&&ex.enabled!==false&&
     Array.isArray(ex.questions)&&ex.questions.length>=10&&ex.questions.length<=20&&
-    // Un défi bonus ENT daté n'apparaît que le jour prévu ; les anciens bonus
-    // sans période gardent leur comportement historique.
-    (!ex.period||ex.period===stamp)&&
+    // Tous les défis bonus publiés restent accessibles simultanément,
+    // même lorsque leur contenu porte une date indicative.
     (!ex.publishedAt||day(ex.publishedAt)<=stamp))
    .sort((a,b)=>String(b.publishedAt||'').localeCompare(String(a.publishedAt||''))||b.id.localeCompare(a.id))
    ;
