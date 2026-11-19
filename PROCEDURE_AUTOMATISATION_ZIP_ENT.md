@@ -158,3 +158,16 @@ réseau, vérifiés via le workflow test-ent-lot.yml. Aucun ZIP vivant de Tim
 traité avec une vraie clé API, aucun import Parent, aucun déploiement
 Cloudflare et aucune mutation Firestore. Ne pas dire « entièrement
 automatisé et opérationnel » avant la validation du vrai circuit.
+
+## Règle supplémentaire explicitement demandée le 19 novembre : reprendre le devoir scolaire
+
+La règle précédente « tentative unique » ne s'applique plus aux **devoirs scolaires originaux ENT** (kind=school) déjà notés **avant ou le jour de leur échéance**. Cette modification découle d'une nouvelle consigne explicite du Parent et ne concerne ni les entraînements, ni les Bonus devoirs, ni les défis.
+
+- Tim valide le devoir, obtient immédiatement sa note sur 10, sans voir les bonnes réponses ou la correction avant le lendemain de la date limite de rendu (Europe/Paris).
+- S'il n'a pas 10/10, il peut cliquer sur « Refaire ce devoir pour améliorer ma note » et répondre aux mêmes questions à nouveau, avant ou le jour de l'échéance. Une nouvelle note est calculée **sans dévoiler la correction**. La reprise cesse au 10/10 ou après l'échéance.
+- Toute tentative est une **nouvelle copie immuable** sous schoolHomeworkRetakes ; la copie initiale dans attempts/privateAttempts reste intacte. L'historique montre les notes successives et la meilleure note. Aucune reprise ne modifie xpState ou n'attribue de XP (0 XP pour le devoir scolaire).
+- Le serveur authentifie Tim, vérifie la catégorie « school » et la date à chaque validation ; la réponse API ne contient ni clé de correction, ni explication. Le compte Parent consulte les notes par l'API de statut, sans envoyer une copie à la place de Tim.
+- Les Bonus devoirs (homeworkBonus:true), exercices de leçon et défis **conservent** leur politique propre. Un devoir ENT qui n'est qu'une consigne « apprendre la leçon » ne doit jamais être présenté comme un questionnaire original du professeur : seules les questions vraiment accessibles peuvent être reproduites comme devoir scolaire original.
+- Code : worker/school-homework-retry.mjs, API retryTimSchoolHomework / getTimSchoolHomeworkRetakes, pont boot.js et interface app.js. Tests : worker/test/school-homework-retry.test.mjs. Les tests utilisent exclusivement un Firestore fictif.
+
+**État :** codé et testé hors ligne sur la branche, **non publié et non contrôlé sur le compte réel de Tim**. Changement de publication et de données réelles interdit sans autorisation explicite du Parent.
