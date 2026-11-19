@@ -416,7 +416,8 @@ def validate(args):
             if ident in ids:issues.append(f'{ident}: identifiant dupliqué')
             ids.add(ident)
             if not isinstance(v.get('title'),str) or not v['title'].strip():issues.append(f'{ident}: titre absent')
-            if v.get('subject') not in SUPPORTED:issues.append(f'{ident}: matière non reconnue')
+            if v.get('subject') not in SUPPORTED and not (v.get('subject')=='Défis' and v.get('kind') in ('daily','weekly','sunday') and v.get('category')=='challenge'):
+                issues.append(f'{ident}: matière non reconnue')
     for l in lessons:
         ident=l.get('id','?')
         if not l.get('entId'):issues.append(f'{ident}: identifiant ENT d’origine absent')
@@ -437,7 +438,7 @@ def validate(args):
             issues.append(f'{ident}: bonus devoirs sans liaison ENT, échéance ou marqueur XP correct')
         for i,q in enumerate(questions,1):
             prefix=f'{ident} Q{i}'
-            if ex.get('timEntBatch') is True and ex.get('subject')=='Espagnol' and not str(q.get('fr') or q.get('translationFr') or '').strip():
+            if ex.get('timEntBatch') is True and (q.get('subject') or ex.get('subject'))=='Espagnol' and not str(q.get('fr') or q.get('translationFr') or '').strip():
                 issues.append(prefix+': traduction française de l’énoncé espagnol absente')
             if not str(q.get('q','')).strip():issues.append(prefix+': énoncé absent')
             if len(str(q.get('why','')).strip())<30:issues.append(prefix+': correction insuffisamment expliquée')
