@@ -18,10 +18,50 @@ const ENT_MUSIC_QUIZ=[
 '8. Situer la naissance du rock’n’roll dans le temps.',
 '9. Identifier le surnom « the King of rock’n’roll ».'
 ];
+function englishSpeech(text,slow=false){
+ const value=String(text||'').trim();
+ if(!value)return;
+ if(!('speechSynthesis' in window)||!('SpeechSynthesisUtterance' in window)){
+  alert('Lecture audio indisponible dans ce navigateur.');return;
+ }
+ const synth=window.speechSynthesis,voices=synth.getVoices()||[];
+ const british=voices.find(v=>String(v.lang||'').toLowerCase().replace('_','-')==='en-gb');
+ const compatible=british||voices.find(v=>String(v.lang||'').toLowerCase().startsWith('en'));
+ if(voices.length&&!compatible){
+  alert('Aucune voix anglaise installée. Active une voix anglaise dans les paramètres de synthèse vocale du téléphone.');
+  return;
+ }
+ try{
+  synth.cancel();
+  const utterance=new SpeechSynthesisUtterance(value);
+  utterance.lang='en-GB';
+  utterance.rate=slow?0.65:0.86;
+  if(compatible)utterance.voice=compatible;
+  synth.speak(utterance);
+ }catch(_){alert('Impossible de prononcer cette expression sur cet appareil.');}
+}
+function englishListenButtons(text){
+ const group=E('span',undefined,'tim-english-audio');
+ group.style.cssText='display:inline-flex;gap:6px;flex-wrap:wrap;margin:4px 6px 4px 0';
+ const normal=button('🔊 Écouter',()=>englishSpeech(text),'tim-english-listen');
+ normal.title='Écouter en anglais : '+text;
+ normal.setAttribute('aria-label','Écouter en anglais : '+text);
+ const slow=button('🐢 Lentement',()=>englishSpeech(text,true),'tim-english-listen-slow');
+ slow.title='Écouter lentement en anglais : '+text;
+ slow.setAttribute('aria-label','Écouter lentement en anglais : '+text);
+ group.append(normal,slow);
+ return group;
+}
 function bisContent(slot,bis){
  add(slot,'h4',bis.title);
  add(slot,'p',bis.rule);
- for(const [a,b] of bis.examples){const p=E('p');p.append(E('strong',a+' : '),document.createTextNode(b));slot.append(p);}
+ for(const [a,b] of bis.examples){
+  const p=E('p');
+  const phrase=E('strong',a+' : ');
+  phrase.lang='en';
+  p.append(phrase,englishListenButtons(a),document.createTextNode(' '+b));
+  slot.append(p);
+ }
  add(slot,'h4','Exemple guidé : comment rédiger');
  if(bis.id==='EN_BIS03')add(slot,'p','Question : Where did you go last summer? Réponse : I went to the beach last summer. Je reprends le sujet I, le verbe au prétérit went et le complément.');
  else if(bis.id==='EN_BIS04')add(slot,'p','Question : What are you like? Réponse : I am rather shy, but I am very caring. Je formule deux phrases complètes avec des adjectifs.');

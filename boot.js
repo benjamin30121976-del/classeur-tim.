@@ -76,6 +76,9 @@ document.getElementById('parent-enter').addEventListener('click',()=>chooseRole(
 document.getElementById('role-back').addEventListener('click',()=>{selectedRole=null;form.hidden=true;roleChoices.hidden=false;});
 
 const message=(msg,good=false)=>{status.textContent=msg;status.classList.toggle('good',good);};
+// Ne jamais ouvrir un faux compte Tim à partir du catalogue Invité quand
+// les cours privés ne sont pas entièrement chargés. Aucun contenu ni XP
+// n'est perdu : on reste sur la connexion, avec un nouvel essai explicite.
 function showTimCourseUnavailable(){
  window.__TIM_READONLY_FALLBACK=false;
  window.__TIM_ADDONS_INCOMPLETE=true;
@@ -103,7 +106,6 @@ function showTimCourseUnavailable(){
  access.hidden=false;
  message('Impossible de charger les données complètes de Tim. Vérifie la disponibilité du service puis réessaie.');
 }
-
 // Firestore Standard does not accept an array directly inside another array.
 // Wrap only those inner arrays as a map; restore them after reading the document.
 // This preserves the original lessons, bilingual tables, timeline and exercises.
@@ -175,20 +177,62 @@ async function loadCourseAdditions(content){
 async function publishCoursePack(pack){
  if(activeUser?.uid!==PARENT_UID)throw Error('Réservé au parent.');
  const entries=[...(pack.lessons||[]).map(v=>['lessons',v]),...(pack.exercises||[]).map(v=>['exercises',v])];
- if(!entries.length || entries.length>30)throw Error('Ajouter entre 1 et 30 contenus par lot.');
+ if(!entries.length || entries.length>120)throw Error('Ajouter entre 1 et 120 contenus par lot.');
  const seen=new Set();
  const ids=new Set(window.__TIM_DATA.lessons.concat(window.__TIM_DATA.exercises).map(x=>x.id));
  for(const [type,v] of entries){
   if(!v||typeof v.id!=='string'||!/^[A-Za-z][A-Za-z0-9_-]{1,35}$/.test(v.id)||typeof v.title!=='string'||!v.title.trim()||v.title.length>200)throw Error('Identifiant ou titre incorrect.');
   if(ids.has(v.id)||seen.has(v.id))throw Error('Le contenu '+v.id+' existe déjà. Aucun écrasement autorisé.');
   if(type==='lessons'&&(!Array.isArray(v.blocks)||!v.help))throw Error('Structure de leçon invalide : '+v.id);
-  if(type==='exercises'&&(!Array.isArray(v.questions)||v.questions.length<1||v.questions.length>(v.kind==='bonus-day'?20:15)||v.questions.some(q=>!['mc','text','free'].includes(q.type)||!q.q||q.right===undefined||(q.type==='free'&&q.rubric!=='letter'))))throw Error('Questions invalides : '+v.id);
-  if(type==='exercises'&&!['school','bonus'].includes(v.category))throw Error('Précise category: "school" (devoir ENT, 0 XP) ou "bonus" (entraînement avec XP) pour '+v.id+'.');
+  if(type==='exercises'&&(!Array.isArray(v.questions)||v.questions.length<1||v.questions.length>(['bonus-day','weekly','sunday','school'].includes(v.kind)?20:15)||v.questions.some(q=>!['mc','text','free'].includes(q.type)||!q.q||q.right===undefined||(q.type==='free'&&q.rubric!=='letter'))))throw Error('Questions invalides : '+v.id);
+  if(type==='exercises'&&!['school','bonus','training','challenge'].includes(v.category))throw Error('Catégorie exercice invalide : '+v.id+'.');
+  // Autoriser le barème déjà validé des entraînements de leçon, sans le confondre avec les bonus historiques.
+  if(type==='exercises'&&v.category==='training'&&(v.kind!=='training'||v.questions.length!==10||v.homeworkBonus===true))throw Error('Entraînement de leçon : 10 questions, type training et aucun marqueur bonus requis : '+v.id);
+  // Devoir exact de l'ENT : réponses cachées jusqu'après le jour d'échéance.
+  // Un questionnaire de révision ne peut jamais être présenté comme l'original du professeur.
+  if(type==='exercises'&&v.category==='school'&&v.timEntBatch===true&&
+     (v.kind!=='school'||v.entHomeworkOriginal!==true||v.homeworkBonus===true||
+      !Array.isArray(v.linkedHomework)||!v.linkedHomework.length||
+      !/^(?:20\d{2})-\d{2}-\d{2}$/.test(String(v.homeworkDue||''))||
+      !v.questions.every(q=>['mc','text'].includes(q.type)&&
+       String(q.why||'').trim().length>=30)))
+    throw Error('Devoir scolaire original : corrigé, provenance et échéance obligatoires : '+v.id);
+  // Bonus devoirs : éligibles au barème training uniquement avec le marqueur explicite et le lien ENT.
+  if(type==='exercises'&&v.homeworkBonus===true&&(v.category!=='bonus'||v.questions.length!==10||!Array.isArray(v.linkedHomework)||!v.linkedHomework.length||!/^(?:20\d{2})-\d{2}-\d{2}$/.test(String(v.homeworkDue||''))))throw Error('Bonus devoirs : catégorie bonus, dix questions et devoir ENT daté obligatoires : '+v.id);
   if(type==='exercises'&&v.kind==='bonus-day'&&(
    v.category!=='bonus'||v.questions.length<10||
    v.questions.some(q=>!['mc','text'].includes(q.type)||typeof q.why!=='string'||!q.why.trim()||
     (q.type==='mc'&&(!Array.isArray(q.options)||q.options.length!==4||!Number.isInteger(Number(q.right))||Number(q.right)<0||Number(q.right)>3)))
   ))throw Error('Défi bonus : 10 à 20 questions avec bonne réponse et explication pour chacune.');
+  if(type==='exercises'&&['daily','weekly','sunday'].includes(v.kind)&&v.timEntBatch===true){
+    const expected=v.kind==='daily'?10:20;
+    if(v.category!=='challenge'||v.questions.length!==expected||
+       !/^(?:20\d{2})-\d{2}-\d{2}$/.test(String(v.period||''))||
+       !Array.isArray(v.realLessons)||!v.realLessons.length||
+       new Set(v.questions.map(q=>String(q.subject||''))).size<2)
+      throw Error('Défi ENT incomplet ou sans calendrier : '+v.id);
+    for(const [index,q] of v.questions.entries()){
+      if(!['text','mc'].includes(q.type)||!String(q.why||'').trim()||
+         String(q.why).trim().length<30||!String(q.q||'').trim()||
+         (q.type==='mc'&&(!Array.isArray(q.options)||q.options.length!==4||
+           !Number.isInteger(q.right)||q.right<0||q.right>3))||
+         (q.type==='text'&&!String(q.right||'').trim()))
+        throw Error('Correction absente dans le défi '+v.id+' Q'+(index+1));
+    }
+  }
+  if(type==='exercises'&&(v.kind==='training'||v.homeworkBonus===true)){
+    if(v.questions.length!==10)throw Error('Dix questions obligatoires : '+v.id);
+    for(const [index,q] of v.questions.entries()){
+      if(!String(q.why||'').trim()||String(q.why).trim().length<30)
+        throw Error('Correction pédagogique insuffisante : '+v.id+' Q'+(index+1));
+      if(q.type==='mc'&&(!Array.isArray(q.options)||q.options.length!==4||
+          new Set(q.options.map(x=>String(x).trim().toLowerCase())).size!==4||
+          !Number.isInteger(q.right)||q.right<0||q.right>3))
+        throw Error('QCM invalide ou sans bonne réponse : '+v.id+' Q'+(index+1));
+      if(q.type==='text'&&!String(q.right||'').trim())
+        throw Error('Réponse écrite manquante : '+v.id+' Q'+(index+1));
+    }
+  }
   seen.add(v.id);
  }
  const supportedLessons=new Set([...window.__TIM_DATA.lessons.map(x=>x.id),...(pack.lessons||[]).map(x=>x.id)]);
@@ -212,6 +256,52 @@ async function publishCoursePack(pack){
 
 // V16 : le parent peut corriger un cours existant sans republier Netlify.
 // Les blocs, identifiants et références d'exercices ne sont pas réinitialisés.
+// Publication des échéances ENT dans le calendrier déjà lu par « À venir ».
+// Jamais d'écriture dans les tentatives, XP ou copies de Tim.
+async function publishEntHomeworks(homework){
+ if(activeUser?.uid!==PARENT_UID)throw Error('Compte Parent requis.');
+ if(!Array.isArray(homework)||homework.length>150)throw Error('Lot de devoirs ENT invalide.');
+ const subjects=new Set(['Espagnol','Mathématiques','Physique-chimie',
+  'Anglais','SVT','Histoire-géographie','Français']);
+ const normalized=homework.map(h=>{
+  if(!h||!String(h.entId||'').trim()||!subjects.has(h.subject)||
+     !/^(?:20\d\d)-\d\d-\d\d$/.test(String(h.due||''))||
+     !String(h.title||'').trim()||String(h.title).length>200)
+    throw Error('Devoir ENT invalide ou sans échéance.');
+  return {entId:String(h.entId),id:String(h.entId),subject:h.subject,
+   due:h.due,title:String(h.title),content:String(h.content||'').slice(0,2500),
+   attachments:(h.attachments||[]).map(x=>String(x)).slice(0,30)};
+ });
+ if(!normalized.length)return 0;
+ const ref=doc(db,'content','main');
+ const changed=await runTransaction(db,async tx=>{
+  const snap=await tx.get(ref);
+  if(!snap.exists())throw Error('Classeur principal introuvable.');
+  const old=decodeFromFirestore(snap.data());
+  const metadata={...(old.metadata||{})};
+  const previous=Array.isArray(metadata.timEntHomework)?metadata.timEntHomework:[];
+  const known=new Map(previous.map(x=>[String(x.entId||x.id),x]));
+  let count=0;
+  for(const h of normalized){
+   const prior=known.get(h.entId);
+   if(prior){
+    if(prior.due!==h.due||prior.title!==h.title||prior.subject!==h.subject)
+     throw Error('Devoir ENT modifié : contrôler avant mise à jour '+h.entId);
+    continue;
+   }
+   known.set(h.entId,h);count++;
+  }
+  if(!count)return 0;
+  metadata.timEntHomework=[...known.values()].sort((a,b)=>a.due.localeCompare(b.due));
+  const updated={...old,metadata};
+  const bytes=new TextEncoder().encode(JSON.stringify(updated)).length;
+  if(bytes>850000)throw Error('Calendrier ENT trop volumineux : lot non publié.');
+  tx.set(ref,encodeForFirestore(updated));
+  return count;
+ });
+ return changed;
+}
+
 async function saveEditableLesson(lesson){
  if(activeUser?.uid!==PARENT_UID)throw Error('Réservé au parent.');
  if(!lesson||typeof lesson.id!=='string'||!/^[A-Za-z][A-Za-z0-9_-]{1,35}$/.test(lesson.id))throw Error('Référence de cours invalide.');
@@ -401,25 +491,33 @@ async function notifyAlert(id,saved){
 async function runFirebaseDiagnostic(){
  if(activeUser?.uid!==PARENT_UID)throw Error('Réservé au parent.');
  // Diagnostic non destructif, aligné sur les règles réelles de Firestore.
- const report={parentContentRead:false,attemptsRead:false,unauthorizedAttemptWriteBlocked:false,backendReport:false};
+ const report={parentContentRead:false,attemptsRead:false,writePermissionNotTested:true,backendReport:false};
  const source=await getDoc(doc(db,'content','main'));
  report.parentContentRead=source.exists();
  await getDocs(query(collection(db,'attempts'),where('authorUid','==',TIM_UID)));
  report.attemptsRead=true;
- try{
-  await setDoc(doc(db,'attempts','diagnostic_interdit'),{authorUid:PARENT_UID,xp:999});
-  throw Error('Sécurité défaillante : écriture directe des résultats autorisée.');
- }catch(error){
-  if(error.code==='permission-denied')report.unauthorizedAttemptWriteBlocked=true;
-  else throw error;
- }
+ // Protection absolue : même un test supposé refusé ne tente jamais une
+ // écriture dans « attempts ». Les permissions s'analysent hors ligne.
  const response=await cloudCallable('getParentReport')({});
  report.backendReport=Array.isArray(response.data?.attempts);
- if(!report.parentContentRead||!report.attemptsRead||!report.unauthorizedAttemptWriteBlocked||!report.backendReport)
-  throw Error('Diagnostic incomplet : '+JSON.stringify(report));
+ if(!report.parentContentRead||!report.attemptsRead||!report.backendReport)
+  throw Error('Diagnostic de lecture incomplet : '+JSON.stringify(report));
  return report;
 }
 
+function timParisDay(){
+ const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Paris',
+  year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+ const x=t=>parts.find(p=>p.type===t)?.value;
+ return x('year')+'-'+x('month')+'-'+x('day');
+}
+function timDayAfter(date){
+ if(!/^20\d{2}-\d{2}-\d{2}$/.test(String(date||'')))return null;
+ const d=new Date(date+'T12:00:00Z');
+ if(!Number.isFinite(d.getTime())||d.toISOString().slice(0,10)!==date)return null;
+ d.setUTCDate(d.getUTCDate()+1);
+ return d.toISOString().slice(0,10);
+}
 async function fetchAttempts(content){
  const docs=await getDocs(activeUser?.uid===TIM_UID?
    query(collection(db,'attempts'),where('authorUid','==',TIM_UID)):
@@ -442,15 +540,25 @@ async function fetchAttempts(content){
   // Les anciens entraînements de leçon sont corrigés automatiquement.
   // Cette règle ne modifie ni les copies ni les XP enregistrés.
   const automaticallyCorrectable=Boolean(ex?.questions?.length&&ex.questions.every(q=>['mc','text'].includes(q.type))&&ex.kind!=='translation-help-log');
-  const released=record.correctionStatus==='released'||(automaticallyCorrectable&&record.authorUid===TIM_UID);
+  const school=record.schoolHomework===true||ex?.kind==='school'||
+   (ex?.category==='school'&&ex?.kind!=='training'&&
+    Boolean(ex?.homeworkDue||ex?.due||ex?.entHomeworkOriginal));
+  const correctionFrom=String(record.correctionNotBefore||'')||
+   (school?timDayAfter(ex?.homeworkDue||ex?.due):null);
+  const schoolReady=!school||Boolean(correctionFrom&&timParisDay()>=correctionFrom);
+  const released=schoolReady&&(record.correctionStatus==='released'||
+   (automaticallyCorrectable&&record.authorUid===TIM_UID)||
+   (school&&Boolean(record.schoolHomework)&&record.authorUid===TIM_UID));
   list.push({
    id:d.id,date:record.submittedAt?.toDate?.().toISOString()||new Date().toISOString(),
    title:ex?.title||secret?.title||(d.id.startsWith('DAY_')?'Petit défi du '+d.id.slice(4,12):d.id.startsWith('SUNDAY_')?'Grand défi du dimanche':'Grand défi du samedi'),lesson:ex?.lesson||'',xp:Number(record.xp||0),policyVersion:Number(record.policyVersion||0),
    correctionStatus:released?'released':'pending-parent',
    correctionLocked:isParent?false:!released,
    answers:isParent&&Array.isArray(secret?.answers)?secret.answers:[],
-   score:isParent&&Number.isFinite(secret?.score)?secret.score:null,
-   total:isParent&&Number.isFinite(secret?.total)?secret.total:null,
+   score:isParent&&Number.isFinite(secret?.score)?secret.score:
+     (!isParent&&school&&Number.isFinite(record.schoolScore)?record.schoolScore:null),
+   total:isParent&&Number.isFinite(secret?.total)?secret.total:
+     (!isParent&&school&&Number.isFinite(record.schoolTotal)?record.schoolTotal:null),
    ...(isParent&&Number.isInteger(secret?.translationHelpCount)?{translationHelpCount:secret.translationHelpCount}:{}),
    needsReview:isParent?Boolean(secret?.needsReview):false
   });
@@ -580,16 +688,37 @@ async function startSession(user){
    mixedDaily=data.exercises;
   }catch(error){console.warn('Défis espagnols indisponibles ; anciens défis conservés :',error.message||error);}
  }
+ // Défis rédigés à partir des nouveaux cours ENT, sans toucher aux anciens IDs.
+ // La substitution ne se fait qu'avec un lot COMPLET et daté, jamais partiel.
+ const publishedBeforeParisDay=(value,period)=>{
+   const when=new Date(value||'');
+   if(!Number.isFinite(when.getTime()))return false;
+   const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Paris',
+      year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(when);
+   const take=x=>parts.find(p=>p.type===x)?.value;
+   return (take('year')+'-'+take('month')+'-'+take('day'))<period;
+ };
+ const batchFor=(kind,period)=>content.exercises.filter(e=>e.timEntBatch===true&&
+    e.kind===kind&&e.category==='challenge'&&e.period===period&&
+    e.questions?.length===(kind==='daily'?10:20)&&
+    publishedBeforeParisDay(e.publishedAt,period));
+ const todayBatch=batchFor('daily',missionPlan.meta.today);
+ const completeDaily=todayBatch.length===3&&new Set(todayBatch.map(e=>e.id)).size===3&&
+    missionPlan.meta.today>='2026-11-23';
+ const saturdayDate=(()=>{const d=new Date(missionPlan.meta.today+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+(6-d.getUTCDay()+7)%7);return d.toISOString().slice(0,10);})();
+ const sundayDate=(()=>{const d=new Date(saturdayDate+'T12:00:00Z');d.setUTCDate(d.getUTCDate()+1);return d.toISOString().slice(0,10);})();
+ const freshWeekly=batchFor('weekly',saturdayDate)[0];
+ const freshSunday=batchFor('sunday',sundayDate)[0];
  const effectiveDailyIds=mixedChallengePlan?
    mixedChallengePlan.filter(ex=>ex.kind==='daily').map(ex=>ex.id):
    missionPlan.meta.dailyIds;
  // Utiliser la carte du dimanche déjà prévue, avec son questionnaire réel côté serveur.
- const effectiveSunday=mixedChallengePlan?.find(ex=>ex.kind==='sunday'&&ex.questions?.length===20)?.id||missionPlan.meta.sunday;
+ const effectiveSunday=freshSunday?.id||mixedChallengePlan?.find(ex=>ex.kind==='sunday'&&ex.questions?.length===20)?.id||missionPlan.meta.sunday;
  window.__TIM_CHALLENGES={...missionPlan.meta,
-  sunday:effectiveSunday,
-  dailyIds:effectiveDailyIds,daily:effectiveDailyIds[0]||null,
-  dailyBankStatus:mixedChallengePlan?(mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='Français'))?'seven-subjects':mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='Histoire-géographie'))?'six-subjects':mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='SVT'))?'five-subjects':mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='Anglais'))?'four-subjects':'three-subjects'):mixedDaily?'mixed':'classic'};
- window.__TIM_NEXT_DAILY=effectiveDailyIds[0]||null;
+  sunday:effectiveSunday,weekly:freshWeekly?.id||missionPlan.meta.weekly,
+  dailyIds:completeDaily?todayBatch.map(e=>e.id).sort():effectiveDailyIds,daily:completeDaily?todayBatch.map(e=>e.id).sort()[0]:(effectiveDailyIds[0]||null),
+  dailyBankStatus:completeDaily?'ent-course':mixedChallengePlan?(mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='Français'))?'seven-subjects':mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='Histoire-géographie'))?'six-subjects':mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='SVT'))?'five-subjects':mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='Anglais'))?'four-subjects':'three-subjects'):mixedDaily?'mixed':'classic'};
+ window.__TIM_NEXT_DAILY=window.__TIM_CHALLENGES.dailyIds[0]||null;
  const mixedIds=new Set((mixedChallengePlan||[]).map(ex=>ex.id));
  const retainedExercises=content.exercises.filter(x=>
   !/^DAY_20\d{6}(?:_\d{2})?$/.test(String(x.id||''))&&!mixedIds.has(x.id));
@@ -606,8 +735,9 @@ async function startSession(user){
    // Conserver les trois exercices de la séance du 12 novembre, importés
    // via le compte Parent. Le reste de l'espagnol garde son parcours ENT V16.
    const nov12=x=>/^ESE_L14_0[1-3]$/.test(String(x?.id||''));
-   content={...content,lessons:content.lessons.filter(x=>notSpanish(x)||x.id==='L14'),
-     exercises:content.exercises.filter(x=>notSpanish(x)||nov12(x))};
+   content={...content,
+     lessons:content.lessons.filter(x=>notSpanish(x)||x.id==='L14'||x.timEntBatch===true),
+     exercises:content.exercises.filter(x=>notSpanish(x)||nov12(x)||x.timEntBatch===true)};
  }
  // Défi bonus personnalisé : indépendant des trois anciens bonus automatiques.
  window.__TIM_BONUS_PARENT=null;
@@ -638,10 +768,10 @@ async function startSession(user){
  window.__TIM_DATA=content;window.__TIM_PARENT=isParent;
  window.__CLOUD_ATTEMPTS=[];window.__TIM_SPANISH_PROGRESS={status:'loading',attempts:[]};
  try{await fetchAttempts(content);}catch(e){
-  console.warn('Résultats privés indisponibles ; aucune validation d exercice autorisée.',
+  console.warn('Historique des tentatives indisponible, aucune tentative ne sera ouverte.',
    e?.code||e?.message);
   if(!isParent){showTimCourseUnavailable();return;}
-  message('Impossible de lire les résultats Parent : disponibilité de Firestore à vérifier.');return;
+  message('Impossible de lire les résultats Parent. Veuillez vérifier la disponibilité de Firestore.');return;
  }
  window.__TIM_SPANISH_PROGRESS={status:'loading',attempts:[]};
  const trainingId=/^SP[QW]_L(?:0[1-9]|1[0-5])_0[1-5]$/;
@@ -1340,6 +1470,28 @@ async function startSession(user){
     throw Error('Correction non confirmée : aucune note de Tim n’a été modifiée.');
    return graded;
   },
+  // Devoir original ENT uniquement : réessai daté, note sans solution.
+  // Le serveur conserve les copies/notes précédentes et attribue 0 XP.
+  schoolHomeworkRetryStatus:async id=>{
+   if(activeUser?.uid!==TIM_UID&&activeUser?.uid!==PARENT_UID)
+    throw Error('Accès réservé à la famille.');
+   const response=await cloudCallable('getTimSchoolHomeworkRetakes')({id});
+   return response.data;
+  },
+  retrySchoolHomework:async(id,answers)=>{
+   if(window.__TIM_READONLY_FALLBACK)throw Error('Service indisponible : aucune tentative ne doit être envoyée.');
+   if(window.__TIM_GUEST||activeUser?.uid!==TIM_UID)
+    throw Error('Seul Tim peut refaire un devoir scolaire.');
+   const ex=window.__TIM_DATA.exercises.find(x=>x.id===id);
+   if(!ex||ex.kind!=='school'||!Array.isArray(answers)||answers.length!==ex.questions.length)
+    throw Error('Devoir scolaire ou réponses invalides.');
+   const response=await cloudCallable('retryTimSchoolHomework')({id,answers});
+   const data=response.data||{};
+   if(data.submitted!==true||data.xp!==0||!Number.isFinite(data.score)||
+      !Number.isFinite(data.total)||data.answers)
+    throw Error('Nouvelle note non confirmée. Ne pas refaire une tentative sans actualiser le résultat.');
+   return data;
+  },
   submit:async(id,values,options={})=>{
    if(window.__TIM_READONLY_FALLBACK)throw Error('Service des résultats indisponible : aucune tentative ne peut être validée en lecture seule.');
    if(window.__TIM_GUEST||activeUser.uid!==TIM_UID)throw Error('Seul Tim peut valider les exercices.');
@@ -1352,7 +1504,7 @@ async function startSession(user){
     const response=await cloudCallable('submitTimExercise')({id,answers:values,translationsUsed,reviewChanges});
    const xp=Number(response.data?.xp||0);
    const released=response.data?.correctionStatus==='released'&&Array.isArray(response.data.answers)&&response.data.answers.length===ex.questions.length;
-   return {id,date:new Date().toISOString(),title:ex.title,lesson:ex.lesson,xp,correctionLocked:!released,correctionStatus:released?'released':'pending-parent',answers:released?response.data.answers:[],score:released?Number(response.data.score):null,total:released?Number(response.data.total):null,needsReview:false,policyVersion:18,translationHelpCount:response.data?.translationHelpCount??null};
+   return {id,date:new Date().toISOString(),title:ex.title,lesson:ex.lesson,xp,correctionLocked:!released,correctionStatus:released?'released':'pending-parent',answers:released?response.data.answers:[],score:released||ex.kind==='school'?Number(response.data.score):null,total:released||ex.kind==='school'?Number(response.data.total):null,needsReview:false,policyVersion:18,translationHelpCount:response.data?.translationHelpCount??null};
   },
   assignParentBonus:async sourceId=>{
    if(activeUser?.uid!==PARENT_UID)throw Error('Réservé au compte Parent.');
@@ -1369,6 +1521,7 @@ async function startSession(user){
   },
   refresh:async()=>fetchAttempts(window.__TIM_DATA),
   publish:publishCoursePack,
+  publishEntHomeworks,
   saveLesson:saveEditableLesson,
   attachments:makeAttachmentBridge(db,()=>activeUser,PARENT_UID,TIM_UID),
   saveSpanishEnt,
@@ -1754,7 +1907,7 @@ async function startSession(user){
  document.getElementById('account-name').textContent=isParent?'Espace parent — compte connecté':'Espace Tim — compte connecté';
  document.querySelectorAll('[data-nav="parent"]').forEach(el=>el.hidden=!isParent);
  document.getElementById('logout-button').onclick=()=>signOut(auth);
- const sc=document.createElement('script');sc.src='./app.js?v=xp-barre-exception-16nov-hg-vocab-thales-18nov-v3-firestore-20261119';sc.onerror=()=>{stopApp();message('Le module pédagogique du classeur n’a pas chargé.');};
+ const sc=document.createElement('script');sc.src='./app.js?v=xp-barre-exception-16nov-hg-vocab-thales-18nov-v3-ent-lot-20261119';sc.onerror=()=>{stopApp();message('Le module pédagogique du classeur n’a pas chargé.');};
  sc.addEventListener('load',()=>{try{if(document.querySelector('.mission-hero'))window.TIM_INTRO_SHOW?.();}catch(e){console.warn('Animation d’ouverture indisponible :',e);}});
  document.body.append(sc);appLoaded=true;
 }

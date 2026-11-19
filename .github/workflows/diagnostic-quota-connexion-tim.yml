@@ -1,0 +1,84 @@
+name: Diagnostic unique quotas Firestore et acces Tim Parent (lecture seule)
+on:
+  workflow_dispatch:
+  push:
+    branches: [automatisation-ent-pedagogie-20261118]
+    paths:
+      - '.github/workflows/diagnostic-quota-connexion-tim.yml'
+      - 'outils/diagnostiquer-quota-firestore.cjs'
+      - 'outils/inspecter-comptes-lecture-seule.cjs'
+      - 'outils/test/diagnostic-quota-firestore.test.cjs'
+permissions:
+  contents: read
+concurrency:
+  group: diagnostic-quotas-tim-unique
+  cancel-in-progress: false
+jobs:
+  observer:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[audit-quotas-seul-20261119]')
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    env:
+      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+      TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+      TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
+      TIM_STUDENT_EMAIL: ${{ secrets.TIM_STUDENT_EMAIL }}
+      TIM_STUDENT_PASSWORD: ${{ secrets.TIM_STUDENT_PASSWORD }}
+      TIM_DIAGNOSTIC_MINIMAL: '1'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Valider le diagnostic sans donnees reelles
+        run: |
+          node --check outils/diagnostiquer-quota-firestore.cjs
+          node --check outils/inspecter-comptes-lecture-seule.cjs
+          node --test outils/test/diagnostic-quota-firestore.test.cjs outils/test/inspection-comptes-lecture-seule.test.cjs
+      - name: Interroger lecture/quota Google sans lire de donnees privees
+        id: quota
+        continue-on-error: true
+        run: node outils/diagnostiquer-quota-firestore.cjs
+      - name: Controler uniquement presence des identifiants sans affichage
+        id: secrets
+        run: |
+          if [ -n "$TIM_PARENT_EMAIL" ] && [ -n "$TIM_PARENT_PASSWORD" ] && [ -n "$TIM_STUDENT_EMAIL" ] && [ -n "$TIM_STUDENT_PASSWORD" ]; then
+            echo 'available=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'available=false' >> "$GITHUB_OUTPUT"
+            echo 'Identifiants des deux profils indisponibles, navigateur prive non lance'
+          fi
+      - name: Installer navigateur Chromium (un seul controle mobile par compte)
+        if: steps.secrets.outputs.available == 'true'
+        run: |
+          mkdir -p /tmp/tim-inspection-quota
+          npm install --prefix /tmp/tim-inspection-quota --no-audit --no-fund playwright
+          /tmp/tim-inspection-quota/node_modules/.bin/playwright install --with-deps chromium
+      - name: Verifier vrais comptes Tim puis Parent sans ecriture
+        if: steps.secrets.outputs.available == 'true'
+        id: navigateur
+        continue-on-error: true
+        env:
+          NODE_PATH: /tmp/tim-inspection-quota/node_modules
+        run: node outils/inspecter-comptes-lecture-seule.cjs
+      - name: Conserver statut et diagnostic sans donnees scolaires
+        if: always()
+        run: |
+          echo "Controle quotas : ${{ steps.quota.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Controle deux comptes : ${{ steps.navigateur.outcome }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "Un seul controle par compte. Aucune soumission. Rapports joints." >> "$GITHUB_STEP_SUMMARY"
+      - name: Archiver uniquement rapports et captures anonymisees
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostic-quota-tim-parent-lecture-seule
+          path: |
+            diagnostic-firestore/
+            browser-comptes-lecture-seule/
+          retention-days: 3
+          if-no-files-found: warn
+      - name: Bloquer la validation si lecture ou compte incomplet
+        if: always()
+        run: |
+          test "${{ steps.quota.outcome }}" = "success"
+          test "${{ steps.navigateur.outcome }}" = "success"

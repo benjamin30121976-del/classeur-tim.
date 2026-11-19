@@ -29,3 +29,20 @@ test('relecture de copie historique Tim : une seule lecture privée pour la mêm
  assert.equal(counts.get('privateAttempts/EX_TRAIN_2'),1);
 });
 
+test('devoir scolaire daté : aucune correction révélée avant la date autorisée',async()=>{
+ let reads=0;
+ const db={
+  async list(path){
+   if(path==='attempts')return [{
+    id:'SCH_PRIVATE_TEST',data:{authorUid:TIM_UID,schoolHomework:true,
+      correctionNotBefore:'2099-12-31',correctionStatus:'released'}
+   }];
+   if(path==='releasedCorrections')return [{id:'SCH_PRIVATE_TEST',data:{released:true}}];
+   throw Error('collection interdite');
+  },
+  async get(){reads++;return {score:6,answers:[{correct:false,response:'a'}]};}
+ };
+ const data=await TESTABLE.releasedCorrections(db,TIM_UID);
+ assert.equal(data.corrections.length,0);
+ assert.equal(reads,0);
+});

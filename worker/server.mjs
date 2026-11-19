@@ -1,10 +1,12 @@
-import {authenticatedTimCourse} from './tim-course-cache.mjs';
 /* School backend for Cloudflare Pages + Firebase Spark.
    Every action verifies a signed Firebase ID token, then enforces the Tim/Parent role.
    No answer key, credential or student grade is served to anonymous visitors. */
 import {PROJECT,TIM_UID,PARENT_UID,ApiFault,verifyFirebaseToken} from './auth.mjs';
 import {firestore,createWrite,upsertWrite,updateWrite,NOW} from './firestore.mjs';
 import {grade} from '../functions/grading.mjs';
+import {isSchoolHomework,schoolCorrectionNotBefore,schoolCorrectionIsOpen} from './school-homework-policy.mjs';
+import {authenticatedTimCourse} from './tim-course-cache.mjs';
+import {retrySchoolHomework,schoolHomeworkRetakeStatus} from './school-homework-retry.mjs';
 import {mathNov12ForParentImport} from '../maths-12nov-training.mjs';
 import {rawPoints,cappedPoints} from '../functions/xp.mjs';
 import {xpPeriodStart} from '../functions/xp-week-exception.mjs';
@@ -111,6 +113,19 @@ async function submitExercise(db,uid,payload){
   throw new ApiFault(400,'invalid-exercise');
  const {exercise,key,spanishSource,mixedSource}=await resolveExercise(db,id);
  if(exercise.enabled!==true)throw new ApiFault(409,'exercise-closed');
+ // Un nouveau défi ENT daté ne peut être remis qu'à son jour prévu.
+ // La date est revérifiée côté serveur, pas seulement cachée dans l'interface.
+ if(exercise.timEntBatch===true&&['daily','weekly','sunday'].includes(exercise.kind)){
+  const today=parisDate(new Date()),dow=new Date(today+'T12:00:00Z').getUTCDay();
+  const due=exercise.period===today;
+  const correctDay=exercise.kind==='daily'?(dow>=1&&dow<=5):
+   exercise.kind==='weekly'?dow===6:dow===0;
+  const count=exercise.kind==='daily'?10:20;
+  if(!due||!correctDay||!(exercise.publishedAt&&parisDate(new Date(exercise.publishedAt))<today)||exercise.category!=='challenge'||
+      exercise.questions?.length!==count)
+   throw new ApiFault(409,'mission-not-open');
+ }
+
   // Défi bonus : pas de texte libre ni de question sans correction expliquée.
   if(exercise.kind==='bonus-day'){
    if(!Array.isArray(exercise.questions)||exercise.questions.length<10||exercise.questions.length>20||
@@ -165,9 +180,17 @@ async function submitExercise(db,uid,payload){
     questionIndex:c.questionIndex,before:c.before,after:c.after
    })),reviewChangeCount:reviewChanges.length}:{})
  };
- const autoRelease=isMissionId(id)||exercise.kind==='bonus-day'||(evaluated.needsReview===false&&exercise.kind!=='translation-help-log');
+ // Devoir ENT noté : montrer immédiatement la note, sans livrer la réponse
+ // avant le lendemain du jour où le travail doit être rendu.
+ const isSchool=isSchoolHomework(exercise);
+ const correctionNotBefore=isSchool?schoolCorrectionNotBefore(exercise):null;
+ const schoolGateOpen=!isSchool||schoolCorrectionIsOpen({schoolHomework:true,correctionNotBefore},today);
+ const autoRelease=schoolGateOpen&&(isMissionId(id)||exercise.kind==='bonus-day'||
+  (evaluated.needsReview===false&&exercise.kind!=='translation-help-log'));
  const pending={
-  exerciseId:id,authorUid:uid,policyVersion:18,xp:points,correctionStatus:autoRelease?'released':'pending-parent'
+  exerciseId:id,authorUid:uid,policyVersion:18,xp:points,correctionStatus:autoRelease?'released':'pending-parent',
+  ...(isSchool?{schoolHomework:true,correctionNotBefore,
+    schoolScore:evaluated.score,schoolTotal:evaluated.total}:{})
  };
  await db.commit([
   createWrite('attempts/'+id,pending,NOW),
@@ -176,7 +199,8 @@ async function submitExercise(db,uid,payload){
   ...(autoRelease?[createWrite('releasedCorrections/'+id,{released:true},NOW)]:[])
  ],transaction);
  return autoRelease?{id,submitted:true,xp:points,correctionLocked:false,correctionStatus:'released',score:evaluated.score,total:evaluated.total,answers:evaluated.answers,translationHelpCount:evaluated.translationHelpCount??0}:
-  {id,submitted:true,xp:points,correctionLocked:true,correctionStatus:'pending-parent'};
+  {id,submitted:true,xp:points,correctionLocked:true,correctionStatus:'pending-parent',
+   ...(isSchool?{score:evaluated.score,total:evaluated.total}: {})};
 }
 async function parentReport(db,uid){
  permitted(uid,'parent');
@@ -197,6 +221,8 @@ async function releaseCorrection(db,uid,payload){
  const tx=await db.transaction();
  const attempt=await db.get('attempts/'+payload.id,tx);
  if(!attempt)throw new ApiFault(404,'attempt-not-found');
+ if(payload.released&&!schoolCorrectionIsOpen(attempt,parisDate(new Date())))
+  throw new ApiFault(409,'school-correction-not-due');
  const status=payload.released?'released':'pending-parent';
  await db.commit([
   updateWrite('attempts/'+payload.id,{correctionStatus:status}),
@@ -212,9 +238,13 @@ async function releasedCorrections(db,uid){
  permitted(uid,'tim');
  const [attempts,releases]=await Promise.all([db.list('attempts',1000),db.list('releasedCorrections',1000)]);
  const allowed=new Set(releases.filter(x=>x.data?.released===true).map(x=>x.id));
- const owned=attempts.filter(x=>x.data?.authorUid===uid);
+ const today=parisDate(new Date());
+ // Une ancienne autorisation « released » ne contourne jamais la date du devoir.
+ const owned=attempts.filter(x=>x.data?.authorUid===uid&&schoolCorrectionIsOpen(x.data,today));
  const legacy=owned.filter(x=>!allowed.has(x.id)&&x.data?.correctionStatus==='pending-parent'&&
   !x.id.startsWith('TRH_'));
+ // Éviter de facturer deux lectures de la même copie : celles vérifiées
+ // pour le déblocage historique sont réutilisées pour le compte Tim.
  const checkedCopies=new Map();
  const eligible=await Promise.all(legacy.map(async x=>{
   const detail=await db.get('privateAttempts/'+x.id);
@@ -235,8 +265,9 @@ async function releasedCorrections(db,uid){
 }
 async function courseContent(db,uid){
  permitted(uid,'tim');
- // Ne jamais présenter une partie du catalogue privé de Tim comme complète.
- // Si Google refuse les listes de compléments, aucun contenu trompeur n'est servi.
+ // Pour le compte Tim, afficher uniquement un catalogue privé COMPLET.
+ // Si une lecture Firestore échoue, remonter une indisponibilité explicite :
+ // ne jamais faire passer « zéro complément » pour le contenu réel.
  const main=await db.get('content/main');
  if(!main||!Array.isArray(main.lessons)||!Array.isArray(main.exercises))
   throw new ApiFault(404,'course-not-found');
@@ -255,6 +286,8 @@ async function courseContent(db,uid){
  const [lessonList,exerciseList]=await Promise.all([
   resilientList('lessons'),resilientList('exercises')
  ]);
+ // Interdire de présenter une base partielle comme l'intégralité des cours.
+ // Un quota épuisé ne devient jamais silencieusement « zéro exercice ».
  if(!lessonList.available||!exerciseList.available)
   throw new ApiFault(503,'student-course-incomplete');
  const lessons=lessonList.items,exercises=exerciseList.items;
@@ -1390,6 +1423,8 @@ const ACTIONS={
  getMathTrainingProgress:getMathTrainingProgress,
  getParentReport:parentReport,
  submitTimExercise:submitExercise,
+ retryTimSchoolHomework:(db,uid,payload)=>retrySchoolHomework(db,uid,payload,{resolveExercise,grade}),
+ getTimSchoolHomeworkRetakes:(db,uid,payload)=>schoolHomeworkRetakeStatus(db,uid,payload,{resolveExercise}),
  setParentCorrectionRelease:releaseCorrection,
  getTimReleasedCorrections:releasedCorrections,
  getTimCourseContent:courseContent,
@@ -1410,8 +1445,8 @@ export async function handleRequest(request,env){
   if(!data||typeof data.action!=='string'||!ACTIONS[data.action])
    throw new ApiFault(400,'unknown-action');
   if(JSON.stringify(data).length>70000)throw new ApiFault(413,'too-large');
-  // Authentification déjà vérifiée ; seule la lecture complète du cours
-  // de Tim utilise le cache privé de courte durée, jamais les copies.
+  // Le cache est accessible uniquement APRÈS vérification du jeton signé.
+  // La lecture complète du catalogue Tim ne consomme pas Firestore à chaque ouverture.
   if(data.action==='getTimCourseContent'){
    const result=await authenticatedTimCourse(uid,request,async()=>{
     const db=await firestore(env);
@@ -1428,5 +1463,4 @@ export async function handleRequest(request,env){
   return respond({error:code},status);
  }
 }
-export const TESTABLE={correctThalesNov16Question9,correctSaturdayFullCredit,reviseSaturday20261114,correctMathNov12Question10,getFirestoreReadDiagnostics,getEnglishTrainingTask,submitEnglishTraining,getEnglishTrainingProgress,previewEnglishTraining,getSvtTrainingTask,submitSvtTraining,getSvtTrainingProgress,previewSvtTraining,getHgTrainingTask,submitHgTraining,getHgTrainingProgress,previewHgTraining,getFrTrainingTask,submitFrTraining,getFrTrainingProgress,previewFrTraining,previewSpanishEntTraining,getMathEntTask,submitMathEntTask,previewMathEntTask,getMathEntProgress,getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,getMixedChallengePlan,previewMixedChallenge,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
-
+export const TESTABLE={retrySchoolHomework,schoolHomeworkRetakeStatus,correctThalesNov16Question9,correctSaturdayFullCredit,reviseSaturday20261114,correctMathNov12Question10,getFirestoreReadDiagnostics,getEnglishTrainingTask,submitEnglishTraining,getEnglishTrainingProgress,previewEnglishTraining,getSvtTrainingTask,submitSvtTraining,getSvtTrainingProgress,previewSvtTraining,getHgTrainingTask,submitHgTraining,getHgTrainingProgress,previewHgTraining,getFrTrainingTask,submitFrTraining,getFrTrainingProgress,previewFrTraining,previewSpanishEntTraining,getMathEntTask,submitMathEntTask,previewMathEntTask,getMathEntProgress,getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,getMixedChallengePlan,previewMixedChallenge,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};

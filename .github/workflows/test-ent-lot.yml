@@ -1,0 +1,103 @@
+name: Valider le pipeline ENT hors ligne
+on:
+  push:
+    branches: [main, automatisation-ent-pedagogie-20261118]
+    paths:
+      - 'boot.js'
+      - 'app.js'
+      - 'index.html'
+      - 'tim-ent-batch-import.js'
+      - 'tools/test/tim-ent-batch-validation.test.cjs'
+      - 'tools/test/diagnostic-lecture-seule.test.cjs'
+      - 'tools/test/matieres-presentes.test.cjs'
+      - 'tools/test/tim-ent-spanish-visibility.test.cjs'
+      - 'tools/test/tim-ent-pdf-inline-ent-bis.test.cjs'
+      - 'tools/test/tim-language-aids.test.cjs'
+      - 'tools/test/school-homework-retry-ui.test.mjs'
+      - 'tools/test/tim-private-course-availability.test.mjs'
+      - 'anglais-parcours.js'
+      - 'espagnol-prononciation.js'
+      - 'physique-chimie-inline-pdf.js'
+      - 'prochaines-missions.js'
+      - 'tools/test/prochaines-missions.readonly.test.cjs'
+      - 'worker/**'
+      - 'functions/**'
+      - 'tools/tim_ent_lot.py'
+      - 'tools/tim_ent_autogenerate.py'
+      - 'tools/ent_tim_nouveautes_7_matieres.py'
+      - 'tools/test/test_tim_ent_lot.py'
+      - 'tools/test/test_tim_ent_autogenerate.py'
+      - 'tools/test/test_ent_tim_nouveautes_7_matieres.py'
+      - '.github/workflows/test-ent-lot.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verification:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Installer lecteur PDF textuel épinglé
+        run: python -m pip install pypdf==5.9.0
+      - name: Compilation et tests hors ligne
+        run: |
+          python -m py_compile tools/tim_ent_lot.py tools/tim_ent_autogenerate.py tools/ent_tim_nouveautes_7_matieres.py
+          node --check boot.js
+          python -m unittest discover -s tools/test -p 'test_tim_ent_lot.py' -v
+          python -m unittest discover -s tools/test -p 'test_tim_ent_autogenerate.py' -v
+          python -m unittest discover -s tools/test -p 'test_ent_tim_nouveautes_7_matieres.py' -v
+
+  audit-pedagogie:
+    needs: verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Vérifier que les moteurs du classeur sont syntaxiquement valides
+        run: |
+          node --check boot.js
+          node --check functions/xp.mjs
+          node --check worker/server.mjs
+          node --check app.js
+          node --check prochaines-missions.js
+          node --check tim-ent-batch-import.js
+          node --test tools/test/matieres-presentes.test.cjs
+          node --test tools/test/diagnostic-lecture-seule.test.cjs
+          node --test tools/test/tim-ent-batch-validation.test.cjs
+          node --test tools/test/tim-ent-spanish-visibility.test.cjs
+          node --test tools/test/tim-ent-pdf-inline-ent-bis.test.cjs
+          node --test tools/test/tim-language-aids.test.cjs
+          node --test tools/test/school-homework-retry-ui.test.mjs
+          node --test tools/test/tim-private-course-availability.test.mjs
+          node --test worker/test/course-fallback.test.mjs worker/test/firestore-quota.test.mjs worker/test/tim-course-cache.test.mjs
+          node --test worker/test/firestore-read-corrections.test.mjs
+          node --test tools/test/firestore-reads-budget.test.mjs
+          node --test tools/test/prochaines-missions.readonly.test.cjs
+      - name: Tester les corrections, sept matières, défis et barèmes sans copie réelle
+        run: |
+          node --test \
+            functions/test/xp.test.mjs \
+            tools/test/xp-v18.test.mjs \
+            worker/test/corrections-pedagogiques.test.mjs \
+            worker/test/school-homework-policy.test.mjs \
+            worker/test/school-homework-submit.test.mjs \
+            worker/test/school-homework-retry.test.mjs \
+            worker/test/math-training.test.mjs \
+            worker/test/physics-training.test.mjs \
+            worker/test/lesson-training-xp.test.mjs \
+            worker/test/spanish-parent-preview.test.mjs \
+            worker/test/hg-training.test.mjs \
+            worker/test/svt-training.test.mjs \
+            worker/test/fr-training.test.mjs \
+            worker/test/mixed-challenges.test.mjs \
+            worker/test/saturday-20261114-review.test.mjs \
+            worker/test/sunday-bilan-20261115.test.mjs
+      - name: Bilan
+        run: |
+          echo 'Tests hors ligne : jamais de validation sur Tim, aucune modification de ses XP.' >> "$GITHUB_STEP_SUMMARY"

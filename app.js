@@ -121,9 +121,9 @@ function bonusMissionPanel(onHome=false,subject=''){
  const chosen=subject||(onHome?'':bonusCatalogSubject);
  const available=chosen?all.filter(e=>(e.subject||'Espagnol')===chosen):all;
  const box=E('section',onHome?'bonus-spotlight home-bonus':'bonus-spotlight');
- box.setAttribute('aria-label','Défi bonus : choisir une matière puis un exercice');
+ box.setAttribute('aria-label','Défis bonus libres : choisir une matière puis un exercice');
  const head=E('div','bonus-spotlight-head');
- head.append(E('h2','bonus-spotlight-heading','DÉFI BONUS'),E('span','bonus-count',all.length+' exercice'+(all.length>1?'s':'')));
+ head.append(E('h2','bonus-spotlight-heading','DÉFIS BONUS LIBRES'),E('span','bonus-count',all.length+' exercice'+(all.length>1?'s':'')));
  box.append(head);
  if(onHome){
   const scene=E('div','bonus-home-scene'),wolf=E('img','bonus-home-wolf');
@@ -236,8 +236,49 @@ function renderLessonIndex(){
  if(bisCourses.length){root.append(E('h3','lesson-type-label bis','LEÇONS BIS ILLUSTRÉES · '+bisCourses.length));for(const l of bisCourses)root.append(cardAction(l.title,'Leçon BIS · '+chapterOf(l),l.summary,()=>openLesson(l.id)));}
  if(!found.length)root.append(notice('Aucune fiche trouvée pour cette recherche.'));
 }
+function makeLanguageAudioPanel(lesson){
+ const subject=subjectOf(lesson);
+ if(!['Anglais','Espagnol'].includes(subject)||!Array.isArray(lesson.audioPhrases))return null;
+ const data=lesson.audioPhrases.filter(p=>p&&String(p.text||'').trim()&&String(p.fr||'').trim());
+ if(!data.length)return null;
+ const language=subject==='Anglais'?'en-GB':'es-ES';
+ const group=E('section','panel language-audio-vocabulary');
+ group.append(E('h3','','🔊 Écouter et répéter les mots du cours'),
+  E('p','small','Écoute le mot ou la phrase à vitesse normale ou lentement, puis répète à voix haute.'));
+ const play=(word,slow)=>{
+  if(!('speechSynthesis' in window)||!('SpeechSynthesisUtterance' in window)){
+   alert('La lecture vocale est indisponible sur cet appareil.');return;
+  }
+  const synth=window.speechSynthesis,voices=synth.getVoices()||[];
+  const same=voices.find(v=>String(v.lang||'').toLowerCase().replace('_','-')===language.toLowerCase());
+  const compatible=same||voices.find(v=>String(v.lang||'').toLowerCase().startsWith(language.slice(0,2).toLowerCase()));
+  if(voices.length&&!compatible){
+   alert('La voix '+(subject==='Anglais'?'anglaise':'espagnole')+' est absente des paramètres de synthèse vocale du téléphone.');
+   return;
+  }
+  try{
+   synth.cancel();
+   const utterance=new SpeechSynthesisUtterance(String(word));
+   utterance.lang=language;
+   utterance.rate=slow?0.65:0.86;
+   if(compatible)utterance.voice=compatible;
+   synth.speak(utterance);
+  }catch(_){alert('Impossible de lire cette phrase sur cet appareil.');}
+ };
+ for(const p of data){
+  const row=E('div','language-audio-row');
+  row.style.cssText='padding:10px 0;border-bottom:1px solid #53617a';
+  const term=E('strong','',String(p.text));term.lang=language.slice(0,2);
+  row.append(term,E('p','small','En français : '+String(p.fr)));
+  const actions=E('div','btnrow');
+  actions.append(button('🔊 Écouter',()=>play(p.text,false),'plain'),
+                 button('🐢 Lentement',()=>play(p.text,true),'plain'));
+  row.append(actions);group.append(row);
+ }
+ return group;
+}
 function openLesson(id){const l=lessonBy(id);if(!l)return;
- if(subjectOf(l)==='SVT'&&window.TIM_SVT_PATH){page('matieres');renderMatiere('SVT',id);return;}if(subjectOf(l)==='Histoire-géographie'&&window.TIM_HG_PATH){page('matieres');renderMatiere('Histoire-géographie',id==='BD16_HG_CAHIER'?'HG_BIS09':id);return;}if(subjectOf(l)==='Français'&&window.TIM_FR_PATH){page('matieres');renderMatiere('Français',id);return;}if(subjectOf(l)==='Anglais'&&window.TIM_ENGLISH_PATH){page('matieres');renderMatiere('Anglais',id);return;}if(subjectOf(l)==='Physique-chimie'&&window.TIM_PHYSIQUE_PATH){page('matieres');renderMatiere('Physique-chimie',id);return;}lessonSubject=subjectOf(l);lessonGroup='';page('cours');document.getElementById('lesson-index').classList.add('hide');const dest=clear(document.getElementById('lesson-detail'));dest.classList.add('active');
+ if(!l.timEntBatch&&subjectOf(l)==='SVT'&&window.TIM_SVT_PATH){page('matieres');renderMatiere('SVT',id);return;}if(!l.timEntBatch&&subjectOf(l)==='Histoire-géographie'&&window.TIM_HG_PATH){page('matieres');renderMatiere('Histoire-géographie',id==='BD16_HG_CAHIER'?'HG_BIS09':id);return;}if(!l.timEntBatch&&subjectOf(l)==='Français'&&window.TIM_FR_PATH){page('matieres');renderMatiere('Français',id);return;}if(!l.timEntBatch&&subjectOf(l)==='Anglais'&&window.TIM_ENGLISH_PATH){page('matieres');renderMatiere('Anglais',id);return;}if(!l.timEntBatch&&subjectOf(l)==='Physique-chimie'&&window.TIM_PHYSIQUE_PATH){page('matieres');renderMatiere('Physique-chimie',id);return;}lessonSubject=subjectOf(l);lessonGroup='';page('cours');document.getElementById('lesson-index').classList.add('hide');const dest=clear(document.getElementById('lesson-detail'));dest.classList.add('active');
  const bis=isBisLesson(l),allSame=DATA.lessons.filter(x=>x.id!==l.id&&subjectOf(x)===subjectOf(l)&&chapterOf(x)===chapterOf(l)),others=allSame.filter(x=>bis?!isBisLesson(x):isBisLesson(x));
  dest.append(button('← Retour au sommaire',()=>{dest.classList.remove('active');document.getElementById('lesson-index').classList.remove('hide');scrollTop();},'plain back'));
  dest.append(E('p','lesson-type-label '+(bis?'bis':'ent'),bis?'LEÇON BIS · POUR MIEUX COMPRENDRE':'COURS ENT · DOCUMENT DU PROFESSEUR'),E('h2','',l.title),E('p','meta',bis?'Version pédagogique complémentaire':'Cours abordé : '+(l.date||'date non précisée')),E('p','',l.summary));
@@ -249,11 +290,59 @@ function openLesson(id){const l=lessonBy(id);if(!l)return;
  if(l.id==='L05'&&window.TIM_SPANISH_LETTER)dest.append(window.TIM_SPANISH_LETTER.createPanel());
  // Les énoncés espagnols des captures ENT sont traduits sans remplacer les PDF de l'enseignante.
  if(subjectOf(l)==='Espagnol'&&window.TIM_SPANISH_ENT_ORIGINALS){dest.append(window.TIM_SPANISH_ENT_ORIGINALS.renderPanel(l.id));}
- // Les PDF d'origine sont prioritaires et consultables en lecteur mobile privé.
- if(!bis)dest.append(makeAttachmentPanel('lesson',l.id));
+ // Les PDF de l'ENT sont visibles SANS CLIC dans les DEUX fiches.
+ // Le même original privé est affiché en place dans ENT et BIS, sans le dupliquer.
+ // Une leçon BIS ne peut jamais emprunter les PDF d'une autre matière.
+ const originalForPdf=bis&&l.timEntBatch
+  ?DATA.lessons.find(x=>x.timEntBatch===true&&x.kind==='ent'&&x.entId===l.entId&&subjectOf(x)===subjectOf(l))
+  :l;
+ if(originalForPdf)dest.append(makeAttachmentPanel('lesson',originalForPdf.id,{inlineRequired:true}));
+ else if(bis&&l.timEntBatch)dest.append(notice('Document ENT original non retrouvé pour cette leçon BIS : PDF à vérifier avant publication.','lesson-caution'));
  for(const b of l.blocks)dest.append(buildBlock(b));loadInlineLessonFigures(dest,l.id);
- if(bis)dest.append(makeAttachmentPanel('lesson',l.id));
-let related=DATA.exercises.filter(e=>e.lesson===l.id&&!e.id.startsWith('R'));let controls=E('div','panel separated');controls.append(E('h3','','S’entraîner sur cette leçon'));if(related.length){let list=E('div','clicklist');for(const ex of related)list.append(cardAction(ex.title,(ex.kind==='training'?'Entraînement · +1 / +0,5 / 0 XP':window.TIM_EXERCISE.school(ex)?'Devoir ENT · 0 XP':'Bonus · jusqu’à +2 XP')+' · '+quizLabel(ex),null,()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));controls.append(list);}else controls.append(E('p','','Un exercice pourra être ajouté ultérieurement.'));dest.append(controls);
+ // Les nouvelles leçons BIS importées réutilisent la même lecture audio
+ // qu'Espagnol/Anglais : vocabulaire prouvé dans le cours ENT, sans XP.
+ if(bis&&l.timEntBatch){
+  const audioPanel=makeLanguageAudioPanel(l);
+  if(audioPanel)dest.append(audioPanel);
+ }
+ // Les éventuels documents complémentaires spécifiques à la BIS restent visibles.
+ if(bis&&(!originalForPdf||originalForPdf.id!==l.id))
+  dest.append(makeAttachmentPanel('lesson',l.id,{hideIfEmpty:true,inlineRequired:true}));
+// Séparation décidée par le Parent le 19/11 : aucune révision fabriquée
+// dans la fiche ENT/BIS importée. Seuls les vrais questionnaires scolaires
+// explicitement rattachés au cours ENT peuvent y être proposés.
+// Les entraînements restent dans les rubriques dédiées, sans modifier leurs XP.
+if(l.timEntBatch===true){
+ const panel=E('div','panel separated');
+ if(l.kind==='ent'){
+  panel.append(E('h3','','Exercices ENT du professeur'));
+  const originals=DATA.exercises.filter(e=>
+   e.lesson===l.id&&e.entHomeworkOriginal===true&&
+   e.kind==='school'&&e.category==='school');
+  if(originals.length){
+   const list=E('div','clicklist');
+   for(const ex of originals)list.append(cardAction(
+    ex.title,'Devoir officiel ENT · 0 XP · '+quizLabel(ex),null,
+    ()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));
+   panel.append(list);
+  }else panel.append(E('p','','Les exercices originaux, lorsqu’ils existent, figurent dans le cours et ses PDF. Aucun questionnaire officiel supplémentaire n’est disponible ici.'));
+ }else{
+  panel.append(E('h3','','S’entraîner après la leçon BIS'));
+  panel.append(E('p','','Les exercices créés pour réviser se trouvent dans les Bonus devoirs et les défis, pas dans les documents du professeur.'));
+ }
+ panel.append(button('Accéder aux bonus et défis',()=>page('exercices'),'plain'));
+ dest.append(panel);
+}else{
+ let related=DATA.exercises.filter(e=>e.lesson===l.id&&!e.id.startsWith('R'));
+ let controls=E('div','panel separated');controls.append(E('h3','','S’entraîner sur cette leçon'));
+ if(related.length){let list=E('div','clicklist');
+  for(const ex of related)list.append(cardAction(ex.title,
+   (ex.kind==='training'?'Entraînement · +1 / +0,5 / 0 XP':window.TIM_EXERCISE.school(ex)?'Devoir ENT · 0 XP':'Bonus · jusqu’à +2 XP')+' · '+quizLabel(ex),
+   null,()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));
+  controls.append(list);
+ }else controls.append(E('p','','Un exercice pourra être ajouté ultérieurement.'));
+ dest.append(controls);
+}
 let help=E('div','helpbox');help.append(E('h3','','Je n’ai pas compris'));help.append(E('p','','Voici une autre manière de comprendre. Les explications suivantes ont été écrites spécialement pour le classeur.'));const stage=E('div');let index=0;function step(){clear(stage);if(index===0){stage.append(badge('Niveau 1 · Explication simple'),E('p','',l.help.simple));}if(index===1){stage.append(badge('Niveau 2 · Étapes guidées'));let ol=E('ol');for(const x of l.help.steps)ol.append(E('li','',x));stage.append(ol,E('p','note info',l.help.example));}if(index>=2){stage.append(badge('Niveau 3 · Vérifier avec un exemple'));const ck=l.help.check;if(ck){stage.append(E('p','',ck.q));let opts=E('div','check-answers');ck.options.forEach((o,j)=>opts.append(button(o,()=>{msg.textContent=(j===ck.right?'Bonne réponse. ':'Ce n’est pas la bonne réponse. ')+ck.why;msg.style.color=j===ck.right?'var(--green)':'var(--red)';},'plain')));stage.append(opts);const msg=E('p','subtle','Cette mini-question est une aide, pas un exercice noté.');stage.append(msg);}else stage.append(E('p','',l.help.example));}next.textContent=index===0?'Explication pas à pas →':index===1?'Vérifier avec un exemple →':'Recommencer l’aide';}
 const next=button('Explication pas à pas →',()=>{index=(index+1)%3;step();});help.append(stage,next);step();dest.append(help);
 let arch=E('div','panel');arch.append(E('h3','','Historique des cours'));arch.append(E('p','small', 'Les originaux ENT doivent être ajoutés dans l’espace parent pour être consultables de façon privée, sans mettre les PDF scolaires sur un site public.'));arch.append(button('Voir le journal des séances',()=>page('archives'),'plain'));dest.append(arch);scrollTop();}
@@ -674,6 +763,19 @@ function renderMathOfficialExercises(root,toolbar){
   page('matieres');renderMatiere('Mathématiques');
  },'plain'));
 }
+// Raccorder les entraînements créés depuis les ZIP ENT aux répertoires
+// propres à chaque matière, sans remplacer les parcours historiques.
+function renderEntBatchExerciseIndex(root){
+ const extra=DATA.exercises.filter(ex=>ex.timEntBatch===true&&
+   ex.subject===exerciseSubject&&ex.kind==='training'&&!ex.homeworkBonus);
+ if(!extra.length)return;
+ const box=E('section','panel ent-exercise-imports');
+ box.append(E('h3','','Nouveaux entraînements des cours ENT'));
+ box.append(E('p','small','Dix questions, correction détaillée et une seule tentative.'));
+ for(const ex of extra)box.append(cardAction(ex.title,'Entraînement de leçon · 10 questions',
+   ex.description||'',()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));
+ root.prepend(box);
+}
 function renderExerciseIndex(){
  const root=clear(document.getElementById('exercise-list')),q=norm(document.getElementById('exercise-search').value),topic=document.getElementById('exercise-topic').value;
  const toolbar=clear(document.getElementById('exercise-subject-toolbar'));
@@ -690,12 +792,12 @@ function renderExerciseIndex(){
   const pageIntro=document.querySelector('#exercices .pagehead .intro');
   if(pageTitle)pageTitle.textContent=isHomeworkBonus?'Bonus devoirs':'Mes exercices';
   if(pageIntro)pageIntro.textContent=isHomeworkBonus?'Matière d’abord, puis sujet. Ces révisions sont créées dans le classeur, elles ne remplacent pas les fiches du professeur.':'Chaque exercice indique ses XP possibles selon la note. Les devoirs, les entraînements et les défis conservent leurs barèmes. Une seule validation par exercice.';
- if(exerciseSubject==='Physique-chimie'){renderPhysicsExerciseDirectory(root,toolbar);return;}
- if(exerciseSubject==='Anglais'){renderEnglishExerciseDirectory(root,toolbar);return;}
-  if(exerciseSubject==='SVT'){renderSvtExerciseDirectory(root,toolbar);return;}
-  if(exerciseSubject==='Histoire-géographie'||exerciseSubject==='EMC'){renderHgExerciseDirectory(root,toolbar);return;}
- if(exerciseSubject==='Français'){renderFrExerciseDirectory(root,toolbar);return;}
- if(exerciseSubject==='Mathématiques'){renderMathOfficialExercises(root,toolbar);return;}
+ if(exerciseSubject==='Physique-chimie'){renderPhysicsExerciseDirectory(root,toolbar);renderEntBatchExerciseIndex(root);return;}
+ if(exerciseSubject==='Anglais'){renderEnglishExerciseDirectory(root,toolbar);renderEntBatchExerciseIndex(root);return;}
+  if(exerciseSubject==='SVT'){renderSvtExerciseDirectory(root,toolbar);renderEntBatchExerciseIndex(root);return;}
+  if(exerciseSubject==='Histoire-géographie'||exerciseSubject==='EMC'){renderHgExerciseDirectory(root,toolbar);renderEntBatchExerciseIndex(root);return;}
+ if(exerciseSubject==='Français'){renderFrExerciseDirectory(root,toolbar);renderEntBatchExerciseIndex(root);return;}
+ if(exerciseSubject==='Mathématiques'){renderMathOfficialExercises(root,toolbar);renderEntBatchExerciseIndex(root);return;}
  if(!exerciseSubject){
   finder.classList.add('hide');root.className='matter-grid';
   if(exerciseMode==='homework-bonus'){
@@ -718,7 +820,7 @@ function renderExerciseIndex(){
    else for(const ex of schoolwork)root.append(cardAction(ex.title,(ex.subject||'Espagnol')+' · '+(ex.kind==='training'?'jusqu’à +1 XP':'0 XP'),exerciseDescription(ex),()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));return;
   }
   if(exerciseMode==='bonus-mission'){
-   root.className='clicklist';document.getElementById('exercise-count').textContent='Défi bonus du jour';
+   root.className='clicklist';document.getElementById('exercise-count').textContent='Défis bonus libres · sans calendrier';
    toolbar.append(button('← Toutes les matières',()=>{exerciseMode='';renderExerciseIndex();},'group-back'));
    root.append(bonusMissionPanel(false));return;
   }
@@ -780,6 +882,54 @@ function renderExerciseIndex(){
 }
 function answerValue(input){if(input.type==='radio'){const chosen=document.querySelector('input[name="'+input.name+'"]:checked');return chosen?chosen.value:'';}return input.value;}
 function freeOrTextAnswer(question,answer){if(question.type==='free')return null;const correct=question.type==='mc'?String(question.right)===String(answer):[question.right,...(question.also||[])].some(x=>norm(x)===norm(answer));return correct;}
+// Les nouveaux énoncés espagnols conservent l'original : traduction FR
+// visible uniquement après clic et lecture audio espagnole à la demande.
+function renderEntSpanishQuestionAids(row,ex,q){
+ // Consigne originale intacte : seule la TRADUCTION de la consigne est affichée
+ // sur demande. Même fonctionnement pour les nouveaux exercices EN et ES.
+ if(ex.timEntBatch!==true)return;
+ const language=q.subject||ex.subject;
+ if(language!=='Espagnol'&&language!=='Anglais')return;
+ const translated=String(q.fr||q.translationFr||'').trim();
+ if(!translated)return;
+ const tools=E('div','ent-spanish-question-aids');
+ const french=E('p','ent-question-translation','Traduction : '+translated);
+ french.hidden=true;
+ tools.append(button('Traduire en français',()=>{
+   french.hidden=!french.hidden;
+ },'plain'));
+ if(typeof window.speechSynthesis!=='undefined'&&typeof window.SpeechSynthesisUtterance!=='undefined'){
+   if(language==='Anglais'){
+     tools.append(button('Écouter en anglais',()=>{
+       const voice=new SpeechSynthesisUtterance(String(q.q||''));
+       voice.lang='en-GB';voice.rate=0.9;
+       window.speechSynthesis.speak(voice);
+     },'plain'));
+   }else{
+     tools.append(button('Écouter en espagnol',()=>{
+       const voice=new SpeechSynthesisUtterance(String(q.q||''));
+       voice.lang='es-ES';voice.rate=0.9;
+       window.speechSynthesis.speak(voice);
+     },'plain'));
+   }
+ }
+ row.append(tools,french);
+}
+function renderImportedQuestionDiagram(row,ex,q){
+ // Figure de la même question, avant et après correction ; jamais d'indice ajouté.
+ if(ex.timEntBatch!==true||!['Mathématiques','Physique-chimie','SVT'].includes(q.subject||ex.subject))return;
+ const svg=q.diagramSvg,alt=String(q.diagramAlt||'').trim();
+ if(!svg)return;
+ const safe=typeof svg==='string'&&svg.length<=25000&&alt.length>=8&&
+   window.TIM_LESSON_EDITOR?.safeSvg?.(svg)&&
+   !/<\s*(?:style|a|script|foreignObject|iframe|object|embed|video|audio|image|use|animate|set|feImage)\b/i.test(svg)&&
+   !/\b(?:href|xlink:href)\s*=|url\s*\(|@import|javascript:/i.test(svg);
+ if(!safe){row.append(notice('Figure de l’exercice indisponible : schéma non validé.'));return;}
+ const img=E('img','v16-inline-figure ent-question-figure');
+ img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(svg);
+ img.alt=alt;img.loading='lazy';
+ row.append(img);
+}
 function openExercise(id,options={}){const ex=exerciseBy(id);if(!ex)return;
  // Figures ajoutées en lecture seule : les énoncés/scores Firestore restent intacts.
  const bonusPrompt=(q,i)=>window.TIM_BONUS_FIGURES?.displayPrompt?.(ex,i,q.q)||q.q;
@@ -815,7 +965,13 @@ function openExercise(id,options={}){const ex=exerciseBy(id);if(!ex)return;
    }
   });return;
  }
- const existing=attemptFor(id),completedChallenge=Boolean(existing&&['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind));
+ const schoolTask=ex.kind==='school';
+ // L'historique demeure intouchable ; la reprise ne s'ouvre que sur un
+ // devoir scolaire déjà rendu. Le serveur revérifie la date à la validation.
+ const retryMode=options.retrySchool===true&&schoolTask&&
+  !window.__TIM_PARENT&&!window.__TIM_GUEST&&Boolean(attemptFor(id));
+ const existing=retryMode?null:attemptFor(id);
+ const completedChallenge=Boolean(existing&&['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind));
  const isHomeworkDetail=ex.homeworkBonus===true;
  window.__TIM_OPEN_EXERCISE_ID=id;page('exercices');
  document.getElementById('exercise-index').classList.add('hide');
@@ -855,6 +1011,10 @@ function openExercise(id,options={}){const ex=exerciseBy(id);if(!ex)return;
  }else{
   root.append(badge(ex.level),E('h2','',ex.title));
   root.append(E('p','intro',exerciseDescription(ex)));
+  if(retryMode)root.append(notice(
+   'Nouvelle tentative du devoir scolaire · 0 XP. Ta copie précédente est conservée. '+
+   'Tu recevras ta nouvelle note, sans voir les corrections avant l’échéance.',
+   'school-homework-retry-notice'));
   // La description et l'énoncé suffisent : aucun lien ni suggestion de cours.
   if(ex.instructions&&!completedChallenge){
    const instructions=E('div','note info',ex.instructions);
@@ -889,9 +1049,9 @@ if(!window.__TIM_GUEST&&!ex.kind&&!attemptFor(ex.id)){
 }
 showTaskGuide(root); // Un seul rappel court au début du bonus, pas dix répétitions.
 if(window.__TIM_GUEST){root.append(notice('Visite en lecture seule : tu peux voir les questions, mais tu ne peux ni répondre ni valider.','guest-preview'));
- for(const [i,q] of ex.questions.entries()){const row=E('div','q');row.append(E('strong','',(i+1)+'. '+bonusPrompt(q,i)));bonusFigure(row,i);if(q.type==='mc'){const ul=E('ul');for(const option of q.options)ul.append(E('li','',option));row.append(ul);}root.append(row);}return;}
+ for(const [i,q] of ex.questions.entries()){const row=E('div','q');row.append(E('strong','',(i+1)+'. '+bonusPrompt(q,i)));if(typeof renderEntSpanishQuestionAids==='function')renderEntSpanishQuestionAids(row,ex,q);bonusFigure(row,i);if(typeof renderImportedQuestionDiagram==='function')renderImportedQuestionDiagram(row,ex,q);if(q.type==='mc'){const ul=E('ul');for(const option of q.options)ul.append(E('li','',option));row.append(ul);}root.append(row);}return;}
 const old=existing,draft=drafts()[ex.id]||[];let form=E('div','panel');let controls=[];
-ex.questions.forEach((question,i)=>{const row=E('div','q');row.append(E('div','qtitle',(i+1)+'. '+bonusPrompt(question,i)));bonusFigure(row,i);const rawPrevious=old?old.answers[i]?.response:draft[i];const previous=typeof rawPrevious==='string'?rawPrevious.split(' ||| ')[0]:rawPrevious;if(question.type==='mc'){let options=E('div','check-answers');question.options.forEach((option,j)=>{const label=E('label','choose');const input=E('input');input.type='radio';input.name='question-'+ex.id+'-'+i;input.value=String(j);input.checked=previous!==undefined&&String(previous)===String(j);input.disabled=!!old;input.addEventListener('change',saveDraft);label.append(input,E('span','',option));options.append(label);});row.append(options);controls.push({kind:'mc',name:'question-'+ex.id+'-'+i});}else{const input=question.type==='free'?E('textarea','answer wide'):E('input','answer');if(question.type==='text'){input.type='text';input.autocomplete='off';input.spellcheck=false;input.placeholder=ex.subject==='Mathématiques'?'Écris le résultat, par exemple 5/8 ou 12 cm':'Écris la réponse en espagnol';}else{input.rows=6;input.placeholder='Écris ta lettre ici…';}input.value=previous===undefined?'':safe(previous);input.disabled=!!old;input.addEventListener('input',saveDraft);row.append(input);if(ex.kind==='bonus-day'&&ex.subject==='Mathématiques'&&question.reasoningRequired){
+ex.questions.forEach((question,i)=>{const row=E('div','q');row.append(E('div','qtitle',(i+1)+'. '+bonusPrompt(question,i)));if(typeof renderEntSpanishQuestionAids==='function')renderEntSpanishQuestionAids(row,ex,question);bonusFigure(row,i);if(typeof renderImportedQuestionDiagram==='function')renderImportedQuestionDiagram(row,ex,question);const rawPrevious=old?old.answers[i]?.response:draft[i];const previous=typeof rawPrevious==='string'?rawPrevious.split(' ||| ')[0]:rawPrevious;if(question.type==='mc'){let options=E('div','check-answers');question.options.forEach((option,j)=>{const label=E('label','choose');const input=E('input');input.type='radio';input.name='question-'+ex.id+'-'+i;input.value=String(j);input.checked=previous!==undefined&&String(previous)===String(j);input.disabled=!!old;input.addEventListener('change',saveDraft);label.append(input,E('span','',option));options.append(label);});row.append(options);controls.push({kind:'mc',name:'question-'+ex.id+'-'+i});}else{const input=question.type==='free'?E('textarea','answer wide'):E('input','answer');if(question.type==='text'){input.type='text';input.autocomplete='off';input.spellcheck=false;input.placeholder=ex.subject==='Mathématiques'?'Écris le résultat, par exemple 5/8 ou 12 cm':'Écris la réponse en espagnol';}else{input.rows=6;input.placeholder='Écris ta lettre ici…';}input.value=previous===undefined?'':safe(previous);input.disabled=!!old;input.addEventListener('input',saveDraft);row.append(input);if(ex.kind==='bonus-day'&&ex.subject==='Mathématiques'&&question.reasoningRequired){
  const detailed=question.reasoningCheck?.kind==='rectangle-perimeter-v1';
  const initial=old?String(old.answers?.[i]?.reasoning||''):String(draft[i]||'').split(' ||| ')[1]||'';
  let previousReasoning={};if(detailed){try{previousReasoning=JSON.parse(initial)||{};}catch{previousReasoning={};}}
@@ -915,6 +1075,48 @@ function reasoningReady(c){return c.kind==='reasoning'?(!!c.node.value.trim()&&!
  c.kind==='reasoning-v2'?(!!c.node.value.trim()&&!!c.work.value.trim()&&!!c.conclusion.value.trim()):true;}
 function saveDraft(){if(old)return;const d=drafts();d[id]=values();save(DRAFT_KEY,d);}
 if(old){
+ const schoolHomework=ex.kind==='school'||(ex.category==='school'&&ex.kind!=='training'&&
+  Boolean(ex.homeworkDue||ex.due||ex.entHomeworkOriginal));
+ if(schoolHomework&&Number.isFinite(old.score)&&Number.isFinite(old.total)){
+  const result=E('section','panel school-homework-grade');
+  result.append(E('h3','','Ta note : '+old.score.toLocaleString('fr-FR')+'/'+old.total.toLocaleString('fr-FR')),
+   E('p','','Ton travail est enregistré. Tu peux voir ton résultat, mais pas encore les bonnes réponses.'));
+  root.append(result);
+  if(!window.__TIM_GUEST&&window.__TIM_BRIDGE?.schoolHomeworkRetryStatus&&ex.kind==='school'){
+   const history=E('div','panel school-homework-retries');
+   history.append(E('p','small','Historique des tentatives en cours de vérification…'));
+   root.append(history);
+   window.__TIM_BRIDGE.schoolHomeworkRetryStatus(id).then(report=>{
+    if(!history.isConnected||!report?.submitted)return;
+    history.replaceChildren();
+    if(Number.isFinite(report.score)&&Number.isFinite(report.total)){
+     result.querySelector('h3').textContent='Ta dernière note : '+
+      report.score.toLocaleString('fr-FR')+'/'+report.total.toLocaleString('fr-FR');
+     history.append(E('p','small','Meilleure note : '+
+      report.bestScore.toLocaleString('fr-FR')+'/'+report.total.toLocaleString('fr-FR')));
+    }
+    const attempts=Array.isArray(report.scores)?report.scores:[];
+    if(attempts.length>1){
+     history.append(E('strong','','Tes tentatives précédentes sont conservées :'));
+     const list=E('ul');
+     for(const entry of attempts)list.append(E('li','',
+      'Tentative '+entry.attempt+' : '+entry.score+'/'+report.total));
+     history.append(list);
+    }
+    if(report.canRetry&&!window.__TIM_PARENT){
+     const b=button('Refaire ce devoir pour améliorer ma note',()=>{
+      openExercise(id,{retrySchool:true,skipOpening:true,attemptCount:report.attemptCount});
+     },'btn');
+     history.append(E('p','small','Les bonnes réponses restent cachées. Tu peux recommencer avant la date limite du devoir.'),b);
+    }else if(!window.__TIM_PARENT){
+     history.append(E('p','small','Aucune nouvelle tentative disponible : la note est maximale ou la date limite du devoir est passée.'));
+    }
+   }).catch(error=>{
+    if(history.isConnected)history.textContent=
+     'Vérification des reprises indisponible : aucun nouveau devoir ne doit être envoyé avant confirmation.';
+   });
+  }
+ }
  const challenge=['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind);
  if(challenge){
   const summary=E('section','panel challenge-result-summary');summary.id='challenge-result-summary';
@@ -946,7 +1148,12 @@ if(old){
   }
  }else if(locked){
   const panel=E('div','correction-pending');
-  panel.append(E('strong','','Devoir envoyé — correction en attente du parent'),E('p','','Tes XP sont calculés immédiatement. Ton parent décidera quand afficher le corrigé.'));
+  if(schoolHomework)
+   panel.append(E('strong','','Devoir scolaire enregistré — corrigé non disponible'),
+    E('p','','La note est accessible. Les bonnes réponses restent cachées jusqu’après l’échéance du devoir. Aucun XP pour un devoir de l’école.'));
+  else
+   panel.append(E('strong','','Devoir envoyé — correction en attente du parent'),
+    E('p','','Tes XP sont calculés immédiatement. Ton parent décidera quand afficher le corrigé.'));
   root.append(panel);
  }else if(disclosed){
   root.append(E('div','banner-good','Exercice terminé · correction disponible.'));
@@ -957,13 +1164,33 @@ if(old){
  const submit=button('Valider définitivement cet exercice',async()=>{
   const vals=values();
   if(vals.some(v=>!safe(v).trim())||controls.some(c=>!reasoningReady(c))){alert('Réponds à toutes les questions et écris ta démarche lorsque cela est demandé.');return;}
-  if(attemptFor(id)){openExercise(id);return;}
-  if(!confirm('Confirmer ? Cet exercice sera définitivement terminé, sur tous les appareils.'))return;
+  if(attemptFor(id)&&!retryMode){openExercise(id);return;}
+  if(!confirm(retryMode
+   ?'Confirmer cette nouvelle tentative du devoir ? Ta première copie restera conservée. Aucun corrigé ne sera dévoilé.'
+   :'Confirmer ? Cet exercice sera définitivement terminé, sur tous les appareils.'))return;
   submit.disabled=true;submit.textContent='Enregistrement sécurisé…';
   let saved;
-  try{saved=await window.__TIM_BRIDGE.submit(id,vals);}
-  catch(err){
-   submit.disabled=false;submit.textContent='Valider définitivement cet exercice';
+  try{
+   saved=retryMode?await window.__TIM_BRIDGE.retrySchoolHomework(id,vals):
+    await window.__TIM_BRIDGE.submit(id,vals);
+  }catch(err){
+   submit.disabled=false;submit.textContent=retryMode?
+    'Faire corriger ma nouvelle tentative (0 XP)':'Valider définitivement cet exercice';
+   if(retryMode){
+    // Une réponse réseau perdue NE doit jamais créer une deuxième reprise.
+    try{
+     const status=await window.__TIM_BRIDGE.schoolHomeworkRetryStatus(id);
+     if(Number(status?.attemptCount)>Number(options.attemptCount||1)){
+      const d=drafts();delete d[id];save(DRAFT_KEY,d);
+      await window.__TIM_BRIDGE.refresh();
+      openExercise(id,{skipOpening:true});
+      return;
+     }
+    }catch(_){}
+    alert('Nouvelle tentative non confirmée. Tes réponses restent en brouillon. '+
+     'Actualise le suivi avant toute nouvelle validation. '+String(err?.message||err));
+    return;
+   }
    // Un enregistrement peut avoir abouti côté serveur avant une coupure réseau.
    try{await window.__TIM_BRIDGE.refresh();}catch{}
    if(attemptFor(id)){
@@ -971,6 +1198,12 @@ if(old){
     openExercise(id);
    }else alert('Validation non confirmée. Tes réponses restent sauvegardées ; vérifie ta connexion avant de réessayer. '+String(err?.message||err));
    return;
+  }
+  if(retryMode){
+   const d=drafts();delete d[id];save(DRAFT_KEY,d);
+   try{await window.__TIM_BRIDGE.refresh();}catch(_){}
+   openExercise(id,{skipOpening:true});
+   return; // La note de reprise est lue séparément ; aucune animation XP.
   }
   window.__CLOUD_ATTEMPTS.push(saved);
   const notification=window.__TIM_BRIDGE.notifyAlert?.(id,saved);
@@ -988,7 +1221,11 @@ if(old){
    root.append(notice('Ton exercice est enregistré, mais le résultat n’a pas pu s’afficher. Tu ne dois pas le recommencer.'));
    root.append(button('Ouvrir ma note et mon corrigé',()=>openExercise(id),'mission-launch'));
   }
-},'btn');if(!isHomeworkDetail)root.append(E('p','small','Une seule validation. Pour les défis, la note et la correction sont immédiates ; les devoirs scolaires restent à 0 XP et sous contrôle du parent.'));root.append(submit);}
+},'btn');if(retryMode)submit.textContent='Faire corriger ma nouvelle tentative (0 XP)';
+ if(!isHomeworkDetail)root.append(E('p','small',retryMode?
+  'Les tentatives de ce devoir sont conservées. La correction demeure cachée jusqu’après la date limite.':
+  'Une seule validation pour les entraînements et défis. Les devoirs scolaires sont à 0 XP ; leurs reprises restent possibles avant échéance.'));
+ root.append(submit);}
 if(!old && !window.__TIM_PARENT && controls.length>1){
   const questionNodes=[...form.querySelectorAll('.q')];
   const submit=root.querySelector('button.btn');
@@ -1036,7 +1273,7 @@ function renderFeedback(ex,t,root){
  for(const [i,a] of t.answers.entries()){
   const q=ex.questions[i]||{},given=q.type==='mc'?(q.options?.[Number(a.response)]??a.response):a.response;
   const row=E('div','separated');
-  row.append(E('strong','',(i+1)+'. '+safe(correctedPrompt(i,a.question||q.q||'Question'))));correctedFigure(row,i);row.append(E('p','','Ma réponse : '+safe(given)));
+  row.append(E('strong','',(i+1)+'. '+safe(correctedPrompt(i,a.question||q.q||'Question'))));correctedFigure(row,i);if(typeof renderImportedQuestionDiagram==='function')renderImportedQuestionDiagram(row,ex,q);row.append(E('p','','Ma réponse : '+safe(given)));
   showWrittenMethod(row,a);
   review.append(row);
  }
@@ -1045,7 +1282,7 @@ function renderFeedback(ex,t,root){
   if(!a.neutralized&&(a.correct===true||(isBonusDay&&a.correct!==false)))continue;
   const q=ex.questions[i]||{},p=E('div','feedback');
   const given=q.type==='mc'?(q.options?.[Number(a.response)]??a.response):a.response;
-  p.append(E('strong','',(i+1)+'. '+safe(correctedPrompt(i,a.question||q.q||'Question'))));correctedFigure(p,i);p.append(E('p','','Ta réponse : '+safe(given)));
+  p.append(E('strong','',(i+1)+'. '+safe(correctedPrompt(i,a.question||q.q||'Question'))));correctedFigure(p,i);if(typeof renderImportedQuestionDiagram==='function')renderImportedQuestionDiagram(p,ex,q);p.append(E('p','','Ta réponse : '+safe(given)));
   showWrittenMethod(p,a);
   if(a.neutralized===true){
    p.classList.add('neutralized-correction');
@@ -1173,6 +1410,50 @@ function makeAttachmentPanel(targetKind,targetId,options={}){
      if(!confirm('Supprimer définitivement « '+item.fileName+' » ?'))return;
      try{await api.remove(item);await refresh();}catch(e){alert('Suppression impossible : '+(e.message||e));}
     },'plain'));}
+
+    // Une pièce ENT importée dans une leçon doit être VISIBLE DANS la leçon.
+    // Le lecteur conserve les octets dans Firestore privé et charge les pages
+    // à l'approche du défilement, sans nouveau clic de Tim.
+    if(targetKind==='lesson'){
+     const embedded=E('div','attachment-inline-embed');
+     const fileName=String(item.fileName||'');
+     if(item.mime==='application/pdf'){
+      if(window.TIM_PHYSICS_INLINE_PDF?.createFullInline){
+       embedded.append(window.TIM_PHYSICS_INLINE_PDF.createFullInline(
+        {target:targetId,fileName},'Document ENT original complet — '+fileName));
+      }else{
+       // Ne JAMAIS transformer silencieusement le PDF en un simple bouton.
+       embedded.append(E('p','lesson-caution',
+        'PDF intégré indisponible : lecteur non chargé. Ce document doit s’afficher directement dans la leçon, sans clic.'));
+      }
+     }else if(item.mime?.startsWith('image/')){
+      const imageSlot=E('div','attachment-inline-image');
+      imageSlot.textContent='Chargement du schéma ENT…';
+      const show=async()=>{
+       try{
+        const blob=await api.read(item),url=URL.createObjectURL(blob);
+        const img=E('img','attachment-image');
+        img.alt='Schéma original ENT : '+fileName;img.src=url;img.loading='lazy';
+        img.style.maxWidth='100%';img.onload=()=>URL.revokeObjectURL(url);
+        imageSlot.replaceChildren(img);
+       }catch(err){imageSlot.textContent='Schéma indisponible : '+String(err.message||err);}
+      };
+      embedded.append(imageSlot);
+      if('IntersectionObserver' in window){
+       const observer=new IntersectionObserver(entries=>{
+        if(entries.some(e=>e.isIntersecting)){observer.disconnect();show();}
+       },{rootMargin:'700px'});
+       observer.observe(imageSlot);
+      }else show();
+     }else if(/\.(?:docx|odt)$/i.test(fileName)&&window.TIM_INLINE_ENT_DOCUMENTS?.renderOfficeDocument){
+      const documentSlot=E('div','attachment-inline-office');embedded.append(documentSlot);
+      window.TIM_INLINE_ENT_DOCUMENTS.renderOfficeDocument(documentSlot,item,
+       /\.docx$/i.test(fileName)?'docx':'odt');
+     }else{
+      embedded.append(E('p','small','Document original lié à cette leçon : ouverture ou téléchargement disponible ci-dessus.'));
+     }
+     row.append(embedded);
+    }
     row.append(controls,preview);list.append(row);
    }
   }catch(e){info.textContent='Pièces jointes indisponibles : '+(e.message||e);}
@@ -1244,6 +1525,7 @@ function renderParent(){
  /* Le Parent ne choisit plus et n'envoie plus de défi bonus. */
  // L'import privé des évaluations est la première action de l'espace Parent.
  if(window.TIM_MATH_PRIVATE_IMPORT?.render)root.prepend(window.TIM_MATH_PRIVATE_IMPORT.render());
+ if(window.TIM_ENT_BATCH?.render)root.prepend(window.TIM_ENT_BATCH.render());
  root.append(notice('Les devoirs officiels restent ceux de l’ENT ; le classeur permet de consulter le suivi des exercices de Tim.','note info'));
 }
 
@@ -1460,8 +1742,8 @@ function dailyMissionPanel(){
  const content=E('div','daily-loup-content');
  content.append(E('p','daily-loup-eyebrow','MISSION · DU LUNDI AU VENDREDI'));
  content.append(E('h2','','DÉFI DU JOUR'));
- const mixed=['mixed','three-subjects','four-subjects','five-subjects','six-subjects','seven-subjects'].includes(meta.dailyBankStatus);
- content.append(E('p','daily-loup-summary',meta.dailyBankStatus==='seven-subjects'?
+ const mixed=['ent-course','mixed','three-subjects','four-subjects','five-subjects','six-subjects','seven-subjects'].includes(meta.dailyBankStatus);
+ content.append(E('p','daily-loup-summary',meta.dailyBankStatus==='ent-course'?'3 missions de 10 questions sur les cours ENT récents, préparées et corrigées avant leur date.':meta.dailyBankStatus==='seven-subjects'?
   '3 missions de 10 questions · Français, histoire-géographie, SVT, anglais, espagnol, maths et physique-chimie mélangés · 7 matières par jour.':
   meta.dailyBankStatus==='six-subjects'?
   '3 missions de 10 questions · Histoire-géographie, SVT, anglais, espagnol, maths et physique-chimie mélangés · 6 matières chaque jour.':
@@ -1593,7 +1875,8 @@ function renderHome(){
  const hero=E('section','mission-hero');
  const copy=E('div','mission-copy');copy.append(E('div','shout','RÉVISIONS DES DEVOIRS'),E('h1','','MES DEVOIRS EN BONUS'),E('p','','Des exercices préparés ensemble pour réviser les devoirs. Note, correction et XP selon le barème de chaque exercice.'));
  copy.append(button('Ouvrir mes exercices bonus →',()=>{exerciseSubject='';exerciseGroup='';exerciseMode='homework-bonus';page('exercices');},'lobo-go'));hero.append(copy);const wolf=E('img','mission-wolf');wolf.src='./assets/loup-accueil.webp';wolf.alt='Le loup jongleur du classeur';hero.append(wolf);// Défis quotidiens rétablis avec les images originales du parent.
- // Priorité aux devoirs à venir, les bonus restent juste après.
+ // Tim voit d'abord les devoirs à venir, puis les Bonus devoirs.
+ // Ne modifie ni les défis, ni les règles de correction, ni les XP.
  window.TIM_NEXT_MISSIONS?.renderTeaser(root,DATA,()=>page('prochaines'));
  root.append(hero);
  if(window.__TIM_READONLY_FALLBACK)
@@ -1632,26 +1915,55 @@ function renderMatieres(){
  }root.append(wrap);
  if(SCHOOL_SUBJECTS.some(s=>!DATA.lessons.some(l=>(l.subject||'Espagnol')===s)))root.append(E('div','note','Les autres matières ne seront remplies qu’à partir des documents réels de Tim (ENT, cahiers et devoirs). Aucun cours ne sera inventé.'));
 }
+// Contenus fraîchement importés depuis les lots ENT : visibles dans chacune
+// des sept matières, sans écraser les parcours pédagogiques déjà validés.
+function renderTimEntBatchLessons(root,subject){
+ const lessons=DATA.lessons.filter(l=>l.timEntBatch===true&&l.subject===subject&&!l.replacesId);
+ const exercises=DATA.exercises.filter(e=>e.timEntBatch===true&&e.subject===subject&&!e.homeworkBonus);
+ if(!lessons.length&&!exercises.length)return;
+ if(root.querySelector('#tim-ent-batch-lessons'))return;
+ const panel=E('section','panel tim-ent-new-lessons');
+ panel.id='tim-ent-batch-lessons';
+ panel.append(E('h3','','Nouveaux cours ENT et entraînements'));
+ panel.append(E('p','small','Cours originaux, leçons BIS et exercices corrigés : les documents du professeur sont intégrés directement aux leçons.'));
+ const ordered=lessons.slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'')||a.id.localeCompare(b.id));
+ for(const lesson of ordered){
+  const sub=isBisLesson(lesson)?'Leçon BIS':'Cours original du professeur';
+  panel.append(cardAction(lesson.title,sub+' · '+(lesson.date||'Date non précisée'),
+   lesson.summary||'',()=>openLesson(lesson.id)));
+ }
+ const bonuses=exercises.filter(e=>e.kind==='training');
+ if(bonuses.length){
+  panel.append(E('h4','','S’entraîner'));
+  for(const ex of bonuses)panel.append(cardAction(ex.title,'Exercice · 10 questions',
+   ex.description||'',()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));
+ }
+ root.append(panel);
+}
 function renderMatiere(name,openLessonId=null,openEntId=null){
  setMatieresSelectionHeader(false);
  const root=clear(document.getElementById('matieres-content'));
  if(name==='Espagnol'&&window.TIM_SPANISH_ENT_EXACT){
-  window.TIM_SPANISH_ENT_EXACT.render(root,{back:renderMatieres,openLessonId}).catch(e=>root.append(E('p','notice','Espagnol indisponible : '+e.message)));
+  Promise.resolve(window.TIM_SPANISH_ENT_EXACT.render(root,{back:renderMatieres,openLessonId}))
+   .then(()=>renderTimEntBatchLessons(root,name))
+   .catch(e=>root.append(E('p','notice','Espagnol indisponible : '+e.message)));
   return;
  }
  if(name==='Espagnol'&&window.TIM_SPANISH_PATH&&window.TIM_SPANISH_EDU){
   window.TIM_SPANISH_PATH.render(root,{lessons:DATA.lessons,back:renderMatieres,original:openLesson});
+  renderTimEntBatchLessons(root,name);
   return;
  }
  if(name==='Physique-chimie'&&window.TIM_PHYSIQUE_PATH){
   window.TIM_PHYSIQUE_PATH.render(root,{lessons:DATA.lessons,back:renderMatieres,openLessonId});
+  renderTimEntBatchLessons(root,name);
   return;
  }
- if(name==='Anglais'&&window.TIM_ENGLISH_PATH){window.TIM_ENGLISH_PATH.render(root,{lessons:DATA.lessons,back:renderMatieres,openLessonId});return;}
-  if(name==='SVT'&&window.TIM_SVT_PATH){window.TIM_SVT_PATH.render(root,{back:renderMatieres,openLessonId});return;}
-  if(name==='Histoire-géographie'&&window.TIM_HG_PATH){window.TIM_HG_PATH.render(root,{back:renderMatieres,openLessonId});return;}
+ if(name==='Anglais'&&window.TIM_ENGLISH_PATH){window.TIM_ENGLISH_PATH.render(root,{lessons:DATA.lessons,back:renderMatieres,openLessonId});renderTimEntBatchLessons(root,name);return;}
+  if(name==='SVT'&&window.TIM_SVT_PATH){window.TIM_SVT_PATH.render(root,{back:renderMatieres,openLessonId});renderTimEntBatchLessons(root,name);return;}
+  if(name==='Histoire-géographie'&&window.TIM_HG_PATH){window.TIM_HG_PATH.render(root,{back:renderMatieres,openLessonId});renderTimEntBatchLessons(root,name);return;}
    if(name==='EMC'&&window.TIM_HG_PATH){window.TIM_HG_PATH.render(root,{back:renderMatieres,openLessonId,emcOnly:true});return;}
- if(name==='Français'&&window.TIM_FR_PATH){window.TIM_FR_PATH.render(root,{back:renderMatieres,openLessonId});return;}
+ if(name==='Français'&&window.TIM_FR_PATH){window.TIM_FR_PATH.render(root,{back:renderMatieres,openLessonId});renderTimEntBatchLessons(root,name);return;}
   if(name==='Mathématiques'&&window.TIM_MATH_PATH){
   window.TIM_MATH_PATH.render(root,{
    lessons:DATA.lessons,exercises:DATA.exercises,openLessonId,openEntId,
@@ -1660,6 +1972,7 @@ function renderMatiere(name,openLessonId=null,openEntId=null){
    submit:(id,answers,bankVersion)=>window.__TIM_BRIDGE.mathTrainingSubmit(id,answers,bankVersion),
    progress:()=>window.__TIM_BRIDGE.mathTrainingProgress()
   });
+  renderTimEntBatchLessons(root,name);
   return;
  }
  root.append(button('← Toutes les matières',renderMatieres,'matter-back'),E('h2','',name));

@@ -11,10 +11,12 @@ const ROLES = [
   {id:'eleve', entry:'#tim-enter', parent:false, email:process.env.TIM_STUDENT_EMAIL || '', password:process.env.TIM_STUDENT_PASSWORD || ''},
   {id:'parent', entry:'#parent-enter', parent:true, email:process.env.TIM_PARENT_EMAIL || '', password:process.env.TIM_PARENT_PASSWORD || ''}
 ];
-const DEVICES = [
-  {id:'ordinateur', viewport:{width:1365,height:900}, isMobile:false},
-  {id:'telephone', viewport:{width:390,height:844}, isMobile:true, hasTouch:true}
-];
+const DEVICES = process.env.TIM_DIAGNOSTIC_MINIMAL==='1'?
+  [{id:'telephone', viewport:{width:390,height:844}, isMobile:true, hasTouch:true}]:
+  [
+    {id:'ordinateur', viewport:{width:1365,height:900}, isMobile:false},
+    {id:'telephone', viewport:{width:390,height:844}, isMobile:true, hasTouch:true}
+  ];
 const MASKS = [
   '#account-name', '#parent-content .results-list', '#parent-content .result-details',
   '#parent-content .copy-detail', '#parent-corrections .results-list',
@@ -101,7 +103,34 @@ async function inspect(browser,role,device,report) {
     await page.locator('#login-email').fill(role.email);
     await page.locator('#login-password').fill(role.password);
     await page.locator('#login-button').click();
-    await page.locator('body.ready').waitFor({timeout:60000});
+    // Ne plus confondre une connexion Firebase réussie avec le chargement
+    // des cours : l'erreur Firestore est maintenant visible et traçable.
+    try{
+      await page.waitForFunction(()=>{
+        const bodyReady=document.body.classList.contains('ready');
+        const failed=Boolean(document.querySelector('#tim-course-unavailable'));
+        const status=document.querySelector('#access-status')?.textContent||'';
+        return bodyReady||failed||status.includes('Connexion refusée')||
+          status.includes('Impossible de charger');
+      },null,{timeout:42000});
+    }catch{
+      check(report,prefix+' : chargement authentifie expire',false,
+        privateReadErrors.map(e=>'HTTP '+e.http+' '+e.code).join(', ')||
+        'délai de 42s sans écran complet ni message exploitable');
+      return;
+    }
+    if(!await page.locator('body.ready').count()||
+       !await page.locator('body.ready').isVisible().catch(()=>false)){
+      const failed=await page.locator('#tim-course-unavailable').count()>0;
+      const errors=privateReadErrors.map(e=>'HTTP '+e.http+' '+e.code).join(', ');
+      check(report,prefix+' : compte connecte et cours prives disponibles',false,
+        failed?'Identifiants acceptés ; cours privés indisponibles'+(errors?' : '+errors:''):
+        (errors||'écran non disponible ; vérifier Auth et Firestore'));
+      report.devices.push({role:role.id,device:device.id,
+        privateCourseStatus:failed?'unavailable':'unknown',
+        privateHttpErrors:privateReadErrors});
+      return;
+    }
     const authenticated=await page.evaluate(expected=>{
       const label=document.querySelector('#account-name')?.textContent||'';
       return window.__TIM_GUEST!==true && window.__TIM_PARENT===expected &&
@@ -209,9 +238,12 @@ async function inspect(browser,role,device,report) {
       blocked.length?blocked.length+' appel(s) bloques':'aucun appel d ecriture');
     check(report,prefix+' : erreurs JavaScript',jsErrors.length===0,
       jsErrors.length?jsErrors.join(', ').slice(0,110):'aucune');
-  }catch{
+  }catch(error){
+    const errors=privateReadErrors.map(e=>'HTTP '+e.http+' '+e.code).join(', ');
+    const safeType=/^(TimeoutError|Error|TypeError)$/.test(String(error?.name))?
+      String(error.name):'navigation';
     check(report,prefix+' : inspection complete',false,
-      'connexion ou navigation impossible ; aucun secret publie');
+      safeType+(errors?' ; cours privés : '+errors:' ; étape de navigation incomplète'));
   }finally{await context.close();}
 }
 async function main(){
@@ -227,8 +259,19 @@ async function main(){
   }
   const {chromium}=require('playwright');
   const browser=await chromium.launch({headless:true});
-  try{for(const role of ROLES)for(const device of DEVICES)
-    await inspect(browser,role,device,report);
+  try{
+    for(const role of ROLES){
+      for(const device of DEVICES){
+        const previous=report.devices.some(d=>d.role===role.id&&
+          d.privateCourseStatus==='unavailable');
+        if(previous){
+          check(report,role.id+'/'+device.id+' : controle suspendu',false,
+            'Firestore refuse déjà les cours privés : aucune deuxième connexion inutile');
+          break;
+        }
+        await inspect(browser,role,device,report);
+      }
+    }
   }finally{await browser.close();}
   const failed=report.checks.filter(c=>!c.ok);
   const lines=['# Inspection Tim et Parent (lecture seule)', '',

@@ -1,64 +1,91 @@
-name: Inspection authentifiee Tim et Parent (lecture seule)
+name: Inspection authentifiee Eleve + Parent (lecture seule)
 on:
   push:
-    branches: [main]
-    paths:
-      - 'boot.js'
-      - 'app.js'
-      - 'index.html'
-      - 'worker/server.mjs'
-      - 'worker/tim-course-cache.mjs'
-      - '.github/workflows/inspection-comptes-eleve-parent.yml'
+    branches:
+      - main
+      - automatisation-ent-pedagogie-20261118
   workflow_dispatch:
+  pull_request:
+    paths:
+      - '.github/workflows/inspection-comptes-eleve-parent.yml'
+      - 'outils/inspecter-comptes-lecture-seule.cjs'
+      - 'outils/test/inspection-comptes-lecture-seule.test.cjs'
+      - 'prochaines-missions.js'
+      - 'tools/test/prochaines-missions-ui.cjs'
+      - 'tim-ent-batch-import.js'
+      - 'tools/test/tim-ent-batch-ui.cjs'
 permissions:
   contents: read
 concurrency:
-  group: inspection-auth-tim-parent-main
+  group: inspection-comptes-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  code:
+  controle-code:
     runs-on: ubuntu-latest
+    timeout-minutes: 4
     steps:
       - uses: actions/checkout@v4
-      - name: Verifier les garde-fous lecture seule
+      - name: Verifier script et protections sans session privee
         run: |
           node --check outils/inspecter-comptes-lecture-seule.cjs
+          node --check outils/diagnostiquer-quota-firestore.cjs
+          node --test outils/test/diagnostic-quota-firestore.test.cjs
+          node --check tools/test/prochaines-missions-ui.cjs
+          node --check tim-ent-batch-import.js
+          node --check app.js
           node --test outils/test/inspection-comptes-lecture-seule.test.cjs
-  comptes:
-    needs: code
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[verification-compte-tim]'))
+  controle-comptes:
+    needs: controle-code
+    # Inspection authentifiee uniquement sur declenchement manuel cible :
+    # les push de branche testent le code sans epuiser les lectures Firestore.
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 18
     env:
+      FIREBASE_SERVICE_ACCOUNT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
       TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
       TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
       TIM_STUDENT_EMAIL: ${{ secrets.TIM_STUDENT_EMAIL }}
       TIM_STUDENT_PASSWORD: ${{ secrets.TIM_STUDENT_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
-      - name: Verifier les quatre secrets sans les afficher
+      - name: Laisser le temps au deploiement Cloudflare apres un push main
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: sleep 90
+      - name: Verifier les secrets sans afficher leur valeur
         run: |
-          test -n "$TIM_PARENT_EMAIL"
-          test -n "$TIM_PARENT_PASSWORD"
-          test -n "$TIM_STUDENT_EMAIL"
-          test -n "$TIM_STUDENT_PASSWORD"
-      - name: Laisser le deploiement Cloudflare se terminer
-        if: github.event_name == 'push'
-        run: sleep 105
-      - name: Installer Chromium et Playwright
+          test -n "$TIM_PARENT_EMAIL" || { echo 'Secret Parent EMAIL absent'; exit 1; }
+          test -n "$TIM_PARENT_PASSWORD" || { echo 'Secret Parent PASSWORD absent'; exit 1; }
+          test -n "$TIM_STUDENT_EMAIL" || { echo 'Secret Student EMAIL absent'; exit 1; }
+          test -n "$TIM_STUDENT_PASSWORD" || { echo 'Secret Student PASSWORD absent'; exit 1; }
+      - name: Lire les quotas et tester deux requêtes Firestore au maximum, sans données de Tim
+        run: node outils/diagnostiquer-quota-firestore.cjs
+      - name: Installer Chromium/Playwright
         run: |
           mkdir -p /tmp/tim-inspection-playwright
           npm install --prefix /tmp/tim-inspection-playwright --no-audit --no-fund playwright
           /tmp/tim-inspection-playwright/node_modules/.bin/playwright install --with-deps chromium
-      - name: Inspecter comptes Tim et Parent sur mobile et ordinateur sans ecriture
+      - name: Voir les exercices à venir sur écrans PC/téléphone sans toucher aux comptes
+        env:
+          NODE_PATH: /tmp/tim-inspection-playwright/node_modules
+        run: node tools/test/prochaines-missions-ui.cjs
+      - name: Vérifier l'import ENT en lecture seule sur PC et téléphone
+        env:
+          NODE_PATH: /tmp/tim-inspection-playwright/node_modules
+        run: node tools/test/tim-ent-batch-ui.cjs
+      - name: Inspecter comptes Tim et Parent (PC + telephone)
         env:
           NODE_PATH: /tmp/tim-inspection-playwright/node_modules
         run: node outils/inspecter-comptes-lecture-seule.cjs
-      - name: Sauvegarder rapport et captures masquees
+      - name: Archiver rapports et captures anonymisees
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: inspection-classeur-tim-production
-          path: browser-comptes-lecture-seule/
-          retention-days: 3
+          name: controle-eleve-parent-lecture-seule
+          path: |
+            browser-comptes-lecture-seule/
+            diagnostic-firestore/
+            browser-fixture-avenir/
+            browser-fixture-ent-batch/
+          retention-days: 1
           if-no-files-found: warn
