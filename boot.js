@@ -637,7 +637,8 @@ async function startSession(user){
  // La substitution ne se fait qu'avec un lot COMPLET et daté, jamais partiel.
  const batchFor=(kind,period)=>content.exercises.filter(e=>e.timEntBatch===true&&
     e.kind===kind&&e.category==='challenge'&&e.period===period&&
-    e.questions?.length===(kind==='daily'?10:20));
+    e.questions?.length===(kind==='daily'?10:20)&&
+    String(e.publishedAt||'').slice(0,10)<period);
  const todayBatch=batchFor('daily',missionPlan.meta.today);
  const completeDaily=todayBatch.length===3&&new Set(todayBatch.map(e=>e.id)).size===3&&
     missionPlan.meta.today>='2026-11-23';
@@ -653,7 +654,7 @@ async function startSession(user){
  window.__TIM_CHALLENGES={...missionPlan.meta,
   sunday:effectiveSunday,weekly:freshWeekly?.id||missionPlan.meta.weekly,
   dailyIds:completeDaily?todayBatch.map(e=>e.id).sort():effectiveDailyIds,daily:completeDaily?todayBatch.map(e=>e.id).sort()[0]:(effectiveDailyIds[0]||null),
-  dailyBankStatus:mixedChallengePlan?(mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='Français'))?'seven-subjects':mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='Histoire-géographie'))?'six-subjects':mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='SVT'))?'five-subjects':mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='Anglais'))?'four-subjects':'three-subjects'):mixedDaily?'mixed':'classic'};
+  dailyBankStatus:completeDaily?'ent-course':mixedChallengePlan?(mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='Français'))?'seven-subjects':mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='Histoire-géographie'))?'six-subjects':mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='SVT'))?'five-subjects':mixedChallengePlan.some(x=>x.questions?.some(q=>q.subject==='Anglais'))?'four-subjects':'three-subjects'):mixedDaily?'mixed':'classic'};
  window.__TIM_NEXT_DAILY=window.__TIM_CHALLENGES.dailyIds[0]||null;
  const mixedIds=new Set((mixedChallengePlan||[]).map(ex=>ex.id));
  const retainedExercises=content.exercises.filter(x=>
