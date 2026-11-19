@@ -851,7 +851,11 @@ function freeOrTextAnswer(question,answer){if(question.type==='free')return null
 // Les nouveaux énoncés espagnols conservent l'original : traduction FR
 // visible uniquement après clic et lecture audio espagnole à la demande.
 function renderEntSpanishQuestionAids(row,ex,q){
- if((q.subject||ex.subject)!=='Espagnol'||ex.timEntBatch!==true)return;
+ // Consigne originale intacte : seule la TRADUCTION de la consigne est affichée
+ // sur demande. Même fonctionnement pour les nouveaux exercices EN et ES.
+ if(ex.timEntBatch!==true)return;
+ const language=q.subject||ex.subject;
+ if(language!=='Espagnol'&&language!=='Anglais')return;
  const translated=String(q.fr||q.translationFr||'').trim();
  if(!translated)return;
  const tools=E('div','ent-spanish-question-aids');
@@ -861,11 +865,19 @@ function renderEntSpanishQuestionAids(row,ex,q){
    french.hidden=!french.hidden;
  },'plain'));
  if(typeof window.speechSynthesis!=='undefined'&&typeof window.SpeechSynthesisUtterance!=='undefined'){
-   tools.append(button('Écouter en espagnol',()=>{
-     const voice=new SpeechSynthesisUtterance(String(q.q||''));
-     voice.lang='es-ES';voice.rate=0.9;
-     window.speechSynthesis.speak(voice);
-   },'plain'));
+   if(language==='Anglais'){
+     tools.append(button('Écouter en anglais',()=>{
+       const voice=new SpeechSynthesisUtterance(String(q.q||''));
+       voice.lang='en-GB';voice.rate=0.9;
+       window.speechSynthesis.speak(voice);
+     },'plain'));
+   }else{
+     tools.append(button('Écouter en espagnol',()=>{
+       const voice=new SpeechSynthesisUtterance(String(q.q||''));
+       voice.lang='es-ES';voice.rate=0.9;
+       window.speechSynthesis.speak(voice);
+     },'plain'));
+   }
  }
  row.append(tools,french);
 }
