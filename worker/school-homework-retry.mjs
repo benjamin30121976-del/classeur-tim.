@@ -8,9 +8,12 @@ import {createWrite,upsertWrite,NOW} from './firestore.mjs';
 import {isSchoolHomework,schoolCorrectionNotBefore} from './school-homework-policy.mjs';
 
 const validId=id=>typeof id==='string'&&/^[A-Za-z][A-Za-z0-9_-]{1,35}$/.test(id);
-const parisToday=()=>new Intl.DateTimeFormat('en-CA',{
- timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit'
-}).format(new Date());
+const parisToday=()=>{
+ const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Paris',
+  year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+ const value=type=>parts.find(p=>p.type===type)?.value||'';
+ return value('year')+'-'+value('month')+'-'+value('day');
+};
 
 function schoolDue(ex){
  const due=String(ex.homeworkDue||ex.due||'');
@@ -21,9 +24,15 @@ function schoolDue(ex){
 function safeScores(initial,state){
  const list=Array.isArray(state?.scores)?state.scores:[];
  if(!Number.isFinite(initial)||initial<0)return [];
- if(!list.length)return [{attempt:1,score:initial}];
- return list.filter(x=>Number.isInteger(x?.attempt)&&Number.isFinite(x?.score))
-  .map(x=>({attempt:x.attempt,score:x.score}));
+ if(!list.length){
+  if(state)return [];
+  return [{attempt:1,score:initial}];
+ }
+ if(list.length>100||list.some((x,i)=>!Number.isInteger(x?.attempt)||
+    x.attempt!==i+1||!Number.isFinite(x?.score)||x.score<0))
+  return [];
+ if(list[0].score!==initial)return [];
+ return list.map(x=>({attempt:x.attempt,score:x.score}));
 }
 export async function schoolHomeworkRetakeStatus(db,uid,payload,{resolveExercise}){
  if(uid!==TIM_UID&&uid!==PARENT_UID)throw new ApiFault(403,'forbidden');
@@ -78,6 +87,7 @@ export async function retrySchoolHomework(db,uid,payload,{resolveExercise,grade}
  const scores=safeScores(Number(original.schoolScore),state);
  if(!scores.length)throw new ApiFault(409,'school-retry-history-invalid');
  const previous=scores[scores.length-1];
+ if(scores.length>=100)throw new ApiFault(409,'school-retry-too-many-attempts');
  if(previous.score>=graded.total)throw new ApiFault(409,'school-retry-already-perfect');
  if(state&&(!Number.isInteger(state.attemptCount)||state.attemptCount!==scores.length||
     state.authorUid!==uid||state.exerciseId!==id))
