@@ -9,9 +9,9 @@ test('devoir ENT pour demain : note aujourd’hui, corrigé caché le jour du re
  assert.equal(schoolExerciseCorrectionIsOpen(ex,'2026-11-21'),true);
 });
 test('un devoir sans échéance vérifiable ne divulgue pas de corrigé',()=>{
- assert.equal(schoolCorrectionNotBefore({category:'school'}),null);
- assert.equal(schoolExerciseCorrectionIsOpen({category:'school'},'2026-11-21'),false);
- assert.equal(schoolCorrectionNotBefore({category:'school',homeworkDue:'2026-02-30'}),null);
+ assert.equal(schoolCorrectionNotBefore({category:'school',kind:'school'}),null);
+ assert.equal(schoolExerciseCorrectionIsOpen({category:'school',kind:'school'},'2026-11-21'),false);
+ assert.equal(schoolCorrectionNotBefore({category:'school',kind:'school',homeworkDue:'2026-02-30'}),null);
 });
 test('le 31 décembre et février bissextile sont traités',()=>{
  assert.equal(schoolCorrectionNotBefore({category:'school',homeworkDue:'2026-12-31'}),'2027-01-01');
@@ -28,4 +28,9 @@ test('filtrage serveur insensible à un indicateur released forcé avant l’éc
  const record={schoolHomework:true,correctionNotBefore:'2026-11-21',correctionStatus:'released'};
  assert.equal(schoolCorrectionIsOpen(record,'2026-11-20'),false);
  assert.equal(schoolCorrectionIsOpen(record,'2026-11-21'),true);
+});
+
+test('un ancien entraînement enregistré en catégorie school reste corrigé immédiatement',()=>{
+ const legacy={kind:'training',category:'school'};
+ assert.equal(schoolExerciseCorrectionIsOpen(legacy,'2026-11-19'),true);
 });
