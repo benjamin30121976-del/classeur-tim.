@@ -65,7 +65,7 @@ async function inspect(browser,role,device,report) {
   page.on('pageerror',error=>{
     const name=String(error?.name||'Erreur JS');
     const stack=String(error?.stack||'');
-    const hit=stack.match(/\\/([A-Za-z0-9_-]+\\.(?:m?js)):(\\d{1,6}):(\\d{1,5})/);
+    const hit=stack.match(/\/([A-Za-z0-9_-]+\.m?js):(\d{1,6}):(\d{1,5})/);
     const location=hit?hit[1]+':'+hit[2]+':'+hit[3]:'emplacement inconnu';
     jsErrors.push((/^(TypeError|ReferenceError|SyntaxError|Error)$/.test(name)?name:'Erreur JS')+' '+location);
   });
