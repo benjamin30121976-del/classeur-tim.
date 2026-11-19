@@ -40,7 +40,15 @@ class FauxModele:
                     q["fr"] = "Que signifie conocer ? " + str(i + 1)
                 questions.append(q)
             return {"questions": questions}
-        return {"summary": "Le cours explique précisément une notion simple, "
+        subject = data["sources"][0]["subject"]
+        audio = []
+        if subject == "Espagnol":
+            audio = [{"text": "yo conozco", "fr": "je connais"}]
+        if subject == "Anglais":
+            audio = [{"text": "I visited London last summer.",
+                      "fr": "J'ai visité Londres l'été dernier."}]
+        return {"audioPhrases": audio,
+                "summary": "Le cours explique précisément une notion simple, "
                            "dans un vocabulaire adapté à un élève de troisième.",
                 "steps": ["Relire le titre du cours.", "Repérer les informations importantes.",
                           "Rédiger une réponse avec un exemple."],
@@ -54,6 +62,9 @@ def source(ent_id, subject, kind, due=""):
     text = ("Le professeur présente la notion conocer, qui signifie connaître, "
             "et l'exemple yo conozco pour expliquer sa conjugaison."
             if subject == "Espagnol" else
+            "Le cours explique I visited London last summer. Cette phrase se situe "
+            "au prétérit simple en anglais, une action terminée dans le passé."
+            if subject == "Anglais" else
             "Le professeur explique le calcul 2 + 2 = 4 et la nécessité "
             "de rédiger les étapes du raisonnement avant le résultat.")
     return {"entId": ent_id, "subject": subject, "kind": kind,
@@ -82,6 +93,25 @@ class AutoGenerationTests(unittest.TestCase):
         s["original"] = "Titre"
         with self.assertRaises(auto.GenerationBlocked):
             auto.make_bis(FauxModele(), s)
+
+    def test_vocabulaire_audio_source_exacte_espagnol_et_anglais(self):
+        for matiere, expected in (("Espagnol", "yo conozco"),
+                                  ("Anglais", "I visited London last summer.")):
+            with self.subTest(matiere=matiere):
+                bis = auto.make_bis(FauxModele(), source("L_AUDIO", matiere, "lesson"))
+                self.assertEqual(bis["audioPhrases"][0]["text"], expected)
+                self.assertTrue(bis["audioPhrases"][0]["fr"])
+
+    def test_vocabulaire_audio_invente_est_refuse(self):
+        class FauxInvente(FauxModele):
+            def ask(self, instructions, data):
+                result = super().ask(instructions, data)
+                if instructions == auto.PEDAGOGY and not data.get("questionCount"):
+                    result["audioPhrases"] = [{"text": "Un mot jamais publié par la prof",
+                                               "fr": "Une fausse traduction"}]
+                return result
+        with self.assertRaises(auto.GenerationBlocked):
+            auto.make_bis(FauxInvente(), source("L_AUDIO", "Anglais", "lesson"))
 
     def test_generation_complete_sans_reseau_et_sans_publication(self):
         with tempfile.TemporaryDirectory() as temp:
