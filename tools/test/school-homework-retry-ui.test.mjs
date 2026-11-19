@@ -8,7 +8,7 @@ const app=fs.readFileSync(path.join(root,'app.js'),'utf8');
 const boot=fs.readFileSync(path.join(root,'boot.js'),'utf8');
 const worker=fs.readFileSync(path.join(root,'worker/server.mjs'),'utf8');
 
-test('l'élève peut refaire un devoir scolaire sans altérer la première copie',()=>{
+test("L'élève peut refaire un devoir scolaire sans altérer la première copie",()=>{
  assert.match(app,/const retryMode=options\.retrySchool===true&&schoolTask/);
  assert.match(app,/Refaire ce devoir pour améliorer ma note/);
  assert.match(app,/openExercise\(id,\{retrySchool:true,skipOpening:true/);
