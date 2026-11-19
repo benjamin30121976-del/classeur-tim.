@@ -797,6 +797,27 @@ function renderExerciseIndex(){
 }
 function answerValue(input){if(input.type==='radio'){const chosen=document.querySelector('input[name="'+input.name+'"]:checked');return chosen?chosen.value:'';}return input.value;}
 function freeOrTextAnswer(question,answer){if(question.type==='free')return null;const correct=question.type==='mc'?String(question.right)===String(answer):[question.right,...(question.also||[])].some(x=>norm(x)===norm(answer));return correct;}
+// Les nouveaux énoncés espagnols conservent l'original : traduction FR
+// visible uniquement après clic et lecture audio espagnole à la demande.
+function renderEntSpanishQuestionAids(row,ex,q){
+ if(ex.subject!=='Espagnol'||ex.timEntBatch!==true)return;
+ const translated=String(q.fr||q.translationFr||'').trim();
+ if(!translated)return;
+ const tools=E('div','ent-spanish-question-aids');
+ const french=E('p','ent-question-translation','Traduction : '+translated);
+ french.hidden=true;
+ tools.append(button('Traduire en français',()=>{
+   french.hidden=!french.hidden;
+ },'plain'));
+ if(typeof window.speechSynthesis!=='undefined'&&typeof window.SpeechSynthesisUtterance!=='undefined'){
+   tools.append(button('Écouter en espagnol',()=>{
+     const voice=new SpeechSynthesisUtterance(String(q.q||''));
+     voice.lang='es-ES';voice.rate=0.9;
+     window.speechSynthesis.speak(voice);
+   },'plain'));
+ }
+ row.append(tools,french);
+}
 function openExercise(id,options={}){const ex=exerciseBy(id);if(!ex)return;
  // Figures ajoutées en lecture seule : les énoncés/scores Firestore restent intacts.
  const bonusPrompt=(q,i)=>window.TIM_BONUS_FIGURES?.displayPrompt?.(ex,i,q.q)||q.q;
@@ -906,9 +927,9 @@ if(!window.__TIM_GUEST&&!ex.kind&&!attemptFor(ex.id)){
 }
 showTaskGuide(root); // Un seul rappel court au début du bonus, pas dix répétitions.
 if(window.__TIM_GUEST){root.append(notice('Visite en lecture seule : tu peux voir les questions, mais tu ne peux ni répondre ni valider.','guest-preview'));
- for(const [i,q] of ex.questions.entries()){const row=E('div','q');row.append(E('strong','',(i+1)+'. '+bonusPrompt(q,i)));bonusFigure(row,i);if(q.type==='mc'){const ul=E('ul');for(const option of q.options)ul.append(E('li','',option));row.append(ul);}root.append(row);}return;}
+ for(const [i,q] of ex.questions.entries()){const row=E('div','q');row.append(E('strong','',(i+1)+'. '+bonusPrompt(q,i)));renderEntSpanishQuestionAids(row,ex,q);bonusFigure(row,i);if(q.type==='mc'){const ul=E('ul');for(const option of q.options)ul.append(E('li','',option));row.append(ul);}root.append(row);}return;}
 const old=existing,draft=drafts()[ex.id]||[];let form=E('div','panel');let controls=[];
-ex.questions.forEach((question,i)=>{const row=E('div','q');row.append(E('div','qtitle',(i+1)+'. '+bonusPrompt(question,i)));bonusFigure(row,i);const rawPrevious=old?old.answers[i]?.response:draft[i];const previous=typeof rawPrevious==='string'?rawPrevious.split(' ||| ')[0]:rawPrevious;if(question.type==='mc'){let options=E('div','check-answers');question.options.forEach((option,j)=>{const label=E('label','choose');const input=E('input');input.type='radio';input.name='question-'+ex.id+'-'+i;input.value=String(j);input.checked=previous!==undefined&&String(previous)===String(j);input.disabled=!!old;input.addEventListener('change',saveDraft);label.append(input,E('span','',option));options.append(label);});row.append(options);controls.push({kind:'mc',name:'question-'+ex.id+'-'+i});}else{const input=question.type==='free'?E('textarea','answer wide'):E('input','answer');if(question.type==='text'){input.type='text';input.autocomplete='off';input.spellcheck=false;input.placeholder=ex.subject==='Mathématiques'?'Écris le résultat, par exemple 5/8 ou 12 cm':'Écris la réponse en espagnol';}else{input.rows=6;input.placeholder='Écris ta lettre ici…';}input.value=previous===undefined?'':safe(previous);input.disabled=!!old;input.addEventListener('input',saveDraft);row.append(input);if(ex.kind==='bonus-day'&&ex.subject==='Mathématiques'&&question.reasoningRequired){
+ex.questions.forEach((question,i)=>{const row=E('div','q');row.append(E('div','qtitle',(i+1)+'. '+bonusPrompt(question,i)));renderEntSpanishQuestionAids(row,ex,question);bonusFigure(row,i);const rawPrevious=old?old.answers[i]?.response:draft[i];const previous=typeof rawPrevious==='string'?rawPrevious.split(' ||| ')[0]:rawPrevious;if(question.type==='mc'){let options=E('div','check-answers');question.options.forEach((option,j)=>{const label=E('label','choose');const input=E('input');input.type='radio';input.name='question-'+ex.id+'-'+i;input.value=String(j);input.checked=previous!==undefined&&String(previous)===String(j);input.disabled=!!old;input.addEventListener('change',saveDraft);label.append(input,E('span','',option));options.append(label);});row.append(options);controls.push({kind:'mc',name:'question-'+ex.id+'-'+i});}else{const input=question.type==='free'?E('textarea','answer wide'):E('input','answer');if(question.type==='text'){input.type='text';input.autocomplete='off';input.spellcheck=false;input.placeholder=ex.subject==='Mathématiques'?'Écris le résultat, par exemple 5/8 ou 12 cm':'Écris la réponse en espagnol';}else{input.rows=6;input.placeholder='Écris ta lettre ici…';}input.value=previous===undefined?'':safe(previous);input.disabled=!!old;input.addEventListener('input',saveDraft);row.append(input);if(ex.kind==='bonus-day'&&ex.subject==='Mathématiques'&&question.reasoningRequired){
  const detailed=question.reasoningCheck?.kind==='rectangle-perimeter-v1';
  const initial=old?String(old.answers?.[i]?.reasoning||''):String(draft[i]||'').split(' ||| ')[1]||'';
  let previousReasoning={};if(detailed){try{previousReasoning=JSON.parse(initial)||{};}catch{previousReasoning={};}}
