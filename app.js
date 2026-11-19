@@ -678,6 +678,19 @@ function renderMathOfficialExercises(root,toolbar){
   page('matieres');renderMatiere('Mathématiques');
  },'plain'));
 }
+// Raccorder les entraînements créés depuis les ZIP ENT aux répertoires
+// propres à chaque matière, sans remplacer les parcours historiques.
+function renderEntBatchExerciseIndex(root){
+ const extra=DATA.exercises.filter(ex=>ex.timEntBatch===true&&
+   ex.subject===exerciseSubject&&ex.kind==='training'&&!ex.homeworkBonus);
+ if(!extra.length)return;
+ const box=E('section','panel ent-exercise-imports');
+ box.append(E('h3','','Nouveaux entraînements des cours ENT'));
+ box.append(E('p','small','Dix questions, correction détaillée et une seule tentative.'));
+ for(const ex of extra)box.append(cardAction(ex.title,'Entraînement de leçon · 10 questions',
+   ex.description||'',()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));
+ root.prepend(box);
+}
 function renderExerciseIndex(){
  const root=clear(document.getElementById('exercise-list')),q=norm(document.getElementById('exercise-search').value),topic=document.getElementById('exercise-topic').value;
  const toolbar=clear(document.getElementById('exercise-subject-toolbar'));
@@ -694,12 +707,12 @@ function renderExerciseIndex(){
   const pageIntro=document.querySelector('#exercices .pagehead .intro');
   if(pageTitle)pageTitle.textContent=isHomeworkBonus?'Bonus devoirs':'Mes exercices';
   if(pageIntro)pageIntro.textContent=isHomeworkBonus?'Matière d’abord, puis sujet. Ces révisions sont créées dans le classeur, elles ne remplacent pas les fiches du professeur.':'Chaque exercice indique ses XP possibles selon la note. Les devoirs, les entraînements et les défis conservent leurs barèmes. Une seule validation par exercice.';
- if(exerciseSubject==='Physique-chimie'){renderPhysicsExerciseDirectory(root,toolbar);return;}
- if(exerciseSubject==='Anglais'){renderEnglishExerciseDirectory(root,toolbar);return;}
-  if(exerciseSubject==='SVT'){renderSvtExerciseDirectory(root,toolbar);return;}
-  if(exerciseSubject==='Histoire-géographie'||exerciseSubject==='EMC'){renderHgExerciseDirectory(root,toolbar);return;}
- if(exerciseSubject==='Français'){renderFrExerciseDirectory(root,toolbar);return;}
- if(exerciseSubject==='Mathématiques'){renderMathOfficialExercises(root,toolbar);return;}
+ if(exerciseSubject==='Physique-chimie'){renderPhysicsExerciseDirectory(root,toolbar);renderEntBatchExerciseIndex(root);return;}
+ if(exerciseSubject==='Anglais'){renderEnglishExerciseDirectory(root,toolbar);renderEntBatchExerciseIndex(root);return;}
+  if(exerciseSubject==='SVT'){renderSvtExerciseDirectory(root,toolbar);renderEntBatchExerciseIndex(root);return;}
+  if(exerciseSubject==='Histoire-géographie'||exerciseSubject==='EMC'){renderHgExerciseDirectory(root,toolbar);renderEntBatchExerciseIndex(root);return;}
+ if(exerciseSubject==='Français'){renderFrExerciseDirectory(root,toolbar);renderEntBatchExerciseIndex(root);return;}
+ if(exerciseSubject==='Mathématiques'){renderMathOfficialExercises(root,toolbar);renderEntBatchExerciseIndex(root);return;}
  if(!exerciseSubject){
   finder.classList.add('hide');root.className='matter-grid';
   if(exerciseMode==='homework-bonus'){
