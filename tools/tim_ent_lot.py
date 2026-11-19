@@ -248,11 +248,13 @@ def homework_preparation_tasks(homework, asof):
 
 def challenge_tasks(asof):
     """Défis ENT supplémentaires : jours futurs seulement, anciennes copies préservées."""
-    if asof<dt.date(2026,11,23):
+    if asof<dt.date(2026,11,22):
         return []  # missions V18 déjà attribuées jusque-là
     dates=[]
-    if asof.weekday()<5:
-        dates.extend([{'date':asof.isoformat(),'id':f'ENTD_{asof:%Y%m%d}_{i:02}',
+    # Préparer le lendemain pour éviter tout remplacement en plein jour.
+    target=asof+dt.timedelta(days=1)
+    if target.weekday()<5:
+        dates.extend([{'date':target.isoformat(),'id':f'ENTD_{target:%Y%m%d}_{i:02}',
                        'kind':'daily','questionCount':10,'category':'challenge'} for i in (1,2,3)])
     saturday=asof+dt.timedelta(days=5-asof.weekday()) if asof.weekday()<=5 else asof+dt.timedelta(days=6)
     sunday=saturday+dt.timedelta(days=1)
