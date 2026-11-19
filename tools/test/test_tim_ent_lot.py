@@ -355,14 +355,14 @@ class LotTest(unittest.TestCase):
             self.assertEqual(plan['lessonsToPrepare'][0]['originalAvailable'],False)
 
     def test_fresh_ent_challenges_are_prepared_for_next_day_and_weekend(self):
-        tasks=p.challenge_tasks(dt.date(2026,11,23))
+        tasks=p.challenge_tasks(p.dt.date(2026,11,23))
         self.assertEqual([t['id'] for t in tasks[:3]],
                          ['ENTD_20261124_01','ENTD_20261124_02','ENTD_20261124_03'])
         self.assertEqual([t['questionCount'] for t in tasks],[10,10,10,20,20])
         self.assertEqual([t['date'] for t in tasks[-2:]],['2026-11-28','2026-11-29'])
         self.assertEqual([t['kind'] for t in tasks[-2:]],['weekly','sunday'])
-        self.assertEqual(p.challenge_tasks(dt.date(2026,11,19)),[])
-        self.assertEqual([t['date'] for t in p.challenge_tasks(dt.date(2026,11,28))],
+        self.assertEqual(p.challenge_tasks(p.dt.date(2026,11,19)),[])
+        self.assertEqual([t['date'] for t in p.challenge_tasks(p.dt.date(2026,11,28))],
                          ['2026-12-05','2026-11-29'])
 
 if __name__=='__main__':unittest.main()
