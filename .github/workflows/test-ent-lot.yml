@@ -29,6 +29,14 @@ on:
       - 'tools/test/test_tim_ent_autogenerate.py'
       - 'tools/test/test_ent_tim_nouveautes_7_matieres.py'
       - '.github/workflows/test-ent-lot.yml'
+  pull_request:
+    paths:
+      - 'boot.js'
+      - 'app.js'
+      - 'xp-rules.js'
+      - 'worker/server.mjs'
+      - 'tools/test/defis-ent-libres-weekend-20261119.test.mjs'
+      - '.github/workflows/test-ent-lot.yml'
   workflow_dispatch:
 permissions:
   contents: read
@@ -70,6 +78,7 @@ jobs:
           node --test tools/test/matieres-presentes.test.cjs
           node --test tools/test/diagnostic-lecture-seule.test.cjs
           node --test tools/test/tim-ent-batch-validation.test.cjs
+          node --test tools/test/defis-ent-libres-weekend-20261119.test.mjs
           node --test tools/test/tim-ent-spanish-visibility.test.cjs
           node --test tools/test/tim-ent-pdf-inline-ent-bis.test.cjs
           node --test tools/test/tim-language-aids.test.cjs
