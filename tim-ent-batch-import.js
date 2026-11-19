@@ -61,7 +61,8 @@ function checkPack(pack,manifest,existing={lessons:[],exercises:[]}){
    fail('Catégorie entraînement invalide : '+ex.id);
   if(['daily','weekly','sunday'].includes(ex.kind)&&
      (ex.category!=='challenge'||!DATE.test(String(ex.period||''))||
-      !Array.isArray(ex.realLessons)||!ex.realLessons.length))
+      !Array.isArray(ex.realLessons)||!ex.realLessons.length||
+      new Set(ex.questions.map(q=>str(q.subject))).size<2))
    fail('Défi ENT sans date, barème ou leçons sources : '+ex.id);
   if(ex.kind==='homework-bonus'&&
      (ex.homeworkBonus!==true||ex.category!=='bonus'||!DATE.test(ex.homeworkDue)||!ex.linkedHomework?.length))
