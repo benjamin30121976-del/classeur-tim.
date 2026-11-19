@@ -269,6 +269,71 @@ def challenge_tasks(asof):
     return dates
 
 
+
+def source_card(item):
+    """Fiche ENT fidèle au texte reçu, sans BIS ni réponse inventée.
+
+    ID stable entre deux collectes : un même devoir à J+7 puis J+1
+    conserve sa référence. La carte reste une SOURCE, pas un exercice noté.
+    """
+    if item.get('subject') not in SUPPORTED or not str(item.get('original') or '').strip():
+        return None
+    ent_id=str(item['entId'])
+    kind=item['kind']
+    if kind not in ('lesson','homework'):
+        return None
+    tag='ENTL_' if kind=='lesson' else 'ENTH_'
+    uid=tag+hashlib.sha256((kind+'|'+ent_id).encode('utf-8')).hexdigest()[:20]
+    title=str(item['title']).strip()
+    due=str(item.get('due') or '')
+    result={
+        'id':uid,
+        'entId':ent_id,
+        'kind':'ent',
+        'category':'school',
+        'subject':item['subject'],
+        'chapter':title,
+        'title':('Devoir ENT — ' if kind=='homework' else 'Cours ENT — ')+title,
+        'date':item.get('date') or '',
+        'blocks':[{'kind':'note','h':'Texte original du professeur',
+                   'body':str(item['original']).strip()}],
+        'help':{'simple':'Texte original du professeur. Les explications pédagogiques seront dans la leçon BIS.',
+                'steps':[],'example':None},
+        'timEntBatch':True,
+        'teacherOriginal':True,
+        'sourceKind':kind,
+        'sourceFingerprint':item.get('fingerprint') or '',
+        'attachmentsEntIds':[a['id'] for a in item.get('attachments',[])],
+    }
+    if kind=='homework':
+        result['homeworkDue']=due
+        result['linkedHomework']=[ent_id]
+    return result
+
+
+def prepare_original_cards(items, output):
+    """Le classement ENT alimente automatiquement les fiches d'origine.
+
+    Une fiche d'origine est utilisable comme source dans le classeur, mais
+    n'est jamais présentée comme leçon BIS, exercice ou pack prêt à publier.
+    """
+    rows=[x for x in items if x.get('status')!='inchangé']
+    cards=[c for x in rows if (c:=source_card(x)) is not None]
+    todos=[{'entId':x['entId'],'kind':x['kind'],'subject':x['subject'],
+            'due':x.get('due') or '', 'sourceId':(source_card(x) or {}).get('id'),
+            'required':('Leçon BIS, Je n’ai pas compris, exemple guidé et entraînement de 10 questions'
+                        if x['kind']=='lesson' else
+                        'Exercices exacts du professeur si source complète et préparation pour échéance'),
+            'blockedBySource':not bool(str(x.get('original') or '').strip()),
+            'attachmentsEntIds':[a['id'] for a in x.get('attachments',[])]}
+           for x in rows if x['subject'] in SUPPORTED]
+    candidate={'schema':'tim-originals-draft-v1','publicationReady':False,
+               'lessons':cards,'exercises':[],
+               'pedagogicalWorkRemaining':todos}
+    dump(output/'pack_sources_ENT_brouillon.json',candidate)
+    return cards,todos
+
+
 def collect(args):
     zip_paths=[Path(x) for x in args.zips]
     files=unpack(zip_paths); lessons,hw,dates,reports,attachment_index=find_docs(files)
@@ -328,6 +393,11 @@ def collect(args):
           'weekendChallenges':{'saturday':20,'sunday':20,'action':'préparer en avance ; conserver les identifiants et tentatives'},
           'qualityGate':'Toutes les réponses, explications et liaisons doivent être contrôlées avant toute publication.',
           'publication':'INTERDITE par ce script ; seule autorisation Parent via système existant'}
+    original_cards,work_left=prepare_original_cards(items,output)
+    plan['originCardsPrepared']=[{'entId':x['entId'],'id':x['id'],
+        'kind':x['sourceKind'],'homeworkDue':x.get('homeworkDue','')}
+        for x in original_cards]
+    plan['pedagogicalWorkRemaining']=len(work_left)
     dump(output/'ent_prive_lot.json',{'asOf':asof.isoformat(),'items':items,'reports':reports,'attachmentIndex':attachment_index})
     dump(output/'plan_pedagogique.json',plan)
     dump(output/'etat_candidat_non_confirme.json',{'fingerprints':current})
@@ -348,6 +418,8 @@ def collect(args):
            f'Exercices dédiés aux devoirs à venir à construire/vérifier : {sum(x["requiredSeries"] for x in upcoming)}',
            f'Bonus proposés : {sum(x["proposedSeries"] for x in bonus_plan)}',
            f'Entraînements quotidiens proposés : {plan["dailyTrainingSuggested"]}',
+           f'Fiches ENT originales automatiquement préparées : {len(original_cards)} (non publiées)',
+           'Leçons BIS et réponses : rédaction et vérification nécessaires avant intégration.',
            'Défis du jour : générateur existant à vérifier, non publiés par ce script.',
            'Défis du samedi et dimanche : 20 questions chacun à contrôler sur le système existant.',
            '', '**Aucun contenu pédagogique n’a été inventé.** Les fiches à produire figurent dans le plan.',
@@ -422,8 +494,15 @@ def validate(args):
         ident=l.get('id','?')
         if not l.get('entId'):issues.append(f'{ident}: identifiant ENT d’origine absent')
         if not l.get('blocks') or not isinstance(l.get('blocks'),list):issues.append(f'{ident}: BIS en blocs absente')
-        if not str(l.get('help','')).strip():issues.append(f'{ident}: aide Je n’ai pas compris absente')
-        if not l.get('examples'):issues.append(f'{ident}: aucun exemple guidé')
+        if l.get('kind')=='bis':
+            help_value=l.get('help')
+            if not help_value or not (str(help_value.get('simple') or '').strip() if isinstance(help_value,dict) else str(help_value).strip()):
+                issues.append(f'{ident}: aide Je n’ai pas compris absente')
+            if not l.get('examples'):issues.append(f'{ident}: aucun exemple guidé')
+        elif l.get('kind')=='ent':
+            if l.get('teacherOriginal') is True and not all(
+               isinstance(b,dict) and str(b.get('body') or '').strip() for b in l.get('blocks',[])):
+                issues.append(f'{ident}: copie de l’original ENT vide')
     for ex in exercises:
         ident=ex.get('id','?');kind=ex.get('kind')
         if kind not in ('training','homework-bonus','school','daily','weekly','sunday'):issues.append(f'{ident}: type inédit/non pris en charge')
@@ -582,7 +661,7 @@ def assemble(args):
         if l.get('timEntBatch') is not True or l.get('kind') not in ('ent','bis'):
             raise ValueError('Leçon sans marqueur ENT ou sans type ENT/BIS : '+str(l.get('id')))
         if l.get('kind')=='ent':
-            original=next((x for x in rows if x['kind']=='lesson' and x['entId']==l.get('entId')),None)
+            original=next((x for x in rows if x['entId']==l.get('entId') and x['kind'] in ('lesson','homework')),None)
             if original and original.get('original'):
                 body='\n'.join(str(b.get('body') or '') for b in (l.get('blocks') or []))
                 if original['original'].strip() not in body:
