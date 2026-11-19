@@ -88,3 +88,13 @@ Les changements de la branche `automatisation-ent-pedagogie-20261118` doivent ê
 
 **Point restant non simulable avec les données seules :** créer les nouvelles explications et réponses exactes pour les vrais ZIP Termux, puis publier avec autorisation et constater la lecture privée de Tim. Ne pas déclarer le classeur prêt sur la seule base des tests de format.
 
+
+
+## Règle non négociable : devoirs scolaires à rendre et entraînements
+
+- **Devoir scolaire réellement donné par l'ENT** : respecter l'énoncé exact et la provenance du professeur. S'il est converti en questionnaire noté, il porte `kind: school`, `category: school`, `entHomeworkOriginal: true`, `linkedHomework` et `homeworkDue`. Sans origine ou date vérifiée, l'import le refuse. Aucun XP.
+- Tim voit **sa note immédiatement après validation** mais ne voit aucune bonne réponse, correction ou explication avant la fin de la date limite du devoir. Le corrigé peut devenir accessible **à partir du lendemain du jour d'échéance**, selon la date Europe/Paris. Un devoir sans date vérifiable ne doit pas libérer un corrigé automatiquement.
+- **Entraînements dans les leçons, Bonus devoirs et défis** : une seule tentative, correction automatique immédiate lorsque possible et XP selon leur barème propre. Un entraînement hérité qui a historiquement `category: school` ne devient pas un devoir à corrigé différé.
+- La règle est vérifiée **dans le traitement des notes, dans la lecture différée du corrigé, dans l'import des lots et dans l'écran élève** ; ne pas conclure sur une simple vérification de l'interface.
+- Aucune règle de report de correction ne modifie rétroactivement les copies, notes ou XP de Tim. Les vérifications de cette nouvelle règle ont été exécutées sur données fictives ; le site publié et les deux comptes n'ont pas encore été vérifiés sur ce nouveau parcours.
+
