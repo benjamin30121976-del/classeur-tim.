@@ -800,7 +800,7 @@ function freeOrTextAnswer(question,answer){if(question.type==='free')return null
 // Les nouveaux énoncés espagnols conservent l'original : traduction FR
 // visible uniquement après clic et lecture audio espagnole à la demande.
 function renderEntSpanishQuestionAids(row,ex,q){
- if(ex.subject!=='Espagnol'||ex.timEntBatch!==true)return;
+ if((q.subject||ex.subject)!=='Espagnol'||ex.timEntBatch!==true)return;
  const translated=String(q.fr||q.translationFr||'').trim();
  if(!translated)return;
  const tools=E('div','ent-spanish-question-aids');
@@ -1537,8 +1537,8 @@ function dailyMissionPanel(){
  const content=E('div','daily-loup-content');
  content.append(E('p','daily-loup-eyebrow','MISSION · DU LUNDI AU VENDREDI'));
  content.append(E('h2','','DÉFI DU JOUR'));
- const mixed=['mixed','three-subjects','four-subjects','five-subjects','six-subjects','seven-subjects'].includes(meta.dailyBankStatus);
- content.append(E('p','daily-loup-summary',meta.dailyBankStatus==='seven-subjects'?
+ const mixed=['ent-course','mixed','three-subjects','four-subjects','five-subjects','six-subjects','seven-subjects'].includes(meta.dailyBankStatus);
+ content.append(E('p','daily-loup-summary',meta.dailyBankStatus==='ent-course'?'3 missions de 10 questions sur les cours ENT récents, préparées et corrigées avant leur date.':meta.dailyBankStatus==='seven-subjects'?
   '3 missions de 10 questions · Français, histoire-géographie, SVT, anglais, espagnol, maths et physique-chimie mélangés · 7 matières par jour.':
   meta.dailyBankStatus==='six-subjects'?
   '3 missions de 10 questions · Histoire-géographie, SVT, anglais, espagnol, maths et physique-chimie mélangés · 6 matières chaque jour.':
