@@ -38,6 +38,9 @@ class FauxModele:
                 if subject == "Espagnol":
                     q["q"] = "¿Qué significa conocer? " + str(i + 1)
                     q["fr"] = "Que signifie conocer ? " + str(i + 1)
+                elif subject == "Anglais":
+                    q["q"] = "Which expression uses the simple past? " + str(i + 1)
+                    q["fr"] = "Quelle expression utilise le prétérit ? " + str(i + 1)
                 questions.append(q)
             return {"questions": questions}
         subject = data["sources"][0]["subject"]
