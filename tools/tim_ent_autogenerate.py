@@ -245,7 +245,7 @@ def exercise(ident, title, subject, lesson, kind, questions, **extra):
     }
 
 
-def prepare(inventory, plan, provider, existing=None):
+def prepare(inventory, plan, provider, existing=None, reference_items=()):
     """Produit un BROUILLON complet ; aucun appel à Firebase."""
     items = inventory["items"]
     problems = plan.get("sourceIssues") or []
@@ -311,21 +311,39 @@ def prepare(inventory, plan, provider, existing=None):
             "Révision du jour — " + item["title"], item["subject"], bis,
             "training", questions, practiceRole="daily-review",
         ))
-    challenge_sources = list({(x["subject"], str(x["entId"])): x for x in selected}.values())
+    # Des sources DEJA validées permettent de mélanger les défis même si le
+    # ZIP du jour ne contient que des maths ou de l'espagnol.
+    verified = []
+    for x in reference_items:
+        if (isinstance(x, dict) and x.get("verified") is True and
+            x.get("subject") in lot.SUPPORTED and
+            x.get("publishedBisId") and x.get("kind") == "lesson"):
+            check_source(x)
+            verified.append(x)
+    challenge_sources = list({
+        (x["subject"], str(x["entId"])): x
+        for x in verified + selected
+    }.values())
     if plan.get("newChallengeTasks") and len({x["subject"] for x in challenge_sources}) < 2:
         raise GenerationBlocked(
             "Défis mélangés impossibles avec une seule matière documentée. "
-            "Fournir des sources pédagogiques déjà vérifiées ; ne pas inventer."
+            "Ajouter des cours déjà vérifiés au catalogue privé ; ne rien inventer."
         )
+
+    def bis_id(x):
+        key = (x["kind"], str(x["entId"]))
+        return bis_by_key.get(key) or str(x.get("publishedBisId") or "")
+
     for task in plan.get("newChallengeTasks") or []:
         sample = challenge_sources[:7]
+        if not all(bis_id(x) for x in sample):
+            raise GenerationBlocked("Défi : référence BIS historique non vérifiée.")
         questions = make_questions(provider, sample, "défi du " + task["date"],
                                    int(task["questionCount"]))
         exercises.append(exercise(
             task["id"], "Défi — " + task["date"], "Défis",
-            bis_by_key[(sample[0]["kind"], str(sample[0]["entId"]))],
-            task["kind"], questions, period=task["date"],
-            realLessons=[bis_by_key[(x["kind"], str(x["entId"]))] for x in sample],
+            bis_id(sample[0]), task["kind"], questions, period=task["date"],
+            realLessons=[bis_id(x) for x in sample],
         ))
     return {"lessons": cards, "exercises": exercises}
 
@@ -346,7 +364,13 @@ def run(args, provider=None):
                                 subject="", date=args.date, out=str(raw)))
     inv = json.loads((raw / "ent_prive_lot.json").read_text(encoding="utf-8"))
     plan = json.loads((raw / "plan_pedagogique.json").read_text(encoding="utf-8"))
-    result = prepare(inv, plan, provider)
+    catalog = {}
+    if args.catalog:
+        catalog = json.loads(Path(args.catalog).read_text(encoding="utf-8"))
+    reference_items = catalog.get("items") or []
+    if not isinstance(reference_items, list):
+        raise GenerationBlocked("Catalogue pédagogique privé invalide.")
+    result = prepare(inv, plan, provider, reference_items=reference_items)
     pack = root / "pack_pedagogique_brouillon.json"
     lot.dump(pack, result)
     # La validation couvre aussi tous les devoirs futurs et les défis.
@@ -377,6 +401,7 @@ def main(argv=None):
     parser.add_argument("--date", help="Date YYYY-MM-DD")
     parser.add_argument("--previous", help="État comparatif déjà CONFIRMÉ")
     parser.add_argument("--existing", help="Exercices existants vérifiés, lecture seule")
+    parser.add_argument("--catalog", help="Cours ENT historiques privés avec BIS publiées vérifiées")
     parser.add_argument("--model", help="Modèle OpenAI, ou variable TIM_AI_MODEL")
     parser.add_argument("--ai-consent", action="store_true",
                         help="Autorise la transmission des TEXTES ENT à OpenAI via API")
