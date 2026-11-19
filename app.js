@@ -953,7 +953,8 @@ function reasoningReady(c){return c.kind==='reasoning'?(!!c.node.value.trim()&&!
  c.kind==='reasoning-v2'?(!!c.node.value.trim()&&!!c.work.value.trim()&&!!c.conclusion.value.trim()):true;}
 function saveDraft(){if(old)return;const d=drafts();d[id]=values();save(DRAFT_KEY,d);}
 if(old){
- const schoolHomework=ex.category==='school'||ex.kind==='school';
+ const schoolHomework=ex.kind==='school'||(ex.category==='school'&&ex.kind!=='training'&&
+  Boolean(ex.homeworkDue||ex.due||ex.entHomeworkOriginal));
  if(schoolHomework&&Number.isFinite(old.score)&&Number.isFinite(old.total)){
   const result=E('section','panel school-homework-grade');
   result.append(E('h3','','Ta note : '+old.score.toLocaleString('fr-FR')+'/'+old.total.toLocaleString('fr-FR')),
