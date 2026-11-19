@@ -107,8 +107,8 @@ Clarté : consigne courte, raisonnement en étapes, unités et phrase réponse u
 Les questions de mathématiques/physique doivent avoir des données et résultats
 cohérents. Le QCM comporte exactement 4 options distinctes et right=index 0..3.
 Les réponses texte ont right=réponse attendue. why explique la méthode et
-l'erreur fréquente en français (minimum 30 caractères). Pour l'espagnol,
-q est en espagnol, fr traduit uniquement la consigne (jamais sa réponse).
+l'erreur fréquente en français (minimum 30 caractères). Pour l'espagnol ET l'anglais, q reste dans la langue de la matière, et
+fr traduit uniquement la consigne en français (jamais sa réponse).
 Ne révèle aucune solution dans l'énoncé. Évite les questions redondantes.
 Toute explication doit s'appuyer sur les éléments fournis.
 """
@@ -242,8 +242,8 @@ def ask_checked(provider, task, sources, count=None):
                     raise GenerationBlocked("QCM ambigu ou réponse invalide.")
             elif q.get("type") != "text" or not str(q.get("right") or "").strip():
                 raise GenerationBlocked("Réponse écrite non vérifiable.")
-            if q.get("subject") == "Espagnol" and not str(q.get("fr") or "").strip():
-                raise GenerationBlocked("Traduction de consigne espagnole absente.")
+            if q.get("subject") in ("Espagnol", "Anglais") and not str(q.get("fr") or "").strip():
+                raise GenerationBlocked("Traduction de consigne anglais/espagnol absente.")
     audit = provider.ask(REVIEW, {"task": task, "sources": sources, "candidate": answer})
     if audit.get("ok") is not True or audit.get("issues"):
         raise GenerationBlocked(
@@ -269,8 +269,8 @@ def make_questions(provider, source_items, title, count):
         q.setdefault("subject", source_items[0]["subject"])
         if q["subject"] not in allowed:
             raise GenerationBlocked("Question basée sur une matière extérieure aux sources.")
-        if q["subject"] == "Espagnol" and not q.get("fr"):
-            raise GenerationBlocked("Traduction espagnole obligatoire.")
+        if q["subject"] in ("Espagnol", "Anglais") and not q.get("fr"):
+            raise GenerationBlocked("Traduction anglaise/espagnole obligatoire.")
     if len(allowed) > 1 and len({q["subject"] for q in questions}) < 2:
         raise GenerationBlocked("Défi non mélangé : plusieurs matières obligatoires.")
     return questions
