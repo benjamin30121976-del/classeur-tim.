@@ -116,9 +116,7 @@ class AutoGenerationTests(unittest.TestCase):
             self.assertEqual(len([x for x in pack["exercises"]
                                   if x["kind"] == "homework-bonus"]), 1)
             self.assertEqual(len([x for x in pack["exercises"]
-                                  if x["practiceRole"] == "daily-review"]) if False
-                             else len([x for x in pack["exercises"]
-                                       if x.get("practiceRole") == "daily-review"]), 3)
+                                  if x.get("practiceRole") == "daily-review"]), 3)
             self.assertEqual(len([x for x in pack["exercises"]
                                   if x["category"] == "challenge"]), 5)
             self.assertEqual(len(manifest["homework"]), 1)
@@ -126,6 +124,35 @@ class AutoGenerationTests(unittest.TestCase):
             self.assertTrue((root / "resultat" / "ETAT_RELECTURE_OBLIGATOIRE.txt").exists())
             self.assertFalse(any(p.name == "session.json" for p in root.rglob("*")))
             self.assertFalse(any("publicationReady" in str(x) for x in pack["lessons"]))
+
+    def test_defi_melange_avec_reference_deja_publiee(self):
+        nouveau = source("N_MA", "Mathématiques", "lesson")
+        historique = source("A_ES", "Espagnol", "lesson")
+        historique["verified"] = True
+        historique["publishedBisId"] = "BIS_ES_DEJA_PUBLIEE"
+        inv = {"items": [nouveau]}
+        plan = {"sourceIssues": [], "sourceReadingRequired": [],
+                "homeworkExercisePreparations": [], "dailyTrainingSuggested": 0,
+                "newChallengeTasks": [
+                    {"id": "ENTD_20261124_01", "date": "2026-11-24",
+                     "kind": "daily", "questionCount": 10}]}
+        pack = auto.prepare(inv, plan, FauxModele(),
+                            reference_items=[historique])
+        challenge = next(x for x in pack["exercises"] if x["kind"] == "daily")
+        self.assertEqual(challenge["id"], "ENTD_20261124_01")
+        self.assertIn("BIS_ES_DEJA_PUBLIEE", challenge["realLessons"])
+        self.assertEqual({q["subject"] for q in challenge["questions"]},
+                         {"Espagnol", "Mathématiques"})
+
+    def test_defi_refuse_sans_deux_matieres(self):
+        inv = {"items": [source("N_MA", "Mathématiques", "lesson")]}
+        plan = {"sourceIssues": [], "sourceReadingRequired": [],
+                "homeworkExercisePreparations": [], "dailyTrainingSuggested": 0,
+                "newChallengeTasks": [
+                    {"id": "ENTD_20261124_01", "date": "2026-11-24",
+                     "kind": "daily", "questionCount": 10}]}
+        with self.assertRaises(auto.GenerationBlocked):
+            auto.prepare(inv, plan, FauxModele())
 
     def test_mode_api_interdit_sans_consentement(self):
         with tempfile.TemporaryDirectory() as tmp:
