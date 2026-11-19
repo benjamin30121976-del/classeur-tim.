@@ -22,6 +22,13 @@ test('les nouveaux énoncés espagnols gardent la question et révèlent la trad
  assert.match(importPack,/Traduction française manquante pour un énoncé espagnol/);
 });
 
+test('les nouveaux exercices anglais traduisent seulement la consigne et parlent anglais',()=>{
+ assert.match(app,/language==='Anglais'/);
+ assert.match(app,/button\('Écouter en anglais'/);
+ assert.match(app,/voice\.lang='en-GB'/);
+ assert.match(importPack,/Traduction française manquante pour un énoncé anglais\/espagnol/);
+});
+
 test('les mots espagnols restent audibles en voix espagnole et non française',()=>{
  assert.match(spanish,/const lang=language==='fr'\?'fr-FR':'es-ES'/);
  assert.match(spanish,/utterance\.rate=button\?\.getAttribute\('data-say-speed'\)==='slow'\?0\.65:0\.86/);
