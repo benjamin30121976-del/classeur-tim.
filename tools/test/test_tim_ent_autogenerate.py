@@ -1,6 +1,8 @@
 """Tests du moteur : données inventées, aucun ENT, aucun compte Tim, aucune API payante."""
 import io
 import json
+from pypdf import PdfWriter
+from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
 import tempfile
 import unittest
 import zipfile
@@ -153,6 +155,55 @@ class AutoGenerationTests(unittest.TestCase):
                      "kind": "daily", "questionCount": 10}]}
         with self.assertRaises(auto.GenerationBlocked):
             auto.prepare(inv, plan, FauxModele())
+
+    def test_pdf_texte_lu_sans_remplacer_original(self):
+        with tempfile.TemporaryDirectory() as folder:
+            folder = Path(folder)
+            writer = PdfWriter()
+            page = writer.add_blank_page(width=595, height=842)
+            font = DictionaryObject({NameObject("/Type"): NameObject("/Font"),
+                NameObject("/Subtype"): NameObject("/Type1"),
+                NameObject("/BaseFont"): NameObject("/Helvetica")})
+            page[NameObject("/Resources")] = DictionaryObject({
+                NameObject("/Font"): DictionaryObject({NameObject("/F1"): font})})
+            stream = DecodedStreamObject()
+            stream.set_data(
+                b"BT /F1 12 Tf 40 760 Td (Le professeur explique la notion. "
+                b"Voici une phrase assez longue pour permettre une revision.) Tj ET")
+            page[NameObject("/Contents")] = writer._add_object(stream)
+            dest = io.BytesIO()
+            writer.write(dest)
+            pdf_zip = folder / "pdf.zip"
+            with zipfile.ZipFile(pdf_zip, "w") as zipf:
+                zipf.writestr("pieces/100~123.pdf", dest.getvalue())
+            item = source("L_PDF", "Mathématiques", "lesson")
+            item["original"] = ""
+            item["attachments"] = [{"id": "100~123", "name": "Cours.pdf"}]
+            inventory = {"items": [item]}
+            plan = {"sourceReadingRequired": [
+                {"entId": "L_PDF", "attachmentIds": ["100~123"]}]}
+            proof = auto.read_attached_pdfs(inventory, plan, [str(pdf_zip)])
+            self.assertEqual(item["original"], "")
+            self.assertIn("notion", item["sourceContent"])
+            self.assertEqual(proof["L_PDF"]["attachmentIds"], ["100~123"])
+
+    def test_pdf_scane_sans_texte_refuse(self):
+        with tempfile.TemporaryDirectory() as folder:
+            folder = Path(folder)
+            writer = PdfWriter()
+            writer.add_blank_page(width=200, height=300)
+            dest = io.BytesIO()
+            writer.write(dest)
+            archive = folder / "scan.zip"
+            with zipfile.ZipFile(archive, "w") as z:
+                z.writestr("pieces/987~321.pdf", dest.getvalue())
+            item = source("L_SCAN", "Mathématiques", "lesson")
+            item["original"] = ""
+            inv = {"items": [item]}
+            with self.assertRaises(auto.GenerationBlocked):
+                auto.read_attached_pdfs(inv, {"sourceReadingRequired": [
+                    {"entId": "L_SCAN", "attachmentIds": ["987~321"]}]},
+                    [str(archive)])
 
     def test_mode_api_interdit_sans_consentement(self):
         with tempfile.TemporaryDirectory() as tmp:
