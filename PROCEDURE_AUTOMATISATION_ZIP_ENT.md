@@ -226,3 +226,12 @@ La règle précédente « tentative unique » ne s'applique plus aux **devoirs s
 - **Avant publication** : dix questions/corrections par exercice ordinaire (≥20 le week-end), liens PDF actifs, traduction/audio par matière, schémas à données vérifiées, test du correcteur, dates des devoirs, absence de doublons, XP, aperçu Parent, navigation Tim/Parent sur téléphone et PC. Aucune tentative Tim utilisée pour les tests, aucune mutation de notes/copies/XP.
 
 **Véracité des états** : l'existence de ce cahier des charges et des tests sur ZIP fictifs ne signifie pas qu'une collecte `ent_tim_unique.py` a été faite sur Android, qu'un vrai ZIP a été entièrement transformé, ni que les nouvelles figures/audios ont été vérifiés sur le site réel. Le moteur `tim_ent_autogenerate.py` a des hooks IA, mais son appel API avec les documents ENT exige un choix explicite et un jeton séparé ; **l'assistant peut aussi rédiger et relire le lot à partir des ZIP que le Parent lui transmet dans le chat**, sans promettre un agent IA automatique permanent. Ne pas demander une « seconde IA » au Parent. Aucune publication implicite.
+
+
+## Entraînements libres sans calendrier — décision du Parent, 19/11/2026
+
+- Tous les exercices créés comme **entraînements libres** (dont les défis bonus `kind:'bonus-day'` et les entraînements `kind:'training'`) sont accessibles **simultanément dès leur publication**, sans jour de déblocage, sans rotation forcée et sans expiration. Les dates figurant éventuellement dans un identifiant historique ne conditionnent pas l'ouverture.
+- Après une tentative de Tim, garder la copie, la note, les XP et les corrections consultables. **Une seule tentative par identifiant** ; ne pas réinitialiser l'exercice pour le rejouer. Si Tim a terminé les séries, créer de nouvelles séries avec de nouveaux identifiants, en conservant les anciennes intactes.
+- Ne pas confondre cette règle avec les **échéances réelles des devoirs ENT** et les missions nommées **défi du jour/samedi/dimanche**, qui ont leurs propres règles de calendrier et barèmes. Les Bonus devoirs restent disponibles à l'avance pour préparer une échéance : `homeworkDue` est la date du devoir, pas un verrouillage de l'entraînement.
+- Vérifier que `bonus-missions.js` n'impose aucun filtrage `period` aux bonus ; `tim-ent-batch-import.js` accepte ces défis bonus libres sans exiger de période. Contrôle automatique dans `tools/test/tim-ent-batch-validation.test.cjs`.
+
