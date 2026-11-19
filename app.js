@@ -236,6 +236,47 @@ function renderLessonIndex(){
  if(bisCourses.length){root.append(E('h3','lesson-type-label bis','LEÇONS BIS ILLUSTRÉES · '+bisCourses.length));for(const l of bisCourses)root.append(cardAction(l.title,'Leçon BIS · '+chapterOf(l),l.summary,()=>openLesson(l.id)));}
  if(!found.length)root.append(notice('Aucune fiche trouvée pour cette recherche.'));
 }
+function makeLanguageAudioPanel(lesson){
+ const subject=subjectOf(lesson);
+ if(!['Anglais','Espagnol'].includes(subject)||!Array.isArray(lesson.audioPhrases))return null;
+ const data=lesson.audioPhrases.filter(p=>p&&String(p.text||'').trim()&&String(p.fr||'').trim());
+ if(!data.length)return null;
+ const language=subject==='Anglais'?'en-GB':'es-ES';
+ const group=E('section','panel language-audio-vocabulary');
+ group.append(E('h3','','🔊 Écouter et répéter les mots du cours'),
+  E('p','small','Écoute le mot ou la phrase à vitesse normale ou lentement, puis répète à voix haute.'));
+ const play=(word,slow)=>{
+  if(!('speechSynthesis' in window)||!('SpeechSynthesisUtterance' in window)){
+   alert('La lecture vocale est indisponible sur cet appareil.');return;
+  }
+  const synth=window.speechSynthesis,voices=synth.getVoices()||[];
+  const same=voices.find(v=>String(v.lang||'').toLowerCase().replace('_','-')===language.toLowerCase());
+  const compatible=same||voices.find(v=>String(v.lang||'').toLowerCase().startsWith(language.slice(0,2).toLowerCase()));
+  if(voices.length&&!compatible){
+   alert('La voix '+(subject==='Anglais'?'anglaise':'espagnole')+' est absente des paramètres de synthèse vocale du téléphone.');
+   return;
+  }
+  try{
+   synth.cancel();
+   const utterance=new SpeechSynthesisUtterance(String(word));
+   utterance.lang=language;
+   utterance.rate=slow?0.65:0.86;
+   if(compatible)utterance.voice=compatible;
+   synth.speak(utterance);
+  }catch(_){alert('Impossible de lire cette phrase sur cet appareil.');}
+ };
+ for(const p of data){
+  const row=E('div','language-audio-row');
+  row.style.cssText='padding:10px 0;border-bottom:1px solid #53617a';
+  const term=E('strong','',String(p.text));term.lang=language.slice(0,2);
+  row.append(term,E('p','small','En français : '+String(p.fr)));
+  const actions=E('div','btnrow');
+  actions.append(button('🔊 Écouter',()=>play(p.text,false),'plain'),
+                 button('🐢 Lentement',()=>play(p.text,true),'plain'));
+  row.append(actions);group.append(row);
+ }
+ return group;
+}
 function openLesson(id){const l=lessonBy(id);if(!l)return;
  if(!l.timEntBatch&&subjectOf(l)==='SVT'&&window.TIM_SVT_PATH){page('matieres');renderMatiere('SVT',id);return;}if(!l.timEntBatch&&subjectOf(l)==='Histoire-géographie'&&window.TIM_HG_PATH){page('matieres');renderMatiere('Histoire-géographie',id==='BD16_HG_CAHIER'?'HG_BIS09':id);return;}if(!l.timEntBatch&&subjectOf(l)==='Français'&&window.TIM_FR_PATH){page('matieres');renderMatiere('Français',id);return;}if(!l.timEntBatch&&subjectOf(l)==='Anglais'&&window.TIM_ENGLISH_PATH){page('matieres');renderMatiere('Anglais',id);return;}if(!l.timEntBatch&&subjectOf(l)==='Physique-chimie'&&window.TIM_PHYSIQUE_PATH){page('matieres');renderMatiere('Physique-chimie',id);return;}lessonSubject=subjectOf(l);lessonGroup='';page('cours');document.getElementById('lesson-index').classList.add('hide');const dest=clear(document.getElementById('lesson-detail'));dest.classList.add('active');
  const bis=isBisLesson(l),allSame=DATA.lessons.filter(x=>x.id!==l.id&&subjectOf(x)===subjectOf(l)&&chapterOf(x)===chapterOf(l)),others=allSame.filter(x=>bis?!isBisLesson(x):isBisLesson(x));
@@ -258,6 +299,12 @@ function openLesson(id){const l=lessonBy(id);if(!l)return;
  if(originalForPdf)dest.append(makeAttachmentPanel('lesson',originalForPdf.id,{inlineRequired:true}));
  else if(bis&&l.timEntBatch)dest.append(notice('Document ENT original non retrouvé pour cette leçon BIS : PDF à vérifier avant publication.','lesson-caution'));
  for(const b of l.blocks)dest.append(buildBlock(b));loadInlineLessonFigures(dest,l.id);
+ // Les nouvelles leçons BIS importées réutilisent la même lecture audio
+ // qu'Espagnol/Anglais : vocabulaire prouvé dans le cours ENT, sans XP.
+ if(bis&&l.timEntBatch){
+  const audioPanel=makeLanguageAudioPanel(l);
+  if(audioPanel)dest.append(audioPanel);
+ }
  // Les éventuels documents complémentaires spécifiques à la BIS restent visibles.
  if(bis&&(!originalForPdf||originalForPdf.id!==l.id))
   dest.append(makeAttachmentPanel('lesson',l.id,{hideIfEmpty:true,inlineRequired:true}));
