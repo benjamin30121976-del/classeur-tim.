@@ -265,8 +265,9 @@ async function releasedCorrections(db,uid){
 }
 async function courseContent(db,uid){
  permitted(uid,'tim');
- // Ne pas bloquer Tim si la lecture des compléments Firestore échoue.
- // Les collections manquantes sont marquées, et le cours principal reste accessible.
+ // Pour le compte Tim, afficher uniquement un catalogue privé COMPLET.
+ // Si une lecture Firestore échoue, remonter une indisponibilité explicite :
+ // ne jamais faire passer « zéro complément » pour le contenu réel.
  const main=await db.get('content/main');
  if(!main||!Array.isArray(main.lessons)||!Array.isArray(main.exercises))
   throw new ApiFault(404,'course-not-found');
