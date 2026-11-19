@@ -1273,7 +1273,7 @@ function renderFeedback(ex,t,root){
  for(const [i,a] of t.answers.entries()){
   const q=ex.questions[i]||{},given=q.type==='mc'?(q.options?.[Number(a.response)]??a.response):a.response;
   const row=E('div','separated');
-  row.append(E('strong','',(i+1)+'. '+safe(correctedPrompt(i,a.question||q.q||'Question'))));correctedFigure(row,i);renderImportedQuestionDiagram(row,ex,q);row.append(E('p','','Ma réponse : '+safe(given)));
+  row.append(E('strong','',(i+1)+'. '+safe(correctedPrompt(i,a.question||q.q||'Question'))));correctedFigure(row,i);if(typeof renderImportedQuestionDiagram==='function')renderImportedQuestionDiagram(row,ex,q);row.append(E('p','','Ma réponse : '+safe(given)));
   showWrittenMethod(row,a);
   review.append(row);
  }
@@ -1282,7 +1282,7 @@ function renderFeedback(ex,t,root){
   if(!a.neutralized&&(a.correct===true||(isBonusDay&&a.correct!==false)))continue;
   const q=ex.questions[i]||{},p=E('div','feedback');
   const given=q.type==='mc'?(q.options?.[Number(a.response)]??a.response):a.response;
-  p.append(E('strong','',(i+1)+'. '+safe(correctedPrompt(i,a.question||q.q||'Question'))));correctedFigure(p,i);renderImportedQuestionDiagram(p,ex,q);p.append(E('p','','Ta réponse : '+safe(given)));
+  p.append(E('strong','',(i+1)+'. '+safe(correctedPrompt(i,a.question||q.q||'Question'))));correctedFigure(p,i);if(typeof renderImportedQuestionDiagram==='function')renderImportedQuestionDiagram(p,ex,q);p.append(E('p','','Ta réponse : '+safe(given)));
   showWrittenMethod(p,a);
   if(a.neutralized===true){
    p.classList.add('neutralized-correction');
