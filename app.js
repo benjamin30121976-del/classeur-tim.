@@ -827,7 +827,10 @@ function renderExerciseIndex(){
   document.getElementById('exercise-count').textContent='Devoirs de l’école et exercices bonus :';
   const overview=E('div','exercise-v12-overview');
   overview.append(button('📚 DEVOIRS DE L’ÉCOLE',()=>{exerciseSubject='';exerciseMode='school-all';renderExerciseIndex();},'exercise-v12-overview-button school'));
-  root.append(overview,bonusMissionPanel(false));
+  root.append(overview);
+  const freeEnt=freeEntDailyPanel(false);
+  if(freeEnt)root.append(freeEnt);
+  root.append(bonusMissionPanel(false));
   const icons=['🇪🇸','∑','⚗','EN','📖','🌍','⚖','🌱','⚙'];
   SCHOOL_SUBJECTS.forEach((name,i)=>{const count=name==='Physique-chimie'?23:name==='Anglais'?(window.TIM_ANGLAIS_PACK?.bis||[]).reduce((n,b)=>n+(['EN_BIS01','EN_BIS02'].includes(b.id)?3:1),0):name==='SVT'?(window.TIM_SVT_PACK?.bis?.length||0)*2:name==='Histoire-géographie'?((window.TIM_HG_PACK?.bis?.length||0)*2+(window.TIM_HG_PACK?.bis||[]).some(b=>b.id==='HG_BIS09'?true:false)):name==='EMC'?(window.TIM_HG_PACK?.bis||[]).filter(x=>/\(EMC\)/.test(x.group||'')).length*2:name==='Français'?(window.TIM_FR_PACK?.bis?.length||0)*2:name==='Mathématiques'?2+bases.filter(e=>(e.subject||'Espagnol')===name).length:bases.filter(e=>(e.subject||'Espagnol')===name).length;
     const b=E('button','matter-card'+(name==='Espagnol'?' matter-espanol':''));b.type='button';
@@ -1725,8 +1728,40 @@ function makeRewardsTile(){
  return b;
 }
 document.getElementById('rewards-close')?.addEventListener('click',()=>{const d=document.getElementById('rewards-dialog');if(d.close)d.close();else d.removeAttribute('open');});
-// Le défi quotidien et son panneau ont été supprimés.
+// Les défis quotidiens issus de l'ENT sont des séries d'entraînement LIBRES.
+// Aucun calendrier d'ouverture : les 18 séries déjà publiées restent accessibles
+// ensemble, y compris les séries nommées d'après une ancienne échéance.
+// Leur identifiant, leur correction, leur tentative unique et leur barème XP
+// restent inchangés. Samedi et dimanche sont gérés séparément.
+function freeEntDailyPanel(compact=false){
+ const all=DATA.exercises.filter(ex=>ex.timEntBatch===true&&ex.kind==='daily'&&
+  ex.category==='challenge'&&Array.isArray(ex.questions)&&ex.questions.length===10)
+  .sort((a,b)=>String(a.period||'').localeCompare(String(b.period||''))||String(a.id).localeCompare(String(b.id)));
+ if(!all.length)return null;
+ const done=all.filter(ex=>attemptFor(ex.id)).length;
+ const section=E('section','panel ent-free-daily-panel');
+ section.append(E('h2','','DÉFIS QUOTIDIENS LIBRES'));
+ section.append(E('p','intro',all.length+' séries de 10 questions disponibles dès maintenant · '+done+' terminée(s) · jusqu’à +3 XP par série. Une seule tentative, puis copie et correction consultables.'));
+ section.append(E('p','small','Les anciennes dates des séries sont uniquement des repères. Aucun déblocage quotidien et aucune expiration. Les grands défis du samedi et du dimanche restent verrouillés jusqu’à leur jour.'));
+ const pending=all.filter(ex=>!attemptFor(ex.id));
+ const shown=compact?(pending.length?pending:all).slice(0,3):all;
+ const list=E('div','clicklist');
+ for(const ex of shown){
+  const index=all.findIndex(item=>item.id===ex.id)+1;
+  const subjects=[...new Set(ex.questions.map(q=>String(q.subject||'').trim()).filter(Boolean))];
+  list.append(cardAction('Défi quotidien libre — Série '+index,
+   '10 questions · jusqu’à +3 XP · '+(subjects.join(' / ')||'Matières mélangées'),
+   'Révision libre · aucune date à attendre',()=>openExercise(ex.id),attemptFor(ex.id)?'Voir la copie':'Faire le défi'));
+ }
+ section.append(list);
+ if(compact)section.append(button('Voir les '+all.length+' défis quotidiens disponibles',()=>{
+  exerciseSubject='';exerciseMode='';exerciseGroup='';page('exercices');renderExerciseIndex();
+ },'lobo-go'));
+ return section;
+}
 function dailyMissionPanel(){
+ const free=freeEntDailyPanel(true);
+ if(free)return free;
  const meta=window.__TIM_CHALLENGES||{};
  const ids=Array.isArray(meta.dailyIds)?meta.dailyIds:[];
  const section=E('section','daily-loup-panel');
