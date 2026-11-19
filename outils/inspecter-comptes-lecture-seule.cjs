@@ -11,10 +11,12 @@ const ROLES = [
   {id:'eleve', entry:'#tim-enter', parent:false, email:process.env.TIM_STUDENT_EMAIL || '', password:process.env.TIM_STUDENT_PASSWORD || ''},
   {id:'parent', entry:'#parent-enter', parent:true, email:process.env.TIM_PARENT_EMAIL || '', password:process.env.TIM_PARENT_PASSWORD || ''}
 ];
-const DEVICES = [
-  {id:'ordinateur', viewport:{width:1365,height:900}, isMobile:false},
-  {id:'telephone', viewport:{width:390,height:844}, isMobile:true, hasTouch:true}
-];
+const DEVICES = process.env.TIM_DIAGNOSTIC_MINIMAL==='1'?
+  [{id:'telephone', viewport:{width:390,height:844}, isMobile:true, hasTouch:true}]:
+  [
+    {id:'ordinateur', viewport:{width:1365,height:900}, isMobile:false},
+    {id:'telephone', viewport:{width:390,height:844}, isMobile:true, hasTouch:true}
+  ];
 const MASKS = [
   '#account-name', '#parent-content .results-list', '#parent-content .result-details',
   '#parent-content .copy-detail', '#parent-corrections .results-list',
