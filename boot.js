@@ -90,6 +90,7 @@ function showTimCourseUnavailable(){
    const title=document.createElement('h2');title.textContent='Cours momentanément indisponibles';
    const detail=document.createElement('p');
    detail.textContent='La connexion de Tim fonctionne, mais le serveur scolaire ne livre pas encore tous les cours et exercices. Rien ne sera remplacé par un contenu incomplet. Aucune tentative ni note n’est modifiée.';
+   detail.style.color='#f0f6ff';detail.style.fontSize='15px';
    const retry=document.createElement('button');retry.type='button';
    retry.textContent='Réessayer de charger mes cours';
    retry.style.cssText='background:#ffe08e;color:#172638;border:0;border-radius:12px;padding:14px 18px;font-size:16px;font-weight:800;width:100%;cursor:pointer';
@@ -101,6 +102,7 @@ function showTimCourseUnavailable(){
    });
    box.append(title,detail,retry);access.append(box);
  }
+ form.hidden=true;
  access.hidden=false;
  message('Impossible de charger les données complètes de Tim. Vérifie la disponibilité du service puis réessaie.');
 }
