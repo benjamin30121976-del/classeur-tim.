@@ -121,9 +121,9 @@ function bonusMissionPanel(onHome=false,subject=''){
  const chosen=subject||(onHome?'':bonusCatalogSubject);
  const available=chosen?all.filter(e=>(e.subject||'Espagnol')===chosen):all;
  const box=E('section',onHome?'bonus-spotlight home-bonus':'bonus-spotlight');
- box.setAttribute('aria-label','Défi bonus : choisir une matière puis un exercice');
+ box.setAttribute('aria-label','Défis bonus libres : choisir une matière puis un exercice');
  const head=E('div','bonus-spotlight-head');
- head.append(E('h2','bonus-spotlight-heading','DÉFI BONUS'),E('span','bonus-count',all.length+' exercice'+(all.length>1?'s':'')));
+ head.append(E('h2','bonus-spotlight-heading','DÉFIS BONUS LIBRES'),E('span','bonus-count',all.length+' exercice'+(all.length>1?'s':'')));
  box.append(head);
  if(onHome){
   const scene=E('div','bonus-home-scene'),wolf=E('img','bonus-home-wolf');
@@ -820,7 +820,7 @@ function renderExerciseIndex(){
    else for(const ex of schoolwork)root.append(cardAction(ex.title,(ex.subject||'Espagnol')+' · '+(ex.kind==='training'?'jusqu’à +1 XP':'0 XP'),exerciseDescription(ex),()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));return;
   }
   if(exerciseMode==='bonus-mission'){
-   root.className='clicklist';document.getElementById('exercise-count').textContent='Défi bonus du jour';
+   root.className='clicklist';document.getElementById('exercise-count').textContent='Défis bonus libres · sans calendrier';
    toolbar.append(button('← Toutes les matières',()=>{exerciseMode='';renderExerciseIndex();},'group-back'));
    root.append(bonusMissionPanel(false));return;
   }
