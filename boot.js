@@ -76,6 +76,34 @@ document.getElementById('parent-enter').addEventListener('click',()=>chooseRole(
 document.getElementById('role-back').addEventListener('click',()=>{selectedRole=null;form.hidden=true;roleChoices.hidden=false;});
 
 const message=(msg,good=false)=>{status.textContent=msg;status.classList.toggle('good',good);};
+// Ne jamais ouvrir un faux compte Tim à partir du catalogue Invité quand
+// les cours privés ne sont pas entièrement chargés. Aucun contenu ni XP
+// n'est perdu : on reste sur la connexion, avec un nouvel essai explicite.
+function showTimCourseUnavailable(){
+ window.__TIM_READONLY_FALLBACK=false;
+ window.__TIM_ADDONS_INCOMPLETE=true;
+ window.__TIM_DATA=null;
+ const id='tim-course-unavailable';
+ let box=document.getElementById(id);
+ if(!box){box=document.createElement('section');box.id=id;box.setAttribute('role','alert');
+   box.style.cssText='max-width:480px;margin:16px auto;padding:20px;border:2px solid #f0ba59;border-radius:16px;background:#27334b;color:#fff;line-height:1.6;text-align:left';
+   const title=document.createElement('h2');title.textContent='Cours momentanément indisponibles';
+   const detail=document.createElement('p');
+   detail.textContent='La connexion de Tim fonctionne, mais le serveur scolaire ne livre pas encore tous les cours et exercices. Rien ne sera remplacé par un contenu incomplet. Aucune tentative ni note n’est modifiée.';
+   const retry=document.createElement('button');retry.type='button';
+   retry.textContent='Réessayer de charger mes cours';
+   retry.style.cssText='background:#ffe08e;color:#172638;border:0;border-radius:12px;padding:14px 18px;font-size:16px;font-weight:800;width:100%;cursor:pointer';
+   retry.addEventListener('click',async()=>{
+    if(retry.disabled)return;
+    retry.disabled=true;retry.textContent='Vérification des cours complets…';
+    try{if(activeUser?.uid===TIM_UID)await startSession(activeUser);}
+    finally{retry.disabled=false;retry.textContent='Réessayer de charger mes cours';}
+   });
+   box.append(title,detail,retry);access.append(box);
+ }
+ access.hidden=false;
+ message('Impossible de charger les données complètes de Tim. Vérifie la disponibilité du service puis réessaie.');
+}
 // Firestore Standard does not accept an array directly inside another array.
 // Wrap only those inner arrays as a map; restore them after reading the document.
 // This preserves the original lessons, bilingual tables, timeline and exercises.
@@ -595,21 +623,18 @@ async function startSession(user){
    const response=await cloudCallable('getTimCourseContent')({});
    content=decodeFromFirestore(response.data.content);
    serverAdditions=response.data.additions;
-   window.__TIM_ADDONS_INCOMPLETE=response.data.additionsIncomplete===true;
+   if(response.data.additionsIncomplete===true)
+    throw Error('Réponse serveur avec compléments incomplets');
+   window.__TIM_ADDONS_INCOMPLETE=false;
    window.__TIM_READONLY_FALLBACK=false;
+   document.getElementById('tim-course-unavailable')?.remove();
   }catch(error){
-   // Le catalogue public ne contient ni corrigés ni données privées.
-   // Il sert uniquement à lire les cours pendant une panne de la lecture
-   // serveur ; il ne remplace jamais les copies et notes enregistrées.
-   const safe=window.TIM_GUEST_DATA;
-   if(!Array.isArray(safe?.lessons)||!Array.isArray(safe?.exercises)||!safe.lessons.length){
-    message('Chargement des cours de Tim impossible : '+(error.message||'Firebase'));return;
-   }
-   console.warn('Catalogue privé temporairement indisponible ; accès de secours sans modification des notes.');
-   content={lessons:safe.lessons,exercises:safe.exercises};
-   serverAdditions={lessons:[],exercises:[]};
-   window.__TIM_ADDONS_INCOMPLETE=true;
-   window.__TIM_READONLY_FALLBACK=true;
+   // Jamais de catalogue invité utilisé comme s'il s'agissait des cours Tim.
+   // Le quota Firestore n'est pas contournable par une copie incomplète.
+   console.warn('Cours privés complets indisponibles ; aucune copie scolaire modifiée.',
+    error?.code||error?.message);
+   showTimCourseUnavailable();
+   return;
   }
  }
  if(!Array.isArray(content.lessons)||!Array.isArray(content.exercises)){message('Le contenu du cours est incomplet.');return;}
@@ -740,7 +765,12 @@ async function startSession(user){
  }
  window.__TIM_DATA=content;window.__TIM_PARENT=isParent;
  window.__CLOUD_ATTEMPTS=[];window.__TIM_SPANISH_PROGRESS={status:'loading',attempts:[]};
- try{await fetchAttempts(content);}catch(e){message('Impossible de lire les résultats. Les règles Firestore sont à vérifier.');return;}
+ try{await fetchAttempts(content);}catch(e){
+  console.warn('Historique des tentatives indisponible, aucune tentative ne sera ouverte.',
+   e?.code||e?.message);
+  if(!isParent){showTimCourseUnavailable();return;}
+  message('Impossible de lire les résultats Parent. Veuillez vérifier la disponibilité de Firestore.');return;
+ }
  window.__TIM_SPANISH_PROGRESS={status:'loading',attempts:[]};
  const trainingId=/^SP[QW]_L(?:0[1-9]|1[0-5])_0[1-5]$/;
  const loadSpanishProgress=async()=>{
