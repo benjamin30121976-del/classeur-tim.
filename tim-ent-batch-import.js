@@ -56,8 +56,8 @@ function checkPack(pack,manifest,existing={lessons:[],exercises:[]}){
  }
  for(const ex of exercises){
   if(ex.timEntBatch!==true||!str(ex.title)||!validQuestions(ex))fail('Exercice sans dix corrections pédagogiques : '+ex.id);
-  if(ex.questions.some(q=>(q.subject||ex.subject)==='Espagnol'&&!str(q.fr||q.translationFr)))
-   fail('Traduction française manquante pour un énoncé espagnol : '+ex.id);
+  if(ex.questions.some(q=>['Espagnol','Anglais'].includes(q.subject||ex.subject)&&!str(q.fr||q.translationFr)))
+   fail('Traduction française manquante pour un énoncé anglais/espagnol : '+ex.id);
   if(!['training','homework-bonus','school','daily','weekly','sunday'].includes(ex.kind))fail('Catégorie d’exercice non prise en charge dans ce lot : '+ex.id);
   if(ex.kind==='school'&&
      (ex.category!=='school'||ex.entHomeworkOriginal!==true||ex.homeworkBonus===true||
