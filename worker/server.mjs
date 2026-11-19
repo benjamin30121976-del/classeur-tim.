@@ -1,3 +1,4 @@
+import {authenticatedTimCourse} from './tim-course-cache.mjs';
 /* School backend for Cloudflare Pages + Firebase Spark.
    Every action verifies a signed Firebase ID token, then enforces the Tim/Parent role.
    No answer key, credential or student grade is served to anonymous visitors. */
@@ -214,24 +215,28 @@ async function releasedCorrections(db,uid){
  const owned=attempts.filter(x=>x.data?.authorUid===uid);
  const legacy=owned.filter(x=>!allowed.has(x.id)&&x.data?.correctionStatus==='pending-parent'&&
   !x.id.startsWith('TRH_'));
+ const checkedCopies=new Map();
  const eligible=await Promise.all(legacy.map(async x=>{
   const detail=await db.get('privateAttempts/'+x.id);
+  checkedCopies.set(x.id,detail);
   // Aucun corrigé de rédaction libre non corrigée ne peut être divulgué.
   return detail?.needsReview===false&&Array.isArray(detail.answers)&&detail.answers.length>0&&
    detail.answers.every(a=>typeof a.correct==='boolean')?x.id:null;
  }));
- for(const id of eligible)if(id)allowed.add(id);
+ const eligibleSet=new Set(eligible.filter(Boolean));
+ for(const id of eligibleSet)allowed.add(id);
  const entries=await Promise.all(owned.filter(x=>allowed.has(x.id)&&
-  (x.data.correctionStatus==='released'||eligible.includes(x.id)))
-  .map(async x=>({id:x.id,details:await db.get('privateAttempts/'+x.id)})));
+  (x.data.correctionStatus==='released'||eligibleSet.has(x.id)))
+  .map(async x=>({id:x.id,details:checkedCopies.has(x.id)?
+   checkedCopies.get(x.id):await db.get('privateAttempts/'+x.id)})));
  return {corrections:entries.filter(x=>x.details).map(x=>({
   id:x.id,answers:x.details.answers||[],score:x.details.score,total:x.details.total,translationHelpCount:x.details.translationHelpCount??null
  }))};
 }
 async function courseContent(db,uid){
  permitted(uid,'tim');
- // Ne pas bloquer Tim si la lecture des compléments Firestore échoue.
- // Les collections manquantes sont marquées, et le cours principal reste accessible.
+ // Ne jamais présenter une partie du catalogue privé de Tim comme complète.
+ // Si Google refuse les listes de compléments, aucun contenu trompeur n'est servi.
  const main=await db.get('content/main');
  if(!main||!Array.isArray(main.lessons)||!Array.isArray(main.exercises))
   throw new ApiFault(404,'course-not-found');
@@ -250,6 +255,8 @@ async function courseContent(db,uid){
  const [lessonList,exerciseList]=await Promise.all([
   resilientList('lessons'),resilientList('exercises')
  ]);
+ if(!lessonList.available||!exerciseList.available)
+  throw new ApiFault(503,'student-course-incomplete');
  const lessons=lessonList.items,exercises=exerciseList.items;
  // Les ajouts du classeur sont stockés avec un payloadJson. Le convertir
  // AVANT de filtrer les corrigés, pour que Tim voie le défi publié sans fuite
@@ -1403,6 +1410,15 @@ export async function handleRequest(request,env){
   if(!data||typeof data.action!=='string'||!ACTIONS[data.action])
    throw new ApiFault(400,'unknown-action');
   if(JSON.stringify(data).length>70000)throw new ApiFault(413,'too-large');
+  // Authentification déjà vérifiée ; seule la lecture complète du cours
+  // de Tim utilise le cache privé de courte durée, jamais les copies.
+  if(data.action==='getTimCourseContent'){
+   const result=await authenticatedTimCourse(uid,request,async()=>{
+    const db=await firestore(env);
+    return courseContent(db,uid);
+   });
+   return respond({data:result});
+  }
   const db=await firestore(env);
   const result=await ACTIONS[data.action](db,uid,data.payload||{},env);
   return respond({data:result});
@@ -1413,3 +1429,6 @@ export async function handleRequest(request,env){
  }
 }
 export const TESTABLE={correctThalesNov16Question9,correctSaturdayFullCredit,reviseSaturday20261114,correctMathNov12Question10,getFirestoreReadDiagnostics,getEnglishTrainingTask,submitEnglishTraining,getEnglishTrainingProgress,previewEnglishTraining,getSvtTrainingTask,submitSvtTraining,getSvtTrainingProgress,previewSvtTraining,getHgTrainingTask,submitHgTraining,getHgTrainingProgress,previewHgTraining,getFrTrainingTask,submitFrTraining,getFrTrainingProgress,previewFrTraining,previewSpanishEntTraining,getMathEntTask,submitMathEntTask,previewMathEntTask,getMathEntProgress,getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,getMixedChallengePlan,previewMixedChallenge,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
+
+// Functions exported for in-memory tests. No route or data is exposed by this export.
+export const TESTABLE={courseContent,releasedCorrections};
