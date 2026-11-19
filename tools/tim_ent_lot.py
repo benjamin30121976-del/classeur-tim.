@@ -338,7 +338,14 @@ def collect(args):
     zip_paths=[Path(x) for x in args.zips]
     files=unpack(zip_paths); lessons,hw,dates,reports,attachment_index=find_docs(files)
     if not lessons and not hw: raise ValueError('Aucun cours ni devoir ENT reconnu dans les ZIP. Ne rien inventer.')
-    items=uniq(resources(lessons,'lesson',dates,args.subject)+resources(hw,'homework',dates,args.subject))
+    all_items=uniq(resources(lessons,'lesson',dates,args.subject)+resources(hw,'homework',dates,args.subject))
+    # Le classeur porte sur sept matières. Les autres cours ne doivent ni
+    # arrêter une mise à jour utile ni être présentés comme des cours de Tim.
+    ignored=[{'entId':x['entId'],'title':x['title'],'subject':x['subject']}
+             for x in all_items if x['subject'] not in SUPPORTED]
+    items=[x for x in all_items if x['subject'] in SUPPORTED]
+    if not items:
+        raise ValueError('Aucun cours ou devoir des sept matières reconnu dans les ZIP')
     source_issues=inspect_source_gaps(items,scan_attachment_files(zip_paths))
     source_blockers=[i for i in source_issues if i['type']!='seance_sans_contenu']
     previous={}
@@ -380,6 +387,7 @@ def collect(args):
     plan={'date':asof.isoformat(),'tomorrow':tomorrow,'lessonsToPrepare':lesson_tasks,
           'dueTomorrow':due_tomorrow,'dueLater':later,'bonusSuggestions':bonus_plan,
           'sourceIssues':source_blockers,'sourceWarnings':[i for i in source_issues if i['type']=='seance_sans_contenu'],
+          'otherSubjectsNotImported':ignored,
           'sourceReady':len(source_blockers)==0 and not requires_pdf_reading,
           'sourceReadingRequired':requires_pdf_reading,
           'dueToday':due_today,'overdueHomework':overdue,'homeworkWithoutDue':unplanned,
@@ -405,6 +413,7 @@ def collect(args):
     for s in states.values():status[s]+=1
     lines=['# Bilan de préparation ENT — '+asof.isoformat(),'',
            'Statut : **inventaire et préparation seulement, aucune publication**','',
+           f'Entrées hors des sept matières ignorées (archives préservées) : {len(ignored)}',
            f'Cours ENT détectés : {sum(x["kind"]=="lesson" for x in items)}',
            f'Devoirs détectés : {sum(x["kind"]=="homework" for x in items)}',
            'États : '+', '.join(f'{k} {v}' for k,v in status.items()),
