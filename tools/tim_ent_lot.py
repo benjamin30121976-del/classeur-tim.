@@ -537,6 +537,15 @@ def validate(args):
             prefix=f'{ident} Q{i}'
             if ex.get('timEntBatch') is True and (q.get('subject') or ex.get('subject')) in ('Espagnol', 'Anglais') and not str(q.get('fr') or q.get('translationFr') or '').strip():
                 issues.append(prefix+': traduction française de l’énoncé anglais/espagnol absente')
+            if 'diagramSvg' in q:
+                svg=q.get('diagramSvg')
+                alt=str(q.get('diagramAlt') or '').strip()
+                if ((q.get('subject') or ex.get('subject')) not in ('Mathématiques','Physique-chimie','SVT')
+                    or not isinstance(svg,str) or not 10<=len(svg)<=25000 or len(alt)<8
+                    or not re.match(r'^\s*(?:<\?xml[^>]*>\s*)?<svg[\s>]',svg,re.I)
+                    or re.search(r'<\s*(?:style|a|script|foreignObject|iframe|object|embed|video|audio|image|use|animate|set|feImage)\b',svg,re.I)
+                    or re.search(r'\bon\w+\s*=|\b(?:href|xlink:href)\s*=|url\s*\(|@import|javascript:',svg,re.I)):
+                    issues.append(prefix+': schéma SVG dangereux/incomplet ou légende manquante')
             if not str(q.get('q','')).strip():issues.append(prefix+': énoncé absent')
             if len(str(q.get('why','')).strip())<30:issues.append(prefix+': correction insuffisamment expliquée')
             if q.get('type')=='mc':
