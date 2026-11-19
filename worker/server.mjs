@@ -4,6 +4,7 @@
 import {PROJECT,TIM_UID,PARENT_UID,ApiFault,verifyFirebaseToken} from './auth.mjs';
 import {firestore,createWrite,upsertWrite,updateWrite,NOW} from './firestore.mjs';
 import {grade} from '../functions/grading.mjs';
+import {isSchoolHomework,schoolCorrectionNotBefore,schoolCorrectionIsOpen} from './school-homework-policy.mjs';
 import {mathNov12ForParentImport} from '../maths-12nov-training.mjs';
 import {rawPoints,cappedPoints} from '../functions/xp.mjs';
 import {xpPeriodStart} from '../functions/xp-week-exception.mjs';
@@ -177,9 +178,17 @@ async function submitExercise(db,uid,payload){
     questionIndex:c.questionIndex,before:c.before,after:c.after
    })),reviewChangeCount:reviewChanges.length}:{})
  };
- const autoRelease=isMissionId(id)||exercise.kind==='bonus-day'||(evaluated.needsReview===false&&exercise.kind!=='translation-help-log');
+ // Devoir ENT noté : montrer immédiatement la note, sans livrer la réponse
+ // avant le lendemain du jour où le travail doit être rendu.
+ const isSchool=isSchoolHomework(exercise);
+ const correctionNotBefore=isSchool?schoolCorrectionNotBefore(exercise):null;
+ const schoolGateOpen=!isSchool||schoolCorrectionIsOpen({schoolHomework:true,correctionNotBefore},today);
+ const autoRelease=schoolGateOpen&&(isMissionId(id)||exercise.kind==='bonus-day'||
+  (evaluated.needsReview===false&&exercise.kind!=='translation-help-log'));
  const pending={
-  exerciseId:id,authorUid:uid,policyVersion:18,xp:points,correctionStatus:autoRelease?'released':'pending-parent'
+  exerciseId:id,authorUid:uid,policyVersion:18,xp:points,correctionStatus:autoRelease?'released':'pending-parent',
+  ...(isSchool?{schoolHomework:true,correctionNotBefore,
+    schoolScore:evaluated.score,schoolTotal:evaluated.total}:{})
  };
  await db.commit([
   createWrite('attempts/'+id,pending,NOW),
@@ -188,7 +197,8 @@ async function submitExercise(db,uid,payload){
   ...(autoRelease?[createWrite('releasedCorrections/'+id,{released:true},NOW)]:[])
  ],transaction);
  return autoRelease?{id,submitted:true,xp:points,correctionLocked:false,correctionStatus:'released',score:evaluated.score,total:evaluated.total,answers:evaluated.answers,translationHelpCount:evaluated.translationHelpCount??0}:
-  {id,submitted:true,xp:points,correctionLocked:true,correctionStatus:'pending-parent'};
+  {id,submitted:true,xp:points,correctionLocked:true,correctionStatus:'pending-parent',
+   ...(isSchool?{score:evaluated.score,total:evaluated.total}: {})};
 }
 async function parentReport(db,uid){
  permitted(uid,'parent');
@@ -209,6 +219,8 @@ async function releaseCorrection(db,uid,payload){
  const tx=await db.transaction();
  const attempt=await db.get('attempts/'+payload.id,tx);
  if(!attempt)throw new ApiFault(404,'attempt-not-found');
+ if(payload.released&&!schoolCorrectionIsOpen(attempt,parisDate(new Date())))
+  throw new ApiFault(409,'school-correction-not-due');
  const status=payload.released?'released':'pending-parent';
  await db.commit([
   updateWrite('attempts/'+payload.id,{correctionStatus:status}),
@@ -224,7 +236,9 @@ async function releasedCorrections(db,uid){
  permitted(uid,'tim');
  const [attempts,releases]=await Promise.all([db.list('attempts',1000),db.list('releasedCorrections',1000)]);
  const allowed=new Set(releases.filter(x=>x.data?.released===true).map(x=>x.id));
- const owned=attempts.filter(x=>x.data?.authorUid===uid);
+ const today=parisDate(new Date());
+ // Une ancienne autorisation « released » ne contourne jamais la date du devoir.
+ const owned=attempts.filter(x=>x.data?.authorUid===uid&&schoolCorrectionIsOpen(x.data,today));
  const legacy=owned.filter(x=>!allowed.has(x.id)&&x.data?.correctionStatus==='pending-parent'&&
   !x.id.startsWith('TRH_'));
  const eligible=await Promise.all(legacy.map(async x=>{
