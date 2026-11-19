@@ -2,7 +2,11 @@
    inaccessible avant la fin du jour d'échéance (Europe/Paris).
    Les entraînements, Bonus devoirs et défis conservent la correction immédiate. */
 const DATE=/^20\d{2}-(0[1-9]|1[0-2])-([0-2]\d|3[01])$/;
-export const isSchoolHomework=ex=>ex?.category==='school'||ex?.kind==='school';
+// Compatibilité : les anciens entraînements ont parfois category:'school'.
+ // Seul un devoir explicitement scolaire et daté doit être bloqué.
+export const isSchoolHomework=ex=>ex?.kind==='school'||
+ (ex?.category==='school'&&ex?.kind!=='training'&&
+  Boolean(ex?.homeworkDue||ex?.due||ex?.entHomeworkOriginal));
 export function schoolCorrectionNotBefore(ex){
  if(!isSchoolHomework(ex))return null;
  const due=String(ex?.homeworkDue||ex?.due||'');
