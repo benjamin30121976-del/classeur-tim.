@@ -110,6 +110,19 @@ async function submitExercise(db,uid,payload){
   throw new ApiFault(400,'invalid-exercise');
  const {exercise,key,spanishSource,mixedSource}=await resolveExercise(db,id);
  if(exercise.enabled!==true)throw new ApiFault(409,'exercise-closed');
+ // Un nouveau défi ENT daté ne peut être remis qu'à son jour prévu.
+ // La date est revérifiée côté serveur, pas seulement cachée dans l'interface.
+ if(exercise.timEntBatch===true&&['daily','weekly','sunday'].includes(exercise.kind)){
+  const today=parisDate(new Date()),dow=new Date(today+'T12:00:00Z').getUTCDay();
+  const due=exercise.period===today;
+  const correctDay=exercise.kind==='daily'?(dow>=1&&dow<=5):
+   exercise.kind==='weekly'?dow===6:dow===0;
+  const count=exercise.kind==='daily'?10:20;
+  if(!due||!correctDay||exercise.category!=='challenge'||
+      exercise.questions?.length!==count)
+   throw new ApiFault(409,'mission-not-open');
+ }
+
   // Défi bonus : pas de texte libre ni de question sans correction expliquée.
   if(exercise.kind==='bonus-day'){
    if(!Array.isArray(exercise.questions)||exercise.questions.length<10||exercise.questions.length>20||
