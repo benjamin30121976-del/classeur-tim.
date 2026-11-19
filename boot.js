@@ -1438,6 +1438,28 @@ async function startSession(user){
     throw Error('Correction non confirmée : aucune note de Tim n’a été modifiée.');
    return graded;
   },
+  // Devoir original ENT uniquement : réessai daté, note sans solution.
+  // Le serveur conserve les copies/notes précédentes et attribue 0 XP.
+  schoolHomeworkRetryStatus:async id=>{
+   if(activeUser?.uid!==TIM_UID&&activeUser?.uid!==PARENT_UID)
+    throw Error('Accès réservé à la famille.');
+   const response=await cloudCallable('getTimSchoolHomeworkRetakes')({id});
+   return response.data;
+  },
+  retrySchoolHomework:async(id,answers)=>{
+   if(window.__TIM_READONLY_FALLBACK)throw Error('Service indisponible : aucune tentative ne doit être envoyée.');
+   if(window.__TIM_GUEST||activeUser?.uid!==TIM_UID)
+    throw Error('Seul Tim peut refaire un devoir scolaire.');
+   const ex=window.__TIM_DATA.exercises.find(x=>x.id===id);
+   if(!ex||ex.kind!=='school'||!Array.isArray(answers)||answers.length!==ex.questions.length)
+    throw Error('Devoir scolaire ou réponses invalides.');
+   const response=await cloudCallable('retryTimSchoolHomework')({id,answers});
+   const data=response.data||{};
+   if(data.submitted!==true||data.xp!==0||!Number.isFinite(data.score)||
+      !Number.isFinite(data.total)||data.answers)
+    throw Error('Nouvelle note non confirmée. Ne pas refaire une tentative sans actualiser le résultat.');
+   return data;
+  },
   submit:async(id,values,options={})=>{
    if(window.__TIM_READONLY_FALLBACK)throw Error('Service des résultats indisponible : aucune tentative ne peut être validée en lecture seule.');
    if(window.__TIM_GUEST||activeUser.uid!==TIM_UID)throw Error('Seul Tim peut valider les exercices.');
@@ -1450,7 +1472,7 @@ async function startSession(user){
     const response=await cloudCallable('submitTimExercise')({id,answers:values,translationsUsed,reviewChanges});
    const xp=Number(response.data?.xp||0);
    const released=response.data?.correctionStatus==='released'&&Array.isArray(response.data.answers)&&response.data.answers.length===ex.questions.length;
-   return {id,date:new Date().toISOString(),title:ex.title,lesson:ex.lesson,xp,correctionLocked:!released,correctionStatus:released?'released':'pending-parent',answers:released?response.data.answers:[],score:released?Number(response.data.score):null,total:released?Number(response.data.total):null,needsReview:false,policyVersion:18,translationHelpCount:response.data?.translationHelpCount??null};
+   return {id,date:new Date().toISOString(),title:ex.title,lesson:ex.lesson,xp,correctionLocked:!released,correctionStatus:released?'released':'pending-parent',answers:released?response.data.answers:[],score:released||ex.kind==='school'?Number(response.data.score):null,total:released||ex.kind==='school'?Number(response.data.total):null,needsReview:false,policyVersion:18,translationHelpCount:response.data?.translationHelpCount??null};
   },
   assignParentBonus:async sourceId=>{
    if(activeUser?.uid!==PARENT_UID)throw Error('Réservé au compte Parent.');
