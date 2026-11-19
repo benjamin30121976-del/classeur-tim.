@@ -281,7 +281,12 @@ def make_bis(provider, source):
         provider,
         "Créer une leçon BIS fidèle : champs summary (explication simple et précise), "
         "steps (liste de 3 à 6 étapes pour comprendre), example (exemple guidé complet), "
-        "help (seconde explication pour Je n'ai pas compris). Aucun exercice dans ce résultat.",
+        "help (seconde explication pour Je n'ai pas compris). "
+        "Pour Espagnol ou Anglais, fournir aussi audioPhrases: liste de 0 à 12 "
+        "objets {text: mot ou phrase EXACTE de la source en langue étudiée, "
+        "fr: traduction française}. Ne pas créer de faux mots ni inventer "
+        "d'exemples audio absents des cours. Pour les autres matières, liste vide. "
+        "Aucun exercice dans ce résultat.",
         [{"subject": source["subject"], "entId": source["entId"],
           "title": source["title"], "original": check_source(source)}],
     )
@@ -293,6 +298,21 @@ def make_bis(provider, source):
         len(str(s).strip()) < 10 for s in steps
     ):
         raise GenerationBlocked("Étapes pédagogiques insuffisantes.")
+    audio_phrases = answer.get("audioPhrases") or []
+    if not isinstance(audio_phrases, list) or len(audio_phrases) > 12:
+        raise GenerationBlocked("Liste audio de vocabulaire invalide.")
+    original_text = check_source(source)
+    verified_phrases = []
+    for phrase in audio_phrases:
+        if not isinstance(phrase, dict):
+            raise GenerationBlocked("Mot de vocabulaire non structuré.")
+        term = str(phrase.get("text") or "").strip()
+        french = str(phrase.get("fr") or "").strip()
+        if not 1 <= len(term) <= 100 or term not in original_text or not french:
+            raise GenerationBlocked("Mot audio ou traduction non vérifiable dans le vrai cours.")
+        if source["subject"] not in ("Anglais", "Espagnol"):
+            raise GenerationBlocked("Audio étranger dans une matière non linguistique.")
+        verified_phrases.append({"text": term, "fr": french})
     ident = uid("BISENT_", source["kind"], source["entId"])
     return {
         "id": ident, "entId": source["entId"], "kind": "bis", "category": "bis",
@@ -307,6 +327,7 @@ def make_bis(provider, source):
         "help": {"simple": str(answer["help"]).strip(), "steps": steps,
                  "example": str(answer["example"]).strip()},
         "examples": [str(answer["example"]).strip()],
+        "audioPhrases": verified_phrases,
         "timEntBatch": True, "sourceFingerprint": source.get("fingerprint") or "",
     }
 
