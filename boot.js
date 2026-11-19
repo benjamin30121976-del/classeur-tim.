@@ -471,6 +471,19 @@ async function runFirebaseDiagnostic(){
  return report;
 }
 
+function timParisDay(){
+ const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Paris',
+  year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());
+ const x=t=>parts.find(p=>p.type===t)?.value;
+ return x('year')+'-'+x('month')+'-'+x('day');
+}
+function timDayAfter(date){
+ if(!/^20\\d{2}-\\d{2}-\\d{2}$/.test(String(date||'')))return null;
+ const d=new Date(date+'T12:00:00Z');
+ if(!Number.isFinite(d.getTime())||d.toISOString().slice(0,10)!==date)return null;
+ d.setUTCDate(d.getUTCDate()+1);
+ return d.toISOString().slice(0,10);
+}
 async function fetchAttempts(content){
  const docs=await getDocs(activeUser?.uid===TIM_UID?
    query(collection(db,'attempts'),where('authorUid','==',TIM_UID)):
@@ -493,15 +506,23 @@ async function fetchAttempts(content){
   // Les anciens entraînements de leçon sont corrigés automatiquement.
   // Cette règle ne modifie ni les copies ni les XP enregistrés.
   const automaticallyCorrectable=Boolean(ex?.questions?.length&&ex.questions.every(q=>['mc','text'].includes(q.type))&&ex.kind!=='translation-help-log');
-  const released=record.correctionStatus==='released'||(automaticallyCorrectable&&record.authorUid===TIM_UID);
+  const school=record.schoolHomework===true||ex?.category==='school'||ex?.kind==='school';
+  const correctionFrom=String(record.correctionNotBefore||'')||
+   (school?timDayAfter(ex?.homeworkDue||ex?.due):null);
+  const schoolReady=!school||Boolean(correctionFrom&&timParisDay()>=correctionFrom);
+  const released=schoolReady&&(record.correctionStatus==='released'||
+   (automaticallyCorrectable&&record.authorUid===TIM_UID)||
+   (school&&Boolean(record.schoolHomework)&&record.authorUid===TIM_UID));
   list.push({
    id:d.id,date:record.submittedAt?.toDate?.().toISOString()||new Date().toISOString(),
    title:ex?.title||secret?.title||(d.id.startsWith('DAY_')?'Petit défi du '+d.id.slice(4,12):d.id.startsWith('SUNDAY_')?'Grand défi du dimanche':'Grand défi du samedi'),lesson:ex?.lesson||'',xp:Number(record.xp||0),policyVersion:Number(record.policyVersion||0),
    correctionStatus:released?'released':'pending-parent',
    correctionLocked:isParent?false:!released,
    answers:isParent&&Array.isArray(secret?.answers)?secret.answers:[],
-   score:isParent&&Number.isFinite(secret?.score)?secret.score:null,
-   total:isParent&&Number.isFinite(secret?.total)?secret.total:null,
+   score:isParent&&Number.isFinite(secret?.score)?secret.score:
+     (!isParent&&school&&Number.isFinite(record.schoolScore)?record.schoolScore:null),
+   total:isParent&&Number.isFinite(secret?.total)?secret.total:
+     (!isParent&&school&&Number.isFinite(record.schoolTotal)?record.schoolTotal:null),
    ...(isParent&&Number.isInteger(secret?.translationHelpCount)?{translationHelpCount:secret.translationHelpCount}:{}),
    needsReview:isParent?Boolean(secret?.needsReview):false
   });
