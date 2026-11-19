@@ -171,3 +171,21 @@ La règle précédente « tentative unique » ne s'applique plus aux **devoirs s
 - Code : worker/school-homework-retry.mjs, API retryTimSchoolHomework / getTimSchoolHomeworkRetakes, pont boot.js et interface app.js. Tests : worker/test/school-homework-retry.test.mjs. Les tests utilisent exclusivement un Firestore fictif.
 
 **État :** codé et testé hors ligne sur la branche, **non publié et non contrôlé sur le compte réel de Tim**. Changement de publication et de données réelles interdit sans autorisation explicite du Parent.
+
+## Diagnostic Firestore compte Tim — 19 novembre 2026
+
+**Preuve réelle (Chromium/Playwright GitHub Actions, run 44477517147)** : les deux connexions Tim/Parent sont authentifiées sur PC et téléphone. Le serveur privé a renvoyé HTTP 503 / `firestore-limit-429` sur `getTimCourseContent`. Ancienne version publiée : le compte Tim se rabattait sur le catalogue Invité, avec 71 leçons et 5 exercices, tandis que l'inspection Parent affichait 105 leçons et 34 exercices. Une erreur JavaScript `TypeError ... map` a aussi été détectée sur la session Tim dégradée. Ces chiffres ne prouvent aucun déficit permanent des cours Tim : ils proviennent de deux chemins de chargement différents.
+
+**Corrections préparées sur la branche de travail** :
+1. `worker/tim-course-cache.mjs` et `worker/server.mjs` : les réponses de cours privés **complètes et filtrées côté serveur** sont conservées dans un cache Cloudflare interne de courte durée (90 secondes), après authentification Tim, afin de diminuer les lectures Firestore répétées. Aucune note, correction, copie ni XP n'est ajoutée à ce cache. Un cache vide ne résout pas un quota 429 persistant.
+2. Toute erreur de lecture de liste de compléments provoque `student-course-incomplete` ; jamais une fausse liste de zéro leçon ou zéro exercice complémentaire.
+3. `boot.js` : suppression du remplacement automatique par `TIM_GUEST_DATA` pour la session Tim. Le compte n'affiche pas de contenu partiel comme s'il était complet. Il propose un message accessible et un bouton de réessai manuel, sans validation de copie.
+4. `worker/server.mjs` : suppression d'une double lecture des mêmes corrections historiques, sans changer les copies ni les règles.
+5. `app.js`, `index.html` : échéances à venir placées avant le Bonus devoirs sur l'accueil, grand visuel Bonus compact sur petit écran, menu inférieur resserré ; aucune modification de barème XP ni des données enregistrées.
+
+**Tests** : `.github/workflows/test-ent-lot.yml`, nouveaux tests `worker/test/tim-course-cache.test.mjs`, `worker/test/firestore-read-corrections.test.mjs`, `tools/test/tim-private-course-availability.test.mjs`, ainsi que le test révisé `worker/test/course-fallback.test.mjs`. Tests synthétiques et contrôles hors ligne GitHub réussis le 19/11.
+
+**Limites importantes** :
+- Les changements ne sont ni publiés sur `main` ni déployés sur Cloudflare. L'inspection des comptes avant cette correction ne prouve pas le résultat après publication.
+- Les quotas/limites HTTP 429 de Google Firestore ne sont pas contournés et peuvent empêcher la **première** lecture complète à froid, même avec le cache. Une action sur la capacité/quota Google peut être nécessaire si la limitation persiste. Ne jamais prétendre que ce problème externe est définitivement résolu sans nouvelle inspection authentifiée après déploiement autorisé.
+- Ne jamais tester en validant un exercice sur le compte Tim ; poursuivre les contrôles navigateur en lecture seule après autorisation de publication. Ne pas modifier `main` sans instruction expresse.
