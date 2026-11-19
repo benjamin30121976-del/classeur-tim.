@@ -904,7 +904,13 @@ function openExercise(id,options={}){const ex=exerciseBy(id);if(!ex)return;
    }
   });return;
  }
- const existing=attemptFor(id),completedChallenge=Boolean(existing&&['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind));
+ const schoolTask=ex.kind==='school';
+ // L'historique demeure intouchable ; la reprise ne s'ouvre que sur un
+ // devoir scolaire déjà rendu. Le serveur revérifie la date à la validation.
+ const retryMode=options.retrySchool===true&&schoolTask&&
+  !window.__TIM_PARENT&&!window.__TIM_GUEST&&Boolean(attemptFor(id));
+ const existing=retryMode?null:attemptFor(id);
+ const completedChallenge=Boolean(existing&&['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind));
  const isHomeworkDetail=ex.homeworkBonus===true;
  window.__TIM_OPEN_EXERCISE_ID=id;page('exercices');
  document.getElementById('exercise-index').classList.add('hide');
@@ -944,6 +950,10 @@ function openExercise(id,options={}){const ex=exerciseBy(id);if(!ex)return;
  }else{
   root.append(badge(ex.level),E('h2','',ex.title));
   root.append(E('p','intro',exerciseDescription(ex)));
+  if(retryMode)root.append(notice(
+   'Nouvelle tentative du devoir scolaire · 0 XP. Ta copie précédente est conservée. '+
+   'Tu recevras ta nouvelle note, sans voir les corrections avant l’échéance.',
+   'school-homework-retry-notice'));
   // La description et l'énoncé suffisent : aucun lien ni suggestion de cours.
   if(ex.instructions&&!completedChallenge){
    const instructions=E('div','note info',ex.instructions);
@@ -1011,6 +1021,40 @@ if(old){
   result.append(E('h3','','Ta note : '+old.score.toLocaleString('fr-FR')+'/'+old.total.toLocaleString('fr-FR')),
    E('p','','Ton travail est enregistré. Tu peux voir ton résultat, mais pas encore les bonnes réponses.'));
   root.append(result);
+  if(!window.__TIM_GUEST&&window.__TIM_BRIDGE?.schoolHomeworkRetryStatus&&ex.kind==='school'){
+   const history=E('div','panel school-homework-retries');
+   history.append(E('p','small','Historique des tentatives en cours de vérification…'));
+   root.append(history);
+   window.__TIM_BRIDGE.schoolHomeworkRetryStatus(id).then(report=>{
+    if(!history.isConnected||!report?.submitted)return;
+    history.replaceChildren();
+    if(Number.isFinite(report.score)&&Number.isFinite(report.total)){
+     result.querySelector('h3').textContent='Ta dernière note : '+
+      report.score.toLocaleString('fr-FR')+'/'+report.total.toLocaleString('fr-FR');
+     history.append(E('p','small','Meilleure note : '+
+      report.bestScore.toLocaleString('fr-FR')+'/'+report.total.toLocaleString('fr-FR')));
+    }
+    const attempts=Array.isArray(report.scores)?report.scores:[];
+    if(attempts.length>1){
+     history.append(E('strong','','Tes tentatives précédentes sont conservées :'));
+     const list=E('ul');
+     for(const entry of attempts)list.append(E('li','',
+      'Tentative '+entry.attempt+' : '+entry.score+'/'+report.total));
+     history.append(list);
+    }
+    if(report.canRetry&&!window.__TIM_PARENT){
+     const b=button('Refaire ce devoir pour améliorer ma note',()=>{
+      openExercise(id,{retrySchool:true,skipOpening:true,attemptCount:report.attemptCount});
+     },'btn');
+     history.append(E('p','small','Les bonnes réponses restent cachées. Tu peux recommencer avant la date limite du devoir.'),b);
+    }else if(!window.__TIM_PARENT){
+     history.append(E('p','small','Aucune nouvelle tentative disponible : la note est maximale ou la date limite du devoir est passée.'));
+    }
+   }).catch(error=>{
+    if(history.isConnected)history.textContent=
+     'Vérification des reprises indisponible : aucun nouveau devoir ne doit être envoyé avant confirmation.';
+   });
+  }
  }
  const challenge=['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind);
  if(challenge){
@@ -1059,13 +1103,33 @@ if(old){
  const submit=button('Valider définitivement cet exercice',async()=>{
   const vals=values();
   if(vals.some(v=>!safe(v).trim())||controls.some(c=>!reasoningReady(c))){alert('Réponds à toutes les questions et écris ta démarche lorsque cela est demandé.');return;}
-  if(attemptFor(id)){openExercise(id);return;}
-  if(!confirm('Confirmer ? Cet exercice sera définitivement terminé, sur tous les appareils.'))return;
+  if(attemptFor(id)&&!retryMode){openExercise(id);return;}
+  if(!confirm(retryMode
+   ?'Confirmer cette nouvelle tentative du devoir ? Ta première copie restera conservée. Aucun corrigé ne sera dévoilé.'
+   :'Confirmer ? Cet exercice sera définitivement terminé, sur tous les appareils.'))return;
   submit.disabled=true;submit.textContent='Enregistrement sécurisé…';
   let saved;
-  try{saved=await window.__TIM_BRIDGE.submit(id,vals);}
-  catch(err){
-   submit.disabled=false;submit.textContent='Valider définitivement cet exercice';
+  try{
+   saved=retryMode?await window.__TIM_BRIDGE.retrySchoolHomework(id,vals):
+    await window.__TIM_BRIDGE.submit(id,vals);
+  }catch(err){
+   submit.disabled=false;submit.textContent=retryMode?
+    'Faire corriger ma nouvelle tentative (0 XP)':'Valider définitivement cet exercice';
+   if(retryMode){
+    // Une réponse réseau perdue NE doit jamais créer une deuxième reprise.
+    try{
+     const status=await window.__TIM_BRIDGE.schoolHomeworkRetryStatus(id);
+     if(Number(status?.attemptCount)>Number(options.attemptCount||1)){
+      const d=drafts();delete d[id];save(DRAFT_KEY,d);
+      await window.__TIM_BRIDGE.refresh();
+      openExercise(id,{skipOpening:true});
+      return;
+     }
+    }catch(_){}
+    alert('Nouvelle tentative non confirmée. Tes réponses restent en brouillon. '+
+     'Actualise le suivi avant toute nouvelle validation. '+String(err?.message||err));
+    return;
+   }
    // Un enregistrement peut avoir abouti côté serveur avant une coupure réseau.
    try{await window.__TIM_BRIDGE.refresh();}catch{}
    if(attemptFor(id)){
@@ -1073,6 +1137,12 @@ if(old){
     openExercise(id);
    }else alert('Validation non confirmée. Tes réponses restent sauvegardées ; vérifie ta connexion avant de réessayer. '+String(err?.message||err));
    return;
+  }
+  if(retryMode){
+   const d=drafts();delete d[id];save(DRAFT_KEY,d);
+   try{await window.__TIM_BRIDGE.refresh();}catch(_){}
+   openExercise(id,{skipOpening:true});
+   return; // La note de reprise est lue séparément ; aucune animation XP.
   }
   window.__CLOUD_ATTEMPTS.push(saved);
   const notification=window.__TIM_BRIDGE.notifyAlert?.(id,saved);
@@ -1090,7 +1160,11 @@ if(old){
    root.append(notice('Ton exercice est enregistré, mais le résultat n’a pas pu s’afficher. Tu ne dois pas le recommencer.'));
    root.append(button('Ouvrir ma note et mon corrigé',()=>openExercise(id),'mission-launch'));
   }
-},'btn');if(!isHomeworkDetail)root.append(E('p','small','Une seule validation. Pour les défis, la note et la correction sont immédiates ; les devoirs scolaires restent à 0 XP et sous contrôle du parent.'));root.append(submit);}
+},'btn');if(retryMode)submit.textContent='Faire corriger ma nouvelle tentative (0 XP)';
+ if(!isHomeworkDetail)root.append(E('p','small',retryMode?
+  'Les tentatives de ce devoir sont conservées. La correction demeure cachée jusqu’après la date limite.':
+  'Une seule validation pour les entraînements et défis. Les devoirs scolaires sont à 0 XP ; leurs reprises restent possibles avant échéance.'));
+ root.append(submit);}
 if(!old && !window.__TIM_PARENT && controls.length>1){
   const questionNodes=[...form.querySelectorAll('.q')];
   const submit=root.querySelector('button.btn');
