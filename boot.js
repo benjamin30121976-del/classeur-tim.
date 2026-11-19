@@ -461,22 +461,17 @@ async function notifyAlert(id,saved){
 async function runFirebaseDiagnostic(){
  if(activeUser?.uid!==PARENT_UID)throw Error('Réservé au parent.');
  // Diagnostic non destructif, aligné sur les règles réelles de Firestore.
- const report={parentContentRead:false,attemptsRead:false,unauthorizedAttemptWriteBlocked:false,backendReport:false};
+ const report={parentContentRead:false,attemptsRead:false,writePermissionNotTested:true,backendReport:false};
  const source=await getDoc(doc(db,'content','main'));
  report.parentContentRead=source.exists();
  await getDocs(query(collection(db,'attempts'),where('authorUid','==',TIM_UID)));
  report.attemptsRead=true;
- try{
-  await setDoc(doc(db,'attempts','diagnostic_interdit'),{authorUid:PARENT_UID,xp:999});
-  throw Error('Sécurité défaillante : écriture directe des résultats autorisée.');
- }catch(error){
-  if(error.code==='permission-denied')report.unauthorizedAttemptWriteBlocked=true;
-  else throw error;
- }
+ // Protection absolue : même un test supposé refusé ne tente jamais une
+ // écriture dans « attempts ». Les permissions s'analysent hors ligne.
  const response=await cloudCallable('getParentReport')({});
  report.backendReport=Array.isArray(response.data?.attempts);
- if(!report.parentContentRead||!report.attemptsRead||!report.unauthorizedAttemptWriteBlocked||!report.backendReport)
-  throw Error('Diagnostic incomplet : '+JSON.stringify(report));
+ if(!report.parentContentRead||!report.attemptsRead||!report.backendReport)
+  throw Error('Diagnostic de lecture incomplet : '+JSON.stringify(report));
  return report;
 }
 
