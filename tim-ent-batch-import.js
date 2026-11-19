@@ -15,7 +15,8 @@ function fail(message){throw Error(message);}
 const unique=x=>new Set(x).size===x.length;
 const str=x=>String(x??'').trim();
 function validQuestions(ex){
- if(!Array.isArray(ex.questions)||ex.questions.length!==10)return false;
+ const count=['weekly','sunday'].includes(ex.kind)?20:10;
+ if(!Array.isArray(ex.questions)||ex.questions.length!==count)return false;
  return ex.questions.every(q=>{
   if(!str(q.q)||str(q.why).length<30)return false;
   if(q.type==='text')return Boolean(str(q.right));
@@ -53,11 +54,15 @@ function checkPack(pack,manifest,existing={lessons:[],exercises:[]}){
  }
  for(const ex of exercises){
   if(ex.timEntBatch!==true||!str(ex.title)||!validQuestions(ex))fail('Exercice sans dix corrections pédagogiques : '+ex.id);
-  if(ex.subject==='Espagnol'&&ex.questions.some(q=>!str(q.fr||q.translationFr)))
+  if(ex.questions.some(q=>(q.subject||ex.subject)==='Espagnol'&&!str(q.fr||q.translationFr)))
    fail('Traduction française manquante pour un énoncé espagnol : '+ex.id);
-  if(!['training','homework-bonus'].includes(ex.kind))fail('Catégorie d’exercice non prise en charge dans ce lot : '+ex.id);
+  if(!['training','homework-bonus','daily','weekly','sunday'].includes(ex.kind))fail('Catégorie d’exercice non prise en charge dans ce lot : '+ex.id);
   if(ex.kind==='training'&&(ex.category!=='training'||ex.homeworkBonus===true))
    fail('Catégorie entraînement invalide : '+ex.id);
+  if(['daily','weekly','sunday'].includes(ex.kind)&&
+     (ex.category!=='challenge'||!DATE.test(String(ex.period||''))||
+      !Array.isArray(ex.realLessons)||!ex.realLessons.length))
+   fail('Défi ENT sans date, barème ou leçons sources : '+ex.id);
   if(ex.kind==='homework-bonus'&&
      (ex.homeworkBonus!==true||ex.category!=='bonus'||!DATE.test(ex.homeworkDue)||!ex.linkedHomework?.length))
    fail('Lien ENT ou échéance du bonus absent : '+ex.id);
