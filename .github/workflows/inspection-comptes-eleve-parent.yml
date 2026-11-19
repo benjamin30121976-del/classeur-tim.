@@ -1,0 +1,64 @@
+name: Inspection authentifiee Tim et Parent (lecture seule)
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'boot.js'
+      - 'app.js'
+      - 'index.html'
+      - 'worker/server.mjs'
+      - 'worker/tim-course-cache.mjs'
+      - '.github/workflows/inspection-comptes-eleve-parent.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: inspection-auth-tim-parent-main
+  cancel-in-progress: true
+jobs:
+  code:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verifier les garde-fous lecture seule
+        run: |
+          node --check outils/inspecter-comptes-lecture-seule.cjs
+          node --test outils/test/inspection-comptes-lecture-seule.test.cjs
+  comptes:
+    needs: code
+    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'push' && contains(github.event.head_commit.message, '[verification-compte-tim]'))
+    runs-on: ubuntu-latest
+    timeout-minutes: 18
+    env:
+      TIM_PARENT_EMAIL: ${{ secrets.TIM_PARENT_EMAIL }}
+      TIM_PARENT_PASSWORD: ${{ secrets.TIM_PARENT_PASSWORD }}
+      TIM_STUDENT_EMAIL: ${{ secrets.TIM_STUDENT_EMAIL }}
+      TIM_STUDENT_PASSWORD: ${{ secrets.TIM_STUDENT_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verifier les quatre secrets sans les afficher
+        run: |
+          test -n "$TIM_PARENT_EMAIL"
+          test -n "$TIM_PARENT_PASSWORD"
+          test -n "$TIM_STUDENT_EMAIL"
+          test -n "$TIM_STUDENT_PASSWORD"
+      - name: Laisser le deploiement Cloudflare se terminer
+        if: github.event_name == 'push'
+        run: sleep 105
+      - name: Installer Chromium et Playwright
+        run: |
+          mkdir -p /tmp/tim-inspection-playwright
+          npm install --prefix /tmp/tim-inspection-playwright --no-audit --no-fund playwright
+          /tmp/tim-inspection-playwright/node_modules/.bin/playwright install --with-deps chromium
+      - name: Inspecter comptes Tim et Parent sur mobile et ordinateur sans ecriture
+        env:
+          NODE_PATH: /tmp/tim-inspection-playwright/node_modules
+        run: node outils/inspecter-comptes-lecture-seule.cjs
+      - name: Sauvegarder rapport et captures masquees
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: inspection-classeur-tim-production
+          path: browser-comptes-lecture-seule/
+          retention-days: 3
+          if-no-files-found: warn
