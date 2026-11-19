@@ -249,14 +249,18 @@ function openLesson(id){const l=lessonBy(id);if(!l)return;
  if(l.id==='L05'&&window.TIM_SPANISH_LETTER)dest.append(window.TIM_SPANISH_LETTER.createPanel());
  // Les énoncés espagnols des captures ENT sont traduits sans remplacer les PDF de l'enseignante.
  if(subjectOf(l)==='Espagnol'&&window.TIM_SPANISH_ENT_ORIGINALS){dest.append(window.TIM_SPANISH_ENT_ORIGINALS.renderPanel(l.id));}
- // Les PDF d'origine sont prioritaires et consultables en lecteur mobile privé.
- if(!bis)dest.append(makeAttachmentPanel('lesson',l.id));
+ // Les PDF de l'ENT sont visibles SANS CLIC dans les DEUX fiches.
+ // Le même original privé est affiché en place dans ENT et BIS, sans le dupliquer.
+ // Une leçon BIS ne peut jamais emprunter les PDF d'une autre matière.
+ const originalForPdf=bis&&l.timEntBatch
+  ?DATA.lessons.find(x=>x.timEntBatch===true&&x.kind==='ent'&&x.entId===l.entId&&subjectOf(x)===subjectOf(l))
+  :l;
+ if(originalForPdf)dest.append(makeAttachmentPanel('lesson',originalForPdf.id,{inlineRequired:true}));
+ else if(bis&&l.timEntBatch)dest.append(notice('Document ENT original non retrouvé pour cette leçon BIS : PDF à vérifier avant publication.','lesson-caution'));
  for(const b of l.blocks)dest.append(buildBlock(b));loadInlineLessonFigures(dest,l.id);
- if(bis&&l.timEntBatch){
-  const original=DATA.lessons.find(x=>x.timEntBatch&&x.kind==='ent'&&x.entId===l.entId);
-  if(original)dest.append(makeAttachmentPanel('lesson',original.id));
- }
- if(bis)dest.append(makeAttachmentPanel('lesson',l.id));
+ // Les éventuels documents complémentaires spécifiques à la BIS restent visibles.
+ if(bis&&(!originalForPdf||originalForPdf.id!==l.id))
+  dest.append(makeAttachmentPanel('lesson',l.id,{hideIfEmpty:true,inlineRequired:true}));
 let related=DATA.exercises.filter(e=>e.lesson===l.id&&!e.id.startsWith('R'));let controls=E('div','panel separated');controls.append(E('h3','','S’entraîner sur cette leçon'));if(related.length){let list=E('div','clicklist');for(const ex of related)list.append(cardAction(ex.title,(ex.kind==='training'?'Entraînement · +1 / +0,5 / 0 XP':window.TIM_EXERCISE.school(ex)?'Devoir ENT · 0 XP':'Bonus · jusqu’à +2 XP')+' · '+quizLabel(ex),null,()=>openExercise(ex.id),attemptFor(ex.id)?'Terminé':'À faire'));controls.append(list);}else controls.append(E('p','','Un exercice pourra être ajouté ultérieurement.'));dest.append(controls);
 let help=E('div','helpbox');help.append(E('h3','','Je n’ai pas compris'));help.append(E('p','','Voici une autre manière de comprendre. Les explications suivantes ont été écrites spécialement pour le classeur.'));const stage=E('div');let index=0;function step(){clear(stage);if(index===0){stage.append(badge('Niveau 1 · Explication simple'),E('p','',l.help.simple));}if(index===1){stage.append(badge('Niveau 2 · Étapes guidées'));let ol=E('ol');for(const x of l.help.steps)ol.append(E('li','',x));stage.append(ol,E('p','note info',l.help.example));}if(index>=2){stage.append(badge('Niveau 3 · Vérifier avec un exemple'));const ck=l.help.check;if(ck){stage.append(E('p','',ck.q));let opts=E('div','check-answers');ck.options.forEach((o,j)=>opts.append(button(o,()=>{msg.textContent=(j===ck.right?'Bonne réponse. ':'Ce n’est pas la bonne réponse. ')+ck.why;msg.style.color=j===ck.right?'var(--green)':'var(--red)';},'plain')));stage.append(opts);const msg=E('p','subtle','Cette mini-question est une aide, pas un exercice noté.');stage.append(msg);}else stage.append(E('p','',l.help.example));}next.textContent=index===0?'Explication pas à pas →':index===1?'Vérifier avec un exemple →':'Recommencer l’aide';}
 const next=button('Explication pas à pas →',()=>{index=(index+1)%3;step();});help.append(stage,next);step();dest.append(help);
@@ -1231,9 +1235,15 @@ function makeAttachmentPanel(targetKind,targetId,options={}){
     if(targetKind==='lesson'){
      const embedded=E('div','attachment-inline-embed');
      const fileName=String(item.fileName||'');
-     if(item.mime==='application/pdf'&&window.TIM_PHYSICS_INLINE_PDF?.createFullInline){
-      embedded.append(window.TIM_PHYSICS_INLINE_PDF.createFullInline(
-       {target:targetId,fileName},'Document ENT original complet — '+fileName));
+     if(item.mime==='application/pdf'){
+      if(window.TIM_PHYSICS_INLINE_PDF?.createFullInline){
+       embedded.append(window.TIM_PHYSICS_INLINE_PDF.createFullInline(
+        {target:targetId,fileName},'Document ENT original complet — '+fileName));
+      }else{
+       // Ne JAMAIS transformer silencieusement le PDF en un simple bouton.
+       embedded.append(E('p','lesson-caution',
+        'PDF intégré indisponible : lecteur non chargé. Ce document doit s’afficher directement dans la leçon, sans clic.'));
+      }
      }else if(item.mime?.startsWith('image/')){
       const imageSlot=E('div','attachment-inline-image');
       imageSlot.textContent='Chargement du schéma ENT…';
