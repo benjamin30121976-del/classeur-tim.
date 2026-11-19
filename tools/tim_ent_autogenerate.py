@@ -10,8 +10,11 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import hashlib
+import io
 import json
 import os
+import re
+import zipfile
 from pathlib import Path
 import sys
 import time
@@ -120,8 +123,81 @@ Ne déduis jamais que les informations non présentes dans la source sont vraies
 """
 
 
+def read_attached_pdfs(inventory, plan, zips):
+    """Extrait du texte seulement; refuse scans/illustrations non vérifiables."""
+    targets = {str(x["entId"]): x for x in plan.get("sourceReadingRequired") or []}
+    if not targets:
+        return {}
+    try:
+        from pypdf import PdfReader
+    except ImportError as exc:
+        raise GenerationBlocked("pypdf requis pour lire les PDF, aucun cours inventé.") from exc
+    proof = {}
+    for item in inventory["items"]:
+        ent_id = str(item["entId"])
+        if ent_id not in targets:
+            continue
+        refs = targets[ent_id].get("attachmentIds") or []
+        if not refs:
+            raise GenerationBlocked("Référence PDF absente : " + ent_id)
+        excerpts = []
+        for ref in refs:
+            matches = []
+            for src in zips:
+                with zipfile.ZipFile(src) as archive:
+                    for row in archive.infolist():
+                        name = row.filename.replace("\\", "/")
+                        if row.is_dir() or not name.lower().endswith(".pdf"):
+                            continue
+                        identifiers = (str(ref), str(ref).replace("~", "_"))
+                        if any(re.search(r"(?<!\d)" + re.escape(token) + r"(?!\d)", name)
+                               for token in identifiers):
+                            matches.append((src, name, row.file_size))
+            if len(matches) != 1:
+                raise GenerationBlocked("PDF original absent ou ambigu : " + ent_id)
+            src, name, size = matches[0]
+            if not 0 < size <= 4 * 1024 * 1024:
+                raise GenerationBlocked("PDF trop volumineux pour l'import : " + ent_id)
+            with zipfile.ZipFile(src) as archive:
+                binary = archive.read(name)
+            if not binary.startswith(b"%PDF-"):
+                raise GenerationBlocked("Faux PDF détecté : " + ent_id)
+            try:
+                pdf = PdfReader(io.BytesIO(binary), strict=True)
+                if pdf.is_encrypted or not 1 <= len(pdf.pages) <= 30:
+                    raise GenerationBlocked("PDF chiffré ou trop long : " + ent_id)
+                pages = []
+                for page in pdf.pages:
+                    if len(page.images):
+                        raise GenerationBlocked(
+                            "Schéma/image dans le PDF : contrôle visuel indispensable (" +
+                            ent_id + ")")
+                    stream = page.get_contents()
+                    if stream is not None and len(stream.get_data()) > 4 * 1024 * 1024:
+                        raise GenerationBlocked("Contenu PDF trop lourd : " + ent_id)
+                    pages.append(page.extract_text() or "")
+                text = "\n".join(pages).strip()
+            except GenerationBlocked:
+                raise
+            except Exception as exc:
+                raise GenerationBlocked("PDF illisible : " + ent_id) from exc
+            if len(text) < 35:
+                raise GenerationBlocked("PDF scanné ou texte insuffisant : " + ent_id)
+            excerpts.append(text)
+        item["sourceContent"] = (str(item.get("original") or "").strip() +
+                                 "\n\n" + "\n\n".join(excerpts)).strip()
+        check_source(item)
+        proof[ent_id] = {
+            "attachmentIds": refs,
+            "description": "Texte extrait automatiquement des PDF originaux identifiés; "
+                           "images/scans refusés. Relecture humaine obligatoire.",
+            "verifiedMode": "extraction_non_officielle",
+        }
+    return proof
+
+
 def check_source(item):
-    text = str(item.get("original") or "").strip()
+    text = str(item.get("sourceContent") or item.get("original") or "").strip()
     if len(text) < 35:
         raise GenerationBlocked(
             "Source insuffisante pour " + str(item.get("entId")) +
@@ -275,6 +351,20 @@ def prepare(inventory, plan, provider, existing=None, reference_items=()):
         seen.add(key)
         check_source(item)
         original = lot.source_card(item)
+        if original is None and item.get("sourceContent"):
+            original = {
+                "id": uid("ENTL_", item["kind"], item["entId"]),
+                "entId": item["entId"], "kind": "ent", "category": "school",
+                "chapter": item["title"], "title": "Cours ENT (PDF original) — " + item["title"],
+                "subject": item["subject"], "date": item.get("date") or "",
+                "teacherOriginal": False, "timEntBatch": True,
+                "blocks": [{"kind": "note", "h": "Document officiel du professeur",
+                            "body": "Consulter la pièce PDF originale jointe. "
+                                    "La transcription automatique n'est pas le document officiel."}],
+                "help": {"simple": "Ouvrir le PDF original du professeur.",
+                         "steps": [], "example": None},
+                "attachmentsEntIds": [a["id"] for a in item.get("attachments", [])],
+            }
         require(original, "Texte ENT d'origine indisponible.")
         bis = make_bis(provider, item)
         cards.extend([original, bis])
@@ -364,6 +454,9 @@ def run(args, provider=None):
                                 subject="", date=args.date, out=str(raw)))
     inv = json.loads((raw / "ent_prive_lot.json").read_text(encoding="utf-8"))
     plan = json.loads((raw / "plan_pedagogique.json").read_text(encoding="utf-8"))
+    reviewed = read_attached_pdfs(inv, plan, args.zips)
+    reviewed_file = root / "preuves_extraction_PDF.json"
+    lot.dump(reviewed_file, reviewed)
     catalog = {}
     if args.catalog:
         catalog = json.loads(Path(args.catalog).read_text(encoding="utf-8"))
@@ -371,19 +464,21 @@ def run(args, provider=None):
     if not isinstance(reference_items, list):
         raise GenerationBlocked("Catalogue pédagogique privé invalide.")
     result = prepare(inv, plan, provider, reference_items=reference_items)
+    inventory_enriched = root / "inventaire_enrichi_prive.json"
+    lot.dump(inventory_enriched, inv)
     pack = root / "pack_pedagogique_brouillon.json"
     lot.dump(pack, result)
     # La validation couvre aussi tous les devoirs futurs et les défis.
     accepted = lot.validate(SimpleNamespace(
         pack=str(pack), plan=str(raw / "plan_pedagogique.json"),
-        existing=args.existing, reviewed_sources=None, out=None))
+        existing=args.existing, reviewed_sources=str(reviewed_file), out=None))
     if accepted != 0:
         raise GenerationBlocked("Contrôle technique du lot refusé. Brouillon conservé ; aucun ZIP importable.")
     ready = root / "lot_ENT_prepare_NON_PUBLIE.zip"
     lot.assemble(SimpleNamespace(
         plan=str(raw / "plan_pedagogique.json"),
-        inventory=str(raw / "ent_prive_lot.json"), pack=str(pack),
-        existing=args.existing, reviewed_sources=None, mapping=None,
+        inventory=str(inventory_enriched), pack=str(pack),
+        existing=args.existing, reviewed_sources=str(reviewed_file), mapping=None,
         out=str(ready), overwrite=False, zips=args.zips))
     (root / "ETAT_RELECTURE_OBLIGATOIRE.txt").write_text(
         "Brouillon généré et contrôlé automatiquement. "
