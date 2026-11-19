@@ -635,10 +635,18 @@ async function startSession(user){
  }
  // Défis rédigés à partir des nouveaux cours ENT, sans toucher aux anciens IDs.
  // La substitution ne se fait qu'avec un lot COMPLET et daté, jamais partiel.
+ const publishedBeforeParisDay=(value,period)=>{
+   const when=new Date(value||'');
+   if(!Number.isFinite(when.getTime()))return false;
+   const parts=new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Paris',
+      year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(when);
+   const take=x=>parts.find(p=>p.type===x)?.value;
+   return (take('year')+'-'+take('month')+'-'+take('day'))<period;
+ };
  const batchFor=(kind,period)=>content.exercises.filter(e=>e.timEntBatch===true&&
     e.kind===kind&&e.category==='challenge'&&e.period===period&&
     e.questions?.length===(kind==='daily'?10:20)&&
-    String(e.publishedAt||'').slice(0,10)<period);
+    publishedBeforeParisDay(e.publishedAt,period));
  const todayBatch=batchFor('daily',missionPlan.meta.today);
  const completeDaily=todayBatch.length===3&&new Set(todayBatch.map(e=>e.id)).size===3&&
     missionPlan.meta.today>='2026-11-23';
