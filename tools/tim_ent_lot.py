@@ -246,6 +246,23 @@ def homework_preparation_tasks(homework, asof):
     return tasks
 
 
+def challenge_tasks(asof):
+    """Défis ENT supplémentaires : jours futurs seulement, anciennes copies préservées."""
+    if asof<dt.date(2026,11,23):
+        return []  # missions V18 déjà attribuées jusque-là
+    dates=[]
+    if asof.weekday()<5:
+        dates.extend([{'date':asof.isoformat(),'id':f'ENTD_{asof:%Y%m%d}_{i:02}',
+                       'kind':'daily','questionCount':10,'category':'challenge'} for i in (1,2,3)])
+    saturday=asof+dt.timedelta(days=5-asof.weekday()) if asof.weekday()<=5 else asof+dt.timedelta(days=6)
+    sunday=saturday+dt.timedelta(days=1)
+    dates.extend([{'date':saturday.isoformat(),'id':f'ENTW_{saturday:%Y%m%d}',
+                   'kind':'weekly','questionCount':20,'category':'challenge'},
+                  {'date':sunday.isoformat(),'id':f'ENTS_{sunday:%Y%m%d}',
+                   'kind':'sunday','questionCount':20,'category':'challenge'}])
+    return dates
+
+
 def collect(args):
     zip_paths=[Path(x) for x in args.zips]
     files=unpack(zip_paths); lessons,hw,dates,reports,attachment_index=find_docs(files)
@@ -299,6 +316,7 @@ def collect(args):
           'upcomingHomeworkExercisePreparations':upcoming,
           'futureHomeworkSeriesRequired':sum(x['requiredSeries'] for x in upcoming),
           'dailyTrainingSuggested':min(5,max(2,len(grouped)+len(lesson_tasks))) if (grouped or lesson_tasks) else 0,
+          'newChallengeTasks':challenge_tasks(asof),
           'dailyChallenges':{'weekday':3,'questionsEach':10,'engine':'missions-v18 + getMixedChallengePlan (existant)',
                              'action':'contrôler le mélange ; préserver missions déjà attribuées'},
           'weekendChallenges':{'saturday':20,'sunday':20,'action':'préparer en avance ; conserver les identifiants et tentatives'},
@@ -401,11 +419,14 @@ def validate(args):
         if not l.get('examples'):issues.append(f'{ident}: aucun exemple guidé')
     for ex in exercises:
         ident=ex.get('id','?');kind=ex.get('kind')
-        if kind not in ('training','homework-bonus'):issues.append(f'{ident}: type inédit/non pris en charge')
+        if kind not in ('training','homework-bonus','daily','weekly','sunday'):issues.append(f'{ident}: type inédit/non pris en charge')
         if not ex.get('lesson'):issues.append(f'{ident}: leçon associée absente')
         questions=ex.get('questions')
-        if not isinstance(questions,list) or len(questions)!=10:
-            issues.append(f'{ident}: dix questions obligatoires');continue
+        expected=20 if kind in ('weekly','sunday') else 10
+        if not isinstance(questions,list) or len(questions)!=expected:
+            issues.append(f'{ident}: {expected} questions obligatoires');continue
+        if kind in ('daily','weekly','sunday') and (ex.get('category')!='challenge' or not norm_date(ex.get('period')) or not ex.get('realLessons')):
+            issues.append(f'{ident}: défi sans catégorie XP, date ou leçons sources')
         if kind=='homework-bonus' and (ex.get('homeworkBonus') is not True or not ex.get('linkedHomework') or not norm_date(ex.get('homeworkDue'))):
             issues.append(f'{ident}: bonus devoirs sans liaison ENT, échéance ou marqueur XP correct')
         for i,q in enumerate(questions,1):
@@ -460,6 +481,17 @@ def validate(args):
             prev=json.loads(Path(args.existing).read_text(encoding='utf-8'))
             existing=prev.get('exercises') or []
         issues.extend(validate_homework_coverage(plan,exercises,existing))
+        all_known=exercises+existing
+        for task in plan.get('newChallengeTasks',[]):
+            found=[x for x in all_known if x.get('id')==task['id'] and
+                   x.get('timEntBatch') is True and x.get('kind')==task['kind'] and
+                   x.get('category')=='challenge' and x.get('period')==task['date'] and
+                   isinstance(x.get('realLessons'),list) and x['realLessons'] and
+                   len(x.get('questions') or [])==task['questionCount']]
+            if not found:
+                issues.append('Défi ENT '+task['id']+' de '+str(task['questionCount'])+
+                              ' questions corrigées manquant')
+
     if issues:
         print('VALIDATION REFUSÉE : '+str(len(issues))+' problème(s):\n'+'\n'.join('- '+x for x in issues[:80]))
         return 1
