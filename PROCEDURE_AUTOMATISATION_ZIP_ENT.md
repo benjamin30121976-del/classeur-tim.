@@ -98,3 +98,21 @@ Les changements de la branche `automatisation-ent-pedagogie-20261118` doivent ê
 - La règle est vérifiée **dans le traitement des notes, dans la lecture différée du corrigé, dans l'import des lots et dans l'écran élève** ; ne pas conclure sur une simple vérification de l'interface.
 - Aucune règle de report de correction ne modifie rétroactivement les copies, notes ou XP de Tim. Les vérifications de cette nouvelle règle ont été exécutées sur données fictives ; le site publié et les deux comptes n'ont pas encore été vérifiés sur ce nouveau parcours.
 
+
+## Collecte sélective sept matières — prototype branché sur V4.1 (19 novembre 2026)
+
+**Fichier préparé :** `tools/ent_tim_nouveautes_7_matieres.py`. Copie téléchargeable : `ent_tim_nouveautes_7_matieres.py` dans le dossier bibliothèque `/Suivi scolaire Tim 3D/` et dans la conversation de création. **Non encore exécuté sur Android ni validé contre les API vivantes pour les sept matières.**
+
+Il réutilise **strictement** les modules déjà éprouvés du collecteur direct V4.1 : V3.7 (session EduConnect), V3.8 (URL et nom sécurisé) et V3.9 (pièces jointes). Le parent télécharge le `.py` dans Android puis exécute :
+
+```bash
+python ~/storage/downloads/ent_tim_nouveautes_7_matieres.py
+```
+
+Sans option : sept matières, période depuis la dernière collecte générale réussie avec au moins sept jours de recouvrement (premier lancement : sept derniers jours) et agenda jusqu'à J+21 pour retrouver les devoirs à venir. Une matière précise ou une autre date de départ se sélectionne avec `--matiere` ou `--depuis AAAA-MM-JJ` ; la période de retour est bornée à 35 jours, sans réinterroger toute l'année.
+
+L'archive unique datée `ENT-Tim-nouveautes-AAAAMMJJ_HHMMSS.zip` contient les **originaux** des cours, les devoirs liés ou annoncés, le calendrier, l'index des pièces et leurs octets lorsque le téléchargement réussit, ainsi qu'un rapport d'erreurs. Les erreurs et fichiers dépassant les 4 Mo de la capacité d'import Parent bloquent le statut « collecte complète » et n'avancent pas le curseur. Une exécution filtrée par matière ne fait pas avancer le curseur commun. Aucun ZIP ancien ni copie de Tim n'est modifié.
+
+**Vérifié localement** : compilation Python, détection des sept matières, dates et fenêtres, et test simulé agenda → deux types de contenu → un ZIP. **Non vérifié** : authentification réelle Android, disponibilité de tous les champs API, pièces sur serveur du collège, absence d'items manquants dans une collecte vivante et publication/affichage sur Tim ou Parent. Le serveur de l'ENT ne se contacte que lors de l'exécution volontaire dans Termux. Les ZIP doivent toujours être renvoyés à ChatGPT pour création et vérification pédagogique ; aucune génération automatique de corrigés n'est prétendue.
+
+**Autre correction sur la même branche** : le pipeline prévoit désormais les trois défis du lundi lors d'une collecte du vendredi ou du week-end. Le diagnostic Firebase du compte Parent ne tente plus une écriture `attempts/diagnostic_interdit` sous prétexte de tester les permissions ; il est désormais intégralement en lecture seule.
