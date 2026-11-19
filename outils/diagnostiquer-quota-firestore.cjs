@@ -124,10 +124,13 @@ async function main(){
  fs.mkdirSync(OUT,{recursive:true});
  const summary={timestamp:new Date().toISOString(),project:PROJECT,mode:'read-only',
   note:'Jamais de copie, note, tentative, XP ou corrigé lu ou écrit.'};
+ const raw=process.env.FIREBASE_SERVICE_ACCOUNT||'';
  let account;
- try{account=JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT||'');}catch{}
- if(!account||account.project_id!==PROJECT||!account.private_key||!account.client_email){
-  summary.access='service-account-missing-or-invalid';
+ if(raw)try{account=JSON.parse(raw);}catch{}
+ if(!raw){
+  summary.access='github-secret-FIREBASE_SERVICE_ACCOUNT-absent';
+ }else if(!account||account.project_id!==PROJECT||!account.private_key||!account.client_email){
+  summary.access='github-secret-FIREBASE_SERVICE_ACCOUNT-invalid';
  }else{
   const a=await auth(account);
   if(!a.token)summary.access={status:'oauth-failed',http:a.http,reason:a.code};
