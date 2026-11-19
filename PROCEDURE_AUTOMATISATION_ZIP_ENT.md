@@ -116,3 +116,45 @@ L'archive unique datée `ENT-Tim-nouveautes-AAAAMMJJ_HHMMSS.zip` contient les **
 **Vérifié localement** : compilation Python, détection des sept matières, dates et fenêtres, et test simulé agenda → deux types de contenu → un ZIP. **Non vérifié** : authentification réelle Android, disponibilité de tous les champs API, pièces sur serveur du collège, absence d'items manquants dans une collecte vivante et publication/affichage sur Tim ou Parent. Le serveur de l'ENT ne se contacte que lors de l'exécution volontaire dans Termux. Les ZIP doivent toujours être renvoyés à ChatGPT pour création et vérification pédagogique ; aucune génération automatique de corrigés n'est prétendue.
 
 **Autre correction sur la même branche** : le pipeline prévoit désormais les trois défis du lundi lors d'une collecte du vendredi ou du week-end. Le diagnostic Firebase du compte Parent ne tente plus une écriture `attempts/diagnostic_interdit` sous prétexte de tester les permissions ; il est désormais intégralement en lecture seule.
+
+
+## Moteur de génération pédagogique automatique (branche de travail, 19/11/2026)
+
+**Programme interne : tools/tim_ent_autogenerate.py.** Prolonge le moteur
+déjà existant tools/tim_ent_lot.py : ZIP reçu → collect → rédaction IA des BIS,
+« Je n'ai pas compris », exemples guidés, entraînements, Bonus devoirs et
+défis → relecture indépendante IA → validate → assemble → ZIP privé
+prêt pour contrôle Parent. Aucun nouvel outil ENT, aucune commande Termux
+à demander pour cette étape.
+
+- Sources : texte officiel conservé ; pièce PDF jointe au cours d'origine.
+  Extraction des PDF natifs textuels seulement, avec correspondance exacte
+  par identifiant ENT. Un scan, un schéma/image ou un PDF incertain bloque
+  le lot, et la transcription n'est jamais appelée « texte du professeur ».
+- 10 questions par entraînement / Bonus devoirs / défi quotidien ; 20 par
+  défi de samedi et dimanche. Devoirs à échéance future, identifiants stables.
+- Les matières peuvent être mélangées avec un catalogue privé de leçons
+  déjà vérifiées. Sans seconde matière fiable, le défi mixte est bloqué.
+- Avec --existing, réemploi des fiches déjà publiées et blocage des conflits,
+  sans toucher aux copies, tentatives ni XP de Tim.
+- Second appel IA de vérification pour chaque fiche et série ; le validateur
+  existant contrôle en plus rattachements, dates, barèmes et complétude.
+  La relecture pédagogique humaine reste nécessaire avant publication.
+
+**Dépendance technique non encore vérifiée en réel :** le programme a besoin
+d'une clé API OPENAI_API_KEY, distincte de l'abonnement ChatGPT, et de
+--ai-consent pour envoyer le texte des cours à l'API. Les appels peuvent être
+facturés. Ne transmettre jamais de mot de passe EduConnect, de jeton de
+session ni de ZIP privé au dépôt GitHub public. En l'absence de clé ou
+d'accord, le programme refuse de se prétendre automatisé.
+
+Exécution INTERNE après réception du ZIP :
+- python tools/tim_ent_autogenerate.py CHEMIN_ZIP --out DOSSIER_PRIVE_VIDE --ai-consent
+- Options privées facultatives : --previous ETAT_CONFIRME,
+  --existing CATALOGUE_CONTENUS_SANS_COPIES, --catalog COURS_HISTORIQUES_VERIFIES.
+
+**État de preuve :** tests sur ZIP fictif avec faux modèle IA, sans appel
+réseau, vérifiés via le workflow test-ent-lot.yml. Aucun ZIP vivant de Tim
+traité avec une vraie clé API, aucun import Parent, aucun déploiement
+Cloudflare et aucune mutation Firestore. Ne pas dire « entièrement
+automatisé et opérationnel » avant la validation du vrai circuit.
