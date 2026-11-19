@@ -5,6 +5,7 @@ import {PROJECT,TIM_UID,PARENT_UID,ApiFault,verifyFirebaseToken} from './auth.mj
 import {firestore,createWrite,upsertWrite,updateWrite,NOW} from './firestore.mjs';
 import {grade} from '../functions/grading.mjs';
 import {isSchoolHomework,schoolCorrectionNotBefore,schoolCorrectionIsOpen} from './school-homework-policy.mjs';
+import {authenticatedTimCourse} from './tim-course-cache.mjs';
 import {retrySchoolHomework,schoolHomeworkRetakeStatus} from './school-homework-retry.mjs';
 import {mathNov12ForParentImport} from '../maths-12nov-training.mjs';
 import {rawPoints,cappedPoints} from '../functions/xp.mjs';
@@ -278,6 +279,10 @@ async function courseContent(db,uid){
  const [lessonList,exerciseList]=await Promise.all([
   resilientList('lessons'),resilientList('exercises')
  ]);
+ // Interdire de présenter une base partielle comme l'intégralité des cours.
+ // Un quota épuisé ne devient jamais silencieusement « zéro exercice ».
+ if(!lessonList.available||!exerciseList.available)
+  throw new ApiFault(503,'student-course-incomplete');
  const lessons=lessonList.items,exercises=exerciseList.items;
  // Les ajouts du classeur sont stockés avec un payloadJson. Le convertir
  // AVANT de filtrer les corrigés, pour que Tim voie le défi publié sans fuite
@@ -1433,6 +1438,15 @@ export async function handleRequest(request,env){
   if(!data||typeof data.action!=='string'||!ACTIONS[data.action])
    throw new ApiFault(400,'unknown-action');
   if(JSON.stringify(data).length>70000)throw new ApiFault(413,'too-large');
+  // Le cache est accessible uniquement APRÈS vérification du jeton signé.
+  // La lecture complète du catalogue Tim ne consomme pas Firestore à chaque ouverture.
+  if(data.action==='getTimCourseContent'){
+   const result=await authenticatedTimCourse(uid,request,async()=>{
+    const db=await firestore(env);
+    return courseContent(db,uid);
+   });
+   return respond({data:result});
+  }
   const db=await firestore(env);
   const result=await ACTIONS[data.action](db,uid,data.payload||{},env);
   return respond({data:result});
