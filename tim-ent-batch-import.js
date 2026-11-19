@@ -67,7 +67,7 @@ function checkPack(pack,manifest,existing={lessons:[],exercises:[]}){
   if(ex.timEntBatch!==true||!str(ex.title)||!validQuestions(ex))fail('Exercice sans dix corrections pédagogiques : '+ex.id);
   if(ex.questions.some(q=>['Espagnol','Anglais'].includes(q.subject||ex.subject)&&!str(q.fr||q.translationFr)))
    fail('Traduction française manquante pour un énoncé anglais/espagnol : '+ex.id);
-  if(!['training','homework-bonus','school','daily','weekly','sunday'].includes(ex.kind))fail('Catégorie d’exercice non prise en charge dans ce lot : '+ex.id);
+  if(!['training','homework-bonus','school','daily','weekly','sunday','bonus-day'].includes(ex.kind))fail('Catégorie d’exercice non prise en charge dans ce lot : '+ex.id);
   if(ex.kind==='school'&&
      (ex.category!=='school'||ex.entHomeworkOriginal!==true||ex.homeworkBonus===true||
       !DATE.test(String(ex.homeworkDue||''))||!Array.isArray(ex.linkedHomework)||!ex.linkedHomework.length||
@@ -81,6 +81,14 @@ function checkPack(pack,manifest,existing={lessons:[],exercises:[]}){
       !Array.isArray(ex.realLessons)||!ex.realLessons.length||
       new Set(ex.questions.map(q=>str(q.subject))).size<2))
    fail('Défi ENT sans date, barème ou leçons sources : '+ex.id);
+  // Bonus daté : ne pas confondre avec un défi quotidien de 3 missions ni
+  // avec un Bonus devoirs. Barème dédié, 10 questions, ouverture à la date prévue.
+  if(ex.kind==='bonus-day'&&
+     (ex.category!=='bonus'||!DATE.test(String(ex.period||''))||
+      ex.homeworkBonus===true||ex.questions.length!==10||
+      !Array.isArray(ex.realLessons)||!ex.realLessons.length||
+      new Set(ex.questions.map(q=>str(q.subject))).size<2))
+   fail('Défi bonus daté : période, barème, mélange ou corrigé invalide : '+ex.id);
   if(ex.kind==='homework-bonus'&&
      (ex.homeworkBonus!==true||ex.category!=='bonus'||!DATE.test(ex.homeworkDue)||!ex.linkedHomework?.length))
    fail('Lien ENT ou échéance du bonus absent : '+ex.id);
