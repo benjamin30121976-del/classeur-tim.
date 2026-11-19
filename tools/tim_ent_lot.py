@@ -432,7 +432,7 @@ def validate(args):
         expected=20 if kind in ('weekly','sunday') else 10
         if not isinstance(questions,list) or len(questions)!=expected:
             issues.append(f'{ident}: {expected} questions obligatoires');continue
-        if kind in ('daily','weekly','sunday') and (ex.get('category')!='challenge' or not norm_date(ex.get('period')) or not ex.get('realLessons')):
+        if kind in ('daily','weekly','sunday') and (ex.get('category')!='challenge' or not norm_date(ex.get('period')) or not ex.get('realLessons') or len({str(q.get('subject') or '') for q in questions})<2):
             issues.append(f'{ident}: défi sans catégorie XP, date ou leçons sources')
         if kind=='homework-bonus' and (ex.get('homeworkBonus') is not True or not ex.get('linkedHomework') or not norm_date(ex.get('homeworkDue'))):
             issues.append(f'{ident}: bonus devoirs sans liaison ENT, échéance ou marqueur XP correct')
