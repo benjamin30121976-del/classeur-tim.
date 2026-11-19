@@ -148,3 +148,16 @@ test('Un devoir scolaire original ENT est distinct du bonus, avec échéance et 
  original.entHomeworkOriginal=true;original.homeworkDue='2026-11-20';
  assert.throws(()=>api.checkPack(s.pack,s.manifest),/Devoir scolaire/);
 });
+
+
+test('Tous les défis bonus futurs déjà publiés sont visibles ensemble sans attendre leur date',()=>{
+ const source=fs.readFileSync(path.join(__dirname,'../../bonus-missions.js'),'utf8');
+ const ctx={window:{},Intl,Date};
+ vm.runInNewContext(source,ctx,{filename:'bonus-missions.js'});
+ const q={type:'mc',q:'Calcul',options:['1','2','3','4'],right:1,why:'Expliquer le résultat et la méthode.'};
+ const mk=(id,period)=>({id,kind:'bonus-day',period,enabled:true,questions:Array.from({length:10},()=>({...q}))});
+ const all=[mk('ENTB_20261120','2026-11-20'),mk('ENTB_20261123','2026-11-23'),mk('ENTB_20261127','2026-11-27')];
+ const visible=ctx.window.TIM_BONUS.pool(all,[],'2026-11-19');
+ assert.deepEqual(Array.from(visible,x=>x.id).sort(),all.map(x=>x.id).sort());
+ assert.equal(ctx.window.TIM_BONUS.state(all,[],new Date('2026-11-19T12:00:00+01:00')).chosen.length,3);
+});
