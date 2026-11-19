@@ -515,7 +515,9 @@ async function fetchAttempts(content){
   // Les anciens entraînements de leçon sont corrigés automatiquement.
   // Cette règle ne modifie ni les copies ni les XP enregistrés.
   const automaticallyCorrectable=Boolean(ex?.questions?.length&&ex.questions.every(q=>['mc','text'].includes(q.type))&&ex.kind!=='translation-help-log');
-  const school=record.schoolHomework===true||ex?.category==='school'||ex?.kind==='school';
+  const school=record.schoolHomework===true||ex?.kind==='school'||
+   (ex?.category==='school'&&ex?.kind!=='training'&&
+    Boolean(ex?.homeworkDue||ex?.due||ex?.entHomeworkOriginal));
   const correctionFrom=String(record.correctionNotBefore||'')||
    (school?timDayAfter(ex?.homeworkDue||ex?.due):null);
   const schoolReady=!school||Boolean(correctionFrom&&timParisDay()>=correctionFrom);
