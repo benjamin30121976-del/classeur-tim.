@@ -953,6 +953,13 @@ function reasoningReady(c){return c.kind==='reasoning'?(!!c.node.value.trim()&&!
  c.kind==='reasoning-v2'?(!!c.node.value.trim()&&!!c.work.value.trim()&&!!c.conclusion.value.trim()):true;}
 function saveDraft(){if(old)return;const d=drafts();d[id]=values();save(DRAFT_KEY,d);}
 if(old){
+ const schoolHomework=ex.category==='school'||ex.kind==='school';
+ if(schoolHomework&&Number.isFinite(old.score)&&Number.isFinite(old.total)){
+  const result=E('section','panel school-homework-grade');
+  result.append(E('h3','','Ta note : '+old.score.toLocaleString('fr-FR')+'/'+old.total.toLocaleString('fr-FR')),
+   E('p','','Ton travail est enregistré. Tu peux voir ton résultat, mais pas encore les bonnes réponses.'));
+  root.append(result);
+ }
  const challenge=['daily','weekly','sunday','bonus-parent','bonus-day'].includes(ex.kind);
  if(challenge){
   const summary=E('section','panel challenge-result-summary');summary.id='challenge-result-summary';
@@ -984,7 +991,12 @@ if(old){
   }
  }else if(locked){
   const panel=E('div','correction-pending');
-  panel.append(E('strong','','Devoir envoyé — correction en attente du parent'),E('p','','Tes XP sont calculés immédiatement. Ton parent décidera quand afficher le corrigé.'));
+  if(schoolHomework)
+   panel.append(E('strong','','Devoir scolaire enregistré — corrigé non disponible'),
+    E('p','','La note est accessible. Les bonnes réponses restent cachées jusqu’après l’échéance du devoir. Aucun XP pour un devoir de l’école.'));
+  else
+   panel.append(E('strong','','Devoir envoyé — correction en attente du parent'),
+    E('p','','Tes XP sont calculés immédiatement. Ton parent décidera quand afficher le corrigé.'));
   root.append(panel);
  }else if(disclosed){
   root.append(E('div','banner-good','Exercice terminé · correction disponible.'));
