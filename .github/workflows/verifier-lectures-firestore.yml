@@ -1,9 +1,24 @@
 name: Contrôler le budget de lectures Firestore (sans réseau)
 on:
+  push:
+    branches: [main]
+    paths:
+      - 'worker/server.mjs'
+      - 'worker/tim-course-cache.mjs'
+      - 'boot.js'
+      - 'app.js'
+      - 'index.html'
+      - '.github/workflows/verifier-lectures-firestore.yml'
   pull_request:
     paths:
       - 'boot.js'
       - 'worker/firestore.mjs'
+      - 'worker/tim-course-cache.mjs'
+      - 'worker/test/tim-course-cache.test.mjs'
+      - 'worker/test/firestore-read-corrections.test.mjs'
+      - 'tools/test/tim-private-course-availability.test.mjs'
+      - 'index.html'
+      - 'app.js'
       - 'worker/server.mjs'
       - 'worker/test/firestore-quota.test.mjs'
       - 'worker/test/course-fallback.test.mjs'
@@ -34,8 +49,12 @@ jobs:
           node --check boot.js
           node --check worker/firestore.mjs
           node --check worker/server.mjs
+          node --check worker/tim-course-cache.mjs
+          node --check app.js
           node --test tools/test/firestore-reads-budget.test.mjs
           node --test worker/test/firestore-quota.test.mjs worker/test/course-fallback.test.mjs
+          node --test worker/test/tim-course-cache.test.mjs worker/test/firestore-read-corrections.test.mjs
+          node --test tools/test/tim-private-course-availability.test.mjs
       - name: Tester les règles de protection du compte Tim
         run: |
           node --test functions/test/grading.test.mjs
