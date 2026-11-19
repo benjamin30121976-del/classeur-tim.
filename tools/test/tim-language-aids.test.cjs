@@ -22,6 +22,16 @@ test('les nouveaux énoncés espagnols gardent la question et révèlent la trad
  assert.match(importPack,/Traduction française manquante pour un énoncé anglais\/espagnol/);
 });
 
+test('la figure d’un nouveau problème de maths reste avec la question et sa correction',()=>{
+ assert.match(app,/function renderImportedQuestionDiagram\(/);
+ assert.match(app,/window\.TIM_LESSON_EDITOR\?\.safeSvg\?\.\(svg\)/);
+ assert.match(app,/img\.alt=alt/);
+ assert.match(app,/renderImportedQuestionDiagram\(row,ex,question\)/);
+ assert.match(app,/renderImportedQuestionDiagram\(p,ex,q\)/);
+ assert.match(importPack,/q\.diagramSvg!==undefined/);
+ assert.match(importPack,/q\.diagramAlt/);
+});
+
 test('les nouveaux exercices anglais traduisent seulement la consigne et parlent anglais',()=>{
  assert.match(app,/language==='Anglais'/);
  assert.match(app,/button\('Écouter en anglais'/);
