@@ -5,6 +5,7 @@ import {PROJECT,TIM_UID,PARENT_UID,ApiFault,verifyFirebaseToken} from './auth.mj
 import {firestore,createWrite,upsertWrite,updateWrite,NOW} from './firestore.mjs';
 import {grade} from '../functions/grading.mjs';
 import {isSchoolHomework,schoolCorrectionNotBefore,schoolCorrectionIsOpen} from './school-homework-policy.mjs';
+import {retrySchoolHomework,schoolHomeworkRetakeStatus} from './school-homework-retry.mjs';
 import {mathNov12ForParentImport} from '../maths-12nov-training.mjs';
 import {rawPoints,cappedPoints} from '../functions/xp.mjs';
 import {xpPeriodStart} from '../functions/xp-week-exception.mjs';
@@ -1410,6 +1411,8 @@ const ACTIONS={
  getMathTrainingProgress:getMathTrainingProgress,
  getParentReport:parentReport,
  submitTimExercise:submitExercise,
+ retryTimSchoolHomework:(db,uid,payload)=>retrySchoolHomework(db,uid,payload,{resolveExercise,grade}),
+ getTimSchoolHomeworkRetakes:(db,uid,payload)=>schoolHomeworkRetakeStatus(db,uid,payload,{resolveExercise}),
  setParentCorrectionRelease:releaseCorrection,
  getTimReleasedCorrections:releasedCorrections,
  getTimCourseContent:courseContent,
@@ -1439,4 +1442,4 @@ export async function handleRequest(request,env){
   return respond({error:code},status);
  }
 }
-export const TESTABLE={correctThalesNov16Question9,correctSaturdayFullCredit,reviseSaturday20261114,correctMathNov12Question10,getFirestoreReadDiagnostics,getEnglishTrainingTask,submitEnglishTraining,getEnglishTrainingProgress,previewEnglishTraining,getSvtTrainingTask,submitSvtTraining,getSvtTrainingProgress,previewSvtTraining,getHgTrainingTask,submitHgTraining,getHgTrainingProgress,previewHgTraining,getFrTrainingTask,submitFrTraining,getFrTrainingProgress,previewFrTraining,previewSpanishEntTraining,getMathEntTask,submitMathEntTask,previewMathEntTask,getMathEntProgress,getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,getMixedChallengePlan,previewMixedChallenge,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
+export const TESTABLE={retrySchoolHomework,schoolHomeworkRetakeStatus,correctThalesNov16Question9,correctSaturdayFullCredit,reviseSaturday20261114,correctMathNov12Question10,getFirestoreReadDiagnostics,getEnglishTrainingTask,submitEnglishTraining,getEnglishTrainingProgress,previewEnglishTraining,getSvtTrainingTask,submitSvtTraining,getSvtTrainingProgress,previewSvtTraining,getHgTrainingTask,submitHgTraining,getHgTrainingProgress,previewHgTraining,getFrTrainingTask,submitFrTraining,getFrTrainingProgress,previewFrTraining,previewSpanishEntTraining,getMathEntTask,submitMathEntTask,previewMathEntTask,getMathEntProgress,getPhysicsEntTask,submitPhysicsEntTask,previewPhysicsEntTask,getPhysicsEntProgress,previewPhysicsTraining,getPhysicsTrainingTask,submitPhysicsTraining,getPhysicsTrainingProgress,sanitize,resolveExercise,submitExercise,getSpanishDailyMissions,getMixedChallengePlan,previewMixedChallenge,courseContent,parentReport,releaseCorrection,releasedCorrections,oldTrainingProgress,getMathTrainingTask,submitMathTraining,getMathTrainingProgress,importMathPrivateQuiz,getSpanishEntTrainingTask,submitSpanishEntTraining,getSpanishEntTrainingProgress};
