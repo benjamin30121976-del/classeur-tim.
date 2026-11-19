@@ -1,0 +1,21 @@
+name: Préparation ENT et validation pédagogique sans écriture
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'outils/preparer_import_ent.py'
+      - 'outils/construire_pack.py'
+      - 'tests/test_automatisation_ent.py'
+      - '.github/workflows/automatisation-ent.yml'
+permissions:
+  contents: read
+jobs:
+  validation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Contrôle automatique du pipeline
+        run: python -m unittest discover -s tests -p 'test_automatisation_ent.py' -v
