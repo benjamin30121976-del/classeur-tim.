@@ -291,6 +291,7 @@ class LotTest(unittest.TestCase):
                  'help':base_help,'examples':['Yo conozco']}
             q={'type':'mc','q':'Que veut dire conocer en français ?',
                'options':['connaître','venir','pouvoir','faire'],'right':0,
+               'fr':'Que veut dire conocer en français ?',
                'why':'Le mot espagnol conocer signifie connaître ; les trois autres traductions correspondent à des verbes différents.'}
             training={'id':'ES_TR_BATCH18','kind':'training','category':'training',
                       'timEntBatch':True,'subject':'Espagnol','title':'Réviser conocer',
